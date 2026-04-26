@@ -120,6 +120,421 @@ hr.dv{border:none;border-top:1px solid var(--bd);margin:18px 0}
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:var(--bd);border-radius:3px}
 
+/* ═══════════════════════════════════════════════
+   DOCUMENTO CORINGA - DESIGN PREMIUM
+══════════════════════════════════════════════════ */
+.coringa-wrapper{
+  max-width:920px;
+  background:var(--sf);
+  border-radius:20px;
+  overflow:hidden;
+  box-shadow:0 8px 40px rgba(0,0,0,.1),0 2px 8px rgba(0,0,0,.06);
+  border:1px solid var(--bd);
+}
+.coringa-header-panel{
+  background:linear-gradient(135deg,#1c1c1e 0%,#2d2d2f 50%,#1c1c1e 100%);
+  padding:24px 32px;
+  display:flex;
+  align-items:center;
+  gap:18px;
+  position:relative;
+  overflow:hidden;
+}
+.coringa-header-panel::before{
+  content:'';
+  position:absolute;
+  top:-80px;right:-30px;
+  width:280px;
+  height:280px;
+  background:radial-gradient(circle,rgba(251,191,36,.12) 0%,transparent 65%);
+  border-radius:50%;
+}
+.coringa-header-panel::after{
+  content:'';
+  position:absolute;
+  bottom:-60px;left:-20px;
+  width:180px;
+  height:180px;
+  background:radial-gradient(circle,rgba(251,191,36,.08) 0%,transparent 65%);
+  border-radius:50%;
+}
+.coringa-icon{
+  width:56px;
+  height:56px;
+  background:linear-gradient(145deg,#fbbf24 0%,#f59e0b 100%);
+  border-radius:14px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:24px;
+  color:#1c1c1e;
+  flex-shrink:0;
+  box-shadow:0 6px 20px rgba(251,191,36,.4);
+  position:relative;
+  z-index:1;
+}
+.coringa-title-info{
+  position:relative;
+  z-index:1;
+}
+.coringa-title{
+  font-size:24px;
+  font-weight:700;
+  color:#fafafa;
+  letter-spacing:2.5px;
+  text-transform:uppercase;
+  font-family:'DM Sans',sans-serif;
+}
+.coringa-subtitle{
+  font-size:12px;
+  color:#71717a;
+  margin-top:3px;
+  font-family:'DM Sans',sans-serif;
+}
+.coringa-body{
+  padding:24px;
+  display:flex;
+  flex-direction:column;
+  gap:18px;
+}
+.coringa-row{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:16px;
+}
+.coringa-row:has(.coringa-full){
+  grid-template-columns:1fr;
+}
+.coringa-card{
+  background:var(--hl);
+  border-radius:12px;
+  padding:16px;
+  border:1px solid var(--bd);
+  position:relative;
+}
+.coringa-card-header{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin-bottom:12px;
+  font-size:12px;
+  font-weight:600;
+  color:var(--tp);
+  text-transform:uppercase;
+  letter-spacing:.5px;
+}
+.coringa-step{
+  background:linear-gradient(145deg,#fbbf24 0%,#f59e0b 100%);
+  color:#1c1c1e;
+  font-size:10px;
+  font-weight:700;
+  padding:4px 8px;
+  border-radius:5px;
+  font-family:'DM Mono',monospace;
+}
+.coringa-card select{
+  padding:10px 12px;
+  border-radius:8px;
+  font-size:13px;
+}
+.coringa-readonly{
+  background:var(--bg);
+  color:var(--ts);
+  margin-top:8px;
+  font-weight:500;
+}
+.coringa-preview{
+  margin-top:12px;
+  padding:12px;
+  background:var(--sf);
+  border-radius:8px;
+  border:1px dashed var(--bd);
+  display:none;
+}
+.coringa-preview.active{
+  display:block;
+}
+.coringa-preview-logo{
+  width:60px;
+  height:60px;
+  object-fit:contain;
+  border-radius:6px;
+  border:1px solid var(--bd);
+  float:left;
+  margin-right:12px;
+}
+.coringa-preview-info{
+  overflow:hidden;
+}
+.coringa-preview-nome{
+  font-size:13px;
+  font-weight:600;
+  color:var(--tp);
+}
+.coringa-preview-cnpj{
+  font-size:11px;
+  color:var(--ts);
+  margin-top:2px;
+}
+.coringa-preview-end{
+  font-size:10px;
+  color:var(--tm);
+  margin-top:4px;
+  line-height:1.4;
+}
+.coringa-fields{
+  display:grid;
+  grid-template-columns:1fr 1fr 1fr;
+  gap:10px;
+}
+.coringa-fields .coringa-field label{
+  display:block;
+  font-size:10px;
+  font-weight:700;
+  color:var(--ts);
+  text-transform:uppercase;
+  letter-spacing:.5px;
+  margin-bottom:4px;
+}
+.coringa-fields input{
+  padding:8px 10px;
+  border-radius:6px;
+}
+.coringa-textareas{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+}
+.coringa-textareas .coringa-field label{
+  display:block;
+  font-size:10px;
+  font-weight:700;
+  color:var(--ts);
+  text-transform:uppercase;
+  letter-spacing:.5px;
+  margin-bottom:4px;
+}
+.coringa-textareas textarea{
+  min-height:90px;
+  border-radius:8px;
+}
+.coringa-textareas input[type="file"]{
+  padding:7px;
+  border-radius:6px;
+}
+.coringa-footer{
+  padding:20px 24px;
+  background:var(--hl);
+  border-top:1px solid var(--bd);
+  display:flex;
+  align-items:center;
+  gap:16px;
+}
+.coringa-footer .btn{
+  padding:12px 28px;
+  font-size:13px;
+  border-radius:8px;
+}
+.coringa-anexos{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  margin-top:10px;
+}
+.coringa-anexos .anexo-item{
+  width:70px;
+  height:70px;
+  background:var(--sf);
+  border:2px solid var(--bd);
+  border-radius:10px;
+  overflow:hidden;
+  position:relative;
+  transition:all .2s;
+}
+.coringa-anexos .anexo-item:hover{
+  border-color:#fbbf24;
+  transform:scale(1.05);
+}
+.coringa-anexos .anexo-item img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+}
+.coringa-anexos .anexo-remove{
+  position:absolute;
+  top:3px;
+  right:3px;
+  background:#dc2626;
+  color:#fff;
+  border:none;
+  border-radius:50%;
+  width:20px;
+  height:20px;
+  cursor:pointer;
+  font-size:11px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.coringa-header-panel{
+  background:linear-gradient(135deg,#1c1c1e 0%,#2c2c2e 100%);
+  padding:28px 32px;
+  display:flex;
+  align-items:center;
+  gap:18px;
+  position:relative;
+  overflow:hidden;
+}
+.coringa-header-panel::before{
+  content:'';
+  position:absolute;
+  top:-50%;right:-10%;
+  width:200px;
+  height:200px;
+  background:radial-gradient(circle,rgba(251,191,36,.15) 0%,transparent 70%);
+  border-radius:50%;
+}
+.coringa-header-panel::after{
+  content:'';
+  position:absolute;
+  bottom:-30%;left:-5%;
+  width:120px;
+  height:120px;
+  background:radial-gradient(circle,rgba(251,191,36,.1) 0%,transparent 70%);
+  border-radius:50%;
+}
+.coringa-icon{
+  width:52px;
+  height:52px;
+  background:linear-gradient(135deg,#fbbf24 0%,#f59e0b 100%);
+  border-radius:12px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:22px;
+  color:#1c1c1e;
+  flex-shrink:0;
+  box-shadow:0 4px 12px rgba(251,191,36,.3);
+}
+.coringa-title{
+  font-size:22px;
+  font-weight:700;
+  color:#fafafa;
+  letter-spacing:2px;
+  text-transform:uppercase;
+}
+.coringa-subtitle{
+  font-size:12px;
+  color:#71717a;
+  margin-top:2px;
+}
+.coringa-grid{
+  padding:24px;
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:20px;
+}
+.coringa-section{
+  background:var(--hl);
+  border-radius:12px;
+  padding:18px;
+  border:1px solid var(--bd);
+  position:relative;
+}
+.coringa-section.coringa-full{
+  grid-column:1 / -1;
+}
+.coringa-section-header{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin-bottom:14px;
+  padding-bottom:10px;
+  border-bottom:1px solid var(--bd);
+}
+.coringa-num{
+  background:linear-gradient(135deg,#fbbf24 0%,#f59e0b 100%);
+  color:#1c1c1e;
+  font-size:11px;
+  font-weight:700;
+  padding:4px 8px;
+  border-radius:4px;
+  font-family:'DM Mono',monospace;
+}
+.coringa-section-title{
+  font-size:13px;
+  font-weight:700;
+  color:var(--tp);
+  letter-spacing:.5px;
+}
+.coringa-field-group{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+}
+.coringa-field-group.coringa-3col{
+  grid-template-columns:1fr 1fr 1fr;
+}
+.coringa-field label.fl{
+  margin-bottom:6px;
+}
+.coringa-field input,
+.coringa-field select,
+.coringa-field textarea{
+  padding:10px 12px;
+  border-radius:8px;
+}
+.coringa-field textarea{
+  min-height:80px;
+}
+.coringa-anexos .anexo-item{
+  width:64px;
+  height:64px;
+  background:var(--sf);
+  border:2px solid var(--bd);
+  border-radius:8px;
+  overflow:hidden;
+  position:relative;
+  transition:all .2s;
+}
+.coringa-anexos .anexo-item:hover{
+  border-color:#fbbf24;
+  transform:scale(1.05);
+}
+.coringa-anexos .anexo-item img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+}
+.coringa-anexos .anexo-remove{
+  position:absolute;
+  top:2px;
+  right:2px;
+  background:#dc2626;
+  color:#fff;
+  border:none;
+  border-radius:50%;
+  width:18px;
+  height:18px;
+  cursor:pointer;
+  font-size:10px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.coringa-actions{
+  padding:20px 24px;
+  background:var(--hl);
+  border-top:1px solid var(--bd);
+  display:flex;
+  align-items:center;
+  gap:16px;
+}
+.coringa-actions .btn{
+  padding:12px 24px;
+  font-size:13px;
+}
+
 /* ── MODAL CERTIFICADOS (fullscreen iframe) ── */
 #cert-modal{
   position:fixed;inset:0;z-index:1000;
@@ -216,6 +631,7 @@ hr.dv{border:none;border-top:1px solid var(--bd);margin:18px 0}
     <div class="mi" onclick="nav('adm',this)"><i class="fa-solid fa-file-signature"></i> Ficha Admissional</div>
     <div class="mi" onclick="nav('epi',this)"><i class="fa-solid fa-helmet-safety"></i> Ficha EPI/EPC</div>
     <div class="mi" onclick="nav('orc',this)"><i class="fa-solid fa-file-invoice-dollar"></i> Or&ccedil;amentos</div>
+    <div class="mi" onclick="nav('docc',this)"><i class="fa-solid fa-file-shield"></i> Documento Coringa</div>
   </div>
   <div class="nav-grp">
     <div class="nav-lbl">Certificados</div>
@@ -241,7 +657,7 @@ hr.dv{border:none;border-top:1px solid var(--bd);margin:18px 0}
 
 <div id="emps" class="view">
   <div class="ph"><div><div class="pt">Empresas</div><div class="pd">Gerencie as empresas clientes</div></div><button class="btn bp" onclick="openM('mdl-e','new')"><i class="fa-solid fa-plus"></i> Nova</button></div>
-  <div class="sw"><input type="text" id="filter-empresas" placeholder="Buscar empresa..." onkeyup="renderEmpresas()"><i class="fa-solid fa-magnifying-glass"></i></div>
+  <div class="sw"><input type="text" id="filter-empresas" placeholder="Buscar empresa..." onkeyup="renderEmps()"><i class="fa-solid fa-magnifying-glass"></i></div>
   <div class="card" style="padding:0;overflow:hidden"><div id="lst-e"></div></div>
 </div>
 
@@ -372,6 +788,94 @@ Favor enviar o comprovante após a operação.
   </div>
 </div>
 
+<div id="docc" class="view">
+  <div class="ph"><div><div class="pt">Documento Coringa</div><div class="pd">Documento com empresa contratante e prestadora de servi&ccedil;os</div></div></div>
+  
+  <div class="coringa-wrapper">
+    <div class="coringa-header-panel">
+      <div class="coringa-icon"><i class="fa-solid fa-file-signature"></i></div>
+      <div class="coringa-title-info">
+        <div class="coringa-title">DOCUMENTO CORINGA</div>
+        <div class="coringa-subtitle">Gera&ccedil;&atilde;o de documentos personalizados</div>
+      </div>
+    </div>
+    
+    <div class="coringa-body">
+      <div class="coringa-row">
+        <div class="coringa-card">
+          <div class="coringa-card-header">
+            <span class="coringa-step">01</span>
+            <span>Empresa Contratante</span>
+          </div>
+          <select id="dc-contratante" onchange="updateDcPreview('contra')">
+            <option value="">Selecione...</option>
+          </select>
+          <div id="dc-contratante-preview" class="coringa-preview"></div>
+        </div>
+        
+        <div class="coringa-card">
+          <div class="coringa-card-header">
+            <span class="coringa-step">02</span>
+            <span>Empresa Prestadora</span>
+          </div>
+          <select id="dc-prestadora" onchange="updateDcPreview('prest')">
+            <option value="">Selecione...</option>
+          </select>
+          <div id="dc-prestadora-preview" class="coringa-preview"></div>
+        </div>
+      </div>
+      
+      <div class="coringa-row">
+        <div class="coringa-card">
+          <div class="coringa-card-header">
+            <span class="coringa-step">03</span>
+            <span>Tipo de Documento</span>
+          </div>
+          <select id="dc-texto" onchange="updateDcTitulo();updateDcPreview('texto')">
+            <option value="">Selecione...</option>
+          </select>
+          <input id="dc-nome-doc" placeholder="Nome do documento" readonly class="coringa-readonly">
+        </div>
+      </div>
+      
+      <div class="coringa-row">
+        <div class="coringa-card">
+          <div class="coringa-card-header">
+            <span class="coringa-step">04</span>
+            <span>Datas &amp; Local</span>
+          </div>
+          <div class="coringa-fields">
+            <div class="coringa-field"><label>Data</label><input type="date" id="dc-data"></div>
+            <div class="coringa-field"><label>Validade</label><input type="date" id="dc-validade"></div>
+            <div class="coringa-field"><label>Local</label><input id="dc-local" placeholder="Cidade/UF"></div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="coringa-row">
+        <div class="coringa-card coringa-full">
+          <div class="coringa-card-header">
+            <span class="coringa-step">05</span>
+            <span>Conte&uacute;do</span>
+          </div>
+          <div class="coringa-textareas">
+            <div class="coringa-field"><label>Descri&ccedil;&atilde;o / Observa&ccedil;&otilde;es</label><textarea id="dc-obs" placeholder="Informa&ccedil;&otilde;es adicionais..."></textarea></div>
+            <div class="coringa-field"><label>Anexar Imagens</label>
+              <input type="file" id="dc-anexos" accept="image/*" multiple onchange="previewDcAnexos()">
+              <div id="dc-anexos-preview" class="coringa-anexos"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="coringa-footer">
+      <button class="btn bp" onclick="genDocCoringa()"><i class="fa-solid fa-file-pdf"></i> GERAR DOCUMENTO</button>
+      <div id="dc-results" style="display:none"></div>
+    </div>
+  </div>
+</div>
+
 <div id="conf" class="view">
   <div class="ph"><div><div class="pt">Configura&ccedil;&otilde;es</div><div class="pd">Imagens e configura&ccedil;&otilde;es do sistema</div></div></div>
   <div class="card" style="max-width:560px">
@@ -398,6 +902,7 @@ Favor enviar o comprovante após a operação.
   <input type="hidden" id="eid">
   <div class="fg"><label class="fl">Nome</label><input id="i-e-nm"></div>
   <div class="fg"><label class="fl">CNPJ</label><input id="i-e-cj" placeholder="00.000.000/0000-00"></div>
+  <div class="fg"><label class="fl">Endere&ccedil;o</label><textarea id="i-e-ender" placeholder="Endere&ccedil;o completo da empresa" style="min-height:60px"></textarea></div>
   <div class="fg"><label class="fl">Logo da Empresa</label><input type="file" id="i-e-logo" accept="image/*" onchange="previewImg(this,'prev-emp-logo')"><img id="prev-emp-logo" class="ip"><input type="hidden" id="i-e-lid"></div>
   <div class="ma"><button class="btn bp" onclick="sv('empresa')"><i class="fa-solid fa-save"></i> Salvar</button><button class="btn bg2" onclick="cls()">Cancelar</button></div>
 </div></div>
@@ -499,7 +1004,7 @@ function initListeners(){
   const to=localStorage.getItem('orc_intro_padrao');
   if(to) document.getElementById('o-intro').value=to;
   const hoje=new Date().toISOString().slice(0,10);
-  ['o-data','e-data','list-data','adm-data'].forEach(id=>{const el=document.getElementById(id);if(el&&!el.value)el.value=hoje;});
+  ['o-data','e-data','list-data','adm-data','dc-data'].forEach(id=>{const el=document.getElementById(id);if(el&&!el.value)el.value=hoje;});
   addOrcItem();
 }
 function renderAll(){updateDashboard();renderEmps();renderFuncs();renderTexts();renderMats();renderHistory();populateSelects();renderPool();renderCart();}
@@ -512,11 +1017,24 @@ function fmtData(d){if(!d)return'';if(typeof d==='string'&&d.includes('-')){cons
 function fmtMoeda(n){return'R$ '+Number(n||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});}
 function toArr(obj){if(!obj)return[];return Object.entries(obj).map(([k,v])=>(typeof v==='object'&&v!==null)?{...v,id:v.id||k}:v);}
 function spin(on){document.getElementById('loader').style.display=on?'flex':'none';}
+function fmtCnpj(c){if(!c)return'—';return c;}
+function addNewPageIfNeeded(doc,y,minSpace){return y;}
+function showDcError(msg, inputId){
+  alert(msg);
+  if(inputId){
+    const el=document.getElementById(inputId);
+    if(el){el.focus();el.style.borderColor='var(--dn)';setTimeout(()=>el.style.borderColor='',2000);}
+  }
+}
+function showDcSuccess(msg){
+  document.getElementById('dc-results').style.display='block';
+  document.getElementById('dc-results').innerHTML=`<div class="res"><i class="fa-solid fa-check-circle"></i> ${msg}</div>`;
+}
 function nav(id,el){document.querySelectorAll('.view').forEach(e=>e.classList.remove('active'));document.querySelectorAll('.mi').forEach(e=>e.classList.remove('active'));document.getElementById(id).classList.add('active');if(el)el.classList.add('active');}
 function tabSwitch(id,el){document.querySelectorAll('.tc').forEach(e=>e.classList.remove('active'));document.getElementById(id).classList.add('active');document.querySelectorAll('.tab').forEach(e=>e.classList.remove('active'));if(el)el.classList.add('active');}
 function openM(id,mode){
   if(mode==='new'){
-    if(id==='mdl-e'){v('eid','');v('i-e-nm','');v('i-e-cj','');v('i-e-lid','');document.getElementById('i-e-logo').value='';const p=document.getElementById('prev-emp-logo');if(p)p.style.display='none';}
+    if(id==='mdl-e'){v('eid','');v('i-e-nm','');v('i-e-cj','');v('i-e-ender','');v('i-e-lid','');document.getElementById('i-e-logo').value='';const p=document.getElementById('prev-emp-logo');if(p)p.style.display='none';}
     if(id==='mdl-f'){v('fid','');v('i-f-nm','');v('i-f-cp','');v('i-f-fn','');v('i-f-cb','');v('i-f-st','');v('i-f-dt','');document.getElementById('i-f-ep').value='';}
     if(id==='mdl-t'){v('tid','');v('i-t-ti','');v('i-t-ca','');v('i-t-co','');}
     if(id==='mdl-m'){v('mid','');v('i-m-nm','');v('i-m-ca','');document.getElementById('i-m-tp').value='EPI';v('i-m-un','');v('i-m-es','0');}
@@ -587,11 +1105,40 @@ async function regenDoc(nome){
   }
 }
 
+// ── LISTAGENS ─────────────────────────────────────────────────────
+function renderEmps(){const q=(document.getElementById('filter-empresas').value||'').toLowerCase();const emps=toArr(DATA.empresas).filter(e=>(e.nome||'').toLowerCase().includes(q)||(e.cnpj||'').toLowerCase().includes(q));document.getElementById('lst-e').innerHTML=emps.length?emps.map(e=>`<div class="tr2"><div><div class="rn">${esc(e.nome)}</div><div class="rs">CNPJ: ${esc(e.cnpj||'—')}${e.endereco?' | '+esc(e.endereco).substring(0,50):''}</div></div><div class="ra"><button class="btn bw" onclick='editEmp(${safeJSON(e)})'><i class="fa-solid fa-pen"></i></button><button class="btn bd2" onclick="del('empresas','${e.id}')"><i class="fa-solid fa-trash"></i></button></div></div>`).join(''):'<div class="es">Nenhuma empresa encontrada</div>';}
+function renderFuncs(){const q=(document.getElementById('filter-colaboradores').value||'').toLowerCase();const funcs=toArr(DATA.funcionarios).filter(f=>(f.nome||'').toLowerCase().includes(q)||(f.funcao||'').toLowerCase().includes(q));const em={};toArr(DATA.empresas).forEach(e=>{em[String(e.id||'').trim()]=e.nome;});document.getElementById('lst-f').innerHTML=funcs.length?funcs.map(f=>`<div class="tr2"><div><div class="rn">${esc(f.nome)}</div><div class="rs">${esc(em[String(f.empresaId||'').trim()]||'?')} · ${esc(f.funcao||'—')}</div></div><div class="ra"><button class="btn bw" onclick='editFunc(${safeJSON(f)})'><i class="fa-solid fa-pen"></i></button><button class="btn bd2" onclick="del('funcionarios','${f.id}')"><i class="fa-solid fa-trash"></i></button></div></div>`).join(''):'<div class="es">Nenhum colaborador encontrado</div>';}
+function renderTexts(){const q=(document.getElementById('filter-texts').value||'').toLowerCase();const texts=toArr(DATA.textos).filter(t=>(t.titulo||'').toLowerCase().includes(q));document.getElementById('lst-t').innerHTML=texts.length?texts.map(t=>`<div class="tr2"><div><div class="rn">${esc(t.titulo)} <span class="bdg">${esc(t.categoria||'')}</span></div><div class="rs">${esc((t.conteudo||'').substring(0,80))}${(t.conteudo||'').length>80?'...':''}</div></div><div class="ra"><button class="btn bw" onclick='editText(${safeJSON(t)})'><i class="fa-solid fa-pen"></i></button><button class="btn bd2" onclick="del('textos','${t.id}')"><i class="fa-solid fa-trash"></i></button></div></div>`).join(''):'<div class="es">Nenhum texto cadastrado</div>';}
+function renderMats(){const q=(document.getElementById('filter-mat').value||'').toLowerCase();const mats=toArr(DATA.materiais).filter(m=>(m.nome||'').toLowerCase().includes(q)||(m.ca||'').toLowerCase().includes(q));document.getElementById('lst-m').innerHTML=mats.length?mats.map(m=>`<div class="tr2"><div><div class="rn">${esc(m.nome)} <span class="bdg">${esc(m.tipo||'EPI')}</span></div><div class="rs">C.A.: ${esc(m.ca||'—')} · Estoque: ${esc(m.estoque||0)} ${esc(m.unidade||'')}</div></div><div class="ra"><button class="btn bw" onclick='editMat(${safeJSON(m)})'><i class="fa-solid fa-pen"></i></button><button class="btn bd2" onclick="del('materiais','${m.id}')"><i class="fa-solid fa-trash"></i></button></div></div>`).join(''):'<div class="es">Nenhum material cadastrado</div>';}
+function renderPool(){const q=(document.getElementById('g-search').value||'').toLowerCase();const texts=toArr(DATA.textos).filter(t=>!SEL_TEXTS.includes(t.id)&&((t.titulo||'').toLowerCase().includes(q)||(t.categoria||'').toLowerCase().includes(q)));document.getElementById('g-pool').innerHTML=texts.map(t=>`<div class="ti" onclick="addText('${t.id}')"><span>${esc(t.titulo)}${t.categoria?' <small style="color:var(--tm)">['+esc(t.categoria)+']</small>':''}</span><i class="fa-solid fa-plus" style="color:var(--sc);font-size:11px"></i></div>`).join('')||'<div class="es" style="padding:10px">Nenhum disponível</div>';renderSel();}
+function renderSel(){document.getElementById('g-sel').innerHTML=SEL_TEXTS.map(id=>{const t=DATA.textos[id];return t?`<div class="ti"><span>${esc(t.titulo)}${t.categoria?' <small style="color:var(--tm)">['+esc(t.categoria)+']</small>':''}</span><i class="fa-solid fa-xmark" style="color:var(--dn);cursor:pointer;font-size:11px" onclick="remText('${id}')"></i></div>`:''}).join('')||'<div class="es" style="padding:10px">Nenhum selecionado</div>';}
+function addText(id){if(!SEL_TEXTS.includes(id)){SEL_TEXTS.push(id);renderPool();}}
+function remText(id){SEL_TEXTS=SEL_TEXTS.filter(i=>i!==id);renderPool();}
+function renderCart(){const el=document.getElementById('epi-cart');el.innerHTML=CART.length?CART.map((c,i)=>`<div class="cait"><span><strong>${esc(c.nome)}</strong> | C.A.: ${esc(c.ca)} | Qtd: ${c.qtd} ${esc(c.unidade)}</span><button class="bxs bxd" onclick="remCart(${i})"><i class="fa-solid fa-xmark"></i></button></div>`).join(''):'<div class="es" style="padding:6px">Nenhum item adicionado</div>';}
+function remCart(i){CART.splice(i,1);renderCart();if(document.getElementById('chk-lembrar-epi').checked)localStorage.setItem('epi_cart_memory',JSON.stringify(CART));}
+function limparEpiSalvo(){CART=[];localStorage.removeItem('epi_cart_memory');renderCart();}
+function addToCart(){const s=document.getElementById('e-sel-mat');const o=s.options[s.selectedIndex];if(!o||!o.value){alert('Selecione um material');return;}const qtd=parseInt(document.getElementById('e-qtd').value)||1;const mat=DATA.materiais[o.value];if(!mat)return;const ex=CART.find(c=>c.id===mat.id);if(ex){ex.qtd+=qtd;}else{CART.push({id:mat.id,nome:mat.nome,ca:mat.ca||'',unidade:mat.unidade||'',tipo:mat.tipo||'EPI',qtd});}renderCart();if(document.getElementById('chk-lembrar-epi').checked)localStorage.setItem('epi_cart_memory',JSON.stringify(CART));}
+function filterEmissionSelect(){const q=document.getElementById('e-search-input').value.toLowerCase();const mats=toArr(DATA.materiais).filter(m=>(m.nome||'').toLowerCase().includes(q)||(m.ca||'').toLowerCase().includes(q));document.getElementById('e-sel-mat').innerHTML='<option value="">Selecione...</option>'+mats.map(m=>`<option value="${m.id}" data-un="${esc(m.unidade||'')}">${esc(m.nome)} (C.A.${m.ca||''})</option>`).join('');}
+function updateUnid(){const s=document.getElementById('e-sel-mat');const o=s.options[s.selectedIndex];document.getElementById('e-unid').value=o?(o.dataset.un||''):'';}
+function fltG(){renderFuncList('g-e','g-f-list','gChk');}
+function fltList(){renderFuncList('list-empresa','list-f-list','lChk');}
+function fltAdm(){renderFuncList('adm-empresa','adm-f-list','admChk');}
+function fltEpi(){renderFuncList('e-e','e-f-list','eChk');}
+function renderFuncList(selId,cId,name){
+  const eid=document.getElementById(selId).value;
+  const funcs=toArr(DATA.funcionarios).filter(f=>String(f.empresaId||'').trim()===String(eid||'').trim());
+  const el=document.getElementById(cId);
+  if(!eid){el.innerHTML='<div class="es">Selecione uma empresa primeiro</div>';return;}
+  el.innerHTML=funcs.length?funcs.map(f=>`<div class="ci"><input type="checkbox" name="${name}" value="${f.id}" id="ck_${name}_${f.id}"><label for="ck_${name}_${f.id}">${esc(f.nome)} <span>(${esc(f.funcao||'')})</span></label></div>`).join(''):'<div class="es">Nenhum colaborador nesta empresa</div>';
+}
+function addOrcItem(){const tr=document.createElement('tr');tr.innerHTML=`<td><input class="oi o-desc" placeholder="Descri\u00e7\u00e3o do servi\u00e7o" oninput="calcTotal()"></td><td><input class="oi o-qtd" type="number" value="1" min="1" oninput="calcTotal()"></td><td><input class="oi o-val" type="number" value="0" min="0" step="0.01" oninput="calcTotal()"></td><td><button class="btn bd2" style="padding:4px 7px" onclick="this.closest('tr').remove();calcTotal()"><i class="fa-solid fa-trash"></i></button></td>`;document.getElementById('orc-body').appendChild(tr);}
+function calcTotal(){let t=0;document.querySelectorAll('#orc-body tr').forEach(tr=>{const q=parseFloat(tr.querySelector('.o-qtd')?.value)||0;const u=parseFloat(tr.querySelector('.o-val')?.value)||0;t+=q*u;});document.getElementById('orc-total-display').textContent=t.toLocaleString('pt-BR',{minimumFractionDigits:2});}
+
 // ── SELECTS ─────────────────────────────────────────────────────
 function populateSelects(){
   const emps=toArr(DATA.empresas);
   const opts='<option value="">Selecione...</option>'+emps.map(e=>`<option value="${esc(e.id)}">${esc(e.nome)}</option>`).join('');
-  ['i-f-ep','o-e','g-e','list-empresa','adm-empresa','e-e'].forEach(id=>{const el=document.getElementById(id);if(!el)return;const cur=el.value;el.innerHTML=opts;if(cur)el.value=cur;});
+  ['i-f-ep','o-e','g-e','list-empresa','adm-empresa','e-e','dc-contratante','dc-prestadora'].forEach(id=>{const el=document.getElementById(id);if(!el)return;const cur=el.value;el.innerHTML=opts;if(cur)el.value=cur;});
   const mats=toArr(DATA.materiais);
   const sm=document.getElementById('e-sel-mat');
   if(sm){const cur=sm.value;sm.innerHTML='<option value="">Selecione...</option>'+mats.map(m=>`<option value="${esc(m.id)}" data-un="${esc(m.unidade||'')}">${esc(m.nome)} (C.A.${m.ca||''})</option>`).join('');if(cur)sm.value=cur;}
@@ -601,6 +1148,8 @@ function populateSelects(){
   if(sl){const cur=sl.value;sl.innerHTML=textOpts;if(cur)sl.value=cur;}
   const sa=document.getElementById('adm-sel-texto');
   if(sa){const cur=sa.value;sa.innerHTML=textOpts;if(cur)sa.value=cur;}
+  const dcTexto=document.getElementById('dc-texto');
+  if(dcTexto){const cur=dcTexto.value;dcTexto.innerHTML=textOpts;if(cur)dcTexto.value=cur;}
 }
 
 function fillTreinoFromText(){
@@ -622,39 +1171,76 @@ function fillAdmFromText(){
   }
 }
 
-// ── LISTAS ──────────────────────────────────────────────────────
-function renderEmps(){const q=(document.getElementById('filter-empresas').value||'').toLowerCase();const emps=toArr(DATA.empresas).filter(e=>(e.nome||'').toLowerCase().includes(q)||(e.cnpj||'').toLowerCase().includes(q));document.getElementById('lst-e').innerHTML=emps.length?emps.map(e=>`<div class="tr2"><div><div class="rn">${esc(e.nome)}</div><div class="rs">CNPJ: ${esc(e.cnpj||'—')}</div></div><div class="ra"><button class="btn bw" onclick='editEmp(${safeJSON(e)})'><i class="fa-solid fa-pen"></i></button><button class="btn bd2" onclick="del('empresas','${e.id}')"><i class="fa-solid fa-trash"></i></button></div></div>`).join(''):'<div class="es">Nenhuma empresa encontrada</div>';}
-function renderFuncs(){const q=(document.getElementById('filter-colaboradores').value||'').toLowerCase();const funcs=toArr(DATA.funcionarios).filter(f=>(f.nome||'').toLowerCase().includes(q)||(f.funcao||'').toLowerCase().includes(q));const em={};toArr(DATA.empresas).forEach(e=>{em[String(e.id||'').trim()]=e.nome;});document.getElementById('lst-f').innerHTML=funcs.length?funcs.map(f=>`<div class="tr2"><div><div class="rn">${esc(f.nome)}</div><div class="rs">${esc(em[String(f.empresaId||'').trim()]||'?')} · ${esc(f.funcao||'—')}</div></div><div class="ra"><button class="btn bw" onclick='editFunc(${safeJSON(f)})'><i class="fa-solid fa-pen"></i></button><button class="btn bd2" onclick="del('funcionarios','${f.id}')"><i class="fa-solid fa-trash"></i></button></div></div>`).join(''):'<div class="es">Nenhum colaborador encontrado</div>';}
-function renderTexts(){const q=(document.getElementById('filter-texts').value||'').toLowerCase();const texts=toArr(DATA.textos).filter(t=>(t.titulo||'').toLowerCase().includes(q));document.getElementById('lst-t').innerHTML=texts.length?texts.map(t=>`<div class="tr2"><div><div class="rn">${esc(t.titulo)} <span class="bdg">${esc(t.categoria||'')}</span></div><div class="rs">${esc((t.conteudo||'').substring(0,80))}${(t.conteudo||'').length>80?'...':''}</div></div><div class="ra"><button class="btn bw" onclick='editText(${safeJSON(t)})'><i class="fa-solid fa-pen"></i></button><button class="btn bd2" onclick="del('textos','${t.id}')"><i class="fa-solid fa-trash"></i></button></div></div>`).join(''):'<div class="es">Nenhum texto cadastrado</div>';}
-function renderMats(){const q=(document.getElementById('filter-mat').value||'').toLowerCase();const mats=toArr(DATA.materiais).filter(m=>(m.nome||'').toLowerCase().includes(q)||(m.ca||'').toLowerCase().includes(q));document.getElementById('lst-m').innerHTML=mats.length?mats.map(m=>`<div class="tr2"><div><div class="rn">${esc(m.nome)} <span class="bdg">${esc(m.tipo||'EPI')}</span></div><div class="rs">C.A.: ${esc(m.ca||'—')} · Estoque: ${esc(m.estoque||0)} ${esc(m.unidade||'')}</div></div><div class="ra"><button class="btn bw" onclick='editMat(${safeJSON(m)})'><i class="fa-solid fa-pen"></i></button><button class="btn bd2" onclick="del('materiais','${m.id}')"><i class="fa-solid fa-trash"></i></button></div></div>`).join(''):'<div class="es">Nenhum material cadastrado</div>';}
-
-function renderPool(){const q=(document.getElementById('g-search').value||'').toLowerCase();const texts=toArr(DATA.textos).filter(t=>!SEL_TEXTS.includes(t.id)&&((t.titulo||'').toLowerCase().includes(q)||(t.categoria||'').toLowerCase().includes(q)));document.getElementById('g-pool').innerHTML=texts.map(t=>`<div class="ti" onclick="addText('${t.id}')"><span>${esc(t.titulo)}${t.categoria?' <small style="color:var(--tm)">['+esc(t.categoria)+']</small>':''}</span><i class="fa-solid fa-plus" style="color:var(--sc);font-size:11px"></i></div>`).join('')||'<div class="es" style="padding:10px">Nenhum disponível</div>';renderSel();}
-function renderSel(){document.getElementById('g-sel').innerHTML=SEL_TEXTS.map(id=>{const t=DATA.textos[id];return t?`<div class="ti"><span>${esc(t.titulo)}${t.categoria?' <small style="color:var(--tm)">['+esc(t.categoria)+']</small>':''}</span><i class="fa-solid fa-xmark" style="color:var(--dn);cursor:pointer;font-size:11px" onclick="remText('${id}')"></i></div>`:''}).join('')||'<div class="es" style="padding:10px">Nenhum selecionado</div>';}
-function addText(id){if(!SEL_TEXTS.includes(id)){SEL_TEXTS.push(id);renderPool();}}
-function remText(id){SEL_TEXTS=SEL_TEXTS.filter(i=>i!==id);renderPool();}
-
-function fltG(){renderFuncList('g-e','g-f-list','gChk');}
-function fltList(){renderFuncList('list-empresa','list-f-list','lChk');}
-function fltAdm(){renderFuncList('adm-empresa','adm-f-list','admChk');}
-function fltEpi(){renderFuncList('e-e','e-f-list','eChk');}
-function renderFuncList(selId,cId,name){
-  const eid=document.getElementById(selId).value;
-  const funcs=toArr(DATA.funcionarios).filter(f=>String(f.empresaId||'').trim()===String(eid||'').trim());
-  const el=document.getElementById(cId);
-  if(!eid){el.innerHTML='<div class="es">Selecione uma empresa primeiro</div>';return;}
-  el.innerHTML=funcs.length?funcs.map(f=>`<div class="ci"><input type="checkbox" name="${name}" value="${f.id}" id="ck_${name}_${f.id}"><label for="ck_${name}_${f.id}">${esc(f.nome)} <span>(${esc(f.funcao||'')})</span></label></div>`).join(''):'<div class="es">Nenhum colaborador nesta empresa</div>';
+function updateDcTitulo(){
+  const id=document.getElementById('dc-texto').value;
+  if(!id){document.getElementById('dc-nome-doc').value='';return;}
+  const t=DATA.textos[id];if(!t)return;
+  document.getElementById('dc-nome-doc').value=t.titulo||'';
 }
 
-function updateUnid(){const s=document.getElementById('e-sel-mat');const o=s.options[s.selectedIndex];document.getElementById('e-unid').value=o?(o.dataset.un||''):'';} 
-function filterEmissionSelect(){const q=document.getElementById('e-search-input').value.toLowerCase();const mats=toArr(DATA.materiais).filter(m=>(m.nome||'').toLowerCase().includes(q)||(m.ca||'').toLowerCase().includes(q));document.getElementById('e-sel-mat').innerHTML='<option value="">Selecione...</option>'+mats.map(m=>`<option value="${m.id}" data-un="${esc(m.unidade||'')}">${esc(m.nome)} (C.A.${m.ca||''})</option>`).join('');}
-function addToCart(){const s=document.getElementById('e-sel-mat');const o=s.options[s.selectedIndex];if(!o||!o.value){alert('Selecione um material');return;}const qtd=parseInt(document.getElementById('e-qtd').value)||1;const mat=DATA.materiais[o.value];if(!mat)return;const ex=CART.find(c=>c.id===mat.id);if(ex){ex.qtd+=qtd;}else{CART.push({id:mat.id,nome:mat.nome,ca:mat.ca||'',unidade:mat.unidade||'',tipo:mat.tipo||'EPI',qtd});}renderCart();if(document.getElementById('chk-lembrar-epi').checked)localStorage.setItem('epi_cart_memory',JSON.stringify(CART));}
-function renderCart(){const el=document.getElementById('epi-cart');el.innerHTML=CART.length?CART.map((c,i)=>`<div class="cait"><span><strong>${esc(c.nome)}</strong> | C.A.: ${esc(c.ca)} | Qtd: ${c.qtd} ${esc(c.unidade)}</span><button class="bxs bxd" onclick="remCart(${i})"><i class="fa-solid fa-xmark"></i></button></div>`).join(''):'<div class="es" style="padding:6px">Nenhum item adicionado</div>';}
-function remCart(i){CART.splice(i,1);renderCart();if(document.getElementById('chk-lembrar-epi').checked)localStorage.setItem('epi_cart_memory',JSON.stringify(CART));}
-function limparEpiSalvo(){CART=[];localStorage.removeItem('epi_cart_memory');renderCart();}
+async function updateDcPreview(type){
+  const seletId=type==='contra'?'dc-contratante':type==='prest'?'dc-prestadora':'dc-texto';
+  const previewId=type==='contra'?'dc-contratante-preview':type==='prest'?'dc-prestadora-preview':'dc-texto-preview';
+  const el=document.getElementById(seletId);
+  const pv=document.getElementById(previewId);
+  if(!el||!pv)return;
+  
+  if(type==='texto'){
+    const txt=DATA.textos[el.value];
+    if(txt){
+      pv.innerHTML=`<div style="font-size:12px;font-weight:600;color:var(--tp)">${txt.titulo||''}</div>
+        <div style="font-size:10px;color:var(--ts);margin-top:4px">${(txt.conteudo||'').substring(0,100)}${(txt.conteudo||'').length>100?'...':''}</div>`;
+      pv.classList.add('active');
+    }else{
+      pv.classList.remove('active');
+    }
+    return;
+  }
+  
+  const emp=DATA.empresas[el.value];
+  if(emp){
+    let imgHtml='';
+    if(emp.logoUrl && emp.logoUrl.startsWith('http')){
+      imgHtml=`<img src="${emp.logoUrl}" class="coringa-preview-logo" crossorigin="anonymous">`;
+    }else if(emp.logoUrl && emp.logoUrl.startsWith('data:')){
+      imgHtml=`<img src="${emp.logoUrl}" class="coringa-preview-logo">`;
+    }
+    pv.innerHTML=imgHtml+`<div class="coringa-preview-info">
+      <div class="coringa-preview-nome">${emp.nome||''}</div>
+      <div class="coringa-preview-cnpj">CNPJ: ${emp.cnpj||'—'}</div>
+      <div class="coringa-preview-end">${(emp.endereco||'').substring(0,60)}${(emp.endereco||'').length>60?'...':''}</div>
+    </div>`;
+    pv.classList.add('active');
+  }else{
+    pv.innerHTML='';
+    pv.classList.remove('active');
+  }
+}
 
-function addOrcItem(){const tr=document.createElement('tr');tr.innerHTML=`<td><input class="oi o-desc" placeholder="Descrição do serviço" oninput="calcTotal()"></td><td><input class="oi o-qtd" type="number" value="1" min="1" oninput="calcTotal()"></td><td><input class="oi o-val" type="number" value="0" min="0" step="0.01" oninput="calcTotal()"></td><td><button class="btn bd2" style="padding:4px 7px" onclick="this.closest('tr').remove();calcTotal()"><i class="fa-solid fa-trash"></i></button></td>`;document.getElementById('orc-body').appendChild(tr);}
-function calcTotal(){let t=0;document.querySelectorAll('#orc-body tr').forEach(tr=>{const q=parseFloat(tr.querySelector('.o-qtd')?.value)||0;const u=parseFloat(tr.querySelector('.o-val')?.value)||0;t+=q*u;});document.getElementById('orc-total-display').textContent=t.toLocaleString('pt-BR',{minimumFractionDigits:2});}
+function previewDcAnexos(){
+  const fl=document.getElementById('dc-anexos');
+  const pv=document.getElementById('dc-anexos-preview');
+  pv.innerHTML='';
+  if(fl.files){
+    Array.from(fl.files).forEach((f,i)=>{
+      const r=new FileReader();
+      r.onload=e=>{
+        const div=document.createElement('div');
+        div.className='anexo-item';
+        const img=document.createElement('img');
+        img.src=e.target.result;
+        const btn=document.createElement('button');
+        btn.className='anexo-remove';
+        btn.innerHTML='<i class="fa-solid fa-times"></i>';
+        btn.onclick=()=>{fl.value='';pv.innerHTML='';};
+        div.appendChild(img);div.appendChild(btn);pv.appendChild(div);
+      };
+      r.readAsDataURL(f);
+    });
+  }
+}
 
+// ── CRUD ──────────────────────────────────────────────────────
 function sv(type){
   const d=getFormData(type);if(!d)return;
   if(type==='empresa'&&document.getElementById('i-e-logo').files[0]){
@@ -672,15 +1258,15 @@ function saveFinal(type,d){spin(true);const path={empresa:'empresas',funcionario
     }
     spin(false);cls();
   }).catch(e=>{spin(false);alert('Erro: '+e.message);});}
-function del(path,id){if(!confirm('Confirma a exclusão?'))return;db.ref(path+'/'+id).remove().then(()=>{if(path==='funcionarios'){db.ref('alunos/'+id).remove().catch(()=>{});}}).catch(e=>alert('Erro: '+e.message));}
+function del(path,id){if(!confirm('Confirma a exclus\u00e3o?'))return;db.ref(path+'/'+id).remove().then(()=>{if(path==='funcionarios'){db.ref('alunos/'+id).remove().catch(()=>{});}}).catch(e=>alert('Erro: '+e.message));}
 function getFormData(t){
-  if(t==='empresa')return{id:v('eid'),nome:v('i-e-nm'),cnpj:v('i-e-cj'),logoUrl:v('i-e-lid')};
+  if(t==='empresa')return{id:v('eid'),nome:v('i-e-nm'),cnpj:v('i-e-cj'),endereco:v('i-e-ender'),logoUrl:v('i-e-lid')};
   if(t==='funcionario')return{id:v('fid'),empresaId:v('i-f-ep'),nome:v('i-f-nm'),cpf:v('i-f-cp'),funcao:v('i-f-fn'),cbo:v('i-f-cb'),setor:v('i-f-st'),dataAdm:v('i-f-dt')};
   if(t==='texto')return{id:v('tid'),titulo:v('i-t-ti'),conteudo:v('i-t-co'),categoria:v('i-t-ca')};
   if(t==='material')return{id:v('mid'),nome:v('i-m-nm'),ca:v('i-m-ca'),tipo:document.getElementById('i-m-tp').value,unidade:v('i-m-un'),estoque:parseInt(v('i-m-es'))||0};
   return null;
 }
-function editEmp(x){v('eid',x.id);v('i-e-nm',x.nome||'');v('i-e-cj',x.cnpj||'');v('i-e-lid',x.logoUrl||'');document.getElementById('i-e-logo').value='';openM('mdl-e');}
+function editEmp(x){v('eid',x.id);v('i-e-nm',x.nome||'');v('i-e-cj',x.cnpj||'');v('i-e-ender',x.endereco||'');v('i-e-lid',x.logoUrl||'');document.getElementById('i-e-logo').value='';openM('mdl-e');}
 function editFunc(x){v('fid',x.id);document.getElementById('i-f-ep').value=x.empresaId||'';v('i-f-nm',x.nome||'');v('i-f-cp',x.cpf||'');v('i-f-fn',x.funcao||'');v('i-f-cb',x.cbo||'');v('i-f-st',x.setor||'');v('i-f-dt',x.dataAdm||'');openM('mdl-f');}
 function editText(x){v('tid',x.id);v('i-t-ti',x.titulo||'');v('i-t-ca',x.categoria||'');v('i-t-co',x.conteudo||'');openM('mdl-t');}
 function editMat(x){v('mid',x.id);v('i-m-nm',x.nome||'');v('i-m-ca',x.ca||'');document.getElementById('i-m-tp').value=x.tipo||'EPI';v('i-m-un',x.unidade||'');v('i-m-es',x.estoque||0);openM('mdl-m');}
@@ -719,7 +1305,7 @@ async function uploadConfig(){
 const IMG_CACHE={};
 async function loadImg(url){
   if(!url)return null;
-  if(url.startsWith('data:')){IMG_CACHE[url]=url;return url;}
+  if(url.startsWith('data:'))return url;
   if(IMG_CACHE[url])return IMG_CACHE[url];
   try{const res=await fetch(url,{mode:'cors'});if(!res.ok)throw 0;const blob=await res.blob();const b64=await new Promise(r=>{const rd=new FileReader();rd.onload=e=>r(e.target.result);rd.readAsDataURL(blob);});IMG_CACHE[url]=b64;return b64;}catch(_){}
   try{const b64=await new Promise((res,rej)=>{const img=new Image();img.crossOrigin='anonymous';img.onload=()=>{const c=document.createElement('canvas');c.width=img.naturalWidth;c.height=img.naturalHeight;c.getContext('2d').drawImage(img,0,0);res(c.toDataURL('image/png'));};img.onerror=rej;img.src=url+'?t='+Date.now();});IMG_CACHE[url]=b64;return b64;}catch(_){}
@@ -817,6 +1403,7 @@ function P_text(doc,text,y,isLandscape,italic){
   const H=isLandscape?PAG.LH:PAG.PH;
   const lh=4.6;
   const bottomLimit=H-20;
+  y+=5;
   doc.setFont('helvetica',italic?'italic':'normal');
   doc.setFontSize(8.5);
   doc.setTextColor(...C.mid);
@@ -839,7 +1426,7 @@ function P_text(doc,text,y,isLandscape,italic){
     if(line.trim()!==''){ doc.text(line,m+3,y); }
     y+=lh;
   }
-  return y+2;
+  return y+6;
 }
 
 function P_infoRow(doc,label,value,y){
@@ -977,6 +1564,204 @@ async function genOrc(){
   doc.save('PROPOSTA_'+(empCliente?.nome||'cliente').replace(/\s+/g,'_')+'_'+dataStr.replace(/\//g,'-')+'.pdf');
   logHistory('Proposta - '+(empCliente?.nome||'?'), {empresaId:empCliente?.id});
 }
+
+// ── DOCUMENTO CORINGA ─────────────────────────────────────────────
+async function genDocCoringa(){
+  const cid=document.getElementById('dc-contratante').value;
+  const pid=document.getElementById('dc-prestadora').value;
+  const tid=document.getElementById('dc-texto').value;
+  
+  if(!cid){alert('Selecione a empresa contratante');return;}
+  if(!pid){alert('Selecione a empresa prestadora');return;}
+  if(!tid){alert('Selecione o tipo de documento');return;}
+  if(cid===pid){alert('Empresa contratante e prestadora não podem ser iguais');return;}
+  
+  spin(true);
+  try{
+    const contratante=DATA.empresas[cid];
+    const prestadora=DATA.empresas[pid];
+    const texto=DATA.textos[tid];
+    
+    if(!contratante||!prestadora||!texto){alert('Dados não encontrados');spin(false);return;}
+    
+    const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+    const m=PAG.PM, uw=PAG.UW, W=PAG.PW, H=PAG.PH;
+    const centroW=W/2;
+    const assData=DATA.config?.assUrl?await loadImg(DATA.config.assUrl):null;
+    
+    // ══════════════════════════════════════
+    // CAPA PROFISSIONAL
+    // ══════════════════════════════════════
+    
+    // Fundo branco da página
+    doc.setFillColor(255,255,255);
+    doc.rect(0,0,W,H,'F');
+    
+    // Barra escura no topo (padrão do sistema)
+    doc.setFillColor(...C.h1);
+    doc.rect(0,0,W,8,'F');
+    
+    // Logo da empresa prestadora (NO MEIO DA CAPA)
+    const prestLogo=prestadora?.logoUrl?await loadImg(prestadora.logoUrl):null;
+    if(prestLogo){
+      try{doc.addImage(prestLogo,'PNG',centroW-22,25,44,44);}catch(_){}
+    }
+    
+    // Nome da empresa prestadora
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(16);
+    doc.setTextColor(30,30,30);
+    doc.text((texto.titulo||'DOCUMENTO').toUpperCase(),centroW,78,{align:'center'});
+    
+    // CNPJ da prestadora
+    if(prestadora?.cnpj){
+      doc.setFont('helvetica','normal');
+      doc.setFontSize(10);
+      doc.setTextColor(100,100,100);
+      doc.text('CNPJ: '+prestadora.cnpj,centroW,86,{align:'center'});
+    }
+    
+    // Cargo do responsável
+    doc.setFont('helvetica','normal');
+    doc.setFontSize(9);
+    doc.setTextColor(120,120,120);
+    doc.text(RESP.funcao+' - '+RESP.registro,centroW,94,{align:'center'});
+    
+    // Linha separadora
+    doc.setDrawColor(200,200,200);
+    doc.setLineWidth(0.5);
+    doc.line(m+20,105,W-m-20,105);
+    
+    // ===== EMPRESA CONTRATANTE =====
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(10);
+    doc.setTextColor(...C.h2);
+    doc.text('EMPRESA CONTRATANTE',centroW,118,{align:'center'});
+    
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(14);
+    doc.setTextColor(30,30,30);
+    doc.text(contratante.nome||'—',centroW,128,{align:'center'});
+    
+    if(contratante?.cnpj){
+      doc.setFont('helvetica','normal');
+      doc.setFontSize(10);
+      doc.setTextColor(80,80,80);
+      doc.text('CNPJ: '+contratante.cnpj,centroW,136,{align:'center'});
+    }
+    if(contratante?.endereco){
+      const endLines=doc.splitTextToSize(contratante.endereco,120);
+      doc.setFont('helvetica','normal');
+      doc.setFontSize(9);
+      doc.setTextColor(100,100,100);
+      doc.text(endLines[0]||'',centroW,144,{align:'center'});
+    }
+    
+    // ===== EMPRESA PRESTADORA (apenas uma vez) =====
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(10);
+    doc.setTextColor(...C.h2);
+    doc.text('EMPRESA PRESTADORA',centroW,162,{align:'center'});
+    
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(14);
+    doc.setTextColor(30,30,30);
+    doc.text(prestadora.nome||'—',centroW,172,{align:'center'});
+    
+    if(prestadora?.cnpj){
+      doc.setFont('helvetica','normal');
+      doc.setFontSize(10);
+      doc.setTextColor(80,80,80);
+      doc.text('CNPJ: '+prestadora.cnpj,centroW,180,{align:'center'});
+    }
+    
+    // Linha separadora antes dos dados
+    let cy=195;
+    doc.setDrawColor(200,200,200);
+    doc.setLineWidth(0.5);
+    doc.line(m+20,cy,W-m-20,cy);
+    
+    // Data e validade
+    cy+=10;
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(9);
+    doc.setTextColor(60,60,60);
+    const dataVal=document.getElementById('dc-data').value;
+    const dataValidade=document.getElementById('dc-validade').value;
+    let dataTxt='Data: '+(fmtData(dataVal)||'—');
+    if(dataValidade)dataTxt+=' | Validade: '+(fmtData(dataValidade)||'—');
+    doc.text(dataTxt,centroW,cy+6,{align:'center'});
+    cy+=15;
+    
+    // Footer da capa
+    P_footer(doc,false);
+    
+    // ===== NOVA PÁGINA - CONTEÚDO =====
+    doc.addPage();
+    
+    // Header padrão
+    const{y:sy}=await P_header(doc,contratante,texto.titulo||'Documento',false);
+    let contentY=sy;
+    
+    // Conteúdo do texto
+    const txtConteudo=cleanForPdf(texto.conteudo||'');
+    if(txtConteudo){
+      contentY=P_section(doc,texto.titulo||'Descricao',contentY,false);
+      contentY=P_text(doc,txtConteudo,contentY,false,false);
+    }
+    
+    // Observações
+    const obs=cleanForPdf(document.getElementById('dc-obs').value||'');
+    if(obs){
+      contentY=P_section(doc,'Observacoes',contentY,false);
+      contentY=P_text(doc,obs,contentY,false,false);
+    }
+    
+    // Anexos (imagens)
+    const fl=document.getElementById('dc-anexos');
+    const loadedImgs=[];
+    if(fl.files&&fl.files.length>0){
+      for(const f of fl.files){
+        try{const d=await new Promise((r,j)=>{const rd=new FileReader();rd.onload=e=>r(e.target.result);rd.onerror=j;rd.readAsDataURL(f);});loadedImgs.push({data:d,name:f.name});}catch(e){}
+      }
+    }
+    if(loadedImgs.length>0){
+      contentY=P_section(doc,'Anexos',contentY,false);
+      const iw=uw/3-4, ih=28;
+      for(let i=0;i<loadedImgs.length;i++){
+        if(i%3===0&&i>0){contentY+=ih+3;contentY=P_checkPage(doc,contentY,ih+15,false);}
+        try{doc.addImage(loadedImgs[i].data,'PNG',m+((i%3)*iw+4),contentY,iw,ih);}catch(_){}
+      }
+      contentY+=ih+5;
+    }
+    
+    // Assinaturas
+    contentY=P_checkPage(doc,contentY,38,false);
+    doc.setDrawColor(...C.bdr);doc.setLineWidth(0.18);doc.line(m,contentY,PAG.PW-m,contentY);contentY+=6;
+    P_signatures(doc,contentY+14,
+      {nome:contratante.nome||'EMPRESA CONTRATANTE',cargo:'Representante Legal'},
+      {nome:prestadora.nome||'EMPRESA PRESTADORA',cargo:'Representante Legal'},
+      assData,false
+    );
+    
+    // Footer
+    P_footer(doc,false);
+    
+    const nomeDoc=(texto.titulo||'documento').replace(/[^\w\u0080-\uFFFF]/g,'_').replace(/_+/g,'_');
+    const filename='DOCUMENTO_'+nomeDoc+'_'+(dataVal?dataVal.replace(/-/g,''):new Date().toISOString().slice(0,10))+'.pdf';
+    
+    doc.save(filename);
+    logHistory('Documento Coringa - '+texto.titulo);
+    showResult('dc-results','Documento gerado com sucesso!');
+  }catch(e){
+    console.error('Erro:',e);
+    alert('Erro ao gerar documento: '+e.message);
+  }finally{
+    spin(false);
+  }
+}
+   
+// ── LISTAS ─────────────────────────────────────────────────────
 
 // ── ORDEM DE SERVIÇO ─────────────────────────────────────────────
 async function gen(){
