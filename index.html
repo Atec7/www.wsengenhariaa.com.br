@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seja Bem-Vindo</title>
+    <link rel="stylesheet" href="estilo.css">
+    <link class="ico" rel="icon" href="logo2.jpg">
+    <style>
+        body, html {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: white;
+            color: #333;
+        }
+        .logo-container {
+            
+            display: inline-block;
+            position: relative;
+            border: 5px;
+            border-radius: 50%;
+            padding: 2px;
+            animation: spin 3.0s linear infinite;
+        }
+        .logo {
+          padding: 20px;
+            width: 100px;
+            height: 100px;
+            display: block;
+            position: relative;
+            z-index: 2;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .title {
+            text-decoration: none;
+            text-align: center;
+            color: white;
+        }
+        .ico {
+            border-radius: 50%;
+            border-style: solid;
+            border-color: green;
+        }
+        header, footer {
+          width: 100%;;
+            background-color: white;
+            color: #333;
+            text-align: center;
+        }
+        .link-atecseven {
+            text-emphasis: none;
+            text-decoration: none;
+            font-size: 16px;
+            text-align: center;
+            font-family: 'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif;
+            color: aqua;
+            transition: color 0.3s, background-color 0.3s;
+        }
+        .link-atecseven:hover {
+            color: white;
+            background-color: rgb(4, 4, 85);
+            border-radius: 5px;
+            font-size: 20px;
+        }
+        
+        .logo2{
+          text-align: center;
+        }
+    </style>
+    <script>
+    
+        setTimeout(() => {
+            window.location.href = 'inicio.html';
+        }, 3000);
+    </script>
+</head>
+<body>
+        <div class="logo2">
+            <img class="logo2" src="logo2.jpg" alt="Logo" width="150px">
+            <h2>Seja Bem Vindo</h2>
+        </div>
+    </section>
+    <section id="contact" class="container">
+        <div class="social-links">
+            <a href="https://wa.me/5575991893667?text=Ol%C3%A1%20WSENGENHARIA!%20Vi%20seu%20site%20e%20gostaria%20de%20contratar%20alguns%20de%20seus%20servi%C3%A7os.%20pode%20me%20atender%20no%20momento%20?" target="_blank">
+                <img class="links" src="whatsaapp-logo.png" alt="WhatsApp">
+            </a>
+            <a href="https://www.instagram.com/wsengenharia_/profilecard/?igsh=MTZ6ZWx4MmF1cjljMw==" target="_blank">
+                <img src="instagram-logo.png" alt="Instagram">
+            </a>
+            <a href="https://www.facebook.com/seu-usuario" target="_blank">
+                <img src="facebook-logo.png" alt="Facebook">
+            </a>
+            <a href="https://www.linkedin.com/in/wedson-santos-979a33b2?utm_source=share&utm_campaign=share_via&utm_content=profile&utm_medium=ios_app" target="_blank">
+                <img src="linkedin-logo.png" alt="LinkedIn">
+            </a>
+        </div>
+    </section>
+     <footer>
+        <div class="container">
+            <p>&copy; 2024 Ws Engenharia, consultoria e treinamentos.
+            <br> <p3>Cnpj: 41.467.540/0001-67</p3>
+            
+            <br>
+            Todos os direitos reservados.</p>
+            <a class="link-atecseven" href="https://atec7.github.io/atecseven.com.br/">Power Bi &copf; Atecseven tecnologia</a>
+        </div>
+    </footer>
+</body>
+</html>
