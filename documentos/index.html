@@ -537,11 +537,15 @@ hr.dv{border:none;border-top:1px solid var(--bd);margin:18px 0}
 
 /* ── MODAL CERTIFICADOS (fullscreen iframe) ── */
 #cert-modal{
-  position:fixed;inset:0;z-index:1000;
-  display:none;flex-direction:column;
-  background:#000;
+  position:fixed !important;
+  top:0 !important;right:0 !important;bottom:0 !important;left:0 !important;
+  z-index:999999 !important;
+  display:none !important;
+  flex-direction:column;
+  background:#0a0a0d !important;
 }
-#cert-modal.open{display:flex;}
+#cert-modal.open{display:flex !important;animation:fadeIn .25s ease}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
 #cert-modal-bar{
   display:flex;align-items:center;justify-content:space-between;
   padding:8px 16px;

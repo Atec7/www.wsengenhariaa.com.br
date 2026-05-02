@@ -4,190 +4,165 @@
 <meta charset="UTF-8">
 <title>WS ENGENHARIA CERTIFICADOS</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
 <style>
-:root{
-  --sb:#1c1c1e;--sb-b:#2c2c2e;--bg:#f4f4f5;--sf:#fff;
-  --bd:#e4e4e7;--tp:#18181b;--ts:#71717a;--tm:#a1a1aa;
-  --hi:#3f3f46;--hl:#f4f4f5;--dn:#dc2626;--wn:#d97706;--sc:#16a34a;
-  --r:8px;--sh:0 1px 3px rgba(0,0,0,.08),0 1px 2px rgba(0,0,0,.05);
+:root {
+    --primary: #004e92;
+    --danger: #dc3545;
+    --bg: #f8f9fa;
+    --text: #212529;
+    --muted: #6c757d;
+    --border: #dee2e6;
+    --sidebar-width: 260px;
+    --header-height: 60px;
+    --radius: 6px;
 }
-* { box-sizing: border-box; margin:0;padding:0 }
-body,html{height:100%}
-body{
+* { box-sizing: border-box; }
+body {
     margin: 0;
-    font-family:'DM Sans',sans-serif;
-    background:var(--bg);
-    color:var(--tp);
+    font-family: Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
     display: flex;
     height: 100vh;
 }
 
 .sidebar {
-    width: 222px;
-    background: var(--sb);
-    display: flex;
-    flex-direction: column;
-    overflow-y: auto;
+    width: var(--sidebar-width);
+    background: #fff;
+    padding: 20px 0;
+    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.05);
     position: fixed;
     top: 0;
     left: 0;
     height: 100%;
+    overflow-y: auto;
     z-index: 100;
-    border-right: 1px solid var(--sb-b);
 }
 .main-content {
-    margin-left: 222px;
-    width: calc(100% - 222px);
+    margin-left: var(--sidebar-width);
+    width: calc(100% - var(--sidebar-width));
     flex-grow: 1;
     padding: 0;
     display: flex;
     flex-direction: column;
 }
 header {
-    background: var(--sb);
-    color: #fbbf24;
-    padding: 18px 24px;
-    height: auto;
+    background: #fff;
+    color: var(--primary);
+    padding: 0 20px;
+    height: var(--header-height);
     display: flex;
     align-items: center;
-    font-size: 15px;
+    font-size: 18px;
     font-weight: 700;
-    border-bottom: 1px solid var(--sb-b);
+    border-bottom: 1px solid #eee;
 }
 .container {
     flex-grow: 1;
     max-width: 1200px;
     margin: 0 auto;
-    padding: 26px 30px;
+    padding: 20px;
     width: 100%;
     overflow-y: auto; 
 }
 
 .sidebar-title {
-    font-size: 14px;
-    font-weight: 700;
-    color: #fafafa;
-    padding: 18px 16px;
-    border-bottom: 1px solid var(--sb-b);
-    display: flex;
-    align-items: center;
-    gap: 9px;
-}
-.sidebar h3 {
-    padding: 6px 16px;
-    font-size: 9px;
-    font-weight: 600;
-    color: #52525b;
-    letter-spacing: 1.5px;
-    text-transform: uppercase;
-    margin-top: 12px;
+    font-size: 22px;
+    font-weight: 900;
+    color: var(--primary);
+    padding: 0 20px 20px;
 }
 .sidebar a {
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 9px 16px;
-    color: #a1a1aa;
+    padding: 10px 20px;
+    color: var(--text);
     text-decoration: none;
-    font-size: 12px;
-    font-weight: 500;
-    border-left: 2px solid transparent;
-    transition: .15s;
+    font-size: 15px;
+    border-left: 3px solid transparent;
+    transition: background-color 0.2s, border-left-color 0.2s;
 }
 .sidebar a:hover, .sidebar a.active {
-    background: rgba(255,255,255,.05); 
-    color: #e4e4e7;
+    background-color: #e9f5ff; 
+    border-left-color: var(--primary);
+    color: var(--primary);
 }
 
 h2 {
     margin-top: 26px;
-    font-size: 21px;
-    font-weight: 700;
-    color: var(--tp);
-    border-bottom: 2px solid var(--bd);
-    padding-bottom: 8px;
-    margin-bottom: 18px;
+    color: var(--primary);
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 5px;
 }
 .card {
-    background: var(--sf);
-    border-radius: var(--r);
-    box-shadow: var(--sh); 
+    background: #fff;
+    border-radius: var(--radius);
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.05); 
     padding: 20px;
-    margin-bottom: 16px;
-    border: 1px solid var(--bd);
+    margin-bottom: 20px;
+    border: 1px solid var(--border);
 }
-label { display: block; font-size: 10px; color: var(--ts); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 4px; font-weight: 700; }
+label { display: block; font-size: 14px; color: var(--muted); margin-top: 10px; font-weight: 600; }
 input:not([type="checkbox"]), textarea, select {
     width: 100%;
-    padding: 8px 11px;
-    border: 1px solid var(--bd);
-    border-radius: 6px;
-    font-family:'DM Sans',sans-serif;
-    font-size: 13px;
-    color: var(--tp);
-    background: var(--sf);
-    transition: border-color .15s,box-shadow .15s;
-    outline: none;
+    padding: 10px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    margin-top: 5px;
+    font-size: 14px;
 }
-input:focus, textarea:focus, select:focus{border-color:var(--hi);box-shadow:0 0 0 3px rgba(63,63,70,.1)}
 button {
-    background: var(--hi);
-    color: #fafafa;
+    background: var(--primary);
+    color: #fff;
     border: none;
-    border-radius: 6px;
-    padding: 8px 15px;
+    border-radius: 4px;
+    padding: 10px 15px;
     font-weight: 600;
-    font-size: 12px;
-    font-family:'DM Sans',sans-serif;
     cursor: pointer;
-    transition: .15s;
+    transition: background-color 0.2s;
     margin-top: 10px;
-    display: inline-flex;
-    align-items: center;
-    gap: 7px;
 }
-button:hover { background: #52525b; }
-button.secondary { background: var(--ts); color: #fff; }
-button.secondary:hover { background: var(--tm); }
-button.danger { background: var(--dn); }
-button.danger:hover { background: #b91c1c; }
+button:hover { background: #003366; }
+button.secondary { background: #6c757d; color: #fff; }
+button.secondary:hover { background: #5a6268; }
+button.danger { background: var(--danger); }
+button.danger:hover { background: #c82333; }
 .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 15px; }
-.grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 13px; }
+.grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 15px; }
 .col-3{grid-column:span 3}.col-4{grid-column:span 4}.col-6{grid-column:span 6}.col-12{grid-column:span 12}
 
 /* Checklist e Tabela */
 .checklist { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 10px; margin-top: 10px; }
 .checklist label { 
-    display: flex; align-items: center; gap: 8px; background: var(--hl); border: 1px solid var(--bd); 
-    border-radius: 6px; padding: 8px 12px; margin:0; font-size: 12px; color: var(--tp); cursor: pointer; font-weight: 500;
+    display: flex; align-items: center; gap: 8px; background: #f8f9fa; border: 1px solid var(--border); 
+    border-radius: 4px; padding: 10px; margin:0; font-size: 14px; color: var(--text); cursor: pointer;
 }
-.checklist input[type="checkbox"] { width: 14px; height: 14px; accent-color: var(--hi); }
-.checklist label:hover { background: var(--bd); }
-.checklist input[type="checkbox"]:checked + span { font-weight: 600; color: var(--hi); }
+.checklist input[type="checkbox"] { width: auto; margin: 0; }
+.checklist label:hover { background: #e9ecef; border-color: var(--primary); }
+.checklist input[type="checkbox"]:checked + span { font-weight: bold; color: var(--primary); }
 .table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-.table th, .table td { padding: 9px 12px; text-align: left; border-bottom: 1px solid var(--bd); font-size: 13px; }
-.table th { background-color: var(--hl); font-weight: 700; color: var(--ts); text-transform: uppercase; letter-spacing: .5px; font-size: 10px; }
-.table tr:hover { background-color: var(--hl); }
+.table th, .table td { padding: 10px; text-align: left; border-bottom: 1px solid #eee; font-size: 14px; }
+.table th { background-color: #f1f1f1; font-weight: 700; color: var(--text); }
+.table tr:hover { background-color: #f9f9f9; }
 
 /* Novo estilo para a seleção de datas por curso */
 .course-date-selector {
     padding: 15px;
-    border: 1px dashed var(--hi);
-    border-radius: var(--r);
+    border: 1px dashed var(--primary);
+    border-radius: var(--radius);
     margin-top: 15px;
-    background: var(--hl);
+    background: #e9f5ff;
 }
 .course-date-selector h4 {
     margin-top: 0;
-    color: var(--tp);
-    font-size: 14px;
-    font-weight: 700;
-    border-bottom: 1px solid var(--bd);
-    padding-bottom: 8px;
-    margin-bottom: 12px;
+    color: var(--primary);
+    font-size: 16px;
+    border-bottom: 1px solid var(--primary);
+    padding-bottom: 5px;
 }
 
 /* 📄 ESTILOS DE PREVIEW (A4 Landscape) */
@@ -267,51 +242,42 @@ button.danger:hover { background: #b91c1c; }
 .modal-overlay {
     position: fixed;
     top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0, 0, 0, .45);
+    background: rgba(0, 0, 0, 0.6);
     display: none; 
     justify-content: center;
     align-items: center;
     z-index: 1000;
-    backdrop-filter: blur(2px);
 }
 .modal-content {
-    background: var(--sf);
-    padding: 26px;
-    border-radius: 12px;
+    background: #fff;
+    padding: 30px;
+    border-radius: 8px;
     max-width: 600px;
     width: 90%;
-    box-shadow: 0 20px 40px rgba(0,0,0,.15);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
     position: relative;
     max-height: 90vh;
     overflow-y: auto;
-    border: 1px solid var(--bd);
 }
 .modal-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-bottom: 1px solid var(--bd);
+    border-bottom: 1px solid var(--border);
     padding-bottom: 10px;
     margin-bottom: 15px;
 }
 .modal-header h3 {
     margin: 0;
-    font-size: 15px;
-    font-weight: 700;
-    color: var(--tp);
+    color: var(--primary);
 }
 .close-btn {
-    background: rgba(255,255,255,.08);
-    border: 1px solid rgba(255,255,255,.15);
-    color: #e4e4e7;
-    border-radius: 6px;
-    padding: 6px 14px;
+    background: none;
+    border: none;
+    font-size: 20px;
     cursor: pointer;
-    font-size: 12px;
-    font-weight: 600;
-    font-family:'DM Sans',sans-serif;
+    color: var(--muted);
 }
-.close-btn:hover{background:rgba(255,255,255,.14);color:#fff}
 .branco{
   color: red;
 }
@@ -328,16 +294,6 @@ button.danger:hover { background: #b91c1c; }
 </style>
 </head>
 <body>
-<div id="acesso-negado" style="display:none;padding:40px;text-align:center;font-family:'DM Sans',sans-serif;">
-  <h2 style="color:#dc2626">Acesso n&atilde;o autorizado</h2>
-  <p style="color:#71717a;margin-top:10px">Fa&ccedil;a login no sistema principal primeiro.</p>
-</div>
-<div id="appShell" style="display:none;">
-  <div style="padding:10px; text-align:right; background:#fff; border-bottom:1px solid #ddd;">
-    <button id="btnLogout" type="button" class="logout-btn">Sair</button>
-  </div>
-</div>
-
 <div class="sidebar">
     <div class="sidebar-title">CERTIFICADOS</div>
     <h3>Cadastros</h3>
@@ -349,6 +305,9 @@ button.danger:hover { background: #b91c1c; }
 </div>
 
 <div class="main-content">
+    <header class="nome-sistema">
+        Sistema de Certificados WS ENGENHARIA CONSULTORIA E TREINAMENTOS (Versão V2.8 - Atecseven Tecnologia LTDA)
+    </header>
     <div class="container">
 
         <div id="secaoEmpresa" class="secao">
@@ -1607,6 +1566,7 @@ window.buildPage1 = ({aluno, curso, empresa, dataInicioBR, dataFimBR}) => {
     const mensagem = buildMensagemCurso(curso, aluno, dataInicioBR, dataFimBR, empresa);
     
     const signatures = [
+        { nome: empresa.certificadorNome || 'Certificador', img: empresa.assinaturaCert },
         { nome: empresa.assinaturaNome2, img: empresa.assinaturaImg2 },
         { nome: empresa.assinaturaNome3, img: empresa.assinaturaImg3 }, 
         { nome: empresa.assinaturaNomeAluno || 'Aluno(a) Certificado(a)', img: empresa.assinaturaImgAluno } 
@@ -1724,18 +1684,18 @@ window.buildPage2 = ({curso,empresa}) => {
     
     return `
       <section class="cert-page2" style="${pageStyle}">
-        <div style="border:1px solid #aaa;padding:10mm;height:100%;display:flex;flex-direction:column;position:relative;background:#fff;">
-                    <header style="margin-bottom:10mm;background:#fff;padding:5px;">
+        <div style="border:1px solid #aaa;padding:10mm;height:100%;display:flex;flex-direction:column;position:relative;">
+                    <header style="margin-bottom:10mm;">
             <div style="display:flex;justify-content:space-between;align-items:center;height:15mm;">
-                ${empresa.logo1 ? `<img src="${empresa.logo1}" alt="Logo 1" style="max-height:15mm;max-width:18%;object-fit:contain;background:#fff;padding:2px;border-radius:4px;">` : '<div style="width:18%;"></div>'}
-                <div style="flex-grow:1;text-align:center;background:#fff;min-width:200px;">
-                    <h2 style="font-size:20pt;margin:0;color:#000;background:#fff;display:inline-block;padding:2px 10px;">CONTEÚDO PROGRAMÁTICO</h2>
+                ${empresa.logo1 ? `<img src="${empresa.logo1}" alt="Logo 1" style="max-height:15mm;max-width:20%;object-fit:contain;">` : '<div style="width:20%;"></div>'}
+                <div style="flex-grow:1;text-align:center;">
+                    <h2 style="font-size:20pt;margin:0;color:#333;">CONTEÚDO PROGRAMÁTICO</h2>
                 </div>
-                ${empresa.logo2 ? `<img src="${empresa.logo2}" alt="Logo 2" style="max-height:15mm;max-width:18%;object-fit:contain;background:#fff;padding:2px;border-radius:4px;">` : '<div style="width:18%;"></div>'}
+                ${empresa.logo2 ? `<img src="${empresa.logo2}" alt="Logo 2" style="max-height:15mm;max-width:20%;object-fit:contain;">` : '<div style="width:20%;"></div>'}
             </div>
-            <div style="text-align:center;margin-top:6px;background:#fff;">
-                <p style="font-size:12pt;margin:0;color:#000;background:#fff;">${curso.nome}</p>
-                <p style="font-size:11pt;margin:2px 0 0 0;color:#000;background:#fff;">${empresa.nome}</p>
+            <div style="text-align:center;margin-top:6px;">
+                <p style="font-size:12pt;margin:0;">${curso.nome}</p>
+                <p style="font-size:11pt;margin:2px 0 0 0;">${empresa.nome}</p>
             </div>
           </header>
 
@@ -1814,7 +1774,7 @@ window.buildListaPresenca = ({curso, empresa, dataInicioBR, dataFimBR, alunos}) 
             minhas atividades na empresa.
         </p>
 
-<div style="margin-top:35px; text-align:center; font-size:10pt;">
+        <div style="margin-top:35px; text-align:center; font-size:10pt;">
             <div style="display:inline-block; width:70%; text-align:center;">
                 <div style="height:70px; display:flex; align-items:flex-end; justify-content:center; margin-bottom:4px;">
                     ${empresa.assinaturaCert ? `
@@ -1841,7 +1801,6 @@ window.buildListaPresenca = ({curso, empresa, dataInicioBR, dataFimBR, alunos}) 
 
       </section>
     `;
-};
 };
 
 window.addEventListener('DOMContentLoaded', () => {
@@ -1875,21 +1834,46 @@ window.addEventListener('DOMContentLoaded', () => {
 
 </script>
 <script>
-// Verifica sessão do login do index.html
-(function(){
-  const appShell=document.getElementById('appShell');
-  const acessoNegado=document.getElementById('acesso-negado');
-  const btnLogout=document.getElementById('btnLogout');
-  if(sessionStorage.getItem('ws_logado')==='1'){
-    appShell.style.display='block';
-  }else{
-    acessoNegado.style.display='block';
+(function () {
+  const USER = "wedson";
+  const PASS = "2026";
+
+  const loginScreen = document.getElementById("loginScreen");
+  const appShell = document.getElementById("appShell");
+  const loginUsuario = document.getElementById("loginUsuario");
+  const loginSenha = document.getElementById("loginSenha");
+  const btnEntrar = document.getElementById("btnEntrarSistema");
+  const btnLogout = document.getElementById("btnLogout");
+  const loginError = document.getElementById("loginError");
+
+  function entrar() {
+    const usuario = (loginUsuario.value || "").trim();
+    const senha = (loginSenha.value || "").trim();
+
+    if (usuario === USER && senha === PASS) {
+      loginError.style.display = "none";
+      loginScreen.style.display = "none";
+      appShell.style.display = "block";
+    } else {
+      loginError.style.display = "block";
+    }
   }
-  if(btnLogout){
-    btnLogout.addEventListener('click',function(){
-      sessionStorage.removeItem('ws_logado');
-      window.location.href='index.html';
-    });
+
+  function sair() {
+    appShell.style.display = "none";
+    loginScreen.style.display = "flex";
+    loginUsuario.value = "";
+    loginSenha.value = "";
+    loginError.style.display = "none";
+  }
+
+  btnEntrar.addEventListener("click", entrar);
+  loginSenha.addEventListener("keydown", function (e) {
+    if (e.key === "Enter") entrar();
+  });
+
+  if (btnLogout) {
+    btnLogout.addEventListener("click", sair);
   }
 })();
 </script>
