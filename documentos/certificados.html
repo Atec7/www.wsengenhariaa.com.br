@@ -1607,7 +1607,6 @@ window.buildPage1 = ({aluno, curso, empresa, dataInicioBR, dataFimBR}) => {
     const mensagem = buildMensagemCurso(curso, aluno, dataInicioBR, dataFimBR, empresa);
     
     const signatures = [
-        { nome: empresa.certificadorNome || 'Certificador', img: empresa.assinaturaCert },
         { nome: empresa.assinaturaNome2, img: empresa.assinaturaImg2 },
         { nome: empresa.assinaturaNome3, img: empresa.assinaturaImg3 }, 
         { nome: empresa.assinaturaNomeAluno || 'Aluno(a) Certificado(a)', img: empresa.assinaturaImgAluno } 
@@ -1815,7 +1814,7 @@ window.buildListaPresenca = ({curso, empresa, dataInicioBR, dataFimBR, alunos}) 
             minhas atividades na empresa.
         </p>
 
-        <div style="margin-top:35px; text-align:center; font-size:10pt;">
+<div style="margin-top:35px; text-align:center; font-size:10pt;">
             <div style="display:inline-block; width:70%; text-align:center;">
                 <div style="height:70px; display:flex; align-items:flex-end; justify-content:center; margin-bottom:4px;">
                     ${empresa.assinaturaCert ? `
@@ -1842,6 +1841,7 @@ window.buildListaPresenca = ({curso, empresa, dataInicioBR, dataFimBR, alunos}) 
 
       </section>
     `;
+};
 };
 
 window.addEventListener('DOMContentLoaded', () => {
