@@ -2067,7 +2067,7 @@ async function genList(){
     doc.setFont('helvetica','normal');doc.setFontSize(6.5);doc.setTextColor(...C.sub);
     doc.text('Engenheiro Civil | Engenheiro de Segurança do Trabalho\nEngenheiro Ambiental e Saneamento Básico | CREA: '+RESP.registro,centroW,cy+20,{align:'center'});
   }
-  P_footer(doc,false);
+  P_footer(doc,false,dataFmt,undefined,emp?.nome);
   spin(false);
   doc.save('LISTA_PRESENCA_'+(treino||'treinamento').replace(/\s+/g,'_')+'_'+dataFmt.replace(/\//g,'-')+'.pdf');
   logHistory('Lista Presenca - '+treino, {empresaId:emp?.id,treino:treino,data:dataFmt});
