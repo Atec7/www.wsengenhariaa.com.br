@@ -1,0 +1,1394 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WS DOCUMENTOS - Geração em Massa</title>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<style>
+:root{
+  --sb:#1c1c1e;--sb-b:#2c2c2e;--bg:#f4f4f5;--sf:#fff;
+  --bd:#e4e4e7;--tp:#18181b;--ts:#71717a;--tm:#a1a1aa;
+  --hi:#3f3f46;--hl:#f4f4f5;--dn:#dc2626;--wn:#d97706;--sc:#122419;
+  --r:8px;--sh:0 1px 3px rgba(0,0,0,.08),0 1px 2px rgba(0,0,0,.05);
+  --gold:#f59e0b;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body,html{height:100%}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);display:flex;height:100%;overflow:hidden;color:var(--tp)}
+.mass-shell{display:flex;height:100%;width:100%;flex-direction:column}
+.mass-topbar{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;background:var(--sb);border-bottom:1px solid var(--sb-b);flex-shrink:0}
+.mass-topbar .brand{font-weight:700;font-size:14px;color:#fafafa;display:flex;align-items:center;gap:9px}
+.mass-topbar .brand-sub{font-size:9px;font-weight:400;color:#71717a;letter-spacing:1px;text-transform:uppercase;display:block;margin-top:2px}
+.mass-topbar .topbar-actions{display:flex;align-items:center;gap:8px}
+.btn{padding:8px 15px;border:none;border-radius:6px;cursor:pointer;font-weight:600;font-size:12px;font-family:'DM Sans',sans-serif;display:inline-flex;align-items:center;gap:7px;transition:.15s;white-space:nowrap}
+.bp{background:var(--hi);color:#fafafa}.bp:hover{background:#52525b}
+.bd2{background:var(--dn);color:#fff}.bd2:hover{background:#b91c1c}
+.bw{background:var(--wn);color:#fff}.bw:hover{background:#b45309}
+.bs{background:var(--sc);color:#fff}.bs:hover{background:#15803d}
+.bg2{background:transparent;color:var(--ts);border:1px solid var(--bd)}.bg2:hover{background:var(--hl)}
+.bf{width:100%;justify-content:center;padding:10px}
+.bxs{padding:4px 10px;border:none;border-radius:4px;cursor:pointer;font-size:11px;font-weight:600;font-family:'DM Sans',sans-serif}
+.bxn{background:var(--hl);color:var(--ts)}.bxd{background:#fee2e2;color:var(--dn)}
+.mass-content{flex:1;padding:26px 30px;overflow-y:auto}
+.ph{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:22px}
+.pt{font-size:21px;font-weight:700}.pd{font-size:12px;color:var(--ts);margin-top:2px}
+.card{background:var(--sf);border-radius:var(--r);box-shadow:var(--sh);border:1px solid var(--bd);padding:20px;margin-bottom:16px}
+.ct{font-size:11px;font-weight:700;color:var(--ts);text-transform:uppercase;letter-spacing:.6px;margin-bottom:14px}
+.step-hdr{display:flex;align-items:center;gap:10px;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--bd)}
+.step-num{width:26px;height:26px;border-radius:50%;background:var(--hi);color:#fafafa;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0}
+.step-title{font-size:14px;font-weight:700;color:var(--tp)}
+.step-desc{font-size:11px;color:var(--tm);margin-top:1px}
+.sg{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:18px}
+.fg{margin-bottom:13px}
+label.fl{display:block;font-size:10px;font-weight:700;color:var(--ts);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+input,select,textarea{width:100%;padding:8px 11px;border:1px solid var(--bd);border-radius:6px;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--tp);background:var(--sf);transition:border-color .15s,box-shadow .15s;outline:none;display:block}
+input:focus,select:focus,textarea:focus{border-color:var(--hi);box-shadow:0 0 0 3px rgba(63,63,70,.1)}
+textarea{resize:vertical;min-height:75px}
+input[type="file"]{padding:5px;font-size:12px}
+.cl{max-height:190px;overflow-y:auto;border:1px solid var(--bd);border-radius:6px;background:var(--sf)}
+.fis{width:100%;padding:5px 8px;border:1px solid var(--bd);border-radius:5px;font-size:11px;margin-bottom:4px;box-sizing:border-box;background:var(--bg)}
+.ci{display:flex;gap:10px;align-items:center;padding:8px 12px;border-bottom:1px solid var(--bd);font-size:12px}
+.ci:last-child{border-bottom:none}
+.ci input[type="checkbox"]{width:14px;height:14px;cursor:pointer;flex-shrink:0;accent-color:var(--hi)}
+.ci label{color:var(--tp);font-weight:500;cursor:pointer;flex:1}
+.ci span{color:var(--tm);font-size:10px}
+.sbar{display:flex;gap:6px;margin-bottom:5px}
+.rmbar{display:flex;align-items:center;gap:9px;background:var(--hl);padding:9px 12px;border-radius:6px;border:1px solid var(--bd);margin-bottom:11px;font-size:12px}
+.rmbar input[type="checkbox"]{width:14px;height:14px;accent-color:var(--hi)}
+.rmbar label{font-weight:600;color:var(--tp);cursor:pointer;flex:1}
+.rmbar small{color:var(--tm)}
+hr.dv{border:none;border-top:1px solid var(--bd);margin:18px 0}
+.res{display:flex;align-items:center;gap:8px;padding:11px 13px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;font-size:12px;font-weight:600;color:var(--sc)}
+.es{padding:28px;text-align:center;color:var(--tm);font-size:13px}
+.mass-hint{font-size:9px;color:var(--tm);margin-top:4px;font-style:italic}
+.mass-hint span{color:var(--wn);font-weight:600}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:13px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.loader{position:fixed;inset:0;background:rgba(255,255,255,.93);display:none;flex-direction:column;justify-content:center;align-items:center;z-index:999}
+.spinner{width:34px;height:34px;border:3px solid var(--bd);border-top-color:var(--hi);border-radius:50%;animation:sp .8s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+.stxt{margin-top:11px;font-size:12px;color:var(--tm);font-weight:500}
+.cait{display:flex;justify-content:space-between;align-items:center;padding:9px 12px;background:var(--hl);border:1px solid var(--bd);border-radius:6px;margin-bottom:5px;font-size:12px}
+.ib{background:var(--hl);border:1px solid var(--bd);border-radius:6px;padding:11px 13px;font-size:12px;color:var(--ts);margin-bottom:12px}
+.bdg{display:inline-flex;align-items:center;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:600;background:var(--hl);color:var(--ts);border:1px solid var(--bd)}
+
+/* ── STEP LAYOUT ── */
+.mass-steps{max-width:960px;margin:0 auto}
+.step-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.step-grid .fg{margin:0}
+.col-full{grid-column:1/-1}
+
+/* ── SUMMARY CARD ── */
+.summary-card{background:linear-gradient(135deg,#f8fafc,#f1f5f9);border:2px solid var(--bd);border-radius:12px;padding:18px 20px}
+.summary-card .ct{color:var(--ts);margin-bottom:10px}
+.summary-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px}
+.summary-stat{background:var(--sf);border:1px solid var(--bd);border-radius:8px;padding:12px;text-align:center}
+.summary-stat .ss-num{font-size:22px;font-weight:700;color:var(--tp);font-family:'DM Mono',monospace}
+.summary-stat .ss-lbl{font-size:9px;color:var(--tm);text-transform:uppercase;letter-spacing:.5px;margin-top:2px}
+.summary-stat.ss-os .ss-num{color:#2563eb}
+.summary-stat.ss-lista .ss-num{color:#7c3aed}
+.summary-stat.ss-adm .ss-num{color:#0891b2}
+.summary-stat.ss-epi .ss-num{color:#16a34a}
+.summary-stat.ss-total .ss-num{color:var(--hi)}
+.summary-stat.ss-total{background:var(--hi);border-color:var(--hi)}
+.summary-stat.ss-total .ss-num{color:#fafafa}
+.summary-stat.ss-total .ss-lbl{color:#a1a1aa}
+.summary-empty{text-align:center;padding:24px;color:var(--tm);font-size:13px}
+
+/* ── PROGRESS DETAIL ── */
+.progress-detail{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--hl);border-radius:6px;border:1px solid var(--bd);font-size:12px}
+.progress-detail .pd-icon{width:28px;height:28px;border-radius:50%;background:var(--hi);color:#fafafa;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0}
+.progress-detail .pd-label{flex:1;font-weight:500;color:var(--tp)}
+.progress-detail .pd-sub{font-size:10px;color:var(--tm);margin-top:1px}
+
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--bd);border-radius:3px}
+</style>
+</head>
+<body>
+<div class="loader" id="loader"><div class="spinner"></div><div class="stxt" id="loader-txt">Gerando documento...</div></div>
+
+<div class="mass-shell">
+  <div class="mass-topbar">
+    <div class="brand"><span style="font-size:17px">&#x1F6E1;</span><div>WS DOCUMENTOS<span class="brand-sub">Geração em Massa</span></div></div>
+    <div class="topbar-actions">
+      <button class="btn bg2" onclick="voltar()"><i class="fa-solid fa-arrow-left"></i> Voltar ao Sistema</button>
+    </div>
+  </div>
+
+  <div class="mass-content">
+    <div class="ph"><div><div class="pt">Geração em Massa</div><div class="pd">Fluxo inteligente para gerar documentos de múltiplos colaboradores</div></div></div>
+
+    <div class="mass-steps">
+
+      <!-- ═══ STEP 1: COLABORADORES ═══ -->
+      <div class="card">
+        <div class="step-hdr">
+          <div class="step-num">1</div>
+          <div><div class="step-title">Selecionar Colaboradores</div><div class="step-desc">Filtre por empresa e cargo, depois marque os colaboradores desejados</div></div>
+        </div>
+        <div class="step-grid">
+          <div class="fg">
+            <label class="fl">Empresa <span style="font-weight:400;color:var(--tm)">(filtro)</span></label>
+            <div style="display:flex;gap:4px;margin-bottom:5px">
+              <button class="bxs bxn" onclick="selAll('mEChk',true);fltMCargos()">Todos</button>
+              <button class="bxs bxd" onclick="selAll('mEChk',false);fltMCargos()">Nenhum</button>
+            </div>
+            <input id="m-e-src" class="fis" placeholder="Pesquisar empresa..." onkeyup="filterCheckList('m-e-list','m-e-src')">
+            <div id="m-e-list" class="cl" style="max-height:110px"><div class="es">Carregando...</div></div>
+          </div>
+          <div class="fg">
+            <label class="fl">Função / Cargo <span style="font-weight:400;color:var(--tm)">(filtro)</span></label>
+            <div style="display:flex;gap:4px;margin-bottom:5px">
+              <button class="bxs bxn" onclick="selAll('mCgChk',true);fltM()">Todos</button>
+              <button class="bxs bxd" onclick="selAll('mCgChk',false);fltM()">Nenhum</button>
+            </div>
+            <input id="m-c-src" class="fis" placeholder="Pesquisar cargo..." onkeyup="filterCheckList('m-c-list','m-c-src')">
+            <div id="m-c-list" class="cl" style="max-height:120px"><div class="es">Nenhum cargo</div></div>
+          </div>
+          <div class="fg col-full">
+            <label class="fl">Colaboradores <span style="font-weight:400;color:var(--tm)">(marque quem deseja gerar)</span></label>
+            <div style="display:flex;gap:4px;margin-bottom:5px">
+              <button class="bxs bxn" onclick="selAll('mChk',true)">Todos</button>
+              <button class="bxs bxd" onclick="selAll('mChk',false)">Nenhum</button>
+            </div>
+            <input id="m-f-src" class="fis" placeholder="Pesquisar colaborador..." onkeyup="filterCheckList('m-f-list','m-f-src')">
+            <div id="m-f-list" class="cl" style="max-height:150px"><div class="es">Carregando...</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ STEP 2: CONFIGURAR DOCUMENTOS ═══ -->
+      <div class="card">
+        <div class="step-hdr">
+          <div class="step-num">2</div>
+          <div><div class="step-title">Configurar Documentos</div><div class="step-desc">Defina campos comuns e selecione os textos e documentos a gerar</div></div>
+        </div>
+
+        <div class="step-grid">
+          <div class="fg">
+            <label class="fl">Data do Documento</label>
+            <input type="date" id="m-data">
+            <div class="mass-hint">Aplicada a todos</div>
+          </div>
+          <div class="fg">
+            <label class="fl">Local</label>
+            <input id="m-local" placeholder="Cidade/UF">
+            <div class="mass-hint">Aplicada a todos</div>
+          </div>
+        </div>
+
+        <hr class="dv" style="margin:14px 0">
+
+        <div class="fg">
+          <label class="fl">Textos para Ordem de Serviço <span style="font-weight:400;color:var(--tm)">(selecione os textos desejados)</span></label>
+          <div class="sbar" style="margin-bottom:3px">
+            <button class="bxs bxn" onclick="selAll('mOsChk',true)">Todos</button>
+            <button class="bxs bxd" onclick="selAll('mOsChk',false)">Nenhum</button>
+          </div>
+          <div id="m-os-textos" class="cl" style="max-height:130px"><div class="es">Selecione um cargo primeiro</div></div>
+        </div>
+
+        <hr class="dv" style="margin:14px 0">
+        <div class="ct"><i class="fa-solid fa-file-lines"></i> Tipos de Documento a Gerar</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px">
+          <label class="ci" style="border:1px solid var(--bd);border-radius:6px;flex:1;min-width:130px;cursor:pointer">
+            <input type="checkbox" id="m-doc-os" onchange="filterTextsByDocType()"> Ordem de Serviço
+          </label>
+          <label class="ci" style="border:1px solid var(--bd);border-radius:6px;flex:1;min-width:130px;cursor:pointer">
+            <input type="checkbox" id="m-doc-adm" onchange="filterTextsByDocType()"> Ficha Admissional
+          </label>
+          <label class="ci" style="border:1px solid var(--bd);border-radius:6px;flex:1;min-width:130px;cursor:pointer">
+            <input type="checkbox" id="m-doc-epi" onchange="filterTextsByDocType()"> Ficha EPI
+          </label>
+          <label class="ci" style="border:1px solid var(--bd);border-radius:6px;flex:1;min-width:130px;cursor:pointer">
+            <input type="checkbox" id="m-doc-lista" onchange="filterTextsByDocType()"> Lista de Presença
+          </label>
+        </div>
+
+        <div id="m-section-lista" style="display:none">
+          <div class="ct"><i class="fa-solid fa-users"></i> Dados da Lista de Presença</div>
+          <div class="g2">
+            <div class="fg"><label class="fl">Nome do Treinamento</label><input id="m-lista-treino" placeholder="Ex: NR-35 Treinamento"></div>
+            <div class="fg"><label class="fl">Carga Horária</label><input id="m-lista-carga" placeholder="Ex: 8h"></div>
+          </div>
+          <div class="g2">
+            <div class="fg"><label class="fl">Local</label><input id="m-lista-local" placeholder="Cidade/UF"></div>
+            <div class="fg"><label class="fl">Data</label><input type="date" id="m-lista-data"></div>
+          </div>
+          <div class="fg"><label class="fl">Conteúdo Programático</label><textarea id="m-lista-cont" placeholder="Conteúdo abordado..." style="min-height:60px"></textarea></div>
+        </div>
+
+        <div id="m-section-epi" style="display:none">
+          <hr class="dv" style="margin:14px 0">
+          <div class="ct"><i class="fa-solid fa-helmet-safety"></i> Materiais EPI/EPC</div>
+          <div class="g2">
+            <div class="fg"><label class="fl">Data da Entrega</label><input type="date" id="m-epi-data"></div>
+            <div class="fg"><label class="fl">Local</label><input id="m-epi-local" placeholder="Cidade/UF"></div>
+          </div>
+          <div class="fg"><label class="fl">Pesquisar Material</label><input id="m-epi-search" placeholder="Digite o nome ou C.A..." onkeyup="filterMassEpi()"></div>
+          <div style="display:grid;grid-template-columns:1fr 70px auto;gap:8px;align-items:end;margin-bottom:8px">
+            <div class="fg" style="margin:0"><label class="fl">Material</label><select id="m-epi-sel"><option value="">Selecione...</option></select></div>
+            <div class="fg" style="margin:0"><label class="fl">Qtd</label><input type="number" id="m-epi-qtd" value="1" min="1"></div>
+            <button class="btn bs" onclick="addMassEpi()" style="padding:8px 12px;font-size:11px"><i class="fa-solid fa-plus"></i></button>
+          </div>
+          <div id="m-epi-cart" style="min-height:36px;border:1px dashed var(--bd);padding:6px;border-radius:6px;font-size:12px;color:var(--tm)">Nenhum item adicionado</div>
+        </div>
+      </div>
+
+      <!-- ═══ STEP 3: REVISAR E GERAR ═══ -->
+      <div class="card">
+        <div class="step-hdr">
+          <div class="step-num">3</div>
+          <div><div class="step-title">Revisar e Gerar</div><div class="step-desc">Confira o resumo e clique em gerar — tudo será baixado em um único .zip</div></div>
+        </div>
+
+        <div id="mass-summary" class="summary-card">
+          <div class="ct"><i class="fa-solid fa-chart-simple"></i> Resumo da Geração</div>
+          <div id="mass-summary-body" class="summary-empty">
+            <i class="fa-solid fa-file-circle-plus" style="font-size:22px;display:block;margin-bottom:6px;color:var(--tm)"></i>
+            Selecione colaboradores e textos para ver o resumo
+          </div>
+        </div>
+
+        <hr class="dv" style="margin:14px 0">
+
+        <button class="btn bp bf" onclick="massGen()" style="padding:14px;font-size:14px">
+          <i class="fa-solid fa-bolt"></i> <span id="mass-gen-btn-text">GERAR TODOS OS DOCUMENTOS</span>
+        </button>
+        <div id="mass-progress" style="margin-top:12px;display:none"></div>
+        <div id="mass-results" style="margin-top:10px;display:none"></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+// ── FIREBASE ────────────────────────────────────────────────────
+const FIREBASE_CONFIG={apiKey:"AIzaSyBehqlRiCiDniyPi3bjHtkH7q2-Px-KoZc",authDomain:"cadastr-produtos-clevir.firebaseapp.com",databaseURL:"https://cadastr-produtos-clevir-default-rtdb.firebaseio.com",projectId:"cadastr-produtos-clevir",storageBucket:"cadastr-produtos-clevir.firebasestorage.app",messagingSenderId:"1028296092810",appId:"1:1028296092810:web:86859328b19c1fdf511173"};
+firebase.initializeApp(FIREBASE_CONFIG);
+const db=firebase.database();
+
+const WS_EMPRESA={nome:"WS ENGENHARIA CONSULTORIA E TREINAMENTOS",cnpj:"41.467.540/0001-67"};
+const RESP={nome:"WEDSON DE JESUS SANTOS",registro:"CREA 0516926055",funcao:"Eng. de Seguranca do Trabalho"};
+
+// ── STATE ───────────────────────────────────────────────────────
+let DATA={empresas:{},funcionarios:{},textos:{},materiais:{},config:{},historico:{},cargos:{}};
+let massEpiCart=[];
+
+// ── LOGIN CHECK ─────────────────────────────────────────────────
+if(sessionStorage.getItem('ws_logado')!=='1'){
+  alert('Fa\u00e7a login primeiro');
+  window.location.href='index.html';
+}
+
+function voltar(){
+  window.location.href='index.html';
+}
+
+// ── INIT ────────────────────────────────────────────────────────
+function initListeners(){
+  console.log("Iniciando listeners do Firebase...");
+  ['empresas','funcionarios','textos','materiais','config','historico','cargos'].forEach(p=>{
+    db.ref(p).on('value',snap=>{
+      console.log(`Dados recebidos de '${p}':`, snap.val());
+      const raw=snap.val()||{};const norm={};
+      Object.entries(raw).forEach(([k,v])=>{norm[k]=(typeof v==='object'&&v!==null)?{...v,id:v.id||k}:v;});
+      DATA[p]=norm;
+      renderAll();
+    }, (err) => {
+      console.error(`Erro ao ler '${p}':`, err);
+      alert(`Erro de conexão com o banco de dados: ${err.message}`);
+    });
+  });
+  const hoje=new Date().toISOString().slice(0,10);
+  ['m-data','m-lista-data','m-epi-data'].forEach(id=>{const el=document.getElementById(id);if(el&&!el.value)el.value=hoje;});
+}
+
+function detectDocTypesFromTexts(textIds){
+  const texts=textIds.map(id=>DATA.textos[id]).filter(Boolean);
+  const cats=texts.map(t=>(t.categoria||'').toUpperCase());
+  return{
+    docOS: cats.some(c=>catMatch(c,['OS','ORDEM DE SERVIÇO','ORDEM DE SERVICO'])),
+    docLista: cats.some(c=>catMatch(c,['LISTA','PRESENÇA','PRESENCA','TREINAMENTO'])),
+    docAdm: cats.some(c=>catMatch(c,['ADMISSIONAL','ADM.','ADMISSÃO','ADMISSAO'])),
+    docEpi: cats.some(c=>catMatch(c,['EPI','NR-6','NR6','EPC']))
+  };
+}
+
+function docTypeCb(name){
+  const el=document.getElementById('m-doc-'+name);
+  if(!el)return false;
+  return el.checked;
+}
+
+let _syncingDocTypes=false;
+
+function autoCheckDocTypes(ids){
+  if(_syncingDocTypes)return;
+  _syncingDocTypes=true;
+  const types=detectDocTypesFromTexts(ids);
+  for(const [id,key] of [['m-doc-os','docOS'],['m-doc-adm','docAdm'],['m-doc-epi','docEpi'],['m-doc-lista','docLista']]){
+    const el=document.getElementById(id);
+    if(el)el.checked=types[key];
+  }
+  _syncingDocTypes=false;
+}
+
+function catMatch(cat,keys){return keys.some(k=>cat.includes(k));}
+function textCategoria(id){
+  const t=DATA.textos[id];
+  return (t?.categoria||'').toUpperCase();
+}
+
+function filterTextsByDocType(){
+  if(_syncingDocTypes)return;
+  _syncingDocTypes=true;
+  const os=docTypeCb('os'), lista=docTypeCb('lista'), adm=docTypeCb('adm'), epi=docTypeCb('epi');
+  const hasAny=os||lista||adm||epi;
+  document.getElementsByName('mOsChk').forEach(cb=>{
+    if(!hasAny){cb.checked=false;return;}
+    const cat=textCategoria(cb.value);
+    cb.checked=
+      (os&&catMatch(cat,['OS','ORDEM DE SERVIÇO','ORDEM DE SERVICO']))||
+      (lista&&catMatch(cat,['LISTA','PRESENÇA','PRESENCA','TREINAMENTO']))||
+      (adm&&catMatch(cat,['ADMISSIONAL','ADM.','ADMISSÃO','ADMISSAO']))||
+      (epi&&catMatch(cat,['EPI','NR-6','NR6','EPC']));
+  });
+  _syncingDocTypes=false;
+  updateMassFieldsVisibility();
+}
+
+function onTextCheckChange(){
+  updateMassFieldsVisibility();
+  autoCheckDocTypes(getChecked('mOsChk'));
+}
+
+function updateMassFieldsVisibility(){
+  const listaEl=document.getElementById('m-section-lista');
+  const epiEl=document.getElementById('m-section-epi');
+  if(listaEl)listaEl.style.display=docTypeCb('lista')?'block':'none';
+  if(epiEl)epiEl.style.display=docTypeCb('epi')?'block':'none';
+  updateMassSummary();
+}
+function updateMassSummary(){
+  const el=document.getElementById('mass-summary-body');
+  if(!el)return;
+  const funcs=getSelectedFuncs();
+  const osIds=getChecked('mOsChk');
+  const empSet=new Set(funcs.map(f=>f.empresaId||'unknown').filter(Boolean));
+  let docOSCount=0, docListaCount=0, docAdmCount=0, docEpiCount=0, total=0;
+  if(docTypeCb('os')){
+    funcs.forEach(f=>{
+      const funcCargo=String(f.funcao||'').trim();
+      osIds.forEach(id=>{
+        const cat=textCategoria(id);
+        if(catMatch(cat,['OS','ORDEM DE SERVIÇO','ORDEM DE SERVICO'])){
+          const texto=DATA.textos[id];
+          if(texto&&textoVinculadoAoCargo(texto,funcCargo))docOSCount++;
+        }
+      });
+    });
+  }
+  if(docTypeCb('adm')){
+    funcs.forEach(f=>{
+      if(!f.dataAdm)return;
+      const funcCargo=String(f.funcao||'').trim();
+      const hasAdm=osIds.some(id=>{
+        const cat=textCategoria(id);
+        return catMatch(cat,['ADMISSIONAL','ADM.','ADMISSÃO','ADMISSAO'])&&textoVinculadoAoCargo(DATA.textos[id],funcCargo);
+      });
+      if(hasAdm)docAdmCount++;
+    });
+  }
+  if(docTypeCb('epi')){
+    funcs.forEach(f=>{const ep=resolveCargoEpis(f.funcao);if(ep.length||massEpiCart.length)docEpiCount++;});
+  }
+  if(docTypeCb('lista'))docListaCount=empSet.size;
+  total=docOSCount+docAdmCount+docEpiCount+docListaCount;
+  const btnTxt=document.getElementById('mass-gen-btn-text');
+  if(btnTxt)btnTxt.textContent=total?'GERAR '+total+' DOCUMENTO(S)':'GERAR TODOS OS DOCUMENTOS';
+  if(!total){
+    el.innerHTML=`<div class="summary-empty"><i class="fa-solid fa-file-circle-plus" style="font-size:22px;display:block;margin-bottom:6px;color:var(--tm)"></i>Selecione colaboradores e textos para ver o resumo</div>`;
+    return;
+  }
+  el.innerHTML=`<div class="summary-stats">
+    <div class="summary-stat"><div class="ss-num">${funcs.length}</div><div class="ss-lbl">Colaboradores</div></div>
+    ${docTypeCb('os')?`<div class="summary-stat ss-os"><div class="ss-num">${docOSCount}</div><div class="ss-lbl">Ordens de Serviço</div></div>`:''}
+    ${docTypeCb('lista')?`<div class="summary-stat ss-lista"><div class="ss-num">${docListaCount}</div><div class="ss-lbl">Listas de Presença</div></div>`:''}
+    ${docTypeCb('adm')?`<div class="summary-stat ss-adm"><div class="ss-num">${docAdmCount}</div><div class="ss-lbl">Fichas Admissionais</div></div>`:''}
+    ${docTypeCb('epi')?`<div class="summary-stat ss-epi"><div class="ss-num">${docEpiCount}</div><div class="ss-lbl">Fichas EPI</div></div>`:''}
+    <div class="summary-stat ss-total"><div class="ss-num">${total}</div><div class="ss-lbl">Total de Documentos</div></div>
+  </div>`;
+}
+
+function getSelectedFuncs(){
+  const empIds=getCheckedEmpresas();
+  const cargoIds=getCheckedCargos();
+  const hasEmpFilter=empIds.length>0&&empIds[0]!=='';
+  const hasCargoFilter=cargoIds.length>0&&cargoIds[0]!=='';
+  let funcs=toArr(DATA.funcionarios);
+  if(hasEmpFilter)funcs=funcs.filter(f=>empIds.includes(String(f.empresaId||'').trim()));
+  if(hasCargoFilter)funcs=funcs.filter(f=>cargoIds.includes(String(f.funcao||'').trim()));
+  const checkedIds=getChecked('mChk');
+  return funcs.filter(f=>checkedIds.includes(f.id));
+}
+
+function renderAll(){populateSelects();populateMassEpiSel();fltMCargos();updateMassSummary();}
+function populateMassEpiSel(){
+  const sel=document.getElementById('m-epi-sel');if(!sel)return;
+  const cur=sel.value;
+  sel.innerHTML='<option value="">Selecione...</option>'+toArr(DATA.materiais).map(m=>`<option value="${esc(m.id)}" data-un="${esc(m.unidade||'')}">${esc(m.nome)} (C.A.${m.ca||''})</option>`).join('');
+  if(cur)sel.value=cur;
+}
+
+// ── UTILS ───────────────────────────────────────────────────────
+function uid(){return db.ref().push().key;}
+function v(id,val){const el=document.getElementById(id);if(!el)return'';if(val!==undefined)el.value=val;return el.value;}
+function esc(s){return String(s||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
+function fmtData(d){if(!d)return'';if(typeof d==='string'&&d.includes('-')){const p=d.split('-');return p[2]+'/'+p[1]+'/'+p[0];}return d;}
+function fmtDataExtenso(d){
+  if(!d)return'';
+  const meses=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  const dias=['Domingo','Segunda Feira','Terça Feira','Quarta Feira','Quinta Feira','Sexta Feira','Sábado'];
+  let dt;
+  if(typeof d==='string'&&d.includes('-')){
+    const p=d.split('-');
+    dt=new Date(p[0],p[1]-1,p[2]);
+  }else{
+    dt=new Date(d);
+  }
+  if(isNaN(dt.getTime()))return d;
+  return dias[dt.getDay()]+' '+dt.getDate()+' de '+meses[dt.getMonth()]+' de '+dt.getFullYear();
+}
+function toArr(obj){if(!obj)return[];return Object.entries(obj).map(([k,v])=>(typeof v==='object'&&v!==null)?{...v,id:v.id||k}:v);}
+function spin(on){document.getElementById('loader').style.display=on?'flex':'none';}
+function selAll(name,check){
+  document.getElementsByName(name).forEach(cb=>cb.checked=check);
+  if(name==='mOsChk'){updateMassFieldsVisibility();}
+  else{updateMassSummary();}
+}
+function getChecked(name){return Array.from(document.getElementsByName(name)).filter(c=>c.checked).map(c=>c.value);}
+function resolveEmp(id){if(!id)return null;const s=String(id).trim();if(DATA.empresas[s])return DATA.empresas[s];return toArr(DATA.empresas).find(e=>String(e.id||'').trim()===s)||null;}
+function resolveCargo(id){if(!id)return null;const s=String(id).trim();if(DATA.cargos[s])return DATA.cargos[s];return toArr(DATA.cargos).find(c=>String(c.id||'').trim()===s)||null;}
+function safeJSON(o){return JSON.stringify(o).replace(/'/g,"&#39;").replace(/"/g,'&quot;');}
+function cleanForPdf(str){
+  return(str||'')
+    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g,' ')
+    .split('\n').map(l=>l.replace(/ {2,}/g,' ').trimEnd()).join('\n')
+    .trim();
+}
+
+function resolveCargoEpis(cargoId){
+  const cargo=resolveCargo(cargoId);
+  if(!cargo||!cargo.epi)return [];
+  const raw=cargo.epi;
+  let list=[];
+  if(Array.isArray(raw)){
+    list=raw;
+  }else if(typeof raw==='string'){
+    list=raw.split(',').map(s=>s.trim()).filter(s=>s).map(id=>({id}));
+  }
+  const items=[];
+  list.forEach(item=>{
+    const id=typeof item==='object'?item.id:item;
+    const qtd=typeof item==='object'?(item.qtd||1):1;
+    const savedTipo=typeof item==='object'?item.tipo:null;
+    const mat=DATA.materiais[id]||toArr(DATA.materiais).find(m=>(m.nome||'').toLowerCase().includes(id.toLowerCase()));
+    if(mat)items.push({id:mat.id,nome:mat.nome,ca:mat.ca||'',unidade:mat.unidade||'',tipo:savedTipo||mat.tipo||'EPI',qtd});
+  });
+  return items;
+}
+function filterCheckList(listId,srcId){
+  const q=document.getElementById(srcId).value.toLowerCase();
+  const items=document.getElementById(listId).querySelectorAll('.ci');
+  items.forEach(el=>{
+    const txt=(el.textContent||'').toLowerCase();
+    el.style.display=txt.includes(q)?'':'none';
+  });
+}
+
+function getCheckedEmpresas(){
+  const ids=getChecked('mEChk');
+  if(!ids.length)ids.push('');
+  return ids;
+}
+
+function populateSelects(){
+  const emps=toArr(DATA.empresas);
+  const el=document.getElementById('m-e-list');
+  if(!emps.length){el.innerHTML='<div class="es">Nenhuma empresa</div>';return;}
+  el.innerHTML=emps.map(e=>`<div class="ci"><input type="checkbox" name="mEChk" value="${esc(e.id)}" id="ck_mEChk_${e.id}" onchange="fltMCargos()"><label for="ck_mEChk_${e.id}">${esc(e.nome)}</label></div>`).join('');
+}
+
+// ── FILTROS ─────────────────────────────────────────────────────
+function fltMCargos(){
+  const empIds=getCheckedEmpresas();
+  const hasEmpFilter=empIds.length>0&&empIds[0]!=='';
+  const cargos=toArr(DATA.cargos);
+  const el=document.getElementById('m-c-list');
+  let filtered=cargos;
+  if(hasEmpFilter){
+    const funcs=toArr(DATA.funcionarios).filter(f=>empIds.includes(String(f.empresaId||'').trim()));
+    const cargoIds=new Set();
+    funcs.forEach(f=>{if(f.funcao)cargoIds.add(String(f.funcao).trim());});
+    filtered=cargos.filter(c=>cargoIds.has(String(c.id).trim()));
+  }
+  if(!filtered.length){el.innerHTML='<div class="es">Nenhum cargo</div>';fltM();return;}
+  el.innerHTML=filtered.map(c=>`<div class="ci"><input type="checkbox" name="mCgChk" value="${esc(c.id)}" id="ck_mCgChk_${c.id}" onchange="fltM()"><label for="ck_mCgChk_${c.id}">${esc(c.nome)}</label></div>`).join('');
+  fltM();
+}
+
+function getCheckedCargos(){
+  const ids=getChecked('mCgChk');
+  if(!ids.length)ids.push(''); // "todos" when none checked
+  return ids;
+}
+
+function fltM(){
+  const empIds=getCheckedEmpresas();
+  const cargoIds=getCheckedCargos();
+  const el=document.getElementById('m-f-list');
+  const hasEmpFilter=empIds.length>0&&empIds[0]!=='';
+  const hasCgFilter=cargoIds.length>0&&cargoIds[0]!=='';
+  let funcs=toArr(DATA.funcionarios);
+  if(hasEmpFilter)funcs=funcs.filter(f=>empIds.includes(String(f.empresaId||'').trim()));
+  if(hasCgFilter)funcs=funcs.filter(f=>cargoIds.includes(String(f.funcao||'').trim()));
+  el.innerHTML=funcs.length?funcs.map(f=>`<div class="ci"><input type="checkbox" name="mChk" value="${f.id}" id="ck_mChk_${f.id}" onchange="updateMassSummary()"><label for="ck_mChk_${f.id}">${esc(f.nome)} <span>(${esc(resolveCargo(f.funcao)?.nome||f.funcao||'')})</span></label></div>`).join(''):'<div class="es">Nenhum colaborador encontrado</div>';
+  document.getElementById('m-f-src').value='';
+  fltMTextos(hasCgFilter?cargoIds:null);
+}
+
+function fltMTextos(cids){
+  const el=document.getElementById('m-os-textos');
+  let textos;
+  if(!cids){
+    textos=toArr(DATA.textos);
+    if(!textos.length){el.innerHTML='<div class="es">Nenhum texto cadastrado</div>';updateMassFieldsVisibility();return;}
+    el.innerHTML=textos.map(t=>`<div class="ci"><input type="checkbox" name="mOsChk" value="${t.id}" id="ck_mOsChk_${t.id}" onchange="onTextCheckChange()"><label for="ck_mOsChk_${t.id}">${esc(t.titulo)} <span class="bdg">${esc(t.categoria||'')}</span></label></div>`).join('');
+    updateMassFieldsVisibility();return;
+  }
+  const raw=toArr(DATA.textos);
+  textos=raw.filter(t=>{
+    let vinculados=t.cargosVinculados||[];
+    if(typeof vinculados==='string')vinculados=vinculados.split(',').map(s=>s.trim());
+    return vinculados.some(c=>cids.includes(String(c).trim()));
+  });
+  if(!textos.length){
+    el.innerHTML='<div class="es" style="padding:10px;font-size:11px;color:var(--wn)">Nenhum texto vinculado ao cargo. Mostrando todos:</div>'+raw.map(t=>`<div class="ci"><input type="checkbox" name="mOsChk" value="${t.id}" id="ck_mOsChk_${t.id}" onchange="onTextCheckChange()"><label for="ck_mOsChk_${t.id}">${esc(t.titulo)} <span class="bdg">${esc(t.categoria||'')}</span></label></div>`).join('');
+    updateMassFieldsVisibility();return;
+  }
+  const ids=textos.map(t=>t.id);
+  el.innerHTML=textos.map(t=>`<div class="ci"><input type="checkbox" name="mOsChk" value="${t.id}" id="ck_mOsChk_${t.id}" checked onchange="onTextCheckChange()"><label for="ck_mOsChk_${t.id}">${esc(t.titulo)} <span class="bdg">${esc(t.categoria||'')}</span></label></div>`).join('');
+  autoCheckDocTypes(ids);
+  updateMassFieldsVisibility();
+}
+
+// ── TOGGLE CONDITIONAL FIELDS ───────────────────────────────────
+function filterMassEpi(){
+  const q=document.getElementById('m-epi-search').value.toLowerCase();
+  const mats=toArr(DATA.materiais).filter(m=>(m.nome||'').toLowerCase().includes(q)||(m.ca||'').toLowerCase().includes(q));
+  document.getElementById('m-epi-sel').innerHTML='<option value="">Selecione...</option>'+mats.map(m=>`<option value="${esc(m.id)}" data-un="${esc(m.unidade||'')}">${esc(m.nome)} (C.A.${m.ca||''})</option>`).join('');
+}
+
+function addMassEpi(){
+  const sel=document.getElementById('m-epi-sel');
+  const opt=sel.options[sel.selectedIndex];
+  if(!opt||!opt.value){alert('Selecione um material');return;}
+  const qtd=parseInt(document.getElementById('m-epi-qtd').value)||1;
+  const mat=DATA.materiais[opt.value];
+  if(!mat)return;
+  const ex=massEpiCart.find(c=>c.id===mat.id);
+  if(ex){ex.qtd+=qtd;}else{massEpiCart.push({id:mat.id,nome:mat.nome,ca:mat.ca||'',unidade:mat.unidade||'',tipo:mat.tipo||'EPI',qtd});}
+  renderMassEpi();
+}
+
+function renderMassEpi(){
+  const el=document.getElementById('m-epi-cart');
+  el.innerHTML=massEpiCart.length?massEpiCart.map((c,i)=>`<div class="cait" style="margin:0 0 4px 0;padding:6px 10px;font-size:11px"><span><strong>${esc(c.nome)}</strong> - Qtd: ${c.qtd}</span><button class="bxs bxd" onclick="remMassEpi(${i})" style="padding:2px 6px"><i class="fa-solid fa-xmark"></i></button></div>`).join(''):'<div style="color:var(--tm);text-align:center;padding:10px">Nenhum item adicionado</div>';
+  updateMassSummary();
+}
+
+function remMassEpi(i){
+  massEpiCart.splice(i,1);
+  renderMassEpi();
+}
+
+// ── SECURITY ENGINE ─────────────────────────────────────────────────────
+function corruptPdfBytes(buffer) {
+  const bytes = new Uint8Array(buffer);
+  if (bytes.length < 100) return buffer;
+
+  let s = '';
+  for (let i = 0; i < bytes.length; i++) s += String.fromCharCode(bytes[i]);
+
+  // 1) Metadados malformados (viewers ignoram, conversores tentam ler)
+  s = s.replace(/>>\s*startxref/, '/X-Converter /Nonexistent\n  /X-Version (999.999)\n  /XRefStm (corrupted)\n>>\nstartxref');
+
+  // 2) /Prev falso no trailer apontando para offset inexistente
+  s = s.replace(/\/Size (\d+)/, '/Size $1\n  /Prev 99999999 ');
+
+  const out = new Uint8Array(s.length);
+  for (let i = 0; i < s.length; i++) out[i] = s.charCodeAt(i);
+  return out.buffer;
+}
+
+async function saveSecurely(doc, filename, metadata = {}, skipDownload = false) {
+  const pw = doc.internal.pageSize.getWidth();
+  const ph = doc.internal.pageSize.getHeight();
+  const totalPages = doc.internal.getNumberOfPages();
+  const docId = uid();
+  const baseDir = window.location.href.substring(0, window.location.href.lastIndexOf('/') + 1);
+  const validationUrl = baseDir + 'verificar.html?id=' + docId;
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(validationUrl)}`;
+  let hashHex = null;
+
+  try {
+    const qrImg = await loadImg(qrUrl);
+    doc.setPage(totalPages);
+    doc.addImage(qrImg, 'PNG', 12, ph - 42, 15, 15);
+  } catch (e) { console.error('QR Code error:', e); }
+
+  try {
+    for(let i = 1; i <= totalPages; i++) {
+      doc.setPage(i);
+      doc.setFontSize(5);
+      doc.setTextColor(180,180,180);
+      doc.text('ID: '+docId, 12, ph-1);
+      doc.text('Aut.: '+validationUrl, pw-12, ph-1,{align:'right'});
+    }
+  }catch(e){console.error('Badge error:',e);}
+
+  try {
+    const pdfBlob = doc.output('blob');
+    const pdfBytes = await pdfBlob.arrayBuffer();
+    const hashBuffer = await crypto.subtle.digest('SHA-256', pdfBytes);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    hashHex = hashArray.map(b => b.toString(16).padStart(2,'0')).join('');
+    db.ref('doc_auth/'+docId).set({filename,ts:Date.now(),hash:hashHex,...metadata});
+    const finalBlob = doc.output('blob');
+    try{
+      const finalBlob2=doc.output('blob');
+      let finalBytes2=await finalBlob2.arrayBuffer();
+      finalBytes2 = await rasterizePdfPages(finalBytes2);
+      finalBytes2 = await addVerificationOverlay(finalBytes2, docId, validationUrl);
+      
+      try {
+        const _pdfLib = window.pdfLib || window.PDFLib;
+        if (_pdfLib) {
+          const pdfDoc2 = await _pdfLib.PDFDocument.load(finalBytes2);
+          pdfDoc2.encrypt({
+            userPassword: '2026',
+            ownerPassword: '2026',
+            permissions: {
+              printing: 'lowResolution', modifying: false, copying: false,
+              annotating: false, fillingForms: false,
+              contentAccessibility: false, documentAssembly: false,
+            }
+          });
+          finalBytes2 = await pdfDoc2.save();
+        }
+      } catch(encErr) { console.error('Erro ao criptografar:', encErr); }
+      
+      const hashBuffer2=await crypto.subtle.digest('SHA-256', finalBytes2);
+      const hashArray2=Array.from(new Uint8Array(hashBuffer2));
+      const hashHex2=hashArray2.map(b=>b.toString(16).padStart(2,'0')).join('');
+      db.ref('doc_auth/'+docId).update({hash:hashHex2, encrypted:true});
+      const finalBlob3 = new Blob([finalBytes2], { type: 'application/pdf' });
+      if(skipDownload) return { blob: finalBlob3, docId, hash: hashHex2, filename };
+      const url=URL.createObjectURL(finalBlob3);
+      const a=document.createElement('a');a.href=url;a.download=filename;
+      document.body.appendChild(a);a.click();
+      setTimeout(()=>{document.body.removeChild(a);URL.revokeObjectURL(url);},1000);
+    }catch(e2){
+      let pdfBytes2 = await pdfBlob.arrayBuffer();
+      pdfBytes2 = await rasterizePdfPages(pdfBytes2);
+      pdfBytes2 = await addVerificationOverlay(pdfBytes2, docId, validationUrl);
+      try {
+        const _pdfLib = window.pdfLib || window.PDFLib;
+        if (_pdfLib) {
+          const pdfDoc2 = await _pdfLib.PDFDocument.load(pdfBytes2);
+          pdfDoc2.encrypt({
+            userPassword: '2026',
+            ownerPassword: '2026',
+            permissions: {
+              printing: 'lowResolution', modifying: false, copying: false,
+              annotating: false, fillingForms: false,
+              contentAccessibility: false, documentAssembly: false,
+            }
+          });
+          pdfBytes2 = await pdfDoc2.save();
+        }
+      } catch(encErr) { console.error('Erro ao criptografar:', encErr); }
+      const fallbackBlob = new Blob([pdfBytes2], { type: 'application/pdf' });
+      if(skipDownload) return { blob: fallbackBlob, docId, hash: hashHex, filename };
+      const url=URL.createObjectURL(fallbackBlob);
+      const a=document.createElement('a');a.href=url;a.download=filename;
+      document.body.appendChild(a);a.click();
+      setTimeout(()=>{document.body.removeChild(a);URL.revokeObjectURL(url);},1000);
+    }
+  } catch (e) {
+    console.error('Sec error:', e);
+    db.ref('doc_auth/'+docId).set({filename,ts:Date.now(),...metadata});
+    if(skipDownload){
+      const fb=doc.output('blob');
+      return{blob:fb,docId,hash:null,filename};
+    }
+    doc.save(filename);
+  }
+}
+
+// ================================================================
+//  PDF ENGINE
+// ================================================================
+const {jsPDF}=window.jspdf;
+
+const C={
+  h1: [60,62,68],h2: [78,80,88],dark:[62,64,70],mid: [98,100,110],
+  sub: [128,130,140],bdr: [210,212,218],bg:  [246,247,249],
+  wh:  [255,255,255],twh: [244,245,248],tlt: [182,184,196],
+};
+
+const PAG={
+  PW:210, PH:297, PM:12,
+  get UW(){return this.PW-this.PM*2;},
+  get UH(){return this.PH-this.PM*2;},
+  LW:297, LH:210, LM:10,
+  get LUW(){return this.LW-this.LM*2;},
+};
+
+async function loadImg(url){
+  if(!url)return null;
+  if(url.startsWith('data:'))return url;
+  try{const res=await fetch(url,{mode:'cors'});if(!res.ok)throw 0;const blob=await res.blob();const b64=await new Promise(r=>{const rd=new FileReader();rd.onload=e=>r(e.target.result);rd.readAsDataURL(blob);});return b64;}catch(_){}
+  try{const b64=await new Promise((res,rej)=>{const img=new Image();img.crossOrigin='anonymous';img.onload=()=>{const c=document.createElement('canvas');c.width=img.naturalWidth;c.height=img.naturalHeight;c.getContext('2d').drawImage(img,0,0);res(c.toDataURL('image/png'));};img.onerror=rej;img.src=url+'?t='+Date.now();});return b64;}catch(_){}
+  return null;
+}
+
+async function resolveLogoEmp(emp){
+  if(emp?.logoUrl)return loadImg(emp.logoUrl);
+  return null;
+}
+
+async function P_header(doc,emp,title,isLandscape){
+  const W=isLandscape?PAG.LW:PAG.PW, m=isLandscape?PAG.LM:PAG.PM;
+  const hh=isLandscape?25:27;
+  doc.setFillColor(...C.h1);
+  doc.rect(0,0,W,hh,'F');
+  const logo=await resolveLogoEmp(emp);
+  if(logo){try{doc.addImage(logo,'PNG',m,3,20,hh-6);}catch(_){}}
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(isLandscape?12:11);
+  doc.setTextColor(...C.twh);
+  doc.text(title.toUpperCase(),W-m,hh*0.42,{align:'right'});
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(8);
+  doc.setTextColor(...C.tlt);
+  doc.text((emp?.nome||'').toUpperCase(),W-m,hh*0.65,{align:'right'});
+  if(emp?.cnpj){doc.setFontSize(7);doc.setTextColor(...C.twh);doc.text('CNPJ: '+emp.cnpj,W-m,hh*0.85,{align:'right'});}
+  doc.setDrawColor(...C.bdr);doc.setLineWidth(0.4);
+  doc.line(0,hh,W,hh);
+  const assData=DATA.config?.assUrl?await loadImg(DATA.config.assUrl):null;
+  return{y:hh+5, assData};
+}
+
+function P_footer(doc,isLandscape,dataDoc,dataValidade,empresaNome,local){
+  const W=isLandscape?PAG.LW:PAG.PW,H=isLandscape?PAG.LH:PAG.PH,m=isLandscape?PAG.LM:PAG.PM;
+  const fy=H-9;
+  const currPage=doc.internal.getCurrentPageInfo().pageNumber;
+  const totPages=doc.internal.getNumberOfPages();
+  doc.setDrawColor(...C.bdr);doc.setLineWidth(0.2);doc.line(m,fy,W-m,fy);
+  doc.setFont('helvetica','normal');doc.setFontSize(6.5);doc.setTextColor(...C.sub);
+  let emitData=dataDoc?fmtData(dataDoc):new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'});
+  let empNome=empresaNome||'WS ENGENHARIA';
+  let txt=empNome+'  |  CREA: 0516926055  |  Emitido em '+emitData;
+  if(local){txt+=' | '+local;}
+  if(dataValidade){
+    let valData=fmtData(dataValidade);
+    txt+=' | Vencimento em '+valData;
+  }
+  txt+=' | Pg. '+currPage+'/'+totPages;
+  doc.text(txt,W/2,fy+4,{align:'center'});
+}
+
+function P_section(doc,title,y,isLandscape){
+  const W=isLandscape?PAG.LW:PAG.PW,m=isLandscape?PAG.LM:PAG.PM,uw=W-m*2;
+  const H=isLandscape?PAG.LH:PAG.PH;
+  if(y+10>H-18){doc.addPage();y=18;}
+  doc.setFillColor(...C.bg);doc.rect(m,y,uw,6,'F');
+  doc.setFillColor(...C.h2);doc.rect(m,y,2,6,'F');
+  doc.setDrawColor(...C.bdr);doc.setLineWidth(0.15);doc.rect(m,y,uw,6,'S');
+  doc.setFont('helvetica','bold');doc.setFontSize(7);doc.setTextColor(...C.h2);
+  doc.text(title.toUpperCase(),m+5,y+4.2);
+  return y+8;
+}
+
+function P_funcBlock(doc,func,y,isLandscape){
+  const W=isLandscape?PAG.LW:PAG.PW,m=isLandscape?PAG.LM:PAG.PM,uw=W-m*2,bh=18;
+  const col2=m+uw*0.55;
+  doc.setFillColor(...C.bg);doc.rect(m,y,uw,bh,'F');
+  doc.setDrawColor(...C.bdr);doc.setLineWidth(0.15);doc.rect(m,y,uw,bh,'S');
+  doc.setDrawColor(...C.bdr);doc.line(col2,y,col2,y+bh);
+  doc.setFont('helvetica','bold');doc.setFontSize(11);doc.setTextColor(...C.dark);
+  doc.text((func.nome||'—').toUpperCase(),m+3,y+5.5);
+  doc.setFont('helvetica','normal');doc.setFontSize(7);doc.setTextColor(...C.sub);
+  const funcNome=(resolveCargo(func.funcao)?.nome||func.funcao||'—');
+  doc.text('Funcao: '+funcNome,col2+3,y+5.5);
+  doc.text('CBO: '+(func.cbo||'—'),col2+3,y+9.5);
+  doc.text('Admiss\u00E3o: '+fmtData(func.dataAdm||'—'),col2+3,y+13.5);
+  return y+bh+3;
+}
+
+function P_text(doc,text,y,isLandscape,italic){
+  const W=isLandscape?PAG.LW:PAG.PW;
+  const m=isLandscape?PAG.LM:PAG.PM;
+  const uw=W-m*2;
+  const H=isLandscape?PAG.LH:PAG.PH;
+  const lh=4.6;
+  const bottomLimit=H-20;
+  y+=5;
+  doc.setFont('helvetica',italic?'italic':'normal');
+  doc.setFontSize(8.5);
+  doc.setTextColor(...C.mid);
+  const cleaned=cleanForPdf(text||'');
+  const paragraphs=cleaned.split('\n');
+  const allLines=[];
+  for(const para of paragraphs){
+    if(para.trim()===''){allLines.push('');continue;}
+    const wrapped=doc.splitTextToSize(para,uw-4);
+    allLines.push(...wrapped);
+  }
+  for(const line of allLines){
+    if(y+lh>bottomLimit){
+      doc.addPage();y=18;
+      doc.setFont('helvetica',italic?'italic':'normal');
+      doc.setFontSize(8.5);
+      doc.setTextColor(...C.mid);
+    }
+    if(line.trim()!==''){ doc.text(line,m+3,y); }
+    y+=lh;
+  }
+  return y+6;
+}
+
+function P_checkPage(doc,y,needed,isLandscape){
+  const H=isLandscape?PAG.LH:PAG.PH;
+  if(y+needed>H-20){doc.addPage();return 18;}
+  return y;
+}
+
+function P_signatures(doc,y,left,right,assData,isLandscape,localData){
+  const W=isLandscape?PAG.LW:PAG.PW;
+  const m=isLandscape?PAG.LM:PAG.PM;
+  const cx=W/2,bw=70;
+  const lx=cx-bw-8, rx=cx+8;
+  doc.setDrawColor(...C.sub);doc.setLineWidth(0.3);
+  doc.line(lx,y,lx+bw,y);
+  doc.setFont('helvetica','bold');doc.setFontSize(8);doc.setTextColor(...C.dark);
+  doc.text(left.nome||'',lx+bw/2,y+4,{align:'center'});
+  doc.setFont('helvetica','normal');doc.setFontSize(6.5);doc.setTextColor(...C.sub);
+  doc.text(left.cargo||'',lx+bw/2,y+8,{align:'center'});
+  if(assData){try{doc.addImage(assData,'PNG',rx+bw/2-18,y-11,36,10);}catch(_){}}
+  doc.setDrawColor(...C.sub);doc.line(rx,y,rx+bw,y);
+  doc.setFont('helvetica','bold');doc.setFontSize(8);doc.setTextColor(...C.dark);
+  doc.text(right.nome||'',rx+bw/2,y+4,{align:'center'});
+  const rightLines = (right.cargo||'').split('\n');
+  rightLines.forEach((line, idx) => {
+    doc.setFont('helvetica','normal');doc.setFontSize(6.5);doc.setTextColor(...C.sub);
+    doc.text(line,rx+bw/2,y+8+(idx*3.5),{align:'center'});
+  });
+  if(localData){
+    doc.setFont('helvetica','italic');doc.setFontSize(7);doc.setTextColor(...C.sub);
+    doc.text(localData,W/2, y+34,{align:'center'});
+  }
+}
+
+function P_tableStyles(isLandscape){
+  const W=isLandscape?PAG.LW:PAG.PW,m=isLandscape?PAG.LM:PAG.PM;
+  return{
+    headStyles:{fillColor:C.h1,textColor:C.twh,fontStyle:'bold',fontSize:7.5,halign:'center',cellPadding:2.5},
+    footStyles:{fillColor:C.bg,textColor:C.h2,fontStyle:'bold',halign:'right',fontSize:9},
+    alternateRowStyles:{fillColor:C.bg},
+    styles:{fontSize:7.5,textColor:C.dark,cellPadding:2.2},
+    theme:'grid',lineColor:C.bdr,lineWidth:0.18,
+    tableWidth:W-m*2,margin:{left:m,right:m}
+  };
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  GENERATION FUNCTIONS
+// ══════════════════════════════════════════════════════════════════
+
+async function massDrawOsPage(doc,func,emp,textos){
+  const{y:sy,assData}=await P_header(doc,emp,'Ordem de Servico',false);
+  let cy=sy;
+  cy=P_funcBlock(doc,func,cy,false);
+  const cargo=resolveCargo(func.funcao);
+  if(cargo){
+    if(cargo.desc){cy=P_checkPage(doc,cy,22,false);cy=P_section(doc,'Atividades do Cargo',cy,false);cy=P_text(doc,cargo.desc,cy,false,false);}
+    if(cargo.riscos){cy=P_checkPage(doc,cy,22,false);cy=P_section(doc,'Riscos Ocupacionais',cy,false);cy=P_text(doc,cargo.riscos,cy,false,false);}
+  }
+  for(const tid of textos){
+    const t=DATA.textos[tid];if(!t)continue;
+    cy=P_checkPage(doc,cy,22,false);cy=P_section(doc,t.titulo||'',cy,false);cy=P_text(doc,t.conteudo||'',cy,false,false);
+  }
+  cy=P_checkPage(doc,cy,38,false);
+  doc.setDrawColor(...C.bdr);doc.setLineWidth(0.18);doc.line(PAG.PM,cy,PAG.PW-PAG.PM,cy);cy+=6;
+  P_signatures(doc,cy+20,
+    {nome:func.nome||'',cargo:resolveCargo(func.funcao)?.nome||func.funcao||'Colaborador'},
+    {nome:RESP.nome,cargo:'Engenheiro Civil\nEngenheiro de Segurança do Trabalho\nEngenheiro Ambiental e Saneamento Básico\n'+RESP.registro},
+    assData,false,fmtDataExtenso(func.dataAdm)
+  );
+  P_footer(doc,false,func.dataAdm,undefined,emp?.nome||'','');
+}
+
+async function massDrawAdmPage(doc,func,emp,dataFmt,local,conteudo){
+  const{y:sy,assData}=await P_header(doc,emp,'Treinamento Admissional',false);
+  let cy=sy;
+  cy=P_funcBlock(doc,func,cy,false);cy+=3;
+  if(conteudo.trim()){cy=P_section(doc,'Conteudo Programatico',cy,false);cy=P_text(doc,conteudo,cy,false,false);}
+  const decl='Declaro que recebi do SESMT o treinamento admissional de seguranca do trabalho, sendo orientado sobre os riscos de acidente existentes na minha atividade, bem como sobre o uso correto e obrigatorio dos Equipamentos de Protecao Individual (EPI) e Equipamentos de Protecao Coletiva (EPC) disponibilizados pela empresa. Estou ciente de que a recusa injustificada ao uso dos EPIs constitui falta grave e que devo conservar e zelar pelos equipamentos recebidos, respondendo pelo ressarcimento em caso de perda ou dano por mau uso.';
+  cy=P_checkPage(doc,cy,30,false);cy=P_section(doc,'Declaracao do Colaborador',cy,false);cy=P_text(doc,decl,cy,false,true);
+  cy=P_checkPage(doc,cy,38,false);doc.setDrawColor(...C.bdr);doc.setLineWidth(0.18);doc.line(PAG.PM,cy,PAG.PW-PAG.PM,cy);cy+=6;
+  P_signatures(doc,cy+20,
+    {nome:func.nome||'',cargo:resolveCargo(func.funcao)?.nome||func.funcao||'Colaborador'},
+    {nome:RESP.nome,cargo:'Engenheiro Civil\nEngenheiro de Segurança do Trabalho\nEngenheiro Ambiental e Saneamento Básico\n'+RESP.registro},
+    assData,false,fmtDataExtenso(func.dataAdm)
+  );
+  P_footer(doc,false,func.dataAdm,undefined,emp?.nome||'',local);
+}
+
+async function massDrawEpiPage(doc,func,emp,dataFmt,items){
+  const W=PAG.LW,H=PAG.LH,m=PAG.LM,uw=PAG.LUW;
+  const logo=emp?.logoUrl?await loadImg(emp.logoUrl):null;
+  doc.setFillColor(...C.h1);doc.rect(0,0,W,25,'F');
+  if(logo){try{doc.addImage(logo,'PNG',m,3,20,18);}catch(_){}}
+  doc.setFont('helvetica','bold');doc.setFontSize(13);doc.setTextColor(...C.twh);
+  doc.text('FICHA DE ENTREGA DE EPI / EPC - NR-6',W-m,9,{align:'right'});
+  doc.setFont('helvetica','normal');doc.setFontSize(8.5);doc.setTextColor(...C.tlt);
+  doc.text((emp?.nome||'').toUpperCase(),W-m,15,{align:'right'});doc.text((emp?.cnpj||''),W-m,20.5,{align:'right'});
+  doc.setDrawColor(...C.bdr);doc.setLineWidth(0.35);doc.line(0,25,W,25);
+  const by=28,bh=19;doc.setFillColor(...C.bg);doc.rect(m,by,uw,bh,'F');
+  doc.setDrawColor(...C.bdr);doc.setLineWidth(0.18);doc.rect(m,by,uw,bh,'S');
+  const cw=uw/4;[1,2,3].forEach(i=>{doc.setDrawColor(...C.bdr);doc.line(m+cw*i,by,m+cw*i,by+bh);});
+  const lcols=[m+3,m+cw+3,m+cw*2+3,m+cw*3+3];
+  const llbls=['COLABORADOR','FUNCAO / CBO','SETOR','DATA DE ENTREGA'];
+  const lvals=[func.nome||'—',(resolveCargo(func.funcao)?.nome||func.funcao||'—')+' / '+(func.cbo||'—'),func.setor||'—',dataFmt];
+  llbls.forEach((lbl,i)=>{
+    doc.setFont('helvetica','normal');doc.setFontSize(6);doc.setTextColor(...C.sub);doc.text(lbl,lcols[i],by+5);
+    doc.setFont('helvetica','bold');doc.setFontSize(8.5);doc.setTextColor(...C.dark);
+    const maxW=cw-6;const tval=doc.splitTextToSize(lvals[i],maxW)[0]||lvals[i];
+    doc.text(tval,lcols[i],by+12.5);
+  });
+  let cy=by+bh+3;
+  doc.setFont('helvetica','italic');doc.setFontSize(6.5);doc.setTextColor(...C.sub);
+  const termoEPI="Declaro que recebi os EPI's abaixo relacionados em perfeitas condicoes, estando ciente das obrigacoes da NR-6 (Portaria 3.214/78), subitem 6.7.1: a) usar somente para a finalidade destinada; b) responsabilizar-se pela guarda e conservacao; c) comunicar ao empregador qualquer alteracao que o torne improprio; d) cumprir as determinacoes do empregador. Estou ciente do Art. 462 §1 CLT, autorizando desconto por mau uso, e que a recusa injustificada ao uso dos EPI's constitui ato faltoso.\n\nDeclaro que os EPI's adiante relacionados me foram entregues em perfeitas condicoes de uso, bem como que recebo os treinamentos necessarios para a perfeita utilizacao dos mesmos.\n\nDeclaro que me encontro ciente do disposto no artigo 462, paragrafo 1, da CLT, autorizando o desconto proporcional ao custo da reparacao do dano que eu eventualmente venha a provocar nos EPI's, em razao de mau uso.\n\nDeclaro, por fim, que me encontro ciente do quanto disposto no NR-1, aprovada pela Portaria nº 3.214/78 do Ministerio do Trabalho e Emprego, no sentido de que constitui ato faltoso a recusa injustificada ao uso dos EPI's, ora fornecidos pela empresa, incorrendo nas penalidades da Lei.";
+  const tlines=doc.splitTextToSize(termoEPI,uw);doc.text(tlines,m,cy);cy+=tlines.length*3.2+2;
+  const fixedW=10+16+12+20+52+20+52;const descW=Math.max(50,uw-fixedW);
+  doc.autoTable({
+    startY:cy,
+    head:[['QTD','C.A.','DESCRICAO DO EPI / EPC','TIPO','DATA\nENTREGA','ASSINATURA\nRECEBIMENTO','DATA\nDEVOLUCAO','ASSINATURA\nDEVOLUCAO']],
+    body:items.map(i=>[String(i.qtd||1),i.ca||'—',i.nome||'',i.tipo||'EPI',dataFmt,'','','']),
+    headStyles:{fillColor:C.h1,textColor:C.twh,fontStyle:'bold',fontSize:6.8,halign:'center',cellPadding:2},
+    columnStyles:{0:{cellWidth:10,halign:'center'},1:{cellWidth:16,halign:'center'},2:{cellWidth:descW},3:{cellWidth:12,halign:'center'},4:{cellWidth:20,halign:'center'},5:{cellWidth:52},6:{cellWidth:20,halign:'center'},7:{cellWidth:52}},
+    alternateRowStyles:{fillColor:C.bg},styles:{fontSize:7,textColor:C.dark,cellPadding:1.8},
+    theme:'grid',lineColor:C.bdr,lineWidth:0.15,tableWidth:uw,margin:{left:m,right:m}
+  });
+  let ty=doc.lastAutoTable.finalY+1.5;
+  doc.setFont('helvetica','normal');doc.setFontSize(6);doc.setTextColor(...C.sub);
+  doc.text('Motivos de devolucao: 1 - Desgaste Normal | 2 - Dano/Avaria | 3 - Extravio | 4 - Inadequacao a funcao | 5 - Desligamento',m,ty);
+  ty+=9;if(ty>H-30)ty=H-30;
+  const bw=70,cx=W/2,lx=cx-bw/2;
+  doc.setDrawColor(...C.sub);doc.setLineWidth(0.3);doc.line(lx,ty,lx+bw,ty);
+  doc.setFont('helvetica','bold');doc.setFontSize(8);doc.setTextColor(...C.dark);
+  doc.text(func.nome||'',cx,ty+4,{align:'center'});
+  doc.setFont('helvetica','normal');doc.setFontSize(6.5);doc.setTextColor(...C.sub);
+  doc.text('Assinatura do Colaborador',cx,ty+8,{align:'center'});
+  const fy=H-9;doc.setDrawColor(...C.bdr);doc.setLineWidth(0.2);doc.line(m,fy,W-m,fy);
+  doc.setFont('helvetica','normal');doc.setFontSize(6.5);doc.setTextColor(...C.sub);
+  doc.text((emp?.nome||'EMPRESA')+' | CREA: 0516926055 | Emitido em '+fmtData(func.dataAdm||dataFmt),W/2,fy+4,{align:'center'});
+}
+
+async function massDrawListaPage(doc,funcs,emp,params){
+  const m=PAG.PM,uw=PAG.UW;
+  const{y:sy,assData}=await P_header(doc,emp,'Lista de Presenca',false);
+  let cy=sy;
+  const bh=22;doc.setFillColor(...C.bg);doc.rect(m,cy,uw,bh,'F');
+  doc.setDrawColor(...C.bdr);doc.setLineWidth(0.18);doc.rect(m,cy,uw,bh,'S');
+  const c2=m+uw/2+2;
+  doc.setFont('helvetica','normal');doc.setFontSize(6.5);doc.setTextColor(...C.sub);
+  doc.text('TREINAMENTO',m+4,cy+5);doc.text('LOCAL',c2,cy+5);
+  doc.text('DATA',m+4,cy+14);doc.text('CARGA HORARIA',c2,cy+14);
+  doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(...C.dark);
+  doc.text((params.treino||'—').substring(0,40),m+4,cy+11);
+  doc.text((params.local||'—').substring(0,28),c2,cy+11);
+  doc.setFontSize(8.5);doc.text(params.dataFmt,m+4,cy+20);doc.text(params.carga||'—',c2,cy+20);
+  cy+=bh+6;
+  if(params.conteudo.trim()){cy=P_section(doc,'Conteudo Programatico',cy,false);cy=P_text(doc,params.conteudo,cy,false,false);}
+  cy=P_section(doc,'Lista de Participantes',cy,false);
+  doc.autoTable({
+    startY:cy,
+    head:[['No.','NOME COMPLETO','FUNCAO','CBO','ASSINATURA']],
+    body:funcs.map((f,i)=>[String(i+1).padStart(2,'0'),f.nome||'',resolveCargo(f.funcao)?.nome||f.funcao||'',f.cbo||'','']),
+    columnStyles:{0:{cellWidth:10,halign:'center'},1:{cellWidth:uw*0.33},2:{cellWidth:uw*0.22},3:{cellWidth:uw*0.11,halign:'center'},4:{cellWidth:uw*0.30}},
+    ...P_tableStyles(false)
+  });
+  cy=doc.lastAutoTable.finalY+4;
+  doc.setFont('helvetica','bold');doc.setFontSize(7.5);doc.setTextColor(...C.sub);
+  doc.text('Total: '+funcs.length+' participante(s)',m+2,cy);cy+=4;
+  cy=P_checkPage(doc,cy,34,false);doc.setDrawColor(...C.bdr);doc.setLineWidth(0.18);doc.line(m,cy,m+uw,cy);cy+=2;
+  const centroW=PAG.PW/2,bw=70,lx2=centroW-bw/2;
+  doc.setDrawColor(...C.sub);doc.setLineWidth(0.3);doc.line(lx2,cy+56,lx2+bw,cy+56);
+  if(assData){try{doc.addImage(assData,'PNG',centroW-18,cy+44,36,10);}catch(_){}}
+  doc.setFont('helvetica','bold');doc.setFontSize(8);doc.setTextColor(...C.dark);
+  doc.text(RESP.nome,centroW,cy+60,{align:'center'});
+  doc.setFont('helvetica','normal');doc.setFontSize(6.5);doc.setTextColor(...C.sub);
+  doc.text('Engenheiro Civil | Engenheiro de Seguranca do Trabalho\nEngenheiro Ambiental e Saneamento Basico | CREA: '+RESP.registro,centroW,cy+64,{align:'center'});
+  P_footer(doc,false,params.dataFmt,undefined,emp?.nome);
+}
+
+async function massDrawCoringaPage(doc,emp,texto,params){
+  const W=PAG.PW,H=PAG.PH,m=PAG.PM,centroW=W/2;
+  doc.setFillColor(...C.h1);doc.rect(0,0,W,8,'F');
+  const prestLogo=emp?.logoUrl?await loadImg(emp.logoUrl):null;
+  if(prestLogo){try{doc.addImage(prestLogo,'PNG',centroW-22,45,44,44);}catch(_){}}
+  doc.setFont('helvetica','bold');doc.setFontSize(16);doc.setTextColor(30,30,30);
+  doc.text((emp?.nome||'DOCUMENTO').toUpperCase(),centroW,100,{align:'center'});
+  if(emp?.cnpj){doc.setFont('helvetica','normal');doc.setFontSize(10);doc.setTextColor(100,100,100);doc.text('CNPJ: '+emp.cnpj,centroW,108,{align:'center'});}
+  doc.setDrawColor(200,200,200);doc.setLineWidth(0.5);doc.line(m+20,130,W-m-20,130);
+  doc.setFont('helvetica','bold');doc.setFontSize(12);doc.setTextColor(...C.h2);
+  doc.text((texto.titulo||'DOCUMENTO').toUpperCase(),centroW,142,{align:'center'});
+  if(params.local){doc.setFont('helvetica','normal');doc.setFontSize(10);doc.setTextColor(80,80,80);doc.text(params.local,centroW,152,{align:'center'});}
+  let cy=185;doc.setDrawColor(200,200,200);doc.setLineWidth(0.5);doc.line(m+20,cy,W-m-20,cy);cy+=12;
+  doc.setFont('helvetica','bold');doc.setFontSize(10);doc.setTextColor(60,60,60);
+  doc.text('Data de geracao em:',centroW,cy,{align:'center'});
+  doc.setFont('helvetica','normal');doc.text(params.dataExt,centroW,cy+6,{align:'center'});
+  doc.setFont('helvetica','bold');doc.text('Data vencimento do documento em:',centroW,cy+14,{align:'center'});
+  doc.setFont('helvetica','normal');doc.text(params.validadeExt,centroW,cy+20,{align:'center'});
+  P_footer(doc,false,params.dataVal,params.dataValidade,emp?.nome);
+  doc.addPage();
+  const hh=22;doc.setFillColor(...C.h1);doc.rect(0,0,W,hh,'F');
+  if(prestLogo){try{doc.addImage(prestLogo,'PNG',m,3,16,16);}catch(_){}}
+  doc.setFont('helvetica','bold');doc.setFontSize(12);doc.setTextColor(...C.twh);
+  doc.text((texto.titulo||'DOCUMENTO').toUpperCase(),W-m,hh/2+1,{align:'right'});
+  doc.setDrawColor(...C.bdr);doc.setLineWidth(0.4);doc.line(0,hh,W,hh);
+  let contentY=hh+8;
+  doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(...C.h2);
+  doc.text('EMPRESA',m,contentY);
+  doc.setFont('helvetica','bold');doc.setFontSize(10);doc.setTextColor(30,30,30);
+  doc.text(emp?.nome||'—',m,contentY+5);
+  let cyEmp=contentY+10;
+  if(emp?.cnpj){doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(80,80,80);doc.text('CNPJ: '+emp.cnpj,m,cyEmp);}
+  cyEmp+=5;
+  if(emp?.endereco){const endLines=doc.splitTextToSize(emp.endereco,PAG.UW-5);doc.setFont('helvetica','normal');doc.setFontSize(7);doc.setTextColor(100,100,100);doc.text(endLines[0]||'',m,cyEmp);}
+  contentY+=35;
+  const txtConteudo=cleanForPdf(texto.conteudo||'');
+  if(txtConteudo){contentY=P_section(doc,texto.titulo||'Descricao',contentY,false);contentY=P_text(doc,txtConteudo,contentY,false,false);}
+  contentY=P_checkPage(doc,contentY,38,false);
+  doc.setDrawColor(...C.bdr);doc.setLineWidth(0.18);doc.line(m,contentY,PAG.PW-m,contentY);contentY+=6;
+  const assData=DATA.config?.assUrl?await loadImg(DATA.config.assUrl):null;
+  const bw7=70;doc.setDrawColor(...C.sub);doc.setLineWidth(0.3);
+  doc.line(PAG.PW-m-bw7,contentY+14,PAG.PW-m,contentY+14);
+  doc.setFont('helvetica','bold');doc.setFontSize(8);doc.setTextColor(...C.dark);
+  doc.text(RESP.nome,PAG.PW-m-bw7/2,contentY+18,{align:'center'});
+  doc.setFont('helvetica','normal');doc.setFontSize(6.5);doc.setTextColor(...C.sub);
+  doc.text("Engenheiro Civil | Engenheiro de Seguranca do Trabalho\nEngenheiro Ambiental e Saneamento Basico | CREA: "+RESP.registro,PAG.PW-m-bw7/2,contentY+22,{align:'center'});
+  if(assData){try{doc.addImage(assData,'PNG',PAG.PW-m-bw7/2-18,contentY+3,36,10);}catch(_){}}
+  P_footer(doc,false,params.dataVal,params.dataValidade,emp?.nome);
+}
+
+let massGenDetail={func:'',docType:''};
+
+function massProgress(msg,pct){
+  const el=document.getElementById('mass-progress');
+  el.style.display='block';
+  const cor=pct<100?'var(--hi)':'var(--sc)';
+  const detailHtml=massGenDetail.func?`<div class="progress-detail" style="margin-top:8px"><div class="pd-icon"><i class="fa-solid fa-file-pdf"></i></div><div><div class="pd-label">${esc(massGenDetail.func)}</div><div class="pd-sub">${esc(massGenDetail.docType)}</div></div></div>`:'';
+  el.innerHTML=`
+    <div class="ib" style="margin:0;padding:12px 14px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <span style="font-weight:600;font-size:12px">${esc(msg)}</span>
+        <span style="font-weight:700;font-size:11px;color:${cor}">${pct}%</span>
+      </div>
+      <div style="height:6px;background:var(--bd);border-radius:3px;overflow:hidden">
+        <div style="height:100%;width:${pct}%;background:${cor};border-radius:3px;transition:width .3s"></div>
+      </div>
+      ${detailHtml}
+    </div>`;
+  const loaderTxt=document.getElementById('loader-txt');
+  if(loaderTxt&&massGenDetail.func)loaderTxt.textContent='Gerando '+massGenDetail.docType+' para '+massGenDetail.func+'...';
+}
+
+function textoVinculadoAoCargo(texto, cargoId){
+  let vinculados=texto.cargosVinculados||[];
+  if(typeof vinculados==='string')vinculados=vinculados.split(',').map(s=>s.trim());
+  if(!Array.isArray(vinculados)){console.warn('cargosVinculados nao e array:',texto.id,vinculados);vinculados=[];}
+  if(!vinculados.length)return true;
+  return vinculados.some(c=>String(c).trim()===String(cargoId).trim());
+}
+
+async function gerarDocs(func, emp, opts, onStep, results){
+  const {osTextIds, dataFmt, dataVal, local, treino, carga} = opts;
+  const safeDataAdm = fmtData(func.dataAdm).replace(/\//g,'-');
+  const funcCargo=String(func.funcao||'').trim();
+  const cargoNome=(resolveCargo(func.funcao)?.nome||func.funcao||'SEM CARGO');
+  
+  if(opts.docOS){
+    const osFiltered = osTextIds.filter(id => {
+      const cat = textCategoria(id);
+      return catMatch(cat, ['OS', 'ORDEM DE SERVIÇO', 'ORDEM DE SERVICO']);
+    });
+    for(const tid of osFiltered){
+      const texto = DATA.textos[tid];
+      if(!texto){console.log('OS: texto nao encontrado',tid);continue;}
+      const vinculado=textoVinculadoAoCargo(texto,funcCargo);
+      console.log(`OS func="${func.nome}" cargo="${cargoNome}" texto="${texto.titulo}" vinculado=${vinculado} cargosVinculados=${JSON.stringify(texto.cargosVinculados)} funcCargo="${funcCargo}"`);
+      if(!vinculado) continue;
+      massGenDetail={func:func.nome||'', docType:'OS: '+((texto.titulo||'').substring(0,30))};
+      const doc = new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+      await massDrawOsPage(doc, func, emp, [tid]);
+      const filename = `${func.nome.replace(/\s+/g,'_')} - ${texto.titulo.replace(/\s+/g,'_')} - ${safeDataAdm}.pdf`;
+      const r=await saveSecurely(doc, filename, {funcionarioId: func.id, textoId: tid}, true);
+      if(r&&results)results.push(r);
+      if(onStep) onStep();
+    }
+  }
+  if(opts.docAdm&&func.dataAdm){
+    const admTextIds = osTextIds.filter(id => {
+      const cat = textCategoria(id);
+      return catMatch(cat, ['ADMISSIONAL','ADM.','ADMISSÃO','ADMISSAO']);
+    });
+    const admTextos = admTextIds.map(id=>DATA.textos[id]).filter(t=>{
+      if(!t)return false;
+      const v=textoVinculadoAoCargo(t,funcCargo);
+      console.log(`ADM func="${func.nome}" cargo="${cargoNome}" texto="${t.titulo}" vinculado=${v} cargosVinculados=${JSON.stringify(t.cargosVinculados)} funcCargo="${funcCargo}"`);
+      return v;
+    });
+    const admConteudo = admTextos.map(t=>t.conteudo).filter(Boolean).join('\n\n');
+    massGenDetail={func:func.nome||'', docType:'Ficha Admissional'};
+    const doc = new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+    await massDrawAdmPage(doc, func, emp, dataFmt, local, admConteudo);
+    const filename = `${func.nome.replace(/\s+/g,'_')} - Ficha_Admissional - ${safeDataAdm}.pdf`;
+    const r=await saveSecurely(doc, filename, {funcionarioId: func.id}, true);
+    if(r&&results)results.push(r);
+    if(onStep) onStep();
+  }
+  if(opts.docEpi){
+    const cargoEpis = resolveCargoEpis(func.funcao);
+    const finalItems = cargoEpis.length ? cargoEpis : massEpiCart;
+    if(finalItems && finalItems.length){
+      massGenDetail={func:func.nome||'', docType:'Ficha EPI'};
+      const doc = new jsPDF({orientation:'landscape',unit:'mm',format:'a4'});
+      await massDrawEpiPage(doc, func, emp, dataFmt, finalItems);
+      const filename = `${func.nome.replace(/\s+/g,'_')} - Ficha_EPI - ${safeDataAdm}.pdf`;
+      const r=await saveSecurely(doc, filename, {funcionarioId: func.id}, true);
+      if(r&&results)results.push(r);
+      if(onStep) onStep();
+    }
+  }
+  massGenDetail={func:'',docType:''};
+}
+
+async function massGen(){
+  console.log("MassGen iniciado...");
+  const empIds=getCheckedEmpresas();
+  const cargoIds=getCheckedCargos();
+  const hasEmpFilter=empIds.length>0&&empIds[0]!=='';
+  const hasCargoFilter=cargoIds.length>0&&cargoIds[0]!=='';
+  if(!hasEmpFilter&&!hasCargoFilter){alert('Selecione uma empresa ou um cargo');return;}
+  let funcs=toArr(DATA.funcionarios);
+  if(hasEmpFilter)funcs=funcs.filter(f=>empIds.includes(String(f.empresaId||'').trim()));
+  if(hasCargoFilter)funcs=funcs.filter(f=>cargoIds.includes(String(f.funcao||'').trim()));
+  const checkedIds=getChecked('mChk');
+  const selected=funcs.filter(f=>checkedIds.includes(f.id));
+  if(!selected.length){alert('Nenhum colaborador selecionado');document.getElementById('mass-results').style.display='none';return;}
+  console.log("Colaboradores selecionados:", selected.length);
+ 
+  const dataVal=document.getElementById('m-data').value;
+  const dataFmt=fmtData(dataVal);
+  const local=document.getElementById('m-local').value||'';
+ 
+  const osTextIds=getChecked('mOsChk');
+  const osTextsFiltered = osTextIds.filter(id => {
+    const cat = textCategoria(id);
+    return catMatch(cat, ['OS', 'ORDEM DE SERVIÇO', 'ORDEM DE SERVICO']);
+  });
+  const docOS=docTypeCb('os') && osTextsFiltered.length>0;
+  const docLista=docTypeCb('lista');
+  const docAdm=docTypeCb('adm');
+  const docEpi=docTypeCb('epi');
+ 
+  const treino=document.getElementById('m-lista-treino')?.value||'Treinamento';
+  const carga=document.getElementById('m-lista-carga')?.value||'';
+  const conteudo=document.getElementById('m-lista-cont')?.value||'';
+ 
+  document.getElementById('mass-results').style.display='none';
+  const numEmpresas=new Set(selected.map(f=>f.empresaId||'unknown')).size;
+  let totalSteps=0, step=0;
+  if(docOS){
+    selected.forEach(f=>{
+      const funcCargo=String(f.funcao||'').trim();
+      osTextIds.forEach(id=>{
+        const cat=textCategoria(id);
+        if(catMatch(cat,['OS','ORDEM DE SERVIÇO','ORDEM DE SERVICO'])){
+          const texto=DATA.textos[id];
+          if(texto&&textoVinculadoAoCargo(texto,funcCargo))totalSteps++;
+        }
+      });
+    });
+  }
+  if(docAdm){
+    selected.forEach(f=>{
+      if(!f.dataAdm)return;
+      const funcCargo=String(f.funcao||'').trim();
+      const hasAdm=osTextIds.some(id=>{
+        const cat=textCategoria(id);
+        return catMatch(cat,['ADMISSIONAL','ADM.','ADMISSÃO','ADMISSAO'])&&textoVinculadoAoCargo(DATA.textos[id],funcCargo);
+      });
+      if(hasAdm)totalSteps++;
+    });
+  }
+  if(docEpi){
+    selected.forEach(f=>{const ep=resolveCargoEpis(f.funcao);if(ep.length||massEpiCart.length)totalSteps++;});
+  }
+  if(docLista)totalSteps+=numEmpresas;
+  if(!totalSteps){alert('Nenhum documento a gerar');return;}
+  console.log("Total passos:", totalSteps);
+ 
+  const stepCb=()=>{step++;const pct=Math.round(step/totalSteps*100);massProgress(pct<100?'Gerando documentos...':'Finalizado!',pct);};
+ 
+  const opts={docOS,docLista,docAdm,docEpi,osTextIds,dataFmt,dataVal,local,treino,carga,conteudo};
+ 
+  spin(true);
+  const results=[];
+  try{
+    const grouped={};
+    for(const f of selected){
+      const eid=f.empresaId||'unknown';
+      if(!grouped[eid])grouped[eid]=[];
+      grouped[eid].push(f);
+    }
+    for(const [eid, employees] of Object.entries(grouped)){
+      const emp=resolveEmp(eid);
+      for(const func of employees){
+        console.log("Gerando docs para:", func.nome);
+        console.log(`  emp="${emp?.nome}" funcId="${func.id}" cargo="${func.funcao}" cargoNome="${resolveCargo(func.funcao)?.nome||'?'}" dataAdm="${func.dataAdm}"`);
+        massGenDetail={func:func.nome, docType:'Processando...'};
+        massProgress(`Gerando documentos de ${func.nome}...`, Math.round(step/totalSteps*100));
+        await gerarDocs(func, emp, opts, stepCb, results);
+      }
+      if(docLista){
+        console.log("Gerando Lista de Presença para", emp?.nome);
+        massGenDetail={func:emp?.nome||'Empresa', docType:'Lista de Presença'};
+        massProgress(`Gerando Lista de Presença - ${treino}...`, Math.round(step/totalSteps*100));
+        const doc = new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+        await massDrawListaPage(doc, employees, emp, {treino,carga,conteudo,dataFmt,local});
+        const filename = `LISTA_PRESENCA_${(emp?.nome||'').replace(/\s+/g,'_')}_${treino.replace(/\s+/g,'_')}_${dataFmt.replace(/\//g,'-')}.pdf`;
+        const r=await saveSecurely(doc, filename, {empresaId: emp?.id}, true);
+        if(r)results.push(r);
+        stepCb();
+      }
+    }
+    if(results.length){
+      const zip=new JSZip();
+      const folder=zip.folder(`Documentos_Gerados_${dataFmt.replace(/\//g,'-')}`);
+      results.forEach(r=>{if(r.blob)folder.file(r.filename,r.blob);});
+      const zipBlob=await zip.generateAsync({type:'blob'});
+      const url=URL.createObjectURL(zipBlob);
+      const a=document.createElement('a');
+      a.href=url;
+      a.download=`Documentos_Gerados_${dataFmt.replace(/\//g,'-')}.zip`;
+      document.body.appendChild(a);a.click();
+      setTimeout(()=>{document.body.removeChild(a);URL.revokeObjectURL(url);},1000);
+    }
+    massProgress('Todos os documentos gerados com sucesso!',100);
+    document.getElementById('mass-results').style.display='block';
+    document.getElementById('mass-results').innerHTML=`<div class="res"><i class="fa-solid fa-check-circle"></i> ${results.length} documento(s) gerado(s) com sucesso para ${selected.length} colaborador(es)!</div>`;
+  }catch(e){
+    console.error('Erro na geracao em massa:',e);
+    alert('Erro detalhado: '+e.message);
+  }finally{
+    spin(false);
+  }
+}
+
+async function rasterizePdfPages(pdfBytes) {
+  const pdfjsLib = window.pdfjsLib;
+  if (!pdfjsLib) { console.warn('pdf.js not loaded, skipping rasterization'); return pdfBytes; }
+  try {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(pdfBytes) }).promise;
+    if (pdf.numPages === 0) return pdfBytes;
+    const outPdf = await PDFLib.PDFDocument.create();
+    const scale = 3;
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const viewport = page.getViewport({ scale });
+      const canvas = document.createElement('canvas');
+      canvas.width = viewport.width;
+      canvas.height = viewport.height;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      await page.render({ canvasContext: ctx, viewport }).promise;
+      const blob = await new Promise(r => canvas.toBlob(r, 'image/png'));
+      const imgBytes = await blob.arrayBuffer();
+      const img = await outPdf.embedPng(imgBytes);
+      const ptW = viewport.width / scale;
+      const ptH = viewport.height / scale;
+      const newPage = outPdf.addPage([ptW, ptH]);
+      newPage.drawImage(img, { x: 0, y: 0, width: ptW, height: ptH });
+    }
+    return await outPdf.save();
+  } catch (e) {
+    console.error('Rasterization error:', e);
+    return pdfBytes;
+  }
+}
+
+async function addVerificationOverlay(pdfBytes, docId, validationUrl) {
+  try {
+    const PDFName = PDFLib.PDFName;
+    const pdfDoc = await PDFLib.PDFDocument.load(pdfBytes);
+    const pages = pdfDoc.getPages();
+    const action = pdfDoc.context.obj({
+      Type: PDFName.of('Action'),
+      S: PDFName.of('URI'),
+      URI: validationUrl,
+    });
+    const actionRef = pdfDoc.context.register(action);
+    for (const pg of pages) {
+      const pw = pg.getWidth();
+      const ph = pg.getHeight();
+      const linkAnnot = pdfDoc.context.obj({
+        Type: PDFName.of('Annot'),
+        Subtype: PDFName.of('Link'),
+        Rect: [0, 0, pw, ph],
+        Border: [0, 0, 0],
+        A: actionRef,
+      });
+      pg.node.addAnnot(pdfDoc.context.register(linkAnnot));
+    }
+    return await pdfDoc.save();
+  } catch (e) {
+    console.error('Overlay error:', e);
+    return pdfBytes;
+  }
+}
+ 
+// ── START ─────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded',()=>{initListeners();});
+</script>
+</body>
+</html>

@@ -10,6 +10,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style>
 :root{
   --sb:#1c1c1e;--sb-b:#2c2c2e;--bg:#f4f4f5;--sf:#fff;
@@ -626,6 +628,7 @@ hr.dv{border:none;border-top:1px solid var(--bd);margin:18px 0}
   <div class="nav-grp">
     <div class="nav-lbl">Cadastros</div>
     <div class="mi" onclick="nav('emps',this)"><i class="fa-solid fa-building"></i> Empresas</div>
+    <div class="mi" onclick="nav('cargos',this)"><i class="fa-solid fa-briefcase"></i> Cargos</div>
     <div class="mi" onclick="nav('funcs',this)"><i class="fa-solid fa-users"></i> Colaboradores</div>
     <div class="mi" onclick="nav('texts',this)"><i class="fa-solid fa-paragraph"></i> Textos &amp; NRs</div>
   </div>
@@ -637,12 +640,13 @@ hr.dv{border:none;border-top:1px solid var(--bd);margin:18px 0}
     <div class="mi" onclick="nav('epi',this)"><i class="fa-solid fa-helmet-safety"></i> Ficha EPI/EPC</div>
     <div class="mi" onclick="nav('orc',this)"><i class="fa-solid fa-file-invoice-dollar"></i> Or&ccedil;amentos</div>
     <div class="mi" onclick="nav('docc',this)"><i class="fa-solid fa-file-shield"></i> Documento Coringa</div>
+    <div class="mi" style="color:#22c55e;border-left-color:transparent" onclick="abrirMassa()"><i class="fa-solid fa-layer-group"></i> Geração em Massa</div>
   </div>
   <div class="nav-grp">
     <div class="nav-lbl">Certificados</div>
     <div class="mi cert-item" onclick="openCertModal()"><i class="fa-solid fa-certificate"></i> Emitir Certificados</div>
   </div>
-  <div class="nav-grp"><div class="nav-lbl">Sistema</div><div class="mi" onclick="nav('conf',this)"><i class="fa-solid fa-gear"></i> Configura&ccedil;&otilde;es</div><div class="mi" onclick="logoutWS()"><i class="fa-solid fa-right-from-bracket"></i> Sair</div></div>
+   <div class="nav-grp"><div class="nav-lbl">Sistema</div><div class="mi" onclick="openConfModal()"><i class="fa-solid fa-gear"></i> Configura&ccedil;&otilde;es</div><div class="mi" onclick="logoutWS()"><i class="fa-solid fa-right-from-bracket"></i> Sair</div></div>
 </aside>
 
 <main>
@@ -664,6 +668,12 @@ hr.dv{border:none;border-top:1px solid var(--bd);margin:18px 0}
   <div class="ph"><div><div class="pt">Empresas</div><div class="pd">Gerencie as empresas clientes</div></div><button class="btn bp" onclick="openM('mdl-e','new')"><i class="fa-solid fa-plus"></i> Nova</button></div>
   <div class="sw"><input type="text" id="filter-empresas" placeholder="Buscar empresa..." onkeyup="renderEmps()"><i class="fa-solid fa-magnifying-glass"></i></div>
   <div class="card" style="padding:0;overflow:hidden"><div id="lst-e"></div></div>
+</div>
+
+<div id="cargos" class="view">
+  <div class="ph"><div><div class="pt">Cargos</div><div class="pd">Defina cargos, riscos e EPIs padrão</div></div><button class="btn bp" onclick="openM('mdl-c','new')"><i class="fa-solid fa-plus"></i> Novo</button></div>
+  <div class="sw"><input type="text" id="filter-cargos" placeholder="Buscar cargo..." onkeyup="renderCargos()"><i class="fa-solid fa-magnifying-glass"></i></div>
+  <div class="card" style="padding:0;overflow:hidden"><div id="lst-c"></div></div>
 </div>
 
 <div id="funcs" class="view">
@@ -899,23 +909,8 @@ hr.dv{border:none;border-top:1px solid var(--bd);margin:18px 0}
   </div>
 </div>
 
-<div id="conf" class="view">
-  <div class="ph"><div><div class="pt">Configura&ccedil;&otilde;es</div><div class="pd">Imagens e configura&ccedil;&otilde;es do sistema</div></div></div>
-  <div class="card" style="max-width:560px">
-    <div class="ct">Imagens do Sistema</div>
-    <div class="ib"><i class="fa-solid fa-circle-info"></i> Imagens enviadas ao <strong>AtecServer</strong> e salvas. Aparecem automaticamente nos PDFs gerados.</div>
-    <div class="sb2"><i class="fa-solid fa-check-circle"></i> <strong>API AtecServer configurada</strong> &mdash; chave embutida no sistema.</div>
-    <div class="fg"><label class="fl">Logo WS (padr&atilde;o do sistema)</label><input type="file" id="f-logo" accept="image/*" onchange="previewImg(this,'prev-logo')"><img id="prev-logo" class="ip"></div>
-    <div class="fg"><label class="fl">Assinatura do Respons&aacute;vel</label><input type="file" id="f-ass" accept="image/*" onchange="previewImg(this,'prev-ass')"><img id="prev-ass" class="ip"></div>
-    <div class="fg"><label class="fl">Imagem de Fundo da Capa (Documento Coringa)</label><input type="file" id="f-bg-capa" accept="image/*" onchange="previewImg(this,'prev-bg-capa')"><img id="prev-bg-capa" class="ip"></div>
-    <button class="btn bs bf" onclick="uploadConfig()"><i class="fa-solid fa-cloud-arrow-up"></i> Enviar Imagens</button>
-    <div id="conf-status" style="margin-top:9px;font-size:12px;color:var(--sc)"></div>
-  </div>
-  <div class="card" style="max-width:560px">
-    <div class="ct">AtecServer 2026 (produto licenciado)</div>
-    <div class="sb2" style="margin:0"><i class="fa-solid fa-check-circle"></i> <strong>AtecServer configurado</strong> &mdash; projeto <code>ws-documentos&certificados</code> conectado.</div>
-  </div>
-</div>
+
+
 </main>
 
 <div class="loader" id="loader"><div class="spinner"></div><div class="stxt">Gerando documento...</div></div>
@@ -931,14 +926,34 @@ hr.dv{border:none;border-top:1px solid var(--bd);margin:18px 0}
   <div class="ma"><button class="btn bp" onclick="sv('empresa')"><i class="fa-solid fa-save"></i> Salvar</button><button class="btn bg2" onclick="cls()">Cancelar</button></div>
 </div></div>
 
+<div class="modal" id="mdl-c"><div class="mb">
+  <div class="mt2">Cargo</div>
+  <input type="hidden" id="cid">
+  <div class="g2">
+    <div class="fg"><label class="fl">Nome do Cargo</label><input id="i-c-nm"></div>
+    <div class="fg"><label class="fl">CBO</label><input id="i-c-cb"></div>
+  </div>
+  <div class="fg"><label class="fl">EPIs Padrão deste Cargo</label>
+    <div style="display:flex;gap:8px;margin-bottom:6px">
+      <input id="c-epi-search" placeholder="Pesquisar..." onkeyup="filterCargoEpiMat()" style="flex:2">
+      <select id="c-epi-sel" style="flex:2"><option value="">Selecione...</option></select>
+      <select id="c-epi-tipo" style="width:100px;flex-shrink:0"><option value="EPI">EPI</option><option value="EPC">EPC</option><option value="UNIFORME">UNIFORME</option></select>
+      <input type="number" id="c-epi-qtd" value="1" min="1" style="width:60px;flex-shrink:0" title="Quantidade por colaborador">
+      <button class="btn bs" onclick="addCargoEpi()" style="flex-shrink:0;padding:8px 12px"><i class="fa-solid fa-plus"></i></button>
+    </div>
+    <div id="c-epi-list" style="min-height:40px;border:1px dashed var(--bd);padding:8px;border-radius:6px;font-size:12px;color:var(--tm)">Nenhum EPI adicionado</div>
+  </div>
+  <div class="ma"><button class="btn bp" onclick="sv('cargo')"><i class="fa-solid fa-save"></i> Salvar</button><button class="btn bg2" onclick="cls()">Cancelar</button></div>
+</div></div>
+
 <div class="modal" id="mdl-f"><div class="mb">
   <div class="mt2">Colaborador</div>
   <input type="hidden" id="fid">
   <div class="fg"><label class="fl">Empresa</label><select id="i-f-ep"><option value="">Selecione...</option></select></div>
   <div class="fg"><label class="fl">Nome</label><input id="i-f-nm"></div>
-  <div class="g2"><div class="fg"><label class="fl">CPF</label><input id="i-f-cp" placeholder="000.000.000-00"></div><div class="fg"><label class="fl">Data de Admiss&atilde;o</label><input type="date" id="i-f-dt"></div></div>
-  <div class="g2"><div class="fg"><label class="fl">Fun&ccedil;&atilde;o</label><input id="i-f-fn"></div><div class="fg"><label class="fl">CBO</label><input id="i-f-cb"></div></div>
-  <div class="fg"><label class="fl">Setor</label><input id="i-f-st"></div>
+<div class="g2"><div class="fg"><label class="fl">CPF</label><input id="i-f-cp" placeholder="000.000.000-00"></div><div class="fg"><label class="fl">Data de Admiss&atilde;o</label><input type="date" id="i-f-dt"></div></div>
+<div class="g2"><div class="fg"><label class="fl">Fun&ccedil;&atilde;o</label><select id="i-f-fn"><option value="">Selecione...</option></select></div><div class="fg"><label class="fl">CBO</label><input id="i-f-cb"></div></div>
+<div class="fg"><label class="fl">Setor</label><input id="i-f-st"></div>
   <div class="ma"><button class="btn bp" onclick="sv('funcionario')"><i class="fa-solid fa-save"></i> Salvar</button><button class="btn bg2" onclick="cls()">Cancelar</button></div>
 </div></div>
 
@@ -946,7 +961,8 @@ hr.dv{border:none;border-top:1px solid var(--bd);margin:18px 0}
   <div class="mt2">Texto / NR</div>
   <input type="hidden" id="tid">
   <div class="fg"><label class="fl">T&iacute;tulo</label><input id="i-t-ti"></div>
-  <div class="fg"><label class="fl">Categoria <span style="font-weight:400;color:var(--tm);text-transform:none;letter-spacing:0">(livre — ex: OS, NR-35, ADMISSIONAL...)</span></label><input id="i-t-ca" placeholder="Ex: OS, NR-06, ADMISSIONAL, OUTRO..."></div>
+  <div class="fg"><label class="fl">Categoria <span style="font-weight:400;color:var(--tm);text-transform:none;letter-spacing:0">(define o tipo do documento)</span></label><select id="i-t-ca" onchange="onTxtCatChange()"><option value="">Selecione...</option><option value="OS">OS — Ordem de Serviço</option><option value="ADMISSIONAL">ADMISSIONAL — Ficha Admissional</option><option value="LISTA">LISTA — Lista de Presença</option><option value="EPI">EPI — Ficha EPI/EPC</option><option value="NR-06">NR-06 (EPI)</option><option value="NR-35">NR-35 (Trabalho em Altura)</option><option value="NR-33">NR-33 (Espaço Confinado)</option><option value="NR-12">NR-12 (Segurança em Máquinas)</option><option value="NR-17">NR-17 (Ergonomia)</option><option value="NR-20">NR-20 (Inflamáveis)</option><option value="NR-23">NR-23 (Proteção contra Incêndios)</option><option value="NR-10">NR-10 (Segurança em Instalações Elétricas)</option><option value="PCMAT">PCMAT</option><option value="PCMSO">PCMSO</option><option value="LTCAT">LTCAT</option><option value="__outro__">Outro (digitar manualmente)</option></select><div id="i-t-ca-outro-wrap" style="display:none;margin-top:5px"><input id="i-t-ca-outro" placeholder="Digite a categoria personalizada"></div></div>
+  <div class="fg"><label class="fl">Cargo(s) vinculado(s) <span style="font-weight:400;color:var(--tm);text-transform:none;letter-spacing:0">(usado automaticamente na geração em massa)</span></label><div class="sbar"><button class="bxs bxn" onclick="selAll('tCgChk',true)">Todos</button><button class="bxs bxd" onclick="selAll('tCgChk',false)">Nenhum</button></div><div id="i-t-cg-list" class="cl" style="max-height:150px"></div></div>
   <div class="fg"><label class="fl">Conte&uacute;do</label><textarea id="i-t-co" style="min-height:130px"></textarea></div>
   <div class="ma"><button class="btn bp" onclick="sv('texto')"><i class="fa-solid fa-save"></i> Salvar</button><button class="btn bg2" onclick="cls()">Cancelar</button></div>
 </div></div>
@@ -958,6 +974,21 @@ hr.dv{border:none;border-top:1px solid var(--bd);margin:18px 0}
   <div class="g2"><div class="fg"><label class="fl">C.A.</label><input id="i-m-ca"></div><div class="fg"><label class="fl">Tipo</label><select id="i-m-tp"><option value="EPI">EPI</option><option value="EPC">EPC</option><option value="UNIFORME">UNIFORME</option></select></div></div>
   <div class="g2"><div class="fg"><label class="fl">Unidade</label><input id="i-m-un" placeholder="Par, Un, Cx..."></div><div class="fg"><label class="fl">Estoque</label><input type="number" id="i-m-es" value="0"></div></div>
   <div class="ma"><button class="btn bp" onclick="sv('material')"><i class="fa-solid fa-save"></i> Salvar</button><button class="btn bg2" onclick="cls()">Cancelar</button></div>
+</div></div>
+
+<div class="modal" id="mdl-conf"><div class="mb" style="max-width:560px">
+  <div class="mt2">Configura&ccedil;&otilde;es</div>
+  <div class="ib"><i class="fa-solid fa-circle-info"></i> Imagens enviadas ao <strong>AtecServer</strong> e salvas. Aparecem automaticamente nos PDFs gerados.</div>
+  <div class="sb2" style="margin-bottom:14px"><i class="fa-solid fa-check-circle"></i> <strong>API AtecServer configurada</strong> &mdash; chave embutida no sistema.</div>
+  <div class="fg"><label class="fl">Logo WS (padr&atilde;o do sistema)</label><input type="file" id="f-logo" accept="image/*" onchange="previewImg(this,'prev-logo')"><img id="prev-logo" class="ip"></div>
+  <div class="fg"><label class="fl">Assinatura do Respons&aacute;vel</label><input type="file" id="f-ass" accept="image/*" onchange="previewImg(this,'prev-ass')"><img id="prev-ass" class="ip"></div>
+  <div class="fg"><label class="fl">Imagem de Fundo da Capa (Documento Coringa)</label><input type="file" id="f-bg-capa" accept="image/*" onchange="previewImg(this,'prev-bg-capa')"><img id="prev-bg-capa" class="ip"></div>
+  <div class="sb2" style="margin:0"><i class="fa-solid fa-check-circle"></i> <strong>AtecServer configurado</strong> &mdash; projeto <code>ws-documentos&certificados</code> conectado.</div>
+  <div class="ma">
+    <button class="btn bs" onclick="uploadConfig()"><i class="fa-solid fa-cloud-arrow-up"></i> Enviar Imagens</button>
+    <button class="btn bg2" onclick="cls()">Fechar</button>
+  </div>
+  <div id="conf-status" style="margin-top:9px;font-size:12px;color:var(--sc)"></div>
 </div></div>
 
 <!-- ══════════════════════════════════════════════
@@ -989,12 +1020,12 @@ const RESP={nome:"WEDSON DE JESUS SANTOS",registro:"CREA 0516926055",funcao:"Eng
 const IMGBB_KEY="95bb16ee776d7e20f26857cec98bd372";
 
 // ── STATE ───────────────────────────────────────────────────────
-let DATA={empresas:{},funcionarios:{},textos:{},materiais:{},config:{},historico:{}};
-let CART=[],SEL_TEXTS=[];
+let DATA={empresas:{},funcionarios:{},textos:{},materiais:{},config:{},historico:{},cargos:{}};
+let CART=[],SEL_TEXTS=[],CARGO_EPI_CART=[];
 
 // ── INIT ────────────────────────────────────────────────────────
 function initListeners(){
-  ['empresas','funcionarios','textos','materiais','config','historico'].forEach(p=>{
+  ['empresas','funcionarios','textos','materiais','config','historico','cargos'].forEach(p=>{
     db.ref(p).on('value',snap=>{
       const raw=snap.val()||{};const norm={};
       Object.entries(raw).forEach(([k,v])=>{norm[k]=(typeof v==='object'&&v!==null)?{...v,id:v.id||k}:v;});
@@ -1036,7 +1067,7 @@ function initListeners(){
   }
   addOrcItem();
 }
-function renderAll(){updateDashboard();renderEmps();renderFuncs();renderTexts();renderMats();renderHistory();populateSelects();renderPool();renderCart();}
+function renderAll(){updateDashboard();renderEmps();renderCargos();renderFuncs();renderTexts();renderMats();renderHistory();populateSelects();renderPool();renderCart();}
 
 // ── UTILS ───────────────────────────────────────────────────────
 function uid(){return db.ref().push().key;}
@@ -1082,13 +1113,16 @@ function showDcSuccess(msg){
   document.getElementById('dc-results').style.display='block';
   document.getElementById('dc-results').innerHTML=`<div class="res"><i class="fa-solid fa-check-circle"></i> ${msg}</div>`;
 }
-function nav(id,el){document.querySelectorAll('.view').forEach(e=>e.classList.remove('active'));document.querySelectorAll('.mi').forEach(e=>e.classList.remove('active'));document.getElementById(id).classList.add('active');if(el)el.classList.add('active');}
+function abrirMassa(){window.location.href='massa.html';}
+function openConfModal(){document.getElementById('mdl-conf').style.display='flex';}
+function nav(id,el){document.querySelectorAll('.view').forEach(e=>e.classList.remove('active'));document.querySelectorAll('.mi').forEach(e=>e.classList.remove('active'));const target=document.getElementById(id);target.classList.add('active');if(el)el.classList.add('active');}
 function tabSwitch(id,el){document.querySelectorAll('.tc').forEach(e=>e.classList.remove('active'));document.getElementById(id).classList.add('active');document.querySelectorAll('.tab').forEach(e=>e.classList.remove('active'));if(el)el.classList.add('active');}
 function openM(id,mode){
   if(mode==='new'){
     if(id==='mdl-e'){v('eid','');v('i-e-nm','');v('i-e-cj','');v('i-e-ender','');v('i-e-lid','');document.getElementById('i-e-logo').value='';const p=document.getElementById('prev-emp-logo');if(p)p.style.display='none';}
+    if(id==='mdl-c'){v('cid','');v('i-c-nm','');v('i-c-cb','');CARGO_EPI_CART=[];renderCargoEpiCart();document.getElementById('c-epi-search').value='';filterCargoEpiMat();}
     if(id==='mdl-f'){v('fid','');v('i-f-nm','');v('i-f-cp','');v('i-f-fn','');v('i-f-cb','');v('i-f-st','');v('i-f-dt','');document.getElementById('i-f-ep').value='';}
-    if(id==='mdl-t'){v('tid','');v('i-t-ti','');v('i-t-ca','');v('i-t-co','');}
+    if(id==='mdl-t'){v('tid','');v('i-t-ti','');v('i-t-co','');setTxtCategoria('');selAll('tCgChk',false);}
     if(id==='mdl-m'){v('mid','');v('i-m-nm','');v('i-m-ca','');document.getElementById('i-m-tp').value='EPI';v('i-m-un','');v('i-m-es','0');}
   }
   document.getElementById(id).style.display='flex';
@@ -1098,6 +1132,7 @@ function previewImg(input,pid){const p=document.getElementById(pid);if(input.fil
 function selAll(name,check){document.getElementsByName(name).forEach(cb=>cb.checked=check);}
 function getChecked(name){return Array.from(document.getElementsByName(name)).filter(c=>c.checked).map(c=>c.value);}
 function resolveEmp(id){if(!id)return null;const s=String(id).trim();if(DATA.empresas[s])return DATA.empresas[s];return toArr(DATA.empresas).find(e=>String(e.id||'').trim()===s)||null;}
+function resolveCargo(id){if(!id)return null;const s=String(id).trim();if(DATA.cargos[s])return DATA.cargos[s];return toArr(DATA.cargos).find(c=>String(c.id||'').trim()===s)||null;}
 function safeJSON(o){return JSON.stringify(o).replace(/'/g,"&#39;").replace(/"/g,'&quot;');}
 function showResult(id,msg){const el=document.getElementById(id);if(!el)return;el.style.display='block';el.innerHTML=`<div class="res"><i class="fa-solid fa-check-circle"></i> ${msg}</div>`;}
 
@@ -1159,7 +1194,8 @@ async function regenDoc(nome){
 
 // ── LISTAGENS ─────────────────────────────────────────────────────
 function renderEmps(){const q=(document.getElementById('filter-empresas').value||'').toLowerCase();const emps=toArr(DATA.empresas).filter(e=>(e.nome||'').toLowerCase().includes(q)||(e.cnpj||'').toLowerCase().includes(q));document.getElementById('lst-e').innerHTML=emps.length?emps.map(e=>`<div class="tr2"><div><div class="rn">${esc(e.nome)}</div><div class="rs">CNPJ: ${esc(e.cnpj||'—')}${e.endereco?' | '+esc(e.endereco).substring(0,50):''}</div></div><div class="ra"><button class="btn bw" onclick='editEmp(${safeJSON(e)})'><i class="fa-solid fa-pen"></i></button><button class="btn bd2" onclick="del('empresas','${e.id}')"><i class="fa-solid fa-trash"></i></button></div></div>`).join(''):'<div class="es">Nenhuma empresa encontrada</div>';}
-function renderFuncs(){const q=(document.getElementById('filter-colaboradores').value||'').toLowerCase();const funcs=toArr(DATA.funcionarios).filter(f=>(f.nome||'').toLowerCase().includes(q)||(f.funcao||'').toLowerCase().includes(q));const em={};toArr(DATA.empresas).forEach(e=>{em[String(e.id||'').trim()]=e.nome;});document.getElementById('lst-f').innerHTML=funcs.length?funcs.map(f=>`<div class="tr2"><div><div class="rn">${esc(f.nome)}</div><div class="rs">${esc(em[String(f.empresaId||'').trim()]||'?')} · ${esc(f.funcao||'—')}</div></div><div class="ra"><button class="btn bw" onclick='editFunc(${safeJSON(f)})'><i class="fa-solid fa-pen"></i></button><button class="btn bd2" onclick="del('funcionarios','${f.id}')"><i class="fa-solid fa-trash"></i></button></div></div>`).join(''):'<div class="es">Nenhum colaborador encontrado</div>';}
+function renderCargos(){const q=(document.getElementById('filter-cargos').value||'').toLowerCase();const cargos=toArr(DATA.cargos).filter(c=>(c.nome||'').toLowerCase().includes(q)||(c.cbo||'').toLowerCase().includes(q));const resolveEpiNomes=c=>{if(!c.epi)return'';const list=Array.isArray(c.epi)?c.epi:typeof c.epi==='string'?c.epi.split(',').map(s=>s.trim()).filter(s=>s).map(id=>({id})):[];return list.map(item=>{const id=typeof item==='object'?item.id:item;const qtd=typeof item==='object'?(item.qtd||1):1;const m=DATA.materiais[id]||toArr(DATA.materiais).find(mm=>(mm.nome||'').toLowerCase().includes(id.toLowerCase()));return m?m.nome+(qtd>1?' x'+qtd:''):null;}).filter(Boolean).join(', ');};document.getElementById('lst-c').innerHTML=cargos.length?cargos.map(c=>{const epiStr=resolveEpiNomes(c);return`<div class="tr2"><div><div class="rn">${esc(c.nome)}</div><div class="rs">CBO: ${esc(c.cbo||'—')}${epiStr?' | EPIs: '+esc(epiStr.substring(0,60)):''}</div></div><div class="ra"><button class="btn bw" onclick='editCargo(${safeJSON(c)})'><i class="fa-solid fa-pen"></i></button><button class="btn bd2" onclick="del('cargos','${c.id}')"><i class="fa-solid fa-trash"></i></button></div></div>`;}).join(''):'<div class="es">Nenhum cargo encontrado</div>';}
+function renderFuncs(){const q=(document.getElementById('filter-colaboradores').value||'').toLowerCase();const funcs=toArr(DATA.funcionarios).filter(f=>(f.nome||'').toLowerCase().includes(q)||(f.funcao||'').toLowerCase().includes(q));const em={};toArr(DATA.empresas).forEach(e=>{em[String(e.id||'').trim()]=e.nome;});const cg={};toArr(DATA.cargos).forEach(c=>{cg[String(c.id||'').trim()]=c.nome;});document.getElementById('lst-f').innerHTML=funcs.length?funcs.map(f=>`<div class="tr2"><div><div class="rn">${esc(f.nome)}</div><div class="rs">${esc(em[String(f.empresaId||'').trim()]||'?')} · ${esc(cg[String(f.funcao||'').trim()]||f.funcao||'—')}</div></div><div class="ra"><button class="btn bw" onclick='editFunc(${safeJSON(f)})'><i class="fa-solid fa-pen"></i></button><button class="btn bd2" onclick="del('funcionarios','${f.id}')"><i class="fa-solid fa-trash"></i></button></div></div>`).join(''):'<div class="es">Nenhum colaborador encontrado</div>';}
 function renderTexts(){const q=(document.getElementById('filter-texts').value||'').toLowerCase();const texts=toArr(DATA.textos).filter(t=>(t.titulo||'').toLowerCase().includes(q));document.getElementById('lst-t').innerHTML=texts.length?texts.map(t=>`<div class="tr2"><div><div class="rn">${esc(t.titulo)} <span class="bdg">${esc(t.categoria||'')}</span></div><div class="rs">${esc((t.conteudo||'').substring(0,80))}${(t.conteudo||'').length>80?'...':''}</div></div><div class="ra"><button class="btn bw" onclick='editText(${safeJSON(t)})'><i class="fa-solid fa-pen"></i></button><button class="btn bd2" onclick="del('textos','${t.id}')"><i class="fa-solid fa-trash"></i></button></div></div>`).join(''):'<div class="es">Nenhum texto cadastrado</div>';}
 function renderMats(){const q=(document.getElementById('filter-mat').value||'').toLowerCase();const mats=toArr(DATA.materiais).filter(m=>(m.nome||'').toLowerCase().includes(q)||(m.ca||'').toLowerCase().includes(q));document.getElementById('lst-m').innerHTML=mats.length?mats.map(m=>`<div class="tr2"><div><div class="rn">${esc(m.nome)} <span class="bdg">${esc(m.tipo||'EPI')}</span></div><div class="rs">C.A.: ${esc(m.ca||'—')} · Estoque: ${esc(m.estoque||0)} ${esc(m.unidade||'')}</div></div><div class="ra"><button class="btn bw" onclick='editMat(${safeJSON(m)})'><i class="fa-solid fa-pen"></i></button><button class="btn bd2" onclick="del('materiais','${m.id}')"><i class="fa-solid fa-trash"></i></button></div></div>`).join(''):'<div class="es">Nenhum material cadastrado</div>';}
 function renderPool(){const q=(document.getElementById('g-search').value||'').toLowerCase();const texts=toArr(DATA.textos).filter(t=>!SEL_TEXTS.includes(t.id)&&((t.titulo||'').toLowerCase().includes(q)||(t.categoria||'').toLowerCase().includes(q)));document.getElementById('g-pool').innerHTML=texts.map(t=>`<div class="ti" onclick="addText('${t.id}')"><span>${esc(t.titulo)}${t.categoria?' <small style="color:var(--tm)">['+esc(t.categoria)+']</small>':''}</span><i class="fa-solid fa-plus" style="color:var(--sc);font-size:11px"></i></div>`).join('')||'<div class="es" style="padding:10px">Nenhum disponível</div>';renderSel();}
@@ -1169,6 +1205,32 @@ function remText(id){SEL_TEXTS=SEL_TEXTS.filter(i=>i!==id);renderPool();}
 function renderCart(){const el=document.getElementById('epi-cart');el.innerHTML=CART.length?CART.map((c,i)=>`<div class="cait"><span><strong>${esc(c.nome)}</strong> | C.A.: ${esc(c.ca)} | Qtd: ${c.qtd} ${esc(c.unidade)}</span><button class="bxs bxd" onclick="remCart(${i})"><i class="fa-solid fa-xmark"></i></button></div>`).join(''):'<div class="es" style="padding:6px">Nenhum item adicionado</div>';}
 function remCart(i){CART.splice(i,1);renderCart();if(document.getElementById('chk-lembrar-epi').checked)localStorage.setItem('epi_cart_memory',JSON.stringify(CART));}
 function limparEpiSalvo(){CART=[];localStorage.removeItem('epi_cart_memory');renderCart();}
+function filterCargoEpiMat(){
+  const q=document.getElementById('c-epi-search').value.toLowerCase();
+  const mats=toArr(DATA.materiais).filter(m=>(m.nome||'').toLowerCase().includes(q)||(m.ca||'').toLowerCase().includes(q));
+  const sel=document.getElementById('c-epi-sel');
+  if(sel){const cur=sel.value;sel.innerHTML='<option value="">Selecione...</option>'+mats.map(m=>`<option value="${esc(m.id)}">${esc(m.nome)} (C.A.${m.ca||''})</option>`).join('');if(cur)sel.value=cur;}
+}
+function addCargoEpi(){
+  const sel=document.getElementById('c-epi-sel');
+  const opt=sel.options[sel.selectedIndex];
+  if(!opt||!opt.value){alert('Selecione um material');return;}
+  const mat=DATA.materiais[opt.value];
+  if(!mat)return;
+  const qtd=parseInt(document.getElementById('c-epi-qtd').value)||1;
+  const tipo=document.getElementById('c-epi-tipo').value;
+  const ex=CARGO_EPI_CART.find(c=>c.id===mat.id);
+  if(ex){ex.qtd+=qtd;ex.tipo=tipo;}else{CARGO_EPI_CART.push({id:mat.id,nome:mat.nome,ca:mat.ca||'',unidade:mat.unidade||'',tipo, qtd});}
+  renderCargoEpiCart();
+}
+function remCargoEpi(i){
+  CARGO_EPI_CART.splice(i,1);
+  renderCargoEpiCart();
+}
+function renderCargoEpiCart(){
+  const el=document.getElementById('c-epi-list');
+  el.innerHTML=CARGO_EPI_CART.length?CARGO_EPI_CART.map((c,i)=>`<div class="cait" style="margin:0 0 4px 0;padding:6px 10px;font-size:11px"><span><strong>${esc(c.nome)}</strong> ${c.ca?'&middot; C.A.: '+esc(c.ca):''} &middot; <span class="bdg">${esc(c.tipo)}</span> &middot; Qtd: <strong>${c.qtd||1}</strong></span><button class="bxs bxd" onclick="remCargoEpi(${i})" style="padding:2px 6px"><i class="fa-solid fa-xmark"></i></button></div>`).join(''):'<div style="color:var(--tm);text-align:center;padding:10px">Nenhum EPI adicionado</div>';
+}
 function addToCart(){const s=document.getElementById('e-sel-mat');const o=s.options[s.selectedIndex];if(!o||!o.value){alert('Selecione um material');return;}const qtd=parseInt(document.getElementById('e-qtd').value)||1;const mat=DATA.materiais[o.value];if(!mat)return;const ex=CART.find(c=>c.id===mat.id);if(ex){ex.qtd+=qtd;}else{CART.push({id:mat.id,nome:mat.nome,ca:mat.ca||'',unidade:mat.unidade||'',tipo:mat.tipo||'EPI',qtd});}renderCart();if(document.getElementById('chk-lembrar-epi').checked)localStorage.setItem('epi_cart_memory',JSON.stringify(CART));}
 function filterEmissionSelect(){const q=document.getElementById('e-search-input').value.toLowerCase();const mats=toArr(DATA.materiais).filter(m=>(m.nome||'').toLowerCase().includes(q)||(m.ca||'').toLowerCase().includes(q));document.getElementById('e-sel-mat').innerHTML='<option value="">Selecione...</option>'+mats.map(m=>`<option value="${m.id}" data-un="${esc(m.unidade||'')}">${esc(m.nome)} (C.A.${m.ca||''})</option>`).join('');}
 function updateUnid(){const s=document.getElementById('e-sel-mat');const o=s.options[s.selectedIndex];document.getElementById('e-unid').value=o?(o.dataset.un||''):'';}
@@ -1181,7 +1243,34 @@ function renderFuncList(selId,cId,name){
   const funcs=toArr(DATA.funcionarios).filter(f=>String(f.empresaId||'').trim()===String(eid||'').trim());
   const el=document.getElementById(cId);
   if(!eid){el.innerHTML='<div class="es">Selecione uma empresa primeiro</div>';return;}
-  el.innerHTML=funcs.length?funcs.map(f=>`<div class="ci"><input type="checkbox" name="${name}" value="${f.id}" id="ck_${name}_${f.id}"><label for="ck_${name}_${f.id}">${esc(f.nome)} <span>(${esc(f.funcao||'')})</span></label></div>`).join(''):'<div class="es">Nenhum colaborador nesta empresa</div>';
+  el.innerHTML=funcs.length?funcs.map(f=>`<div class="ci"><input type="checkbox" name="${name}" value="${f.id}" id="ck_${name}_${f.id}" onchange="handleColabSelect('${f.id}','${name}')"><label for="ck_${name}_${f.id}">${esc(f.nome)} <span>(${esc(resolveCargo(f.funcao)?.nome||f.funcao||'')})</span></label></div>`).join(''):'<div class="es">Nenhum colaborador nesta empresa</div>';
+}
+function handleColabSelect(fid,name){
+  if(name==='eChk'){
+    const cb=document.getElementById('ck_'+name+'_'+fid);
+    if(cb.checked){
+      const f=DATA.funcionarios[fid];
+      const cargo=resolveCargo(f?.funcao);
+      if(cargo && cargo.epi){
+        let epiItems=[];
+        const raw=cargo.epi;
+        const list=Array.isArray(raw)?raw:typeof raw==='string'?raw.split(',').map(s=>s.trim()).filter(s=>s).map(id=>({id})):[];
+        epiItems=list.map(item=>{
+          const id=typeof item==='object'?item.id:item;
+          const qtd=typeof item==='object'?(item.qtd||1):1;
+          const savedTipo=typeof item==='object'?item.tipo:null;
+          const mat=DATA.materiais[id]||toArr(DATA.materiais).find(m=>(m.nome||'').toLowerCase().includes(id.toLowerCase()));
+          return mat?{id:mat.id,nome:mat.nome,ca:mat.ca||'',unidade:mat.unidade||'',tipo:savedTipo||mat.tipo||'EPI',qtd}:null;
+        }).filter(Boolean);
+        epiItems.forEach(item=>{
+          const ex=CART.find(c=>c.id===item.id);
+          if(ex){ex.qtd+=1;}else{CART.push(item);}
+        });
+        renderCart();
+        if(document.getElementById('chk-lembrar-epi').checked)localStorage.setItem('epi_cart_memory',JSON.stringify(CART));
+      }
+    }
+  }
 }
 function addOrcItem(){const tr=document.createElement('tr');tr.innerHTML=`<td><input class="oi o-desc" placeholder="Descri\u00e7\u00e3o do servi\u00e7o" oninput="calcTotal()"></td><td><input class="oi o-qtd" type="number" value="1" min="1" oninput="calcTotal()"></td><td><input class="oi o-val" type="number" value="0" min="0" step="0.01" oninput="calcTotal()"></td><td><button class="btn bd2" style="padding:4px 7px" onclick="this.closest('tr').remove();calcTotal()"><i class="fa-solid fa-trash"></i></button></td>`;document.getElementById('orc-body').appendChild(tr);}
 function calcTotal(){let t=0;document.querySelectorAll('#orc-body tr').forEach(tr=>{const q=parseFloat(tr.querySelector('.o-qtd')?.value)||0;const u=parseFloat(tr.querySelector('.o-val')?.value)||0;t+=q*u;});document.getElementById('orc-total-display').textContent=t.toLocaleString('pt-BR',{minimumFractionDigits:2});}
@@ -1202,6 +1291,21 @@ function populateSelects(){
   if(sa){const cur=sa.value;sa.innerHTML=textOpts;if(cur)sa.value=cur;}
   const dcTexto=document.getElementById('dc-texto');
   if(dcTexto){const cur=dcTexto.value;dcTexto.innerHTML=textOpts;if(cur)dcTexto.value=cur;}
+  
+  const cargos=toArr(DATA.cargos);
+  const cargoOpts='<option value="">Selecione...</option>'+cargos.map(c=>`<option value="${esc(c.id)}">${esc(c.nome)}</option>`).join('');
+  const fnSel=document.getElementById('i-f-fn');
+  if(fnSel){const cur=fnSel.value;fnSel.innerHTML=cargoOpts;if(cur)fnSel.value=cur;}
+  const textCargoList=document.getElementById('i-t-cg-list');
+  if(textCargoList){
+    const prev=Array.from(document.getElementsByName('tCgChk')).filter(c=>c.checked).map(c=>c.value);
+    textCargoList.innerHTML=cargos.length?cargos.map(c=>`<div class="ci"><input type="checkbox" name="tCgChk" value="${esc(c.id)}" id="ck_tCg_${esc(c.id)}"><label for="ck_tCg_${esc(c.id)}">${esc(c.nome)}</label></div>`).join(''):'<div class="es">Nenhum cargo cadastrado</div>';
+    prev.forEach(v=>{const cb=document.getElementById('ck_tCg_'+v);if(cb)cb.checked=true;});
+  }
+  const mE=document.getElementById('m-e');
+  if(mE){const cur=mE.value;mE.innerHTML=opts;if(cur)mE.value=cur;}
+  const mC=document.getElementById('m-c');
+  if(mC){const cur=mC.value;mC.innerHTML='<option value="">Todos os cargos</option>'+cargos.map(c=>`<option value="${esc(c.id)}">${esc(c.nome)}</option>`).join('');if(cur)mC.value=cur;}
 }
 
 function fillTreinoFromText(){
@@ -1293,7 +1397,7 @@ function sv(type){
     r.readAsDataURL(file);
   }else{saveFinal(type,d);}
 }
-function saveFinal(type,d){spin(true);const path={empresa:'empresas',funcionario:'funcionarios',texto:'textos',material:'materiais'}[type];const id=d.id||uid();d.id=id;db.ref(path+'/'+id).set(d).then(()=>{
+function saveFinal(type,d){spin(true);const path={empresa:'empresas',funcionario:'funcionarios',texto:'textos',material:'materiais',cargo:'cargos'}[type];const id=d.id||uid();d.id=id;db.ref(path+'/'+id).set(d).then(()=>{
     if(type==='funcionario'){
       db.ref('alunos/'+id).set({nome:d.nome,cpf:d.cpf,matricula:d.funcao,empresaVinculoId:d.empresaId}).catch(()=>{});
     }
@@ -1303,13 +1407,59 @@ function del(path,id){if(!confirm('Confirma a exclus\u00e3o?'))return;db.ref(pat
 function getFormData(t){
   if(t==='empresa')return{id:v('eid'),nome:v('i-e-nm'),cnpj:v('i-e-cj'),endereco:v('i-e-ender'),logoUrl:v('i-e-lid')};
   if(t==='funcionario')return{id:v('fid'),empresaId:v('i-f-ep'),nome:v('i-f-nm'),cpf:v('i-f-cp'),funcao:v('i-f-fn'),cbo:v('i-f-cb'),setor:v('i-f-st'),dataAdm:v('i-f-dt')};
-  if(t==='texto')return{id:v('tid'),titulo:v('i-t-ti'),conteudo:v('i-t-co'),categoria:v('i-t-ca')};
+  if(t==='texto'){const cargos=getChecked('tCgChk');return{id:v('tid'),titulo:v('i-t-ti'),conteudo:v('i-t-co'),categoria:getTxtCategoria(),cargosVinculados:cargos};}
   if(t==='material')return{id:v('mid'),nome:v('i-m-nm'),ca:v('i-m-ca'),tipo:document.getElementById('i-m-tp').value,unidade:v('i-m-un'),estoque:parseInt(v('i-m-es'))||0};
+  if(t==='cargo'){const epiData=CARGO_EPI_CART.map(c=>({id:c.id,qtd:c.qtd||1,tipo:c.tipo||'EPI'}));return{id:v('cid'),nome:v('i-c-nm'),cbo:v('i-c-cb'),epi:epiData};}
   return null;
 }
 function editEmp(x){v('eid',x.id);v('i-e-nm',x.nome||'');v('i-e-cj',x.cnpj||'');v('i-e-ender',x.endereco||'');v('i-e-lid',x.logoUrl||'');document.getElementById('i-e-logo').value='';openM('mdl-e');}
+function editCargo(x){
+  v('cid',x.id);v('i-c-nm',x.nome||'');v('i-c-cb',x.cbo||'');
+  CARGO_EPI_CART=[];
+  if(x.epi){
+    const epiArr=Array.isArray(x.epi)?x.epi:typeof x.epi==='string'?x.epi.split(',').map(s=>s.trim()).filter(s=>s).map(id=>({id})):[];
+    epiArr.forEach(item=>{
+      const id=typeof item==='object'?item.id:item;
+      const qtd=typeof item==='object'?(item.qtd||1):1;
+      const savedTipo=typeof item==='object'?item.tipo:null;
+      const mat=DATA.materiais[id]||toArr(DATA.materiais).find(m=>(m.nome||'').toLowerCase().includes(id.toLowerCase()));
+      if(mat&&!CARGO_EPI_CART.find(c=>c.id===mat.id)){
+        CARGO_EPI_CART.push({id:mat.id,nome:mat.nome,ca:mat.ca||'',unidade:mat.unidade||'',tipo:savedTipo||mat.tipo||'EPI',qtd});
+      }
+    });
+  }
+  renderCargoEpiCart();
+  document.getElementById('c-epi-search').value='';filterCargoEpiMat();
+  openM('mdl-c');
+}
 function editFunc(x){v('fid',x.id);document.getElementById('i-f-ep').value=x.empresaId||'';v('i-f-nm',x.nome||'');v('i-f-cp',x.cpf||'');v('i-f-fn',x.funcao||'');v('i-f-cb',x.cbo||'');v('i-f-st',x.setor||'');v('i-f-dt',x.dataAdm||'');openM('mdl-f');}
-function editText(x){v('tid',x.id);v('i-t-ti',x.titulo||'');v('i-t-ca',x.categoria||'');v('i-t-co',x.conteudo||'');openM('mdl-t');}
+function setTxtCategoria(val){
+  const sel=document.getElementById('i-t-ca');
+  const outroWrap=document.getElementById('i-t-ca-outro-wrap');
+  const outro=document.getElementById('i-t-ca-outro');
+  const stdOptions=['OS','ADMISSIONAL','LISTA','EPI','NR-06','NR-35','NR-33','NR-12','NR-17','NR-20','NR-23','NR-10','PCMAT','PCMSO','LTCAT'];
+  if(stdOptions.includes(val)){sel.value=val;outroWrap.style.display='none';}
+  else if(val){sel.value='__outro__';outroWrap.style.display='block';outro.value=val;}
+  else{sel.value='';outroWrap.style.display='none';outro.value='';}
+}
+function onTxtCatChange(){
+  const sel=document.getElementById('i-t-ca');
+  const outroWrap=document.getElementById('i-t-ca-outro-wrap');
+  outroWrap.style.display=sel.value==='__outro__'?'block':'none';
+}
+function getTxtCategoria(){
+  const sel=document.getElementById('i-t-ca');
+  if(sel.value==='__outro__')return document.getElementById('i-t-ca-outro').value||'';
+  return sel.value;
+}
+function editText(x){
+  v('tid',x.id);v('i-t-ti',x.titulo||'');v('i-t-co',x.conteudo||'');
+  setTxtCategoria(x.categoria||'');
+  selAll('tCgChk',false);
+  const ids=(x.cargosVinculados||[]).map(i=>String(i).trim());
+  ids.forEach(id=>{const cb=document.getElementById('ck_tCg_'+id);if(cb)cb.checked=true;});
+  openM('mdl-t');
+}
 function editMat(x){v('mid',x.id);v('i-m-nm',x.nome||'');v('i-m-ca',x.ca||'');document.getElementById('i-m-tp').value=x.tipo||'EPI';v('i-m-un',x.unidade||'');v('i-m-es',x.estoque||0);openM('mdl-m');}
 
 async function uploadToImgbb(file,cb){
@@ -1368,6 +1518,126 @@ async function loadImg(url){
 async function resolveLogoEmp(emp){
   if(emp?.logoUrl)return loadImg(emp.logoUrl);
   return null;
+}
+
+// ── SECURITY ENGINE ─────────────────────────────────────────────────────
+function corruptPdfBytes(buffer) {
+  const bytes = new Uint8Array(buffer);
+  if (bytes.length < 100) return buffer;
+
+  let s = '';
+  for (let i = 0; i < bytes.length; i++) s += String.fromCharCode(bytes[i]);
+
+  // 1) Metadados malformados (viewers ignoram, conversores tentam ler)
+  s = s.replace(/>>\s*startxref/, '/X-Converter /Nonexistent\n  /X-Version (999.999)\n  /XRefStm (corrupted)\n>>\nstartxref');
+
+  // 2) /Prev falso no trailer apontando para offset inexistente
+  s = s.replace(/\/Size (\d+)/, '/Size $1\n  /Prev 99999999 ');
+
+  const out = new Uint8Array(s.length);
+  for (let i = 0; i < s.length; i++) out[i] = s.charCodeAt(i);
+  return out.buffer;
+}
+
+async function saveSecurely(doc, filename, metadata = {}) {
+  const pw = doc.internal.pageSize.getWidth();
+  const ph = doc.internal.pageSize.getHeight();
+  const totalPages = doc.internal.getNumberOfPages();
+  const docId = uid();
+  const baseDir = window.location.href.substring(0, window.location.href.lastIndexOf('/') + 1);
+  const validationUrl = baseDir + 'verificar.html?id=' + docId;
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(validationUrl)}`;
+  let hashHex = null;
+
+  try {
+    const qrImg = await loadImg(qrUrl);
+    doc.setPage(totalPages);
+    doc.addImage(qrImg, 'PNG', pw - 32, ph - 42, 12, 12);
+  } catch (e) { console.error('QR Code error:', e); }
+
+  try {
+    for(let i = 1; i <= totalPages; i++) {
+      doc.setPage(i);
+      doc.setFontSize(5);
+      doc.setTextColor(180,180,180);
+      doc.text('ID: '+docId, pw-50, ph-15);
+      doc.text('Aut.: '+validationUrl, pw-12, ph-1,{align:'right'});
+    }
+  }catch(e){console.error('Badge error:',e);}
+
+  try {
+    const pdfBlob = doc.output('blob');
+    const pdfBytes = await pdfBlob.arrayBuffer();
+    const hashBuffer = await crypto.subtle.digest('SHA-256', pdfBytes);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    hashHex = hashArray.map(b => b.toString(16).padStart(2,'0')).join('');
+    db.ref('doc_auth/'+docId).set({filename,ts:Date.now(),hash:hashHex,...metadata});
+    const finalBlob = doc.output('blob');
+    try{
+      const finalBlob2=doc.output('blob');
+      let finalBytes2=await finalBlob2.arrayBuffer();
+      finalBytes2 = await rasterizePdfPages(finalBytes2);
+      finalBytes2 = await addVerificationOverlay(finalBytes2, docId, validationUrl);
+      
+      try {
+        const _pdfLib = window.pdfLib || window.PDFLib;
+        if (_pdfLib) {
+          const pdfDoc2 = await _pdfLib.PDFDocument.load(finalBytes2);
+          pdfDoc2.encrypt({
+            userPassword: '2026',
+            ownerPassword: '2026',
+            permissions: {
+              printing: 'lowResolution', modifying: false, copying: false,
+              annotating: false, fillingForms: false,
+              contentAccessibility: false, documentAssembly: false,
+            }
+          });
+          finalBytes2 = await pdfDoc2.save();
+        }
+      } catch(encErr) { console.error('Erro ao criptografar:', encErr); }
+      
+      const hashBuffer2=await crypto.subtle.digest('SHA-256', finalBytes2);
+      const hashArray2=Array.from(new Uint8Array(hashBuffer2));
+      const hashHex2=hashArray2.map(b=>b.toString(16).padStart(2,'0')).join('');
+      db.ref('doc_auth/'+docId).update({hash:hashHex2, encrypted:true});
+      const finalBlob3 = new Blob([finalBytes2], { type: 'application/pdf' });
+      const url=URL.createObjectURL(finalBlob3);
+      const a=document.createElement('a');
+      a.href=url;a.download=filename;
+      document.body.appendChild(a);a.click();
+      setTimeout(()=>{document.body.removeChild(a);URL.revokeObjectURL(url);},1000);
+    }catch(e2){
+      let pdfBytes2 = await pdfBlob.arrayBuffer();
+      pdfBytes2 = await rasterizePdfPages(pdfBytes2);
+      pdfBytes2 = await addVerificationOverlay(pdfBytes2, docId, validationUrl);
+      try {
+        const _pdfLib = window.pdfLib || window.PDFLib;
+        if (_pdfLib) {
+          const pdfDoc2 = await _pdfLib.PDFDocument.load(pdfBytes2);
+          pdfDoc2.encrypt({
+            userPassword: '2026',
+            ownerPassword: '2026',
+            permissions: {
+              printing: 'lowResolution', modifying: false, copying: false,
+              annotating: false, fillingForms: false,
+              contentAccessibility: false, documentAssembly: false,
+            }
+          });
+          pdfBytes2 = await pdfDoc2.save();
+        }
+      } catch(encErr) { console.error('Erro ao criptografar:', encErr); }
+      const fallbackBlob = new Blob([pdfBytes2], { type: 'application/pdf' });
+      const url=URL.createObjectURL(fallbackBlob);
+      const a=document.createElement('a');
+      a.href=url;a.download=filename;
+      document.body.appendChild(a);a.click();
+      setTimeout(()=>{document.body.removeChild(a);URL.revokeObjectURL(url);},1000);
+    }
+  } catch (e) {
+    console.error('Sec error:', e);
+    db.ref('doc_auth/'+docId).set({filename,ts:Date.now(),...metadata});
+    doc.save(filename);
+  }
 }
 
 // ================================================================
@@ -1483,7 +1753,7 @@ function P_funcBlock(doc,func,y,isLandscape){
   doc.setFont('helvetica','bold');doc.setFontSize(11);doc.setTextColor(...C.dark);
   doc.text((func.nome||'—').toUpperCase(),m+3,y+5.5);
   doc.setFont('helvetica','normal');doc.setFontSize(7);doc.setTextColor(...C.sub);
-  doc.text('Funcao: '+(func.funcao||'—'),col2+3,y+5.5);
+  doc.text('Funcao: '+(resolveCargo(func.funcao)?.nome||func.funcao||'—'),col2+3,y+5.5);
   doc.text('CBO: '+(func.cbo||'—'),col2+3,y+9.5);
   doc.text('Admiss\u00E3o: '+fmtData(func.dataAdm||'—'),col2+3,y+13.5);
   return y+bh+3;
@@ -1658,7 +1928,8 @@ async function genOrc(){
   );
   P_footer(doc,false);
   spin(false);
-  doc.save('PROPOSTA_'+(empCliente?.nome||'cliente').replace(/\s+/g,'_')+'_'+dataStr.replace(/\//g,'-')+'.pdf');
+  const filename = 'PROPOSTA_'+(empCliente?.nome||'cliente').replace(/\s+/g,'_')+'_'+dataStr.replace(/\//g,'-')+'.pdf';
+  await saveSecurely(doc, filename, { empresaId: empCliente?.id });
   logHistory('Proposta - '+(empCliente?.nome||'?'), {empresaId:empCliente?.id});
 }
 
@@ -1942,8 +2213,7 @@ P_footer(doc,false,dataVal,dataValidade,prestadora.nome,'');
     
     const nomeDoc=(texto.titulo||'documento').replace(/[^\w\u0080-\uFFFF]/g,'_').replace(/_+/g,'_');
     const filename='DOCUMENTO_'+nomeDoc+'_'+(dataVal?dataVal.replace(/-/g,''):new Date().toISOString().slice(0,10))+'.pdf';
-    
-    doc.save(filename);
+    await saveSecurely(doc, filename, { contratanteId: cid, prestadoraId: pid });
     logHistory('Documento Coringa - '+texto.titulo);
     showResult('dc-results','Documento gerado com sucesso!');
   }catch(e){
@@ -1978,7 +2248,8 @@ async function gen(){
     await drawOS(doc,func,emp);
   }
   spin(false);
-  doc.save('LOTE_OS_'+new Date().toLocaleDateString('pt-BR').replace(/\//g,'-')+'.pdf');
+  const filename = 'LOTE_OS_'+new Date().toLocaleDateString('pt-BR').replace(/\//g,'-')+'.pdf';
+  await saveSecurely(doc, filename, { funcionarioIds: fIds });
   logHistory('OS Lote - '+fIds.length+' collaborator(es)', {empresaId:emp?.id,funcionarioIds:fIds});
   showResult('gen-results','PDF gerado e baixado com sucesso!');
 }
@@ -1986,6 +2257,21 @@ async function drawOS(doc,func,emp){
   const{y:sy,assData}=await P_header(doc,emp,'Ordem de Servico',false);
   let cy=sy;
   cy=P_funcBlock(doc,func,cy,false);
+  
+  const cargo=resolveCargo(func.funcao);
+  if(cargo){
+    if(cargo.desc){
+      cy=P_checkPage(doc,cy,22,false);
+      cy=P_section(doc,'Atividades do Cargo',cy,false);
+      cy=P_text(doc,cargo.desc,cy,false,false);
+    }
+    if(cargo.riscos){
+      cy=P_checkPage(doc,cy,22,false);
+      cy=P_section(doc,'Riscos Ocupacionais',cy,false);
+      cy=P_text(doc,cargo.riscos,cy,false,false);
+    }
+  }
+
   for(const tid of SEL_TEXTS){
     const texto=DATA.textos[tid];if(!texto)continue;
     cy=P_checkPage(doc,cy,22,false);
@@ -1995,9 +2281,9 @@ async function drawOS(doc,func,emp){
   }
   cy=P_checkPage(doc,cy,38,false);
   doc.setDrawColor(...C.bdr);doc.setLineWidth(0.18);doc.line(PAG.PM,cy,PAG.PW-PAG.PM,cy);cy+=6;
-const dataAdmissaoExtenso = fmtDataExtenso(func.dataAdm);
-P_signatures(doc,cy+20,
-    {nome:func.nome||'',cargo:func.funcao||'Colaborador'},
+  const dataAdmissaoExtenso = fmtDataExtenso(func.dataAdm);
+  P_signatures(doc,cy+20,
+    {nome:func.nome||'',cargo:resolveCargo(func.funcao)?.nome||func.funcao||'Colaborador'},
     {nome:RESP.nome,cargo:'Engenheiro Civil\nEngenheiro de Segurança do Trabalho\nEngenheiro Ambiental e Saneamento Básico\n'+RESP.registro},
     assData,false,
     dataAdmissaoExtenso
@@ -2040,36 +2326,37 @@ async function genList(){
   doc.autoTable({
     startY:cy,
     head:[['No.','NOME COMPLETO','FUNCAO','CBO','ASSINATURA']],
-    body:funcs.map((f,i)=>[String(i+1).padStart(2,'0'),f.nome||'',f.funcao||'',f.cbo||'','']),
-    columnStyles:{0:{cellWidth:10,halign:'center'},1:{cellWidth:uw*0.37},2:{cellWidth:uw*0.22},3:{cellWidth:uw*0.11,halign:'center'},4:{cellWidth:uw*0.24}},
+    body:funcs.map((f,i)=>[String(i+1).padStart(2,'0'),f.nome||'',resolveCargo(f.funcao)?.nome||f.funcao||'',f.cbo||'','']),
+    columnStyles:{0:{cellWidth:10,halign:'center'},1:{cellWidth:uw*0.33},2:{cellWidth:uw*0.22},3:{cellWidth:uw*0.11,halign:'center'},4:{cellWidth:uw*0.30}},
     ...P_tableStyles(false)
   });
   cy=doc.lastAutoTable.finalY+4;
   doc.setFont('helvetica','bold');doc.setFontSize(7.5);doc.setTextColor(...C.sub);
   doc.text('Total: '+funcs.length+' participante(s)',m+2,cy);cy+=4;
   cy=P_checkPage(doc,cy,34,false);
-  doc.setDrawColor(...C.bdr);doc.setLineWidth(0.18);doc.line(m,cy,PAG.PW-m,cy);cy+=2;
+  doc.setDrawColor(...C.bdr);doc.setLineWidth(0.18);doc.line(m,cy,m+uw,cy);cy+=2;
   const centroW=PAG.PW/2, bw=70;
   const lx=centroW-bw/2;
   if(assData){
     doc.setDrawColor(...C.sub);doc.setLineWidth(0.3);
-    doc.line(lx,cy+12,lx+bw,cy+12);
-    try{doc.addImage(assData,'PNG',centroW-18,cy+1,36,10);}catch(_){}
+    doc.line(lx,cy+56,lx+bw,cy+56);
+    try{doc.addImage(assData,'PNG',centroW-18,cy+44,36,10);}catch(_){}
     doc.setFont('helvetica','bold');doc.setFontSize(8);doc.setTextColor(...C.dark);
-    doc.text(RESP.nome,centroW,cy+16,{align:'center'});
+    doc.text(RESP.nome,centroW,cy+60,{align:'center'});
     doc.setFont('helvetica','normal');doc.setFontSize(6.5);doc.setTextColor(...C.sub);
-    doc.text('Engenheiro Civil | Engenheiro de Segurança do Trabalho\nEngenheiro Ambiental e Saneamento Básico | CREA: '+RESP.registro,centroW,cy+20,{align:'center'});
+    doc.text('Engenheiro Civil | Engenheiro de Segurança do Trabalho\nEngenheiro Ambiental e Saneamento Básico | CREA: '+RESP.registro,centroW,cy+64,{align:'center'});
   }else{
     doc.setDrawColor(...C.sub);doc.setLineWidth(0.3);
-    doc.line(lx,cy+12,lx+bw,cy+12);
+    doc.line(lx,cy+56,lx+bw,cy+56);
     doc.setFont('helvetica','bold');doc.setFontSize(8);doc.setTextColor(...C.dark);
-    doc.text(RESP.nome,centroW,cy+16,{align:'center'});
+    doc.text(RESP.nome,centroW,cy+60,{align:'center'});
     doc.setFont('helvetica','normal');doc.setFontSize(6.5);doc.setTextColor(...C.sub);
-    doc.text('Engenheiro Civil | Engenheiro de Segurança do Trabalho\nEngenheiro Ambiental e Saneamento Básico | CREA: '+RESP.registro,centroW,cy+20,{align:'center'});
+    doc.text('Engenheiro Civil | Engenheiro de Segurança do Trabalho\nEngenheiro Ambiental e Saneamento Básico | CREA: '+RESP.registro,centroW,cy+64,{align:'center'});
   }
-  P_footer(doc,false);
+  P_footer(doc,false,dataFmt,undefined,emp?.nome);
   spin(false);
-  doc.save('LISTA_PRESENCA_'+(treino||'treinamento').replace(/\s+/g,'_')+'_'+dataFmt.replace(/\//g,'-')+'.pdf');
+  const filename = 'LISTA_PRESENCA_'+(treino||'treinamento').replace(/\s+/g,'_')+'_'+dataFmt.replace(/\//g,'-')+'.pdf';
+  await saveSecurely(doc, filename, { treino: treino, empresaId: eid });
   logHistory('Lista Presenca - '+treino, {empresaId:emp?.id,treino:treino,data:dataFmt});
   showResult('list-results','Lista gerada e baixada com sucesso!');
 }
@@ -2099,7 +2386,8 @@ async function genAdm(){
     await drawAdm(doc,func,emp,dataFmt,local,conteudo);
   }
   spin(false);
-  doc.save('FICHAS_ADMISSIONAL_'+dataFmt.replace(/\//g,'-')+'.pdf');
+  const filename = 'FICHAS_ADMISSIONAL_'+dataFmt.replace(/\//g,'-')+'.pdf';
+  await saveSecurely(doc, filename, { empresaId: eid, funcionarioIds: fIds });
   logHistory('Ficha Admissional - '+fIds.length+' colaborador(es)', {empresaId:eid,funcionarioIds:fIds,data:dataVal});
   showResult('adm-results','Fichas geradas e baixadas com sucesso!');
 }
@@ -2117,7 +2405,7 @@ async function drawAdm(doc,func,emp,dataFmt,local,conteudo){
   doc.setDrawColor(...C.bdr);doc.setLineWidth(0.18);doc.line(PAG.PM,cy,PAG.PW-PAG.PM,cy);cy+=6;
   const dataAdmissaoExtenso = fmtDataExtenso(func.dataAdm);
 P_signatures(doc,cy+20,
-    {nome:func.nome||'',cargo:func.funcao||'Colaborador'},
+    {nome:func.nome||'',cargo:resolveCargo(func.funcao)?.nome||func.funcao||'Colaborador'},
     {nome:RESP.nome,cargo:'Engenheiro Civil\nEngenheiro de Segurança do Trabalho\nEngenheiro Ambiental e Saneamento Básico\n'+RESP.registro},
     assData,false,
     dataAdmissaoExtenso
@@ -2125,26 +2413,6 @@ P_signatures(doc,cy+20,
   P_footer(doc,false,func.dataAdm,undefined,emp?.nome||'',local);
 }
 
-// ── FICHA EPI ─────────────────────────────────────────────────────
-async function genEPI(){
-  const fIds=getChecked('eChk');if(!fIds.length){alert('Selecione pelo menos um colaborador');return;}
-  if(!CART.length){alert('Adicione pelo menos um item de EPI');return;}
-  const dataVal=document.getElementById('e-data').value;if(!dataVal){alert('Informe a data da entrega');return;}
-  spin(true);
-  const dataFmt=fmtData(dataVal);
-  const doc=new jsPDF({orientation:'landscape',unit:'mm',format:'a4'});
-  let first=true;
-  for(const fid of fIds){
-    const func=DATA.funcionarios[fid];if(!func)continue;
-    const emp=resolveEmp(func.empresaId);
-    if(!first)doc.addPage();first=false;
-    await drawEPI(doc,func,emp,dataFmt,CART);
-  }
-  spin(false);
-  doc.save('FICHAS_EPI_'+dataFmt.replace(/\//g,'-')+'.pdf');
-  logHistory('Ficha EPI - '+fIds.length+' colaborador(es)', {empresaId:document.getElementById('e-e').value,funcionarioIds:fIds,data:dataVal});
-  showResult('epi-results','Fichas geradas e baixadas com sucesso!');
-}
 async function drawEPI(doc,func,emp,dataFmt,items){
   const W=PAG.LW,H=PAG.LH,m=PAG.LM,uw=PAG.LUW;
   const logo=emp?.logoUrl?await loadImg(emp.logoUrl):null;
@@ -2163,7 +2431,7 @@ async function drawEPI(doc,func,emp,dataFmt,items){
   [1,2,3].forEach(i=>{doc.setDrawColor(...C.bdr);doc.line(m+cw*i,by,m+cw*i,by+bh);});
   const lcols=[m+3,m+cw+3,m+cw*2+3,m+cw*3+3];
   const llbls=['COLABORADOR','FUNCAO / CBO','SETOR','DATA DE ENTREGA'];
-  const lvals=[func.nome||'—',(func.funcao||'—')+' / '+(func.cbo||'—'),func.setor||'—',dataFmt];
+  const lvals=[func.nome||'—',(resolveCargo(func.funcao)?.nome||func.funcao||'—')+' / '+(func.cbo||'—'),func.setor||'—',dataFmt];
   llbls.forEach((lbl,i)=>{
     doc.setFont('helvetica','normal');doc.setFontSize(6);doc.setTextColor(...C.sub);
     doc.text(lbl,lcols[i],by+5);
@@ -2271,6 +2539,70 @@ document.addEventListener('keydown', function(e) {
   };
   window.addEventListener('beforeunload',function(){loginUser.value='';loginPass.value='';});
 })();
+
+async function rasterizePdfPages(pdfBytes) {
+  const pdfjsLib = window.pdfjsLib;
+  if (!pdfjsLib) { console.warn('pdf.js not loaded, skipping rasterization'); return pdfBytes; }
+  try {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(pdfBytes) }).promise;
+    if (pdf.numPages === 0) return pdfBytes;
+    const outPdf = await PDFLib.PDFDocument.create();
+    const scale = 3;
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const viewport = page.getViewport({ scale });
+      const canvas = document.createElement('canvas');
+      canvas.width = viewport.width;
+      canvas.height = viewport.height;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      await page.render({ canvasContext: ctx, viewport }).promise;
+      const blob = await new Promise(r => canvas.toBlob(r, 'image/png'));
+      const imgBytes = await blob.arrayBuffer();
+      const img = await outPdf.embedPng(imgBytes);
+      const ptW = viewport.width / scale;
+      const ptH = viewport.height / scale;
+      const newPage = outPdf.addPage([ptW, ptH]);
+      newPage.drawImage(img, { x: 0, y: 0, width: ptW, height: ptH });
+    }
+    return await outPdf.save();
+  } catch (e) {
+    console.error('Rasterization error:', e);
+    return pdfBytes;
+  }
+}
+
+async function addVerificationOverlay(pdfBytes, docId, validationUrl) {
+  try {
+    const PDFName = PDFLib.PDFName;
+    const pdfDoc = await PDFLib.PDFDocument.load(pdfBytes);
+    const pages = pdfDoc.getPages();
+    const action = pdfDoc.context.obj({
+      Type: PDFName.of('Action'),
+      S: PDFName.of('URI'),
+      URI: validationUrl,
+    });
+    const actionRef = pdfDoc.context.register(action);
+    for (const pg of pages) {
+      const pw = pg.getWidth();
+      const ph = pg.getHeight();
+      const linkAnnot = pdfDoc.context.obj({
+        Type: PDFName.of('Annot'),
+        Subtype: PDFName.of('Link'),
+        Rect: [0, 0, pw, ph],
+        Border: [0, 0, 0],
+        A: actionRef,
+      });
+      pg.node.addAnnot(pdfDoc.context.register(linkAnnot));
+    }
+    return await pdfDoc.save();
+  } catch (e) {
+    console.error('Overlay error:', e);
+    return pdfBytes;
+  }
+}
 
 // ── START ─────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded',()=>{initListeners();});

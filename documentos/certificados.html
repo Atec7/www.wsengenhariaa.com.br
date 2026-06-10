@@ -6,6 +6,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 
 <style>
 :root {
@@ -584,6 +586,7 @@ button.danger:hover { background: #c82333; }
 
 <script type="module">
   // Importações do Firebase
+
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
 import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-analytics.js";
 import { getDatabase, ref, push, set, update, remove, onValue } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-database.js";
@@ -1238,7 +1241,8 @@ async function gerarCertificados(){
             jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
 
-        html2pdf().from(tempContainerPresenca).set(optionsPresenca).save();
+        const blobPresenca = await html2pdf().from(tempContainerPresenca).set(optionsPresenca).output('blob');
+        await saveSecurely(blobPresenca, 'listas_presenca.pdf', { empresaId: empresa.id });
     }
 
     try {
@@ -1251,7 +1255,118 @@ async function gerarCertificados(){
     }
 }
 
-function downloadPDF(targetElement, filename = 'certificados_gerados.pdf') {
+function corruptPdfBytes(buffer) {
+  const bytes = new Uint8Array(buffer);
+  if (bytes.length < 100) return buffer;
+
+  let s = '';
+  for (let i = 0; i < bytes.length; i++) s += String.fromCharCode(bytes[i]);
+
+  // 1) Metadados malformados (viewers ignoram, conversores tentam ler)
+  s = s.replace(/>>\s*startxref/, '/X-Converter /Nonexistent\n  /X-Version (999.999)\n  /XRefStm (corrupted)\n>>\nstartxref');
+
+  // 2) /Prev falso no trailer apontando para offset inexistente
+  s = s.replace(/\/Size (\d+)/, '/Size $1\n  /Prev 99999999 ');
+
+  const out = new Uint8Array(s.length);
+  for (let i = 0; i < s.length; i++) out[i] = s.charCodeAt(i);
+  return out.buffer;
+}
+
+async function saveSecurely(pdfBlob, filename, metadata = {}) {
+    const arrayBuffer = await pdfBlob.arrayBuffer();
+    const pdfDoc = await PDFLib.PDFDocument.load(arrayBuffer);
+    const pages = pdfDoc.getPages();
+    const baseDir = window.location.href.substring(0, window.location.href.lastIndexOf('/') + 1);
+    const docId = push(ref(db, 'doc_auth')).key;
+    const validationUrl = baseDir + 'verificar.html?id=' + docId;
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(validationUrl)}`;
+    let hashHex = null;
+
+    const pdfLibFont = await pdfDoc.embedFont(PDFLib.StandardFonts.Helvetica);
+
+    try {
+        const qrImgBytes = await fetch(qrUrl).then(res => res.arrayBuffer());
+        const qrImg = await pdfDoc.embedPng(qrImgBytes);
+        const lastPage = pages[pages.length - 1];
+        lastPage.drawImage(qrImg, { x: 12, y: 24, width: 20, height: 20 });
+    } catch (e) { console.error('QR Code error:', e); }
+
+    for(let i = 0; i < pages.length; i++){
+        const pg = pages[i];
+        const pw = pg.getWidth();
+        pg.drawText('ID: ' + docId, { x: 12, y: 1.5, size: 5, font: pdfLibFont, color: PDFLib.rgb(0.7, 0.7, 0.7) });
+        pg.drawText('Aut.: ' + validationUrl, { x: pw - 12, y: 1.5, size: 5, font: pdfLibFont, color: PDFLib.rgb(0.7, 0.7, 0.7) });
+        pg.drawRectangle({
+            x: pw-50, y: 4, width: 46, height: 14,
+            borderColor: PDFLib.rgb(0.78, 0.78, 0.78),
+            color: PDFLib.rgb(0.97, 0.97, 0.97),
+            borderWidth: 0.5
+        });
+        pg.drawText('ID: ' + docId.slice(0,12) + '..', {
+            x: pw-27, y: 11.5, size: 4.5, font: pdfLibFont,
+            color: PDFLib.rgb(0.4, 0.4, 0.4)
+        });
+        pg.drawText('AGUARDE...', {
+            x: pw-27, y: 7, size: 3.5, font: pdfLibFont,
+            color: PDFLib.rgb(0.4, 0.4, 0.4)
+        });
+    }
+
+    pdfDoc.setTitle(filename);
+    const firstBytes = await pdfDoc.save();
+    const firstBlob = new Blob([firstBytes], { type: 'application/pdf' });
+
+    try {
+        const fbArray = await firstBlob.arrayBuffer();
+        const hashBuffer = await crypto.subtle.digest('SHA-256', fbArray);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        hashHex = hashArray.map(b => b.toString(16).padStart(2,'0')).join('');
+        await set(ref(db, 'doc_auth/' + docId), { filename, ts: Date.now(), hash: hashHex, ...metadata });
+        for(let i = 0; i < pages.length; i++){
+            pages[i].drawText('SHA256: ' + hashHex.slice(0,10) + '..', {
+                x: pages[i].getWidth()-27, y: 7, size: 3.5, font: pdfLibFont,
+                color: PDFLib.rgb(0.47, 0.47, 0.47)
+            });
+        }
+        let finalBytes = await pdfDoc.save();
+        finalBytes = await rasterizePdfPages(finalBytes);
+        finalBytes = await addVerificationOverlay(finalBytes, docId, validationUrl);
+        
+        try {
+            const pdfDoc2 = await PDFLib.PDFDocument.load(finalBytes);
+            pdfDoc2.encrypt({
+                userPassword: '2026',
+                ownerPassword: '2026',
+                permissions: {
+                    printing: 'lowResolution', modifying: false, copying: false,
+                    annotating: false, fillingForms: false,
+                    contentAccessibility: false, documentAssembly: false,
+                }
+            });
+            finalBytes = await pdfDoc2.save();
+        } catch(encErr) { console.error('Erro ao criptografar:', encErr); }
+        
+        const hashBuffer2 = await crypto.subtle.digest('SHA-256', finalBytes);
+        const hashArray2 = Array.from(new Uint8Array(hashBuffer2));
+        const hashHex2 = hashArray2.map(b => b.toString(16).padStart(2,'0')).join('');
+        await update(ref(db, 'doc_auth/' + docId), { hash: hashHex2, encrypted: true });
+        const finalBlob = new Blob([finalBytes], { type: 'application/pdf' });
+        const url = URL.createObjectURL(finalBlob);
+        const link = document.createElement('a'); link.href = url; link.download = filename;
+        document.body.appendChild(link); link.click();
+        setTimeout(() => { document.body.removeChild(link); URL.revokeObjectURL(url); }, 1000);
+    } catch (e) {
+        console.error('Hash error:', e);
+        await set(ref(db, 'doc_auth/' + docId), { filename, ts: Date.now(), ...metadata });
+        const url = URL.createObjectURL(firstBlob);
+        const link = document.createElement('a'); link.href = url; link.download = filename;
+        document.body.appendChild(link); link.click();
+        setTimeout(() => { document.body.removeChild(link); URL.revokeObjectURL(url); }, 1000);
+    }
+}
+
+async function downloadPDF(targetElement, filename = 'certificados_gerados.pdf') {
     if (targetElement.innerHTML.trim() === "") {
         return alert("Nenhum conteúdo carregado para baixar.");
     }
@@ -1282,7 +1397,8 @@ function downloadPDF(targetElement, filename = 'certificados_gerados.pdf') {
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
     };
 
-    html2pdf().from(tempContainer).set(options).save();
+    const blob = await html2pdf().from(tempContainer).set(options).output('blob');
+    await saveSecurely(blob, filename);
 }
 function handleBulkDownload() {
     downloadPDF(el("printArea"), 'certificados_gerados_em_massa.pdf');
@@ -1759,8 +1875,8 @@ window.buildListaPresenca = ({curso, empresa, dataInicioBR, dataFimBR, alunos}) 
                 <tr style="background:#f0f0f0; border-bottom:2px solid #000;">
                     <th style="padding:10px 8px; text-align:center; font-size:11pt; font-weight:bold; width:50px; border-right:1px solid #000;">#</th>
                     <th style="padding:10px 8px; text-align:left; font-size:11pt; font-weight:bold; border-right:1px solid #000;">Nome do Participante</th>
-                    <th style="padding:10px 8px; text-align:center; font-size:11pt; font-weight:bold; width:110px; border-right:1px solid #000;">CPF</th>
-                    <th style="padding:10px 8px; text-align:center; font-size:11pt; font-weight:bold; width:220px;">Assinatura</th>
+                    <th style="padding:10px 8px; text-align:center; font-size:11pt; font-weight:bold; width:90px; border-right:1px solid #000;">CPF</th>
+                    <th style="padding:10px 8px; text-align:center; font-size:11pt; font-weight:bold; width:250px;">Assinatura</th>
                 </tr>
             </thead>
             <tbody>
@@ -1876,6 +1992,70 @@ window.addEventListener('DOMContentLoaded', () => {
     btnLogout.addEventListener("click", sair);
   }
 })();
+
+async function rasterizePdfPages(pdfBytes) {
+  const pdfjsLib = window.pdfjsLib;
+  if (!pdfjsLib) { console.warn('pdf.js not loaded, skipping rasterization'); return pdfBytes; }
+  try {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(pdfBytes) }).promise;
+    if (pdf.numPages === 0) return pdfBytes;
+    const outPdf = await PDFLib.PDFDocument.create();
+    const scale = 3;
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const viewport = page.getViewport({ scale });
+      const canvas = document.createElement('canvas');
+      canvas.width = viewport.width;
+      canvas.height = viewport.height;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      await page.render({ canvasContext: ctx, viewport }).promise;
+      const blob = await new Promise(r => canvas.toBlob(r, 'image/png'));
+      const imgBytes = await blob.arrayBuffer();
+      const img = await outPdf.embedPng(imgBytes);
+      const ptW = viewport.width / scale;
+      const ptH = viewport.height / scale;
+      const newPage = outPdf.addPage([ptW, ptH]);
+      newPage.drawImage(img, { x: 0, y: 0, width: ptW, height: ptH });
+    }
+    return await outPdf.save();
+  } catch (e) {
+    console.error('Rasterization error:', e);
+    return pdfBytes;
+  }
+}
+
+async function addVerificationOverlay(pdfBytes, docId, validationUrl) {
+  try {
+    const PDFName = PDFLib.PDFName;
+    const pdfDoc = await PDFLib.PDFDocument.load(pdfBytes);
+    const pages = pdfDoc.getPages();
+    const action = pdfDoc.context.obj({
+      Type: PDFName.of('Action'),
+      S: PDFName.of('URI'),
+      URI: validationUrl,
+    });
+    const actionRef = pdfDoc.context.register(action);
+    for (const pg of pages) {
+      const pw = pg.getWidth();
+      const ph = pg.getHeight();
+      const linkAnnot = pdfDoc.context.obj({
+        Type: PDFName.of('Annot'),
+        Subtype: PDFName.of('Link'),
+        Rect: [0, 0, pw, ph],
+        Border: [0, 0, 0],
+        A: actionRef,
+      });
+      pg.node.addAnnot(pdfDoc.context.register(linkAnnot));
+    }
+    return await pdfDoc.save();
+  } catch (e) {
+    console.error('Overlay error:', e);
+    return pdfBytes;
+  }
+}
 </script>
 
 </body>
