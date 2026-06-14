@@ -122,6 +122,574 @@ hr.dv{border:none;border-top:1px solid var(--bd);margin:18px 0}
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:var(--bd);border-radius:3px}
 
+/* ═══════════════════════════════════════════════
+   DOCUMENTO CORINGA - DESIGN PREMIUM
+══════════════════════════════════════════════════ */
+.coringa-wrapper{
+  max-width:920px;
+  background:var(--sf);
+  border-radius:20px;
+  overflow:hidden;
+  box-shadow:0 8px 40px rgba(0,0,0,.1),0 2px 8px rgba(0,0,0,.06);
+  border:1px solid var(--bd);
+}
+.coringa-header-panel{
+  background:linear-gradient(135deg,#1c1c1e 0%,#2d2d2f 50%,#1c1c1e 100%);
+  padding:24px 32px;
+  display:flex;
+  align-items:center;
+  gap:18px;
+  position:relative;
+  overflow:hidden;
+}
+.coringa-header-panel::before{
+  content:'';
+  position:absolute;
+  top:-80px;right:-30px;
+  width:280px;
+  height:280px;
+  background:radial-gradient(circle,rgba(251,191,36,.12) 0%,transparent 65%);
+  border-radius:50%;
+}
+.coringa-header-panel::after{
+  content:'';
+  position:absolute;
+  bottom:-60px;left:-20px;
+  width:180px;
+  height:180px;
+  background:radial-gradient(circle,rgba(251,191,36,.08) 0%,transparent 65%);
+  border-radius:50%;
+}
+.coringa-icon{
+  width:56px;
+  height:56px;
+  background:linear-gradient(145deg,#fbbf24 0%,#f59e0b 100%);
+  border-radius:14px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:24px;
+  color:#1c1c1e;
+  flex-shrink:0;
+  box-shadow:0 6px 20px rgba(251,191,36,.4);
+  position:relative;
+  z-index:1;
+}
+.coringa-title-info{
+  position:relative;
+  z-index:1;
+}
+.coringa-title{
+  font-size:24px;
+  font-weight:700;
+  color:#fafafa;
+  letter-spacing:2.5px;
+  text-transform:uppercase;
+  font-family:'DM Sans',sans-serif;
+}
+.coringa-subtitle{
+  font-size:12px;
+  color:#71717a;
+  margin-top:3px;
+  font-family:'DM Sans',sans-serif;
+}
+.coringa-body{
+  padding:24px;
+  display:flex;
+  flex-direction:column;
+  gap:18px;
+}
+.coringa-row{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:16px;
+}
+.coringa-row:has(.coringa-full){
+  grid-template-columns:1fr;
+}
+.coringa-card{
+  background:var(--hl);
+  border-radius:12px;
+  padding:16px;
+  border:1px solid var(--bd);
+  position:relative;
+}
+.coringa-card-header{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin-bottom:12px;
+  font-size:12px;
+  font-weight:600;
+  color:var(--tp);
+  text-transform:uppercase;
+  letter-spacing:.5px;
+}
+.coringa-step{
+  background:linear-gradient(145deg,#fbbf24 0%,#f59e0b 100%);
+  color:#1c1c1e;
+  font-size:10px;
+  font-weight:700;
+  padding:4px 8px;
+  border-radius:5px;
+  font-family:'DM Mono',monospace;
+}
+.coringa-card select{
+  padding:10px 12px;
+  border-radius:8px;
+  font-size:13px;
+}
+.coringa-readonly{
+  background:var(--bg);
+  color:var(--ts);
+  margin-top:8px;
+  font-weight:500;
+}
+.coringa-preview{
+  margin-top:12px;
+  padding:12px;
+  background:var(--sf);
+  border-radius:8px;
+  border:1px dashed var(--bd);
+  display:none;
+}
+.coringa-preview.active{
+  display:block;
+}
+.coringa-preview-logo{
+  width:60px;
+  height:60px;
+  object-fit:contain;
+  border-radius:6px;
+  border:1px solid var(--bd);
+  float:left;
+  margin-right:12px;
+}
+.coringa-preview-info{
+  overflow:hidden;
+}
+.coringa-preview-nome{
+  font-size:13px;
+  font-weight:600;
+  color:var(--tp);
+}
+.coringa-preview-cnpj{
+  font-size:11px;
+  color:var(--ts);
+  margin-top:2px;
+}
+.coringa-preview-end{
+  font-size:10px;
+  color:var(--tm);
+  margin-top:4px;
+  line-height:1.4;
+}
+.coringa-fields{
+  display:grid;
+  grid-template-columns:1fr 1fr 1fr;
+  gap:10px;
+}
+.coringa-fields .coringa-field label{
+  display:block;
+  font-size:10px;
+  font-weight:700;
+  color:var(--ts);
+  text-transform:uppercase;
+  letter-spacing:.5px;
+  margin-bottom:4px;
+}
+.coringa-fields input{
+  padding:8px 10px;
+  border-radius:6px;
+}
+.coringa-textareas{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+}
+.coringa-textareas .coringa-field label{
+  display:block;
+  font-size:10px;
+  font-weight:700;
+  color:var(--ts);
+  text-transform:uppercase;
+  letter-spacing:.5px;
+  margin-bottom:4px;
+}
+.coringa-textareas textarea{
+  min-height:90px;
+  border-radius:8px;
+}
+.coringa-textareas input[type="file"]{
+  padding:7px;
+  border-radius:6px;
+}
+.coringa-footer{
+  padding:20px 24px;
+  background:var(--hl);
+  border-top:1px solid var(--bd);
+  display:flex;
+  align-items:center;
+  gap:16px;
+}
+.coringa-footer .btn{
+  padding:12px 28px;
+  font-size:13px;
+  border-radius:8px;
+}
+.coringa-anexos{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  margin-top:10px;
+}
+.coringa-anexos .anexo-item{
+  width:70px;
+  height:70px;
+  background:var(--sf);
+  border:2px solid var(--bd);
+  border-radius:10px;
+  overflow:hidden;
+  position:relative;
+  transition:all .2s;
+}
+.coringa-anexos .anexo-item:hover{
+  border-color:#fbbf24;
+  transform:scale(1.05);
+}
+.coringa-anexos .anexo-item img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+}
+.coringa-anexos .anexo-remove{
+  position:absolute;
+  top:3px;
+  right:3px;
+  background:#dc2626;
+  color:#fff;
+  border:none;
+  border-radius:50%;
+  width:20px;
+  height:20px;
+  cursor:pointer;
+  font-size:11px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.coringa-header-panel{
+  background:linear-gradient(135deg,#1c1c1e 0%,#2c2c2e 100%);
+  padding:28px 32px;
+  display:flex;
+  align-items:center;
+  gap:18px;
+  position:relative;
+  overflow:hidden;
+}
+.coringa-header-panel::before{
+  content:'';
+  position:absolute;
+  top:-50%;right:-10%;
+  width:200px;
+  height:200px;
+  background:radial-gradient(circle,rgba(251,191,36,.15) 0%,transparent 70%);
+  border-radius:50%;
+}
+.coringa-header-panel::after{
+  content:'';
+  position:absolute;
+  bottom:-30%;left:-5%;
+  width:120px;
+  height:120px;
+  background:radial-gradient(circle,rgba(251,191,36,.1) 0%,transparent 70%);
+  border-radius:50%;
+}
+.coringa-icon{
+  width:52px;
+  height:52px;
+  background:linear-gradient(135deg,#fbbf24 0%,#f59e0b 100%);
+  border-radius:12px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:22px;
+  color:#1c1c1e;
+  flex-shrink:0;
+  box-shadow:0 4px 12px rgba(251,191,36,.3);
+}
+.coringa-title{
+  font-size:22px;
+  font-weight:700;
+  color:#fafafa;
+  letter-spacing:2px;
+  text-transform:uppercase;
+}
+.coringa-subtitle{
+  font-size:12px;
+  color:#71717a;
+  margin-top:2px;
+}
+.coringa-grid{
+  padding:24px;
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:20px;
+}
+.coringa-section{
+  background:var(--hl);
+  border-radius:12px;
+  padding:18px;
+  border:1px solid var(--bd);
+  position:relative;
+}
+.coringa-section.coringa-full{
+  grid-column:1 / -1;
+}
+.coringa-section-header{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin-bottom:14px;
+  padding-bottom:10px;
+  border-bottom:1px solid var(--bd);
+}
+.coringa-num{
+  background:linear-gradient(135deg,#fbbf24 0%,#f59e0b 100%);
+  color:#1c1c1e;
+  font-size:11px;
+  font-weight:700;
+  padding:4px 8px;
+  border-radius:4px;
+  font-family:'DM Mono',monospace;
+}
+.coringa-section-title{
+  font-size:13px;
+  font-weight:700;
+  color:var(--tp);
+  letter-spacing:.5px;
+}
+.coringa-field-group{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+}
+.coringa-field-group.coringa-3col{
+  grid-template-columns:1fr 1fr 1fr;
+}
+.coringa-field label.fl{
+  margin-bottom:6px;
+}
+.coringa-field input,
+.coringa-field select,
+.coringa-field textarea{
+  padding:10px 12px;
+  border-radius:8px;
+}
+.coringa-field textarea{
+  min-height:80px;
+}
+.coringa-anexos .anexo-item{
+  width:64px;
+  height:64px;
+  background:var(--sf);
+  border:2px solid var(--bd);
+  border-radius:8px;
+  overflow:hidden;
+  position:relative;
+  transition:all .2s;
+}
+.coringa-anexos .anexo-item:hover{
+  border-color:#fbbf24;
+  transform:scale(1.05);
+}
+.coringa-anexos .anexo-item img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+}
+.coringa-anexos .anexo-remove{
+  position:absolute;
+  top:2px;
+  right:2px;
+  background:#dc2626;
+  color:#fff;
+  border:none;
+  border-radius:50%;
+  width:18px;
+  height:18px;
+  cursor:pointer;
+  font-size:10px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.coringa-actions{
+  padding:20px 24px;
+  background:var(--hl);
+  border-top:1px solid var(--bd);
+  display:flex;
+  align-items:center;
+  gap:16px;
+}
+.coringa-actions .btn{
+  padding:12px 24px;
+  font-size:13px;
+}
+
+/* ── FOTO MANAGER ── */
+.dc-foto-manager{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+.dc-foto-list{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(90px,1fr));
+  gap:8px;
+}
+.dc-foto-item{
+  background:var(--sf);
+  border:2px solid var(--bd);
+  border-radius:8px;
+  overflow:hidden;
+  position:relative;
+  transition:all .2s;
+}
+.dc-foto-item:hover{border-color:#fbbf24;}
+.dc-foto-item img{
+  width:100%;
+  height:70px;
+  object-fit:cover;
+  display:block;
+}
+.dc-foto-controls{
+  display:flex;
+  align-items:center;
+  gap:4px;
+  padding:4px 6px;
+  background:var(--hl);
+  font-size:10px;
+  border-top:1px solid var(--bd);
+}
+.dc-foto-controls select{
+  flex:1;
+  padding:2px 4px;
+  font-size:10px;
+  border-radius:4px;
+  border:1px solid var(--bd);
+  background:var(--sf);
+  min-width:0;
+  width:auto;
+}
+.dc-foto-remove{
+  background:#dc2626;
+  color:#fff;
+  border:none;
+  border-radius:50%;
+  width:18px;
+  height:18px;
+  cursor:pointer;
+  font-size:9px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex-shrink:0;
+}
+/* ── TABELA MODAL ── */
+.table-builder{
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+}
+.tb-config{
+  display:flex;
+  gap:10px;
+  align-items:end;
+}
+.tb-config .fg{flex:1;}
+.tb-editor-wrap{
+  max-height:320px;
+  overflow-y:auto;
+  border:1px solid var(--bd);
+  border-radius:6px;
+}
+.tb-editor{
+  width:100%;
+  border-collapse:collapse;
+  font-size:12px;
+}
+.tb-editor th,.tb-editor td{
+  border:1px solid var(--bd);
+  padding:4px 6px;
+  min-width:60px;
+}
+.tb-editor th{
+  background:var(--hl);
+  font-size:10px;
+  font-weight:700;
+  color:var(--ts);
+  text-transform:uppercase;
+}
+.tb-editor input{
+  width:100%;
+  border:none;
+  padding:4px;
+  font-size:11px;
+  background:transparent;
+  outline:none;
+  font-family:'DM Sans',sans-serif;
+}
+.tb-editor input:focus{background:var(--hl);border-radius:3px;}
+.tb-pag-select{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  margin-top:8px;
+}
+.tb-pag-select label{font-size:11px;font-weight:600;color:var(--ts);}
+.tb-pag-select select{
+  width:80px;
+  padding:4px 8px;
+  border-radius:5px;
+  border:1px solid var(--bd);
+  font-size:12px;
+}
+/* ── CAMPOS DINÂMICOS ── */
+.dc-dynamic-fields{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+.dc-dynamic-row{
+  display:grid;
+  grid-template-columns:1fr 1fr auto;
+  gap:8px;
+  align-items:center;
+  background:var(--hl);
+  padding:8px 10px;
+  border-radius:6px;
+  border:1px solid var(--bd);
+}
+.dc-dynamic-row input{
+  padding:6px 8px;
+  font-size:12px;
+  border-radius:5px;
+}
+.dc-dynamic-remove{
+  background:#dc2626;
+  color:#fff;
+  border:none;
+  border-radius:50%;
+  width:24px;
+  height:24px;
+  cursor:pointer;
+  font-size:11px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
 /* ── MODAL CERTIFICADOS (fullscreen iframe) ── */
 #cert-modal{
   position:fixed !important;
@@ -224,7 +792,7 @@ hr.dv{border:none;border-top:1px solid var(--bd);margin:18px 0}
     <div class="mi" onclick="nav('adm',this)"><i class="fa-solid fa-file-signature"></i> Ficha Admissional</div>
     <div class="mi" onclick="nav('epi',this)"><i class="fa-solid fa-helmet-safety"></i> Ficha EPI/EPC</div>
     <div class="mi" onclick="nav('orc',this)"><i class="fa-solid fa-file-invoice-dollar"></i> Or&ccedil;amentos</div>
-    <div class="mi" onclick="abrirCoringa()"><i class="fa-solid fa-file-shield"></i> Documento Coringa</div>
+    <div class="mi" onclick="nav('docc',this)"><i class="fa-solid fa-file-shield"></i> Documento Coringa</div>
     <div class="mi" style="color:#22c55e;border-left-color:transparent" onclick="abrirMassa()"><i class="fa-solid fa-layer-group"></i> Geração em Massa</div>
   </div>
   <div class="nav-grp">
@@ -393,9 +961,130 @@ hr.dv{border:none;border-top:1px solid var(--bd);margin:18px 0}
   </div>
 </div>
 
+<div id="docc" class="view">
+  <div class="ph"><div><div class="pt">Documento Coringa</div><div class="pd">Documento com empresa contratante e prestadora de servi&ccedil;os</div></div></div>
+  
+  <div class="coringa-wrapper">
+    <div class="coringa-header-panel">
+      <div class="coringa-icon"><i class="fa-solid fa-file-signature"></i></div>
+      <div class="coringa-title-info">
+        <div class="coringa-title">DOCUMENTO CORINGA</div>
+        <div class="coringa-subtitle">Gera&ccedil;&atilde;o de documentos personalizados</div>
+      </div>
+    </div>
+    
+    <div class="coringa-body">
+      <div class="coringa-row">
+        <div class="coringa-card">
+          <div class="coringa-card-header">
+            <span class="coringa-step">01</span>
+            <span>Empresa Contratante</span>
+          </div>
+          <select id="dc-contratante" onchange="updateDcPreview('contra')">
+            <option value="">Selecione...</option>
+          </select>
+          <div id="dc-contratante-preview" class="coringa-preview"></div>
+        </div>
+        
+        <div class="coringa-card">
+          <div class="coringa-card-header">
+            <span class="coringa-step">02</span>
+            <span>Empresa Prestadora</span>
+          </div>
+          <select id="dc-prestadora" onchange="updateDcPreview('prest')">
+            <option value="">Selecione...</option>
+          </select>
+          <div id="dc-prestadora-preview" class="coringa-preview"></div>
+        </div>
+      </div>
+      
+      <div class="coringa-row">
+        <div class="coringa-card">
+          <div class="coringa-card-header">
+            <span class="coringa-step">03</span>
+            <span>Tipo de Documento</span>
+          </div>
+          <select id="dc-texto" onchange="updateDcTitulo();updateDcPreview('texto')">
+            <option value="">Selecione...</option>
+          </select>
+          <input id="dc-nome-doc" placeholder="Nome do documento" readonly class="coringa-readonly">
+        </div>
+      </div>
+      
+      <div class="coringa-row">
+        <div class="coringa-card">
+          <div class="coringa-card-header">
+            <span class="coringa-step">04</span>
+            <span>Datas &amp; Local</span>
+          </div>
+          <div class="coringa-fields">
+            <div class="coringa-field"><label>Data</label><input type="date" id="dc-data" onchange="autoValidadeCoringa()"></div>
+            <div class="coringa-field"><label>Validade</label><input type="date" id="dc-validade"></div>
+            <div class="coringa-field"><label>Local</label><input id="dc-local" placeholder="Cidade/UF"></div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="coringa-row">
+        <div class="coringa-card coringa-full">
+          <div class="coringa-card-header">
+            <span class="coringa-step">05</span>
+            <span>Conte&uacute;do</span>
+          </div>
+          <div class="coringa-textareas">
+            <div class="coringa-field"><label>Descri&ccedil;&atilde;o / Observa&ccedil;&otilde;es</label><textarea id="dc-obs" placeholder="Informa&ccedil;&otilde;es adicionais..."></textarea></div>
+            <div class="coringa-field">
+              <label>Fotos do Documento</label>
+              <div class="dc-foto-manager">
+                <input type="file" id="dc-anexos" accept="image/*" multiple onchange="dcAddFotos(event)">
+                <div id="dc-foto-list" class="dc-foto-list"></div>
+                <div style="font-size:10px;color:var(--tm)">Até 4 fotos por página · Selecione a página para cada foto abaixo</div>
+              </div>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px;margin-top:4px">
+            <div style="display:flex;align-items:center;gap:8px">
+              <input type="checkbox" id="dc-duas-empresas" checked style="width:16px;height:16px;accent-color:var(--hi)">
+              <label for="dc-duas-empresas" style="font-size:12px;font-weight:500;cursor:pointer">Mostrar duas empresas (Contratante + Prestadora)</label>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <input type="checkbox" id="dc-duas-logos" checked style="width:16px;height:16px;accent-color:var(--hi)">
+              <label for="dc-duas-logos" style="font-size:12px;font-weight:500;cursor:pointer">Mostrar as duas logos no documento</label>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <input type="checkbox" id="dc-ass-esp" checked style="width:16px;height:16px;accent-color:var(--hi)">
+              <label for="dc-ass-esp" style="font-size:12px;font-weight:500;cursor:pointer">Incluir assinatura da Contratada</label>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="coringa-row">
+        <div class="coringa-card coringa-full">
+          <div class="coringa-card-header">
+            <span class="coringa-step">06</span>
+            <span>Ferramentas Extras</span>
+          </div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <button class="btn bp" onclick="dcOpenTableModal()"><i class="fa-solid fa-table"></i> Adicionar Tabela</button>
+            <button class="btn bs" onclick="dcAddDynamicField()"><i class="fa-solid fa-plus-circle"></i> Adicionar Campo Din&acirc;mico</button>
+          </div>
+          <div id="dc-dynamic-fields" class="dc-dynamic-fields" style="margin-top:10px"></div>
+          <div id="dc-tabelas-lista" style="margin-top:10px;display:flex;flex-direction:column;gap:6px"></div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="coringa-footer">
+      <button class="btn bp" onclick="genDocCoringa()"><i class="fa-solid fa-file-pdf"></i> GERAR DOCUMENTO</button>
+      <div id="dc-results" style="display:none"></div>
+    </div>
+  </div>
+</div>
+
+
 
 </main>
-</div>
 
 <div class="loader" id="loader"><div class="spinner"></div><div class="stxt">Gerando documento...</div></div>
 
@@ -476,6 +1165,33 @@ hr.dv{border:none;border-top:1px solid var(--bd);margin:18px 0}
 </div></div>
 
 <!-- ══════════════════════════════════════════════
+     MODAL — CONSTRUTOR DE TABELA (DOCUMENTO CORINGA)
+═════════════════════════════════════════════════ -->
+<div class="modal" id="mdl-tabela"><div class="mb" style="max-width:700px">
+  <div class="mt2">Construtor de Tabela</div>
+  <div class="table-builder">
+    <div class="tb-config">
+      <div class="fg"><label class="fl">Colunas</label><input type="number" id="tb-col" value="3" min="1" max="10" onchange="dcRebuildTableEditor()"></div>
+      <div class="fg"><label class="fl">Linhas</label><input type="number" id="tb-row" value="3" min="1" max="30" onchange="dcRebuildTableEditor()"></div>
+    </div>
+    <div class="tb-editor-wrap">
+      <table class="tb-editor" id="tb-editor"></table>
+    </div>
+    <div class="tb-pag-select">
+      <label>Inserir tabela na p&aacute;gina:</label>
+      <select id="tb-page">
+        <option value="0">Antes das fotos</option>
+        <option value="999">Depois das fotos (nova p&aacute;gina)</option>
+      </select>
+    </div>
+    <div class="ma">
+      <button class="btn bp" onclick="dcConfirmTable()"><i class="fa-solid fa-check"></i> Inserir Tabela</button>
+      <button class="btn bg2" onclick="cls()">Cancelar</button>
+    </div>
+  </div>
+</div></div>
+
+<!-- ══════════════════════════════════════════════
      MODAL FULLSCREEN — SISTEMA DE CERTIFICADOS
      O iframe carrega certificados.html intacto.
      Tecla ESC também fecha o modal.
@@ -543,7 +1259,12 @@ function initListeners(){
   const to=localStorage.getItem('orc_intro_padrao');
   if(to) document.getElementById('o-intro').value=to;
   const hoje=new Date().toISOString().slice(0,10);
-  ['o-data','e-data','list-data','adm-data'].forEach(id=>{const el=document.getElementById(id);if(el&&!el.value)el.value=hoje;});
+  ['o-data','e-data','list-data','adm-data','dc-data'].forEach(id=>{const el=document.getElementById(id);if(el&&!el.value)el.value=hoje;});
+  // Inicializar validade do coringa com +1 ano
+  const dcVal=document.getElementById('dc-validade');
+  if(dcVal&&!dcVal.value){
+    const d=new Date();d.setFullYear(d.getFullYear()+1);dcVal.value=d.toISOString().slice(0,10);
+  }
   addOrcItem();
 }
 function renderAll(){updateDashboard();renderEmps();renderCargos();renderFuncs();renderTexts();renderMats();renderHistory();populateSelects();renderPool();renderCart();}
@@ -567,13 +1288,32 @@ function fmtDataExtenso(d){
   if(isNaN(dt.getTime()))return d;
   return dias[dt.getDay()]+' '+dt.getDate()+' de '+meses[dt.getMonth()]+' de '+dt.getFullYear();
 }
+function autoValidadeCoringa(){
+  const dataInput=document.getElementById('dc-data');
+  const validadeInput=document.getElementById('dc-validade');
+  if(dataInput.value && !validadeInput.value){
+    const d=new Date(dataInput.value);
+    d.setFullYear(d.getFullYear()+1);
+    validadeInput.value=d.toISOString().slice(0,10);
+  }
+}
 function fmtMoeda(n){return'R$ '+Number(n||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});}
 function toArr(obj){if(!obj)return[];return Object.entries(obj).map(([k,v])=>(typeof v==='object'&&v!==null)?{...v,id:v.id||k}:v);}
 function spin(on){document.getElementById('loader').style.display=on?'flex':'none';}
 function fmtCnpj(c){if(!c)return'—';return c;}
 function addNewPageIfNeeded(doc,y,minSpace){return y;}
+function showDcError(msg, inputId){
+  alert(msg);
+  if(inputId){
+    const el=document.getElementById(inputId);
+    if(el){el.focus();el.style.borderColor='var(--dn)';setTimeout(()=>el.style.borderColor='',2000);}
+  }
+}
+function showDcSuccess(msg){
+  document.getElementById('dc-results').style.display='block';
+  document.getElementById('dc-results').innerHTML=`<div class="res"><i class="fa-solid fa-check-circle"></i> ${msg}</div>`;
+}
 function abrirMassa(){window.location.href='massa.html';}
-function abrirCoringa(){window.location.href='coringa.html';}
 function openConfModal(){document.getElementById('mdl-conf').style.display='flex';}
 function nav(id,el){document.querySelectorAll('.view').forEach(e=>e.classList.remove('active'));document.querySelectorAll('.mi').forEach(e=>e.classList.remove('active'));const target=document.getElementById(id);target.classList.add('active');if(el)el.classList.add('active');}
 function tabSwitch(id,el){document.querySelectorAll('.tc').forEach(e=>e.classList.remove('active'));document.getElementById(id).classList.add('active');document.querySelectorAll('.tab').forEach(e=>e.classList.remove('active'));if(el)el.classList.add('active');}
@@ -739,7 +1479,7 @@ function calcTotal(){let t=0;document.querySelectorAll('#orc-body tr').forEach(t
 function populateSelects(){
   const emps=toArr(DATA.empresas);
   const opts='<option value="">Selecione...</option>'+emps.map(e=>`<option value="${esc(e.id)}">${esc(e.nome)}</option>`).join('');
-  ['i-f-ep','o-e','g-e','list-empresa','adm-empresa','e-e'].forEach(id=>{const el=document.getElementById(id);if(!el)return;const cur=el.value;el.innerHTML=opts;if(cur)el.value=cur;});
+  ['i-f-ep','o-e','g-e','list-empresa','adm-empresa','e-e','dc-contratante','dc-prestadora'].forEach(id=>{const el=document.getElementById(id);if(!el)return;const cur=el.value;el.innerHTML=opts;if(cur)el.value=cur;});
   const mats=toArr(DATA.materiais);
   const sm=document.getElementById('e-sel-mat');
   if(sm){const cur=sm.value;sm.innerHTML='<option value="">Selecione...</option>'+mats.map(m=>`<option value="${esc(m.id)}" data-un="${esc(m.unidade||'')}">${esc(m.nome)} (C.A.${m.ca||''})</option>`).join('');if(cur)sm.value=cur;}
@@ -749,6 +1489,9 @@ function populateSelects(){
   if(sl){const cur=sl.value;sl.innerHTML=textOpts;if(cur)sl.value=cur;}
   const sa=document.getElementById('adm-sel-texto');
   if(sa){const cur=sa.value;sa.innerHTML=textOpts;if(cur)sa.value=cur;}
+  const dcTexto=document.getElementById('dc-texto');
+  if(dcTexto){const cur=dcTexto.value;dcTexto.innerHTML=textOpts;if(cur)dcTexto.value=cur;}
+  
   const cargos=toArr(DATA.cargos);
   const cargoOpts='<option value="">Selecione...</option>'+cargos.map(c=>`<option value="${esc(c.id)}">${esc(c.nome)}</option>`).join('');
   const fnSel=document.getElementById('i-f-fn');
@@ -781,6 +1524,62 @@ function fillAdmFromText(){
   const t=DATA.textos[id];if(!t)return;
   if(t.conteudo&&!document.getElementById('adm-cont').value){
     document.getElementById('adm-cont').value=t.conteudo;
+  }
+}
+
+function updateDcTitulo(){
+  const id=document.getElementById('dc-texto').value;
+  if(!id){document.getElementById('dc-nome-doc').value='';return;}
+  const t=DATA.textos[id];if(!t)return;
+  document.getElementById('dc-nome-doc').value=t.titulo||'';
+}
+
+async function updateDcPreview(type){
+  const seletId=type==='contra'?'dc-contratante':type==='prest'?'dc-prestadora':'dc-texto';
+  const previewId=type==='contra'?'dc-contratante-preview':type==='prest'?'dc-prestadora-preview':'dc-texto-preview';
+  const el=document.getElementById(seletId);
+  const pv=document.getElementById(previewId);
+  if(!el||!pv)return;
+  
+  if(type==='texto'){
+    const txt=DATA.textos[el.value];
+    if(txt){
+      pv.innerHTML=`<div style="font-size:12px;font-weight:600;color:var(--tp)">${txt.titulo||''}</div>
+        <div style="font-size:10px;color:var(--ts);margin-top:4px">${(txt.conteudo||'').substring(0,100)}${(txt.conteudo||'').length>100?'...':''}</div>`;
+      pv.classList.add('active');
+    }else{
+      pv.classList.remove('active');
+    }
+    return;
+  }
+  
+  const emp=DATA.empresas[el.value];
+  if(emp){
+    let imgHtml='';
+    if(emp.logoUrl && emp.logoUrl.startsWith('http')){
+      imgHtml=`<img src="${emp.logoUrl}" class="coringa-preview-logo" crossorigin="anonymous">`;
+    }else if(emp.logoUrl && emp.logoUrl.startsWith('data:')){
+      imgHtml=`<img src="${emp.logoUrl}" class="coringa-preview-logo">`;
+    }
+    pv.innerHTML=imgHtml+`<div class="coringa-preview-info">
+      <div class="coringa-preview-nome">${emp.nome||''}</div>
+      <div class="coringa-preview-cnpj">CNPJ: ${emp.cnpj||'—'}</div>
+      <div class="coringa-preview-end">${(emp.endereco||'').substring(0,60)}${(emp.endereco||'').length>60?'...':''}</div>
+    </div>`;
+    pv.classList.add('active');
+  }else{
+    pv.innerHTML='';
+    pv.classList.remove('active');
+  }
+}
+
+function previewDcAnexos(){
+  const fl=document.getElementById('dc-anexos');
+  const pv=document.getElementById('dc-anexos-preview');
+  pv.innerHTML='';
+  if(fl.files&&fl.files.length>0){
+    const count=fl.files.length;
+    pv.innerHTML='<div style="padding:20px;text-align:center;color:var(--ts)">'+count+' imagem(ns) selecionada(s)</div>';
   }
 }
 
@@ -1334,6 +2133,552 @@ async function genOrc(){
   logHistory('Proposta - '+(empCliente?.nome||'?'), {empresaId:empCliente?.id});
 }
 
+// ── DC: FOTOS ─────────────────────────────────────────────────────
+let DC_FOTOS=[];
+let DC_TABELAS=[];
+let DC_DYNAMIC_FIELDS=[];
+
+function dcAddFotos(event){
+  const files=Array.from(event.target.files);
+  files.forEach(f=>{
+    if(!f.type.startsWith('image/'))return;
+    const r=new FileReader();
+    r.onload=e=>{
+      DC_FOTOS.push({data:e.target.result,name:f.name,page:1});
+      dcRenderFotos();
+    };
+    r.readAsDataURL(f);
+  });
+  event.target.value='';
+}
+
+function dcRenderFotos(){
+  const el=document.getElementById('dc-foto-list');
+  if(!DC_FOTOS.length){el.innerHTML='<div style="grid-column:1/-1;padding:20px;text-align:center;color:var(--tm);font-size:12px">Nenhuma foto adicionada</div>';return;}
+  const totalPaginas=DC_FOTOS.length;
+  el.innerHTML=DC_FOTOS.map((f,i)=>`
+    <div class="dc-foto-item">
+      <img src="${f.data}" alt="${esc(f.name)}">
+      <div class="dc-foto-controls">
+        <select onchange="DC_FOTOS[${i}].page=parseInt(this.value);dcRenderFotos()">
+          ${Array.from({length:Math.max(1,totalPaginas)},(_,p)=>`<option value="${p+1}" ${f.page===p+1?'selected':''}>Pg ${p+1}</option>`).join('')}
+        </select>
+        <button class="dc-foto-remove" onclick="DC_FOTOS.splice(${i},1);dcRenderFotos()">&times;</button>
+      </div>
+    </div>`).join('');
+}
+
+// ── DC: TABELA ─────────────────────────────────────────────────────
+function dcOpenTableModal(){
+  // Preencher seletor de página com opções dinâmicas
+  const pagSel=document.getElementById('tb-page');
+  let opts='<option value="0">Antes das fotos</option>';
+  // Adicionar páginas de fotos existentes
+  const paginas=new Set(DC_FOTOS.map(f=>f.page));
+  const pagSorted=Array.from(paginas).sort((a,b)=>a-b);
+  pagSorted.forEach(p=>{opts+=`<option value="foto-${p}">Na página da foto ${p}</option>`;});
+  opts+='<option value="999">Depois das fotos</option>';
+  pagSel.innerHTML=opts;
+  document.getElementById('mdl-tabela').style.display='flex';
+  dcRebuildTableEditor();
+}
+
+function dcRebuildTableEditor(){
+  const cols=parseInt(document.getElementById('tb-col').value)||3;
+  const rows=parseInt(document.getElementById('tb-row').value)||3;
+  const tbl=document.getElementById('tb-editor');
+  let html='<tr>';
+  for(let c=0;c<cols;c++)html+=`<th><input placeholder="Coluna ${c+1}" value="" data-c="${c}" data-r="header"></th>`;
+  html+='</tr>';
+  for(let r=0;r<rows;r++){
+    html+='<tr>';
+    for(let c=0;c<cols;c++)html+=`<td><input placeholder="—" value="" data-r="${r}" data-c="${c}"></td>`;
+    html+='</tr>';
+  }
+  tbl.innerHTML=html;
+}
+
+function dcConfirmTable(){
+  const cols=parseInt(document.getElementById('tb-col').value)||3;
+  const rows=parseInt(document.getElementById('tb-row').value)||3;
+  const pageVal=document.getElementById('tb-page').value;
+  const page=pageVal.startsWith('foto-')?parseInt(pageVal.replace('foto-','')):parseInt(pageVal);
+  const headers=[];
+  const body=[];
+  for(let c=0;c<cols;c++){
+    const inp=document.querySelector(`#tb-editor input[data-c="${c}"][data-r="header"]`);
+    headers.push(inp?inp.value.trim():'');
+  }
+  for(let r=0;r<rows;r++){
+    const row=[];
+    for(let c=0;c<cols;c++){
+      const inp=document.querySelector(`#tb-editor input[data-r="${r}"][data-c="${c}"]`);
+      row.push(inp?inp.value.trim():'');
+    }
+    body.push(row);
+  }
+  const label=headers.filter(h=>h).join(' / ')||'Tabela '+(DC_TABELAS.length+1);
+  DC_TABELAS.push({label,headers,body,page});
+  dcRenderTabelas();
+  cls();
+}
+
+function dcRenderTabelas(){
+  const el=document.getElementById('dc-tabelas-lista');
+  if(!DC_TABELAS.length){el.innerHTML='';return;}
+  el.innerHTML=DC_TABELAS.map((t,i)=>`
+    <div class="cait">
+      <span><strong>${esc(t.label)}</strong> &middot; ${t.headers.length} col x ${t.body.length} lin &middot; ${t.page===0?'Antes das fotos':t.page===999?'Depois das fotos':'Pg '+t.page}</span>
+      <button class="bxs bxd" onclick="DC_TABELAS.splice(${i},1);dcRenderTabelas()"><i class="fa-solid fa-xmark"></i></button>
+    </div>`).join('');
+}
+
+// ── DC: CAMPOS DINÂMICOS ───────────────────────────────────────────
+function dcAddDynamicField(){
+  DC_DYNAMIC_FIELDS.push({nome:'',valor:''});
+  dcRenderDynamicFields();
+}
+
+function dcRemoveDynamicField(i){
+  DC_DYNAMIC_FIELDS.splice(i,1);
+  dcRenderDynamicFields();
+}
+
+function dcRenderDynamicFields(){
+  const el=document.getElementById('dc-dynamic-fields');
+  if(!DC_DYNAMIC_FIELDS.length){
+    el.innerHTML='<div style="color:var(--tm);font-size:11px;text-align:center;padding:10px">Nenhum campo din&acirc;mico adicionado</div>';
+    return;
+  }
+  el.innerHTML=DC_DYNAMIC_FIELDS.map((f,i)=>`
+    <div class="dc-dynamic-row">
+      <input placeholder="Nome do campo" value="${esc(f.nome)}" oninput="DC_DYNAMIC_FIELDS[${i}].nome=this.value">
+      <input placeholder="Valor do campo" value="${esc(f.valor)}" oninput="DC_DYNAMIC_FIELDS[${i}].valor=this.value">
+      <button class="dc-dynamic-remove" onclick="dcRemoveDynamicField(${i})">&times;</button>
+    </div>`).join('');
+}
+
+// ── DC: RENDER TABLE IN PDF ──
+function dcRenderTableInDoc(doc,tbl,startY,m,uw,W,H){
+  if(!tbl.headers.length)return startY;
+  const colW=Math.floor((uw-10)/tbl.headers.length);
+  let y=startY;
+  const lh=6;
+  // Cabeçalho
+  y=P_checkPage(doc,y,lh+4,false);
+  doc.setFillColor(...C.h1);
+  doc.rect(m+5,y-3,colW*tbl.headers.length+4,lh+2,'F');
+  doc.setTextColor(...C.twh);
+  doc.setFont('helvetica','bold');doc.setFontSize(7);
+  tbl.headers.forEach((h,i)=>{
+    const x=m+7+i*colW;
+    doc.text(String(h||'').toUpperCase(),x,y);
+  });
+  y+=lh+2;
+  // Linhas
+  doc.setFont('helvetica','normal');doc.setFontSize(7);
+  tbl.body.forEach((row,ri)=>{
+    y=P_checkPage(doc,y,lh+2,false);
+    if(ri%2===0)doc.setFillColor(...C.bg);
+    else doc.setFillColor(255,255,255);
+    doc.rect(m+5,y-2,colW*tbl.headers.length+4,lh,'F');
+    doc.setTextColor(...C.dark);
+    row.forEach((val,ci)=>{
+      const x=m+7+ci*colW;
+      doc.text(String(val||''),x,y);
+    });
+    // borda sutil
+    doc.setDrawColor(...C.bdr);doc.setLineWidth(0.1);
+    doc.line(m+5,y-2,m+5+colW*tbl.headers.length+4,y-2);
+    y+=lh;
+  });
+  return y+6;
+}
+
+// ── DOCUMENTO CORINGA ─────────────────────────────────────────────
+async function genDocCoringa(){
+  const cid=document.getElementById('dc-contratante').value;
+  const pid=document.getElementById('dc-prestadora').value;
+  const tid=document.getElementById('dc-texto').value;
+  
+  if(!cid){alert('Selecione a empresa contratante');return;}
+  if(!pid){alert('Selecione a empresa prestadora');return;}
+  if(!tid){alert('Selecione o tipo de documento');return;}
+  if(cid===pid){alert('Empresa contratante e prestadora não podem ser iguais');return;}
+  
+  const mostrarDuasEmpresas=document.getElementById('dc-duas-empresas').checked;
+  const mostrarDuasLogos=document.getElementById('dc-duas-logos').checked;
+  
+  spin(true);
+  try{
+    const contratante=DATA.empresas[cid];
+    const prestadora=DATA.empresas[pid];
+    const texto=DATA.textos[tid];
+    
+    if(!contratante||!prestadora||!texto){alert('Dados não encontrados');spin(false);return;}
+    
+    const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+    const m=PAG.PM, uw=PAG.UW, W=PAG.PW, H=PAG.PH;
+    const centroW=W/2;
+    const assData=DATA.config?.assUrl?await loadImg(DATA.config.assUrl):null;
+    
+    // ══════════════════════════════════════
+    // CAPA PROFISSIONAL
+    // ══════════════════════════════════════
+    
+    // Imagem de fundo da capa
+    let bgCapa=null;
+    let bgFormat='PNG';
+    try{
+      const bgFromLs=localStorage.getItem('dc_bg_capa');
+      if(bgFromLs && bgFromLs.includes('data:')){
+        if(bgFromLs.includes('jpeg') || bgFromLs.includes('jpg')) bgFormat='JPEG';
+        else if(bgFromLs.includes('png')) bgFormat='PNG';
+        else if(bgFromLs.includes('webp')) bgFormat='WEBP';
+        bgCapa=bgFromLs;
+      }
+    }catch(_){}
+    if(!bgCapa && DATA.config && DATA.config.bgCapaUrl){
+      bgCapa=await loadImg(DATA.config.bgCapaUrl);
+    }
+    if(bgCapa){
+      doc.setFillColor(255,255,255);
+      doc.rect(0,0,W,H,'F');
+      doc.addImage(bgCapa,bgFormat,0,0,W,H);
+    }else{
+      doc.setFillColor(255,255,255);
+      doc.rect(0,0,W,H,'F');
+    }
+    
+    // Barra escura no topo (padrão do sistema)
+    doc.setFillColor(...C.h1);
+    doc.rect(0,0,W,8,'F');
+    
+    // Logo da empresa prestadora (NO MEIO DA CAPA) - sempre apenas a prestadora
+    const prestLogo=prestadora?.logoUrl?await loadImg(prestadora.logoUrl):null;
+    if(prestLogo){
+      try{doc.addImage(prestLogo,'PNG',centroW-22,45,44,44);}catch(_){}
+    }
+    
+    // Nome da empresa prestadora
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(16);
+    doc.setTextColor(30,30,30);
+    doc.text((prestadora.nome||'DOCUMENTO').toUpperCase(),centroW,100,{align:'center'});
+
+    // CNPJ da prestadora
+    if(prestadora?.cnpj){
+      doc.setFont('helvetica','normal');
+      doc.setFontSize(10);
+      doc.setTextColor(100,100,100);
+      doc.text('CNPJ: '+prestadora.cnpj,centroW,108,{align:'center'});
+    }
+
+    // Endereco da prestadora
+    if(prestadora?.endereco){
+      const prestEndLines=doc.splitTextToSize(prestadora.endereco,130);
+      doc.setFont('helvetica','normal');
+      doc.setFontSize(9);
+      doc.setTextColor(100,100,100);
+      doc.text(prestEndLines[0]||'',centroW,116,{align:'center'});
+    }
+
+    // Linha separadora
+    doc.setDrawColor(200,200,200);
+    doc.setLineWidth(0.5);
+    doc.line(m+20,130,W-m-20,130);
+
+    // Nome do documento
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(12);
+    doc.setTextColor(...C.h2);
+    doc.text((texto.titulo||'DOCUMENTO').toUpperCase(),centroW,142,{align:'center'});
+
+    // ===== LOCAL =====
+    const localTxt=document.getElementById('dc-local').value;
+    if(localTxt){
+      doc.setFont('helvetica','normal');
+      doc.setFontSize(10);
+      doc.setTextColor(80,80,80);
+      doc.text(localTxt,centroW,152,{align:'center'});
+    }
+
+    // Linha separadora antes dos dados
+    let cy=185;
+    doc.setDrawColor(200,200,200);
+    doc.setLineWidth(0.5);
+    doc.line(m+20,cy,W-m-20,cy);
+
+    // Data e validade por extenso
+    cy+=12;
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(10);
+    doc.setTextColor(60,60,60);
+    const dataVal=document.getElementById('dc-data').value;
+    let dataValidade=document.getElementById('dc-validade').value;
+    // Se não tiver validade, define automático de 1 ano
+    if(!dataValidade && dataVal){
+      const d=new Date(dataVal);
+      d.setFullYear(d.getFullYear()+1);
+      dataValidade=d.toISOString().slice(0,10);
+    }
+    const dataGeracao=fmtDataExtenso(dataVal);
+    const dataVenc=fmtDataExtenso(dataValidade);
+    doc.text('Data de geração em:',centroW,cy,{align:'center'});
+    doc.setFont('helvetica','normal');
+    doc.text(dataGeracao,centroW,cy+6,{align:'center'});
+    doc.setFont('helvetica','bold');
+    doc.text('Data vencimento do documento em:',centroW,cy+14,{align:'center'});
+    doc.setFont('helvetica','normal');
+    doc.text(dataVenc,centroW,cy+20,{align:'center'});
+    
+    // Footer da capa (página 1)
+    P_footer(doc,false,dataVal,dataValidade,prestadora.nome);
+    
+    // ===== NOVA PÁGINA - RESUMO EMPRESAS =====
+    doc.addPage();
+    
+    // Header simples com nome do documento e logos
+    const hh=22;
+    doc.setFillColor(...C.h1);
+    doc.rect(0,0,W,hh,'F');
+    
+    // Logos das empresas (esquerda) - só se marcando a opção
+    let logoContratante=null, logoPrestadora=null;
+    if(mostrarDuasLogos){
+      logoContratante=contratante?.logoUrl?await loadImg(contratante.logoUrl):null;
+      logoPrestadora=prestadora?.logoUrl?await loadImg(prestadora.logoUrl):null;
+      if(logoContratante){try{doc.addImage(logoContratante,'PNG',m,3,16,16);}catch(_){}}
+      if(logoPrestadora){try{doc.addImage(logoPrestadora,'PNG',m+20,3,16,16);}catch(_){}}
+    }else{
+      logoPrestadora=prestadora?.logoUrl?await loadImg(prestadora.logoUrl):null;
+      if(logoPrestadora){try{doc.addImage(logoPrestadora,'PNG',m,3,16,16);}catch(_){}}
+    }
+    
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(12);
+    doc.setTextColor(...C.twh);
+    doc.text((texto.titulo||'DOCUMENTO').toUpperCase(),W-m,hh/2+1,{align:'right'});
+    doc.setDrawColor(...C.bdr);doc.setLineWidth(0.4);
+    doc.line(0,hh,W,hh);
+    let contentY=hh+8;
+    
+    // Empresa Contratante (esquerda) - só se marcar opção
+    if(mostrarDuasEmpresas){
+      doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(...C.h2);
+      doc.text('EMPRESA CONTRATANTE',m,contentY);
+      doc.setFont('helvetica','bold');doc.setFontSize(10);doc.setTextColor(30,30,30);
+      doc.text(contratante.nome||'—',m,contentY+5);
+      let cyEmp=contentY+10;
+      if(contratante?.cnpj){
+        doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(80,80,80);
+        doc.text('CNPJ: '+contratante.cnpj,m,cyEmp);
+      }
+      cyEmp+=5;
+      if(contratante?.endereco){
+        const endLines=doc.splitTextToSize(contratante.endereco,uw/2-5);
+        doc.setFont('helvetica','normal');doc.setFontSize(7);doc.setTextColor(100,100,100);
+        doc.text(endLines[0]||'',m,cyEmp);
+      }
+      contentY+=45;
+    }
+    
+    // Empresa Contratada (abaixo da contratante)
+    doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(...C.h2);
+    doc.text(mostrarDuasEmpresas?'EMPRESA CONTRATADA':'EMPRESA',m,contentY);
+    doc.setFont('helvetica','bold');doc.setFontSize(10);doc.setTextColor(30,30,30);
+    doc.text(prestadora.nome||'—',m,contentY+5);
+    let cyEmp=contentY+10;
+    if(prestadora?.cnpj){
+      doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(80,80,80);
+      doc.text('CNPJ: '+prestadora.cnpj,m,cyEmp);
+    }
+    cyEmp+=5;
+    if(prestadora?.endereco){
+      const prestEndLines=doc.splitTextToSize(prestadora.endereco,uw-5);
+      doc.setFont('helvetica','normal');doc.setFontSize(7);doc.setTextColor(100,100,100);
+      doc.text(prestEndLines[0]||'',m,cyEmp);
+    }
+    
+    contentY+=mostrarDuasEmpresas?30:35;
+    
+    // Conteúdo do texto
+    const txtConteudo=cleanForPdf(texto.conteudo||'');
+    if(txtConteudo){
+      contentY=P_section(doc,texto.titulo||'Descricao',contentY,false);
+      contentY=P_text(doc,txtConteudo,contentY,false,false);
+    }
+    
+    // Observações
+    const obs=cleanForPdf(document.getElementById('dc-obs').value||'');
+    if(obs){
+      contentY=P_section(doc,'Observacoes',contentY,false);
+      contentY=P_text(doc,obs,contentY,false,false);
+    }
+    
+// ── CAMPOS DINÂMICOS (página 2) ──
+    if(DC_DYNAMIC_FIELDS.length>0){
+      const hasData=DC_DYNAMIC_FIELDS.some(f=>f.nome.trim());
+      if(hasData){
+        contentY=P_checkPage(doc,contentY,20,false);
+        contentY=P_section(doc,'Informacoes Complementares',contentY,false);
+        const dcYW=uw-10;
+        const colW=dcYW/2;
+        const camposPorLinha=2;
+        let dcY=contentY;
+        const dcStartY=contentY;
+        const dcLh=7;
+        for(let i=0;i<DC_DYNAMIC_FIELDS.length;i+=camposPorLinha){
+          dcY=P_checkPage(doc,dcY,dcLh+4,false);
+          for(let j=0;j<camposPorLinha;j++){
+            const idx=i+j;
+            if(idx>=DC_DYNAMIC_FIELDS.length)break;
+            const f=DC_DYNAMIC_FIELDS[idx];
+            if(!f.nome.trim())continue;
+            const xPos=m+5+(j*colW);
+            doc.setFont('helvetica','bold');doc.setFontSize(7.5);doc.setTextColor(...C.h2);
+            doc.text((f.nome||'').toUpperCase(),xPos,dcY);
+            doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(...C.dark);
+            doc.text(f.valor||'—',xPos,dcY+4.5);
+          }
+          dcY+=dcLh+2;
+        }
+        contentY=Math.max(contentY,dcY)+6;
+      }
+    }
+    
+    // ── TABELAS (antes das fotos) ──
+    const tablesBefore=DC_TABELAS.filter(t=>t.page===0);
+    for(const tb of tablesBefore){
+      contentY=dcRenderTableInDoc(doc,tb,contentY,m,uw,W,H);
+    }
+    
+    // Assinaturas (antes dos anexos) - Esq: Contratada (prestadora), Dir: Contratante (engenheiro)
+    const incluirAssPrestadora=document.getElementById('dc-ass-esp').checked;
+    contentY=P_checkPage(doc,contentY,38,false);
+    doc.setDrawColor(...C.bdr);doc.setLineWidth(0.18);doc.line(m,contentY,PAG.PW-m,contentY);contentY+=6;
+    if(incluirAssPrestadora){
+      P_signatures(doc,contentY+14,
+        {nome:prestadora.nome||'EMPRESA CONTRATADA',cargo:'Representante Legal'},
+{nome:RESP.nome,cargo:'Engenheiro Civil\nEngenheiro de Segurança do Trabalho\nEngenheiro Ambiental e Saneamento Básico\n'+RESP.registro},
+        assData,false
+      );
+    }else{
+      const bw=70;
+      doc.setDrawColor(...C.sub);doc.setLineWidth(0.3);
+      doc.line(PAG.PW-m-bw,contentY+14,PAG.PW-m,contentY+14);
+      doc.setFont('helvetica','bold');doc.setFontSize(8);doc.setTextColor(...C.dark);
+      doc.text(RESP.nome,PAG.PW-m-bw/2,contentY+18,{align:'center'});
+      doc.setFont('helvetica','normal');doc.setFontSize(6.5);doc.setTextColor(...C.sub);
+      doc.text('Engenheiro Civil | Engenheiro de Segurança do Trabalho\nEngenheiro Ambiental e Saneamento Básico | CREA: '+RESP.registro,PAG.PW-m-bw/2,contentY+22,{align:'center'});
+    }
+    
+    // Footer
+    P_footer(doc,false,dataVal,dataValidade,prestadora.nome);
+    
+    // ── FOTOS (agrupadas por página, até 4 por página PDF) ──
+    const margin=m, headerH=20;
+    if(DC_FOTOS.length>0){
+      // Agrupar fotos por número de página
+      const grupos={};
+      DC_FOTOS.forEach(f=>{
+        const pg=f.page||1;
+        if(!grupos[pg])grupos[pg]=[];
+        grupos[pg].push(f);
+      });
+      const paginasOrdenadas=Object.keys(grupos).map(Number).sort((a,b)=>a-b);
+      for(const pgNum of paginasOrdenadas){
+        const fotos=grupos[pgNum];
+        // Dividir em grupos de até 4
+        for(let g=0;g<fotos.length;g+=4){
+          const batch=fotos.slice(g,g+4);
+          doc.addPage();
+          // Header
+          doc.setFillColor(...C.h1);
+          doc.rect(0,0,W,headerH,'F');
+          if(mostrarDuasLogos){
+            if(logoContratante){try{doc.addImage(logoContratante,'PNG',margin,3,12,12);}catch(_){}}
+            if(logoPrestadora){try{doc.addImage(logoPrestadora,'PNG',margin+15,3,12,12);}catch(_){}}
+          }else{
+            if(logoPrestadora){try{doc.addImage(logoPrestadora,'PNG',margin,3,12,12);}catch(_){}}
+          }
+          doc.setFont('helvetica','bold');doc.setFontSize(11);doc.setTextColor(...C.twh);
+          doc.text('FOTO '+(g+1)+'-'+(g+batch.length)+' (Pg. '+pgNum+')',W-margin,headerH/2+1,{align:'right'});
+          
+          function dcImgFmt(d){return d.includes('image/jpeg')||d.includes('jpg')?'JPEG':'PNG';}
+          if(batch.length===1){
+            // Centralizar 1 foto
+            const f=batch[0];
+            const imgW=170, imgH=180;
+            const cx=(W-imgW)/2;
+            try{
+              doc.addImage(f.data,dcImgFmt(f.data),cx,28,imgW,imgH);
+            }catch(e){}
+          }else if(batch.length===2){
+            // 2 fotos lado a lado
+            const imgW=82, imgH=180;
+            for(let fi=0;fi<batch.length;fi++){
+              const x=margin+fi*(imgW+6);
+              try{
+                doc.addImage(batch[fi].data,dcImgFmt(batch[fi].data),x,28,imgW,imgH);
+              }catch(e){}
+            }
+          }else if(batch.length===3){
+            // 3 fotos: 2 em cima, 1 embaixo centralizada
+            const imgW=82, imgH=88;
+            for(let fi=0;fi<2;fi++){
+              const x=margin+fi*(imgW+6);
+              try{
+                doc.addImage(batch[fi].data,dcImgFmt(batch[fi].data),x,28,imgW,imgH);
+              }catch(e){}
+            }
+            const x3=(W-imgW)/2;
+            try{
+              doc.addImage(batch[2].data,dcImgFmt(batch[2].data),x3,120,imgW,imgH);
+            }catch(e){}
+          }else{
+            // 4 fotos em grid 2x2
+            const imgW=82, imgH=88;
+            for(let fi=0;fi<4;fi++){
+              const col=fi%2, row=Math.floor(fi/2);
+              const x=margin+col*(imgW+6);
+              const y=28+row*(imgH+6);
+              try{
+                doc.addImage(batch[fi].data,dcImgFmt(batch[fi].data),x,y,imgW,imgH);
+              }catch(e){}
+            }
+          }
+          P_footer(doc,false,dataVal,dataValidade,prestadora.nome,'');
+        }
+      }
+    }
+    
+    // ── TABELAS (depois das fotos) ──
+    const tablesAfter=DC_TABELAS.filter(t=>t.page===999);
+    for(const tb of tablesAfter){
+      doc.addPage();
+      doc.setFillColor(...C.h1);
+      doc.rect(0,0,W,22,'F');
+      doc.setFont('helvetica','bold');doc.setFontSize(11);doc.setTextColor(...C.twh);
+      doc.text(tb.label||'TABELA',W-margin,22/2+1,{align:'right'});
+      const ty=30;
+      dcRenderTableInDoc(doc,tb,ty,m,uw,W,H);
+      P_footer(doc,false,dataVal,dataValidade,prestadora.nome,'');
+    }
+    
+    const nomeDoc=(texto.titulo||'documento').replace(/[^\w\u0080-\uFFFF]/g,'_').replace(/_+/g,'_');
+    const filename='DOCUMENTO_'+nomeDoc+'_'+(dataVal?dataVal.replace(/-/g,''):new Date().toISOString().slice(0,10))+'.pdf';
+    await saveSecurely(doc, filename, { contratanteId: cid, prestadoraId: pid });
+    logHistory('Documento Coringa - '+texto.titulo);
+    showResult('dc-results','Documento gerado com sucesso!');
+  }catch(e){
+    console.error('Erro:',e);
+    alert('Erro ao gerar documento: '+e.message);
+  }finally{
+    spin(false);
+  }
+}
+   
 // ── LISTAS ─────────────────────────────────────────────────────
 
 // ── ORDEM DE SERVIÇO ─────────────────────────────────────────────
@@ -1651,7 +2996,37 @@ document.addEventListener('keydown', function(e) {
 })();
 
 async function rasterizePdfPages(pdfBytes) {
-  return pdfBytes;
+  const pdfjsLib = window.pdfjsLib;
+  if (!pdfjsLib) { console.warn('pdf.js not loaded, skipping rasterization'); return pdfBytes; }
+  try {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(pdfBytes) }).promise;
+    if (pdf.numPages === 0) return pdfBytes;
+    const outPdf = await PDFLib.PDFDocument.create();
+    const scale = 3;
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const viewport = page.getViewport({ scale });
+      const canvas = document.createElement('canvas');
+      canvas.width = viewport.width;
+      canvas.height = viewport.height;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      await page.render({ canvasContext: ctx, viewport }).promise;
+      const blob = await new Promise(r => canvas.toBlob(r, 'image/png'));
+      const imgBytes = await blob.arrayBuffer();
+      const img = await outPdf.embedPng(imgBytes);
+      const ptW = viewport.width / scale;
+      const ptH = viewport.height / scale;
+      const newPage = outPdf.addPage([ptW, ptH]);
+      newPage.drawImage(img, { x: 0, y: 0, width: ptW, height: ptH });
+    }
+    return await outPdf.save();
+  } catch (e) {
+    console.error('Rasterization error:', e);
+    return pdfBytes;
+  }
 }
 
 async function addVerificationOverlay(pdfBytes, docId, validationUrl) {
