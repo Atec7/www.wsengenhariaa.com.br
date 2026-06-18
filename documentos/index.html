@@ -243,7 +243,7 @@ hr.dv{border:none;border-top:1px solid var(--bd);margin:18px 0}
     <div class="sc2"><div class="sl">Textos</div><div class="sv2" id="c-t">0</div></div>
   </div>
   <div class="card">
-    <div class="ct">Hist&oacute;rico de Documentos</div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px"><div class="ct" style="margin:0">Hist&oacute;rico de Documentos</div><button class="bxs bxd" onclick="clearHistory()"><i class="fa-solid fa-trash"></i> Limpar</button></div>
     <div class="sw"><input id="hist-search" placeholder="Buscar por nome ou data..." onkeyup="renderHistory()"><i class="fa-solid fa-magnifying-glass"></i></div>
     <div id="hist-list" style="border:1px solid var(--bd);border-radius:6px;max-height:360px;overflow-y:auto"></div>
   </div>
@@ -611,6 +611,7 @@ function renderHistory(){
   document.getElementById('hist-list').innerHTML=items.length?items.map(h=>`<div class="hr2"><span><i class="fa-solid fa-file-pdf" style="color:var(--dn);margin-right:7px"></i>${esc(h.nome)}</span><button class="btn" style="padding:3px 6px;font-size:10px;" onclick="regenDoc('${esc(h.nome)}')"><i class="fa-solid fa-download"></i></button><span style="color:var(--tm);font-size:11px">${esc(h.data)}</span></div>`).join(''):'<div class="es">Nenhum documento gerado ainda.</div>';
 }
 function logHistory(nome, dadosExtras={}){const data=new Date().toLocaleDateString('pt-BR',{hour:'2-digit',minute:'2-digit'});db.ref('historico').push({nome,data,ts:Date.now(),...dadosExtras});}
+function clearHistory(){if(!confirm('Tem certeza que deseja limpar todo o hist\u00f3rico de documentos?'))return;db.ref('historico').remove().then(()=>{renderHistory();}).catch(e=>{alert('Erro ao limpar hist\u00f3rico: '+e.message);});}
 
 async function regenDoc(nome){
   const nomeLower=nome.toLowerCase();
@@ -1523,6 +1524,40 @@ P_signatures(doc,cy+20,
   P_footer(doc,false,func.dataAdm,undefined,emp?.nome||'',local);
 }
 
+// ── FICHA EPI/EPC ──────────────────────────────────────────────
+async function genEPI(){
+  const eid=document.getElementById('e-e').value;if(!eid){alert('Selecione uma empresa');return;}
+  const fIds=getChecked('eChk');if(!fIds.length){alert('Selecione pelo menos um colaborador');return;}
+  const dataVal=document.getElementById('e-data').value;if(!dataVal){alert('Informe a data de entrega');return;}
+  spin(true);
+  const dataFmt=fmtData(dataVal);
+  const cartItems=CART.map(c=>({...c}));
+  if(!cartItems.length){alert('Adicione pelo menos um item ao carrinho');spin(false);return;}
+  const firstFunc=DATA.funcionarios[fIds[0]];
+  const emp=resolveEmp(firstFunc?.empresaId||eid);
+  const doc=new jsPDF({orientation:'landscape',unit:'mm',format:'a4'});
+  let first=true;
+  for(const fid of fIds){
+    const func=DATA.funcionarios[fid];if(!func)continue;
+    let items=[...cartItems];
+    const cargo=resolveCargo(func.funcao);
+    if(cargo?.epi?.length){
+      cargo.epi.forEach(cepi=>{
+        if(!items.find(i=>i.id===cepi.id)){
+          const mat=DATA.materiais[cepi.id];
+          if(mat)items.push({id:mat.id,nome:mat.nome,ca:mat.ca||'',unidade:mat.unidade||'',tipo:cepi.tipo||mat.tipo||'EPI',qtd:cepi.qtd||1});
+        }
+      });
+    }
+    if(!first)doc.addPage();first=false;
+    await drawEPI(doc,func,emp,dataFmt,items);
+  }
+  spin(false);
+  const filename='FICHAS_EPI_'+dataFmt.replace(/\//g,'-')+'.pdf';
+  await saveSecurely(doc,filename,{empresaId:eid,funcionarioIds:fIds});
+  logHistory('Ficha EPI - '+fIds.length+' colaborador(es)',{empresaId:eid,funcionarioIds:fIds,data:dataVal});
+  showResult('epi-results','Fichas geradas e baixadas com sucesso!');
+}
 async function drawEPI(doc,func,emp,dataFmt,items){
   const W=PAG.LW,H=PAG.LH,m=PAG.LM,uw=PAG.LUW;
   const logo=emp?.logoUrl?await loadImg(emp.logoUrl):null;
