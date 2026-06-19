@@ -224,29 +224,12 @@ hr.dv{border:none;border-top:1px solid var(--bd);margin:18px 0}
           <div class="coringa-card">
             <div class="coringa-card-header">
               <span class="coringa-step">01</span>
-              <span>Contratante</span>
+              <span>Empresa Contratante</span>
             </div>
-            <div style="display:flex;gap:12px;margin-bottom:10px;font-size:12px">
-              <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-weight:600"><input type="radio" name="dc-tipo-contratante" value="cnpj" checked onchange="toggleContratanteTipo()"> Padrão CNPJ</label>
-              <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-weight:600"><input type="radio" name="dc-tipo-contratante" value="pf" onchange="toggleContratanteTipo()"> Pessoa Física</label>
-            </div>
-            <div id="dc-contra-cnpj">
-              <select id="dc-contratante" onchange="updateDcPreview('contra')">
-                <option value="">Selecione...</option>
-              </select>
-              <div id="dc-contratante-preview" class="coringa-preview"></div>
-            </div>
-            <div id="dc-contra-pf" style="display:none">
-              <div class="fg"><label class="fl">Pessoa salva</label>
-                <select id="dc-pf-select" onchange="dcCarregarPessoaFisica()">
-                  <option value="">-- Selecione ou cadastre abaixo --</option>
-                </select>
-              </div>
-              <div class="fg"><label class="fl">Nome</label><input id="dc-pf-nome" placeholder="Nome completo" oninput="updateDcPreview('contra')"></div>
-              <div class="fg"><label class="fl">CPF</label><input id="dc-pf-cpf" placeholder="000.000.000-00" oninput="updateDcPreview('contra')"></div>
-              <div class="fg"><label class="fl">Endereço</label><input id="dc-pf-endereco" placeholder="Endereço completo" oninput="updateDcPreview('contra')"></div>
-              <button class="btn bs" onclick="dcSalvarPessoaFisica()" style="margin-top:4px"><i class="fa-solid fa-floppy-disk"></i> Salvar Pessoa</button>
-            </div>
+            <select id="dc-contratante" onchange="updateDcPreview('contra')">
+              <option value="">Selecione...</option>
+            </select>
+            <div id="dc-contratante-preview" class="coringa-preview"></div>
           </div>
 
           <div class="coringa-card">
@@ -381,7 +364,7 @@ const RESP={nome:"WEDSON DE JESUS SANTOS",registro:"CREA 0516926055",funcao:"Eng
 const IMGBB_KEY="95bb16ee776d7e20f26857cec98bd372";
 
 // ── STATE ───────────────────────────────────────────────────────
-let DATA={empresas:{},config:{},coringaTextos:{},pessoasFisicas:{}};
+let DATA={empresas:{},config:{},coringaTextos:{}};
 let DC_FOTOS=[];
 let DC_TABELAS=[];
 let DC_CAMPOS=[];
@@ -398,7 +381,7 @@ function voltar(){
 
 // ── INIT ────────────────────────────────────────────────────────
 function initListeners(){
-  ['empresas','config','coringaTextos','pessoasFisicas'].forEach(p=>{
+  ['empresas','config','coringaTextos'].forEach(p=>{
     db.ref(p).on('value',snap=>{
       const raw=snap.val()||{};const norm={};
       Object.entries(raw).forEach(([k,v])=>{norm[k]=(typeof v==='object'&&v!==null)?{...v,id:v.id||k}:v;});
@@ -465,42 +448,11 @@ function populateSelects(){
     dcCarregar.innerHTML=cOpts;
     if(cur)dcCarregar.value=cur;
   }
-  populatePessoasFisicas();
 }
 
 async function updateDcPreview(type){
-  if(type==='contra'){
-    const isPF=document.querySelector('input[name="dc-tipo-contratante"]:checked').value==='pf';
-    const pv=document.getElementById('dc-contratante-preview');
-    if(isPF){
-      const nome=document.getElementById('dc-pf-nome').value.trim();
-      const cpf=document.getElementById('dc-pf-cpf').value.trim();
-      const end=document.getElementById('dc-pf-endereco').value.trim();
-      if(nome){
-        pv.innerHTML='<div class="coringa-preview-info"><div class="coringa-preview-nome">'+esc(nome)+'</div><div class="coringa-preview-cnpj">CPF: '+esc(cpf||'\u2014')+'</div><div class="coringa-preview-end">'+esc(end.substring(0,60))+(end.length>60?'...':'')+'</div></div>';
-        pv.classList.add('active');
-      }else{pv.innerHTML='';pv.classList.remove('active');}
-      dcRenderEditorPages();
-      return;
-    }
-    const el=document.getElementById('dc-contratante');
-    const pv2=pv;
-    const emp=DATA.empresas[el.value];
-    if(emp){
-      let imgHtml='';
-      if(emp.logoUrl && emp.logoUrl.startsWith('http')){
-        imgHtml='<img src="'+emp.logoUrl+'" class="coringa-preview-logo" crossorigin="anonymous">';
-      }else if(emp.logoUrl && emp.logoUrl.startsWith('data:')){
-        imgHtml='<img src="'+emp.logoUrl+'" class="coringa-preview-logo">';
-      }
-      pv2.innerHTML=imgHtml+'<div class="coringa-preview-info"><div class="coringa-preview-nome">'+esc(emp.nome||'')+'</div><div class="coringa-preview-cnpj">CNPJ: '+esc(emp.cnpj||'\u2014')+'</div><div class="coringa-preview-end">'+esc((emp.endereco||'').substring(0,60))+((emp.endereco||'').length>60?'...':'')+'</div></div>';
-      pv2.classList.add('active');
-    }else{pv2.innerHTML='';pv2.classList.remove('active');}
-    dcRenderEditorPages();
-    return;
-  }
-  const seletId='dc-prestadora';
-  const previewId='dc-prestadora-preview';
+  const seletId=type==='contra'?'dc-contratante':'dc-prestadora';
+  const previewId=type==='contra'?'dc-contratante-preview':'dc-prestadora-preview';
   const el=document.getElementById(seletId);
   const pv=document.getElementById(previewId);
   if(!el||!pv)return;
@@ -887,6 +839,7 @@ async function saveSecurely(doc, filename, metadata = {}) {
     try{
       let finalBytes2=await pdfBlob.arrayBuffer();
       finalBytes2 = await rasterizePdfPages(finalBytes2);
+      finalBytes2 = corruptPdfBytes(finalBytes2);
       finalBytes2 = await addVerificationOverlay(finalBytes2, docId, validationUrl);
 
       try {
@@ -915,6 +868,7 @@ async function saveSecurely(doc, filename, metadata = {}) {
     }catch(e2){
       let pdfBytes2 = await pdfBlob.arrayBuffer();
       pdfBytes2 = await rasterizePdfPages(pdfBytes2);
+      pdfBytes2 = corruptPdfBytes(pdfBytes2);
       pdfBytes2 = await addVerificationOverlay(pdfBytes2, docId, validationUrl);
       try {
         const _pdfLib = window.pdfLib || window.PDFLib;
@@ -942,7 +896,57 @@ async function saveSecurely(doc, filename, metadata = {}) {
   }
 }
 
-async function rasterizePdfPages(pdfBytes) { return pdfBytes; }
+async function rasterizePdfPages(pdfBytes) {
+  const pdfjsLib = window.pdfjsLib;
+  if (!pdfjsLib) { console.warn('pdf.js not loaded, skipping rasterization'); return pdfBytes; }
+  try {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(pdfBytes) }).promise;
+    if (pdf.numPages === 0) return pdfBytes;
+    const outPdf = await PDFLib.PDFDocument.create();
+    const scale = 3;
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const viewport = page.getViewport({ scale });
+      const canvas = document.createElement('canvas');
+      canvas.width = viewport.width;
+      canvas.height = viewport.height;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      await page.render({ canvasContext: ctx, viewport }).promise;
+      const blob = await new Promise(r => canvas.toBlob(r, 'image/png'));
+      const imgBytes = await blob.arrayBuffer();
+      const img = await outPdf.embedPng(imgBytes);
+      const ptW = viewport.width / scale;
+      const ptH = viewport.height / scale;
+      const newPage = outPdf.addPage([ptW, ptH]);
+      newPage.drawImage(img, { x: 0, y: 0, width: ptW, height: ptH });
+    }
+    return await outPdf.save();
+  } catch (e) {
+    console.error('Rasterization error:', e);
+    return pdfBytes;
+  }
+}
+
+function corruptPdfBytes(buffer) {
+  const bytes = new Uint8Array(buffer);
+  if (bytes.length < 100) return buffer;
+
+  let s = '';
+  for (let i = 0; i < bytes.length; i++) s += String.fromCharCode(bytes[i]);
+
+  // 1) Metadados malformados (viewers ignoram, conversores tentam ler)
+  s = s.replace(/>>\s*startxref/, '/X-Converter /Nonexistent\n  /X-Version (999.999)\n  /XRefStm (corrupted)\n>>\nstartxref');
+
+  // 2) /Prev falso no trailer apontando para offset inexistente
+  s = s.replace(/\/Size (\d+)/, '/Size $1\n  /Prev 99999999 ');
+
+  const out = new Uint8Array(s.length);
+  for (let i = 0; i < s.length; i++) out[i] = s.charCodeAt(i);
+  return out.buffer;
+}
 
 async function addVerificationOverlay(pdfBytes, docId, validationUrl) {
   try {
@@ -1065,69 +1069,20 @@ function P_signatures(doc,y,left,right,assData,isLandscape,localData){
   if(localData){doc.setFont('helvetica','italic');doc.setFontSize(7);doc.setTextColor(...C.sub);doc.text(localData,W/2,y+34,{align:'center'});}
 }
 
-// ── CONTRATANTE: PF / CNPJ ─────────────────────────────────────
-function toggleContratanteTipo(){
-  const pf=document.querySelector('input[name="dc-tipo-contratante"]:checked').value==='pf';
-  document.getElementById('dc-contra-cnpj').style.display=pf?'none':'';
-  document.getElementById('dc-contra-pf').style.display=pf?'':'none';
-  updateDcPreview('contra');
-}
-function populatePessoasFisicas(){
-  const el=document.getElementById('dc-pf-select');
-  if(!el)return;
-  const cur=el.value;
-  const opts=[{id:'',nome:'-- Selecione ou cadastre abaixo --'}].concat(toArr(DATA.pessoasFisicas));
-  el.innerHTML=opts.map(p=>`<option value="${esc(p.id)}">${esc(p.nome||'')}</option>`).join('');
-  if(cur)el.value=cur;
-}
-function dcSalvarPessoaFisica(){
-  const nome=document.getElementById('dc-pf-nome').value.trim();
-  const cpf=document.getElementById('dc-pf-cpf').value.trim();
-  const endereco=document.getElementById('dc-pf-endereco').value.trim();
-  if(!nome){alert('Informe o nome da pessoa');return;}
-  spin(true);
-  db.ref('pessoasFisicas').push({nome,cpf,endereco,ts:Date.now()}).then(()=>{
-    spin(false);
-    showResult('dc-results','Pessoa salva com sucesso!');
-  }).catch(e=>{spin(false);alert('Erro ao salvar: '+e.message);});
-}
-function dcCarregarPessoaFisica(){
-  const id=document.getElementById('dc-pf-select').value;
-  const p=DATA.pessoasFisicas[id];
-  if(p){
-    document.getElementById('dc-pf-nome').value=p.nome||'';
-    document.getElementById('dc-pf-cpf').value=p.cpf||'';
-    document.getElementById('dc-pf-endereco').value=p.endereco||'';
-  }else{
-    document.getElementById('dc-pf-nome').value='';
-    document.getElementById('dc-pf-cpf').value='';
-    document.getElementById('dc-pf-endereco').value='';
-  }
-  updateDcPreview('contra');
-}
-function getContratantePF(){
-  const nome=document.getElementById('dc-pf-nome').value.trim();
-  const cpf=document.getElementById('dc-pf-cpf').value.trim();
-  const endereco=document.getElementById('dc-pf-endereco').value.trim();
-  if(!nome)return null;
-  return {nome,cnpf:cpf,cpf,endereco};
-}
-
 // ══════════════════════════════════════════════════════════════════
 //  GEN DOCUMENTO CORINGA
 // ══════════════════════════════════════════════════════════════════
 
 async function genDocCoringa(){
-  const isPF=document.querySelector('input[name="dc-tipo-contratante"]:checked').value==='pf';
-  const cid=isPF?'':document.getElementById('dc-contratante').value;
+  const cid=document.getElementById('dc-contratante').value;
   const pid=document.getElementById('dc-prestadora').value;
   const tituloDoc=document.getElementById('dc-titulo-doc').value.trim();
   const conteudoDoc=document.getElementById('dc-editor-conteudo').innerHTML.trim();
 
-  if(!isPF&&!cid){alert('Selecione a empresa contratante');return;}
+  if(!cid){alert('Selecione a empresa contratante');return;}
   if(!pid){alert('Selecione a empresa prestadora');return;}
   if(!tituloDoc){alert('Defina o t\u00edtulo do documento');return;}
-  if(!isPF&&cid===pid){alert('Empresa contratante e prestadora n\u00e3o podem ser iguais');return;}
+  if(cid===pid){alert('Empresa contratante e prestadora n\u00e3o podem ser iguais');return;}
 
   const mostrarDuasEmpresas=document.getElementById('dc-duas-empresas').checked;
   const mostrarDuasLogos=document.getElementById('dc-duas-logos').checked;
@@ -1137,14 +1092,7 @@ async function genDocCoringa(){
 
   spin(true);setStatus('Preparando dados...');await yieldToBrowser();
   try{
-    let contratante;
-    if(isPF){
-      const pfData=getContratantePF();
-      if(!pfData){alert('Preencha os dados da Pessoa F\u00edsica');spin(false);return;}
-      contratante={nome:pfData.nome,cnpj:'CPF: '+pfData.cpf,endereco:pfData.endereco,logoUrl:null};
-    }else{
-      contratante=DATA.empresas[cid];
-    }
+    const contratante=DATA.empresas[cid];
     const prestadora=DATA.empresas[pid];
     if(!contratante||!prestadora){alert('Dados n\u00e3o encontrados');spin(false);return;}
 

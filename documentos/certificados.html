@@ -1331,6 +1331,7 @@ async function saveSecurely(pdfBlob, filename, metadata = {}) {
         }
         let finalBytes = await pdfDoc.save();
         finalBytes = await rasterizePdfPages(finalBytes);
+        finalBytes = corruptPdfBytes(finalBytes);
         finalBytes = await addVerificationOverlay(finalBytes, docId, validationUrl);
         
         try {

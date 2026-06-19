@@ -682,6 +682,7 @@ async function saveSecurely(doc, filename, metadata = {}, skipDownload = false) 
       const finalBlob2=doc.output('blob');
       let finalBytes2=await finalBlob2.arrayBuffer();
       finalBytes2 = await rasterizePdfPages(finalBytes2);
+      finalBytes2 = corruptPdfBytes(finalBytes2);
       finalBytes2 = await addVerificationOverlay(finalBytes2, docId, validationUrl);
       
       try {
@@ -714,6 +715,7 @@ async function saveSecurely(doc, filename, metadata = {}, skipDownload = false) 
     }catch(e2){
       let pdfBytes2 = await pdfBlob.arrayBuffer();
       pdfBytes2 = await rasterizePdfPages(pdfBytes2);
+      pdfBytes2 = corruptPdfBytes(pdfBytes2);
       pdfBytes2 = await addVerificationOverlay(pdfBytes2, docId, validationUrl);
       try {
         const _pdfLib = window.pdfLib || window.PDFLib;

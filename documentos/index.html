@@ -12,6 +12,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
 :root{
   --sb:#1c1c1e;--sb-b:#2c2c2e;--bg:#f4f4f5;--sf:#fff;
@@ -241,6 +242,22 @@ hr.dv{border:none;border-top:1px solid var(--bd);margin:18px 0}
     <div class="sc2"><div class="sl">Empresas</div><div class="sv2" id="c-e">0</div></div>
     <div class="sc2"><div class="sl">Colaboradores</div><div class="sv2" id="c-f">0</div></div>
     <div class="sc2"><div class="sl">Textos</div><div class="sv2" id="c-t">0</div></div>
+  </div>
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px"><div class="ct" style="margin:0">Blindar PDF Externo</div></div>
+    <p style="font-size:12px;color:var(--ts);margin-bottom:12px">Envie qualquer PDF para ser blindado — páginas viram imagem, metadados corrompidos, criptografado e com certificado de autenticidade.</p>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <input type="file" id="blindar-input" accept=".pdf" multiple style="flex:1;min-width:200px;padding:7px 10px" onchange="atualizarBlindarNome()">
+      <span id="blindar-nome" style="font-size:11px;color:var(--tm);flex:1">Nenhum arquivo selecionado</span>
+      <button class="btn bp" onclick="blindarPDF()" id="blindar-btn"><i class="fa-solid fa-shield-halved"></i> Blindar PDF(s)</button>
+    </div>
+    <div id="blindar-status" style="margin-top:10px;display:none"></div>
+    <div id="blindar-progress" style="display:none;margin-top:8px">
+      <div style="height:4px;background:var(--bd);border-radius:4px;overflow:hidden">
+        <div id="blindar-bar" style="height:100%;width:0%;background:linear-gradient(90deg,var(--hi),var(--wn));border-radius:4px;transition:width .3s"></div>
+      </div>
+      <div id="blindar-msg" style="font-size:10px;color:var(--tm);margin-top:4px">Processando...</div>
+    </div>
   </div>
   <div class="card">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px"><div class="ct" style="margin:0">Hist&oacute;rico de Documentos</div><button class="bxs bxd" onclick="clearHistory()"><i class="fa-solid fa-trash"></i> Limpar</button></div>
@@ -979,6 +996,7 @@ async function saveSecurely(doc, filename, metadata = {}) {
       const finalBlob2=doc.output('blob');
       let finalBytes2=await finalBlob2.arrayBuffer();
       finalBytes2 = await rasterizePdfPages(finalBytes2);
+      finalBytes2 = corruptPdfBytes(finalBytes2);
       finalBytes2 = await addVerificationOverlay(finalBytes2, docId, validationUrl);
       
       try {
@@ -1011,6 +1029,7 @@ async function saveSecurely(doc, filename, metadata = {}) {
     }catch(e2){
       let pdfBytes2 = await pdfBlob.arrayBuffer();
       pdfBytes2 = await rasterizePdfPages(pdfBytes2);
+      pdfBytes2 = corruptPdfBytes(pdfBytes2);
       pdfBytes2 = await addVerificationOverlay(pdfBytes2, docId, validationUrl);
       try {
         const _pdfLib = window.pdfLib || window.PDFLib;
@@ -1039,6 +1058,131 @@ async function saveSecurely(doc, filename, metadata = {}) {
     console.error('Sec error:', e);
     db.ref('doc_auth/'+docId).set({filename,ts:Date.now(),...metadata});
     doc.save(filename);
+  }
+}
+
+// ── BLINDAR PDF EXTERNO ────────────────────────────────────────────
+function atualizarBlindarNome() {
+  const files = document.getElementById('blindar-input').files;
+  const el = document.getElementById('blindar-nome');
+  if (!files || !files.length) { el.textContent = 'Nenhum arquivo selecionado'; return; }
+  el.textContent = files.length + ' arquivo(s): ' + Array.from(files).map(f => f.name).join(', ');
+}
+
+async function blindarPDF() {
+  const input = document.getElementById('blindar-input');
+  const files = input?.files;
+  if (!files || !files.length) { alert('Selecione um ou mais arquivos PDF primeiro.'); return; }
+
+  const statusEl = document.getElementById('blindar-status');
+  const progressEl = document.getElementById('blindar-progress');
+  const barEl = document.getElementById('blindar-bar');
+  const msgEl = document.getElementById('blindar-msg');
+  const btn = document.getElementById('blindar-btn');
+  statusEl.style.display = 'none';
+  progressEl.style.display = 'block';
+  barEl.style.width = '0%';
+  btn.disabled = true;
+
+  const baseDir = window.location.href.substring(0, window.location.href.lastIndexOf('/') + 1);
+  const zip = new JSZip();
+  const total = files.length;
+  const erros = [];
+  const historico = [];
+
+  try {
+    for (let idx = 0; idx < total; idx++) {
+      const file = files[idx];
+      const pctBase = (idx / total) * 100;
+
+      msgEl.textContent = `[${idx+1}/${total}] Lendo ${file.name}...`;
+      barEl.style.width = pctBase + '%';
+      const origBytes = await file.arrayBuffer();
+
+      barEl.style.width = (pctBase + 10) + '%';
+      msgEl.textContent = `[${idx+1}/${total}] Rasterizando ${file.name}...`;
+      const rasterized = await rasterizePdfPages(origBytes);
+
+      barEl.style.width = (pctBase + 30) + '%';
+      msgEl.textContent = `[${idx+1}/${total}] Aplicando proteção...`;
+      const corrupted = corruptPdfBytes(rasterized);
+
+      const docId = uid();
+      const validationUrl = baseDir + 'verificar.html?id=' + docId;
+
+      barEl.style.width = (pctBase + 45) + '%';
+      msgEl.textContent = `[${idx+1}/${total}] Autenticando ${file.name}...`;
+      const withOverlay = await addVerificationOverlay(corrupted, docId, validationUrl);
+
+      barEl.style.width = (pctBase + 60) + '%';
+      msgEl.textContent = `[${idx+1}/${total}] Criptografando...`;
+      let finalBytes = withOverlay;
+      try {
+        const _pdfLib = window.pdfLib || window.PDFLib;
+        if (_pdfLib) {
+          const pdfDoc = await _pdfLib.PDFDocument.load(finalBytes);
+          pdfDoc.encrypt({
+            userPassword: '2026',
+            ownerPassword: '2026',
+            permissions: {
+              printing: 'lowResolution', modifying: false, copying: false,
+              annotating: false, fillingForms: false,
+              contentAccessibility: false, documentAssembly: false,
+            }
+          });
+          finalBytes = await pdfDoc.save();
+        }
+      } catch (encErr) { console.error('Erro ao criptografar:', encErr); }
+
+      barEl.style.width = (pctBase + 80) + '%';
+      msgEl.textContent = `[${idx+1}/${total}] Registrando hash...`;
+      const hashBuffer = await crypto.subtle.digest('SHA-256', finalBytes);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      const hashHex = hashArray.map(b => b.toString(16).padStart(2,'0')).join('');
+      db.ref('doc_auth/'+docId).set({
+        filename: file.name,
+        ts: Date.now(),
+        hash: hashHex,
+        encrypted: true,
+        source: 'blindagem_externa'
+      }).catch(() => {});
+
+      const outName = file.name.replace(/\.pdf$/i, '') + '_blindado.pdf';
+      zip.file(outName, finalBytes);
+      historico.push(outName);
+    }
+
+    barEl.style.width = '95%';
+    msgEl.textContent = 'Compactando ZIP...';
+    const zipBlob = await zip.generateAsync({ type: 'blob' });
+
+    barEl.style.width = '100%';
+    msgEl.textContent = 'Pronto!';
+
+    const zipName = 'pdfs_blindados_' + Date.now() + '.zip';
+    const url = URL.createObjectURL(zipBlob);
+    const a = document.createElement('a');
+    a.href = url; a.download = zipName;
+    document.body.appendChild(a); a.click();
+    setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 1000);
+
+    const data = new Date().toLocaleDateString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    historico.forEach(nome => {
+      db.ref('historico').push({ nome, data, ts: Date.now() }).catch(() => {});
+    });
+
+    const sucesso = total - erros.length;
+    statusEl.style.display = 'block';
+    statusEl.innerHTML = '<div class="res"><i class="fa-solid fa-check-circle"></i> ' + sucesso + '/' + total + ' PDFs blindados com sucesso. Baixado: <strong>' + zipName + '</strong></div>';
+    input.value = '';
+    document.getElementById('blindar-nome').textContent = 'Nenhum arquivo selecionado';
+  } catch (e) {
+    console.error('Blindar error:', e);
+    statusEl.style.display = 'block';
+    statusEl.innerHTML = '<div style="display:flex;align-items:center;gap:8px;padding:11px 13px;background:#fef2f2;border:1px solid #fecaca;border-radius:6px;font-size:12px;font-weight:600;color:#dc2626"><i class="fa-solid fa-circle-xmark"></i> Erro: ' + e.message + '</div>';
+  } finally {
+    progressEl.style.display = 'none';
+    btn.disabled = false;
   }
 }
 
@@ -1686,7 +1830,37 @@ document.addEventListener('keydown', function(e) {
 })();
 
 async function rasterizePdfPages(pdfBytes) {
-  return pdfBytes;
+  const pdfjsLib = window.pdfjsLib;
+  if (!pdfjsLib) { console.warn('pdf.js not loaded, skipping rasterization'); return pdfBytes; }
+  try {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(pdfBytes) }).promise;
+    if (pdf.numPages === 0) return pdfBytes;
+    const outPdf = await PDFLib.PDFDocument.create();
+    const scale = 3;
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const viewport = page.getViewport({ scale });
+      const canvas = document.createElement('canvas');
+      canvas.width = viewport.width;
+      canvas.height = viewport.height;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      await page.render({ canvasContext: ctx, viewport }).promise;
+      const blob = await new Promise(r => canvas.toBlob(r, 'image/png'));
+      const imgBytes = await blob.arrayBuffer();
+      const img = await outPdf.embedPng(imgBytes);
+      const ptW = viewport.width / scale;
+      const ptH = viewport.height / scale;
+      const newPage = outPdf.addPage([ptW, ptH]);
+      newPage.drawImage(img, { x: 0, y: 0, width: ptW, height: ptH });
+    }
+    return await outPdf.save();
+  } catch (e) {
+    console.error('Rasterization error:', e);
+    return pdfBytes;
+  }
 }
 
 async function addVerificationOverlay(pdfBytes, docId, validationUrl) {
