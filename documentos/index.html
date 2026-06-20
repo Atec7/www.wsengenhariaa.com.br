@@ -825,7 +825,13 @@ function saveFinal(type,d){spin(true);const path={empresa:'empresas',funcionario
 function del(path,id){if(!confirm('Confirma a exclus\u00e3o?'))return;db.ref(path+'/'+id).remove().then(()=>{if(path==='funcionarios'){db.ref('alunos/'+id).remove().catch(()=>{});}}).catch(e=>alert('Erro: '+e.message));}
 function getFormData(t){
   if(t==='empresa')return{id:v('eid'),nome:v('i-e-nm'),cnpj:v('i-e-cj'),endereco:v('i-e-ender'),logoUrl:v('i-e-lid')};
-  if(t==='funcionario')return{id:v('fid'),empresaId:v('i-f-ep'),nome:v('i-f-nm'),cpf:v('i-f-cp'),funcao:v('i-f-fn'),cbo:v('i-f-cb'),setor:v('i-f-st'),dataAdm:v('i-f-dt')};
+  if(t==='funcionario'){
+    const cpfRaw=v('i-f-cp').replace(/\D/g,'');
+    const idAtual=v('fid');
+    const existente=toArr(DATA.funcionarios).find(f=>f.id!==idAtual&&(f.cpf||'').replace(/\D/g,'')===cpfRaw);
+    if(existente){alert('CPF j\u00e1 cadastrado para: '+existente.nome);return null;}
+    return{id:idAtual,empresaId:v('i-f-ep'),nome:v('i-f-nm'),cpf:v('i-f-cp'),funcao:v('i-f-fn'),cbo:v('i-f-cb'),setor:v('i-f-st'),dataAdm:v('i-f-dt')};
+  }
   if(t==='texto'){const cargos=getChecked('tCgChk');return{id:v('tid'),titulo:v('i-t-ti'),conteudo:v('i-t-co'),categoria:getTxtCategoria(),cargosVinculados:cargos};}
   if(t==='material')return{id:v('mid'),nome:v('i-m-nm'),ca:v('i-m-ca'),tipo:document.getElementById('i-m-tp').value,unidade:v('i-m-un'),estoque:parseInt(v('i-m-es'))||0};
   if(t==='cargo'){const epiData=CARGO_EPI_CART.map(c=>({id:c.id,qtd:c.qtd||1,tipo:c.tipo||'EPI'}));return{id:v('cid'),nome:v('i-c-nm'),cbo:v('i-c-cb'),epi:epiData};}
