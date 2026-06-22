@@ -216,6 +216,7 @@ hr.dv{border:none;border-top:1px solid var(--bd);margin:18px 0}
     <div class="mi" onclick="nav('emps',this)"><i class="fa-solid fa-building"></i> Empresas</div>
     <div class="mi" onclick="nav('cargos',this)"><i class="fa-solid fa-briefcase"></i> Cargos</div>
     <div class="mi" onclick="nav('funcs',this)"><i class="fa-solid fa-users"></i> Colaboradores</div>
+    <div class="mi" onclick="nav('pessoas',this)"><i class="fa-solid fa-user"></i> Pessoas</div>
     <div class="mi" onclick="nav('texts',this)"><i class="fa-solid fa-paragraph"></i> Textos &amp; NRs</div>
   </div>
   <div class="nav-grp">
@@ -282,6 +283,12 @@ hr.dv{border:none;border-top:1px solid var(--bd);margin:18px 0}
   <div class="ph"><div><div class="pt">Colaboradores</div><div class="pd">Gerencie os colaboradores cadastrados</div></div><button class="btn bp" onclick="openM('mdl-f','new')"><i class="fa-solid fa-plus"></i> Novo</button></div>
   <div class="sw"><input type="text" id="filter-colaboradores" placeholder="Buscar colaborador..." onkeyup="renderFuncs()"><i class="fa-solid fa-magnifying-glass"></i></div>
   <div class="card" style="padding:0;overflow:hidden"><div id="lst-f"></div></div>
+</div>
+
+<div id="pessoas" class="view">
+  <div class="ph"><div><div class="pt">Pessoas</div><div class="pd">Cadastro de pessoas f&iacute;sicas para contratantes</div></div><button class="btn bp" onclick="openM('mdl-p','new')"><i class="fa-solid fa-plus"></i> Nova</button></div>
+  <div class="sw"><input type="text" id="filter-pessoas" placeholder="Buscar pessoa..." onkeyup="renderPessoas()"><i class="fa-solid fa-magnifying-glass"></i></div>
+  <div class="card" style="padding:0;overflow:hidden"><div id="lst-p"></div></div>
 </div>
 
 <div id="texts" class="view">
@@ -458,6 +465,15 @@ hr.dv{border:none;border-top:1px solid var(--bd);margin:18px 0}
   <div class="ma"><button class="btn bp" onclick="sv('funcionario')"><i class="fa-solid fa-save"></i> Salvar</button><button class="btn bg2" onclick="cls()">Cancelar</button></div>
 </div></div>
 
+<div class="modal" id="mdl-p"><div class="mb">
+  <div class="mt2">Pessoa</div>
+  <input type="hidden" id="pid">
+  <div class="fg"><label class="fl">Nome</label><input id="i-p-nm"></div>
+  <div class="fg"><label class="fl">CPF</label><input id="i-p-cp" placeholder="000.000.000-00"></div>
+  <div class="fg"><label class="fl">Endere&ccedil;o</label><textarea id="i-p-ender" placeholder="Endere&ccedil;o completo da pessoa" style="min-height:60px"></textarea></div>
+  <div class="ma"><button class="btn bp" onclick="sv('pessoa')"><i class="fa-solid fa-save"></i> Salvar</button><button class="btn bg2" onclick="cls()">Cancelar</button></div>
+</div></div>
+
 <div class="modal" id="mdl-t"><div class="mb">
   <div class="mt2">Texto / NR</div>
   <input type="hidden" id="tid">
@@ -526,7 +542,7 @@ let CART=[],SEL_TEXTS=[],CARGO_EPI_CART=[];
 
 // ── INIT ────────────────────────────────────────────────────────
 function initListeners(){
-  ['empresas','funcionarios','textos','materiais','config','historico','cargos'].forEach(p=>{
+  ['empresas','funcionarios','textos','materiais','config','historico','cargos','pessoas'].forEach(p=>{
     db.ref(p).on('value',snap=>{
       const raw=snap.val()||{};const norm={};
       Object.entries(raw).forEach(([k,v])=>{norm[k]=(typeof v==='object'&&v!==null)?{...v,id:v.id||k}:v;});
@@ -563,7 +579,7 @@ function initListeners(){
   ['o-data','e-data','list-data','adm-data'].forEach(id=>{const el=document.getElementById(id);if(el&&!el.value)el.value=hoje;});
   addOrcItem();
 }
-function renderAll(){updateDashboard();renderEmps();renderCargos();renderFuncs();renderTexts();renderMats();renderHistory();populateSelects();renderPool();renderCart();}
+function renderAll(){updateDashboard();renderEmps();renderCargos();renderFuncs();renderPessoas();renderTexts();renderMats();renderHistory();populateSelects();renderPool();renderCart();}
 
 // ── UTILS ───────────────────────────────────────────────────────
 function uid(){return db.ref().push().key;}
@@ -601,6 +617,7 @@ function openM(id,mode){
     if(id==='mdl-f'){v('fid','');v('i-f-nm','');v('i-f-cp','');v('i-f-fn','');v('i-f-cb','');v('i-f-st','');v('i-f-dt','');document.getElementById('i-f-ep').value='';}
     if(id==='mdl-t'){v('tid','');v('i-t-ti','');v('i-t-co','');setTxtCategoria('');selAll('tCgChk',false);}
     if(id==='mdl-m'){v('mid','');v('i-m-nm','');v('i-m-ca','');document.getElementById('i-m-tp').value='EPI';v('i-m-un','');v('i-m-es','0');}
+    if(id==='mdl-p'){v('pid','');v('i-p-nm','');v('i-p-cp','');v('i-p-ender','');}
   }
   document.getElementById(id).style.display='flex';
 }
@@ -674,6 +691,7 @@ async function regenDoc(nome){
 function renderEmps(){const q=(document.getElementById('filter-empresas').value||'').toLowerCase();const emps=toArr(DATA.empresas).filter(e=>(e.nome||'').toLowerCase().includes(q)||(e.cnpj||'').toLowerCase().includes(q));document.getElementById('lst-e').innerHTML=emps.length?emps.map(e=>`<div class="tr2"><div><div class="rn">${esc(e.nome)}</div><div class="rs">CNPJ: ${esc(e.cnpj||'—')}${e.endereco?' | '+esc(e.endereco).substring(0,50):''}</div></div><div class="ra"><button class="btn bw" onclick='editEmp(${safeJSON(e)})'><i class="fa-solid fa-pen"></i></button><button class="btn bd2" onclick="del('empresas','${e.id}')"><i class="fa-solid fa-trash"></i></button></div></div>`).join(''):'<div class="es">Nenhuma empresa encontrada</div>';}
 function renderCargos(){const q=(document.getElementById('filter-cargos').value||'').toLowerCase();const cargos=toArr(DATA.cargos).filter(c=>(c.nome||'').toLowerCase().includes(q)||(c.cbo||'').toLowerCase().includes(q));const resolveEpiNomes=c=>{if(!c.epi)return'';const list=Array.isArray(c.epi)?c.epi:typeof c.epi==='string'?c.epi.split(',').map(s=>s.trim()).filter(s=>s).map(id=>({id})):[];return list.map(item=>{const id=typeof item==='object'?item.id:item;const qtd=typeof item==='object'?(item.qtd||1):1;const m=DATA.materiais[id]||toArr(DATA.materiais).find(mm=>(mm.nome||'').toLowerCase().includes(id.toLowerCase()));return m?m.nome+(qtd>1?' x'+qtd:''):null;}).filter(Boolean).join(', ');};document.getElementById('lst-c').innerHTML=cargos.length?cargos.map(c=>{const epiStr=resolveEpiNomes(c);return`<div class="tr2"><div><div class="rn">${esc(c.nome)}</div><div class="rs">CBO: ${esc(c.cbo||'—')}${epiStr?' | EPIs: '+esc(epiStr.substring(0,60)):''}</div></div><div class="ra"><button class="btn bw" onclick='editCargo(${safeJSON(c)})'><i class="fa-solid fa-pen"></i></button><button class="btn bd2" onclick="del('cargos','${c.id}')"><i class="fa-solid fa-trash"></i></button></div></div>`;}).join(''):'<div class="es">Nenhum cargo encontrado</div>';}
 function renderFuncs(){const q=(document.getElementById('filter-colaboradores').value||'').toLowerCase();const funcs=toArr(DATA.funcionarios).filter(f=>(f.nome||'').toLowerCase().includes(q)||(f.funcao||'').toLowerCase().includes(q));const em={};toArr(DATA.empresas).forEach(e=>{em[String(e.id||'').trim()]=e.nome;});const cg={};toArr(DATA.cargos).forEach(c=>{cg[String(c.id||'').trim()]=c.nome;});document.getElementById('lst-f').innerHTML=funcs.length?funcs.map(f=>`<div class="tr2"><div><div class="rn">${esc(f.nome)}</div><div class="rs">${esc(em[String(f.empresaId||'').trim()]||'?')} · ${esc(cg[String(f.funcao||'').trim()]||f.funcao||'—')}</div></div><div class="ra"><button class="btn bw" onclick='editFunc(${safeJSON(f)})'><i class="fa-solid fa-pen"></i></button><button class="btn bd2" onclick="del('funcionarios','${f.id}')"><i class="fa-solid fa-trash"></i></button></div></div>`).join(''):'<div class="es">Nenhum colaborador encontrado</div>';}
+function renderPessoas(){const q=(document.getElementById('filter-pessoas').value||'').toLowerCase();const pessoas=toArr(DATA.pessoas).filter(p=>(p.nome||'').toLowerCase().includes(q)||(p.cpf||'').toLowerCase().includes(q));document.getElementById('lst-p').innerHTML=pessoas.length?pessoas.map(p=>`<div class="tr2"><div><div class="rn">${esc(p.nome)}</div><div class="rs">CPF: ${esc(p.cpf||'—')}${p.endereco?' | '+esc(p.endereco).substring(0,50):''}</div></div><div class="ra"><button class="btn bw" onclick='editPessoa(${safeJSON(p)})'><i class="fa-solid fa-pen"></i></button><button class="btn bd2" onclick="del('pessoas','${p.id}')"><i class="fa-solid fa-trash"></i></button></div></div>`).join(''):'<div class="es">Nenhuma pessoa encontrada</div>';}
 function renderTexts(){const q=(document.getElementById('filter-texts').value||'').toLowerCase();const texts=toArr(DATA.textos).filter(t=>(t.titulo||'').toLowerCase().includes(q));document.getElementById('lst-t').innerHTML=texts.length?texts.map(t=>`<div class="tr2"><div><div class="rn">${esc(t.titulo)} <span class="bdg">${esc(t.categoria||'')}</span></div><div class="rs">${esc((t.conteudo||'').substring(0,80))}${(t.conteudo||'').length>80?'...':''}</div></div><div class="ra"><button class="btn bw" onclick='editText(${safeJSON(t)})'><i class="fa-solid fa-pen"></i></button><button class="btn bd2" onclick="del('textos','${t.id}')"><i class="fa-solid fa-trash"></i></button></div></div>`).join(''):'<div class="es">Nenhum texto cadastrado</div>';}
 function renderMats(){const q=(document.getElementById('filter-mat').value||'').toLowerCase();const mats=toArr(DATA.materiais).filter(m=>(m.nome||'').toLowerCase().includes(q)||(m.ca||'').toLowerCase().includes(q));document.getElementById('lst-m').innerHTML=mats.length?mats.map(m=>`<div class="tr2"><div><div class="rn">${esc(m.nome)} <span class="bdg">${esc(m.tipo||'EPI')}</span></div><div class="rs">C.A.: ${esc(m.ca||'—')} · Estoque: ${esc(m.estoque||0)} ${esc(m.unidade||'')}</div></div><div class="ra"><button class="btn bw" onclick='editMat(${safeJSON(m)})'><i class="fa-solid fa-pen"></i></button><button class="btn bd2" onclick="del('materiais','${m.id}')"><i class="fa-solid fa-trash"></i></button></div></div>`).join(''):'<div class="es">Nenhum material cadastrado</div>';}
 function renderPool(){const q=(document.getElementById('g-search').value||'').toLowerCase();const texts=toArr(DATA.textos).filter(t=>!SEL_TEXTS.includes(t.id)&&((t.titulo||'').toLowerCase().includes(q)||(t.categoria||'').toLowerCase().includes(q)));document.getElementById('g-pool').innerHTML=texts.map(t=>`<div class="ti" onclick="addText('${t.id}')"><span>${esc(t.titulo)}${t.categoria?' <small style="color:var(--tm)">['+esc(t.categoria)+']</small>':''}</span><i class="fa-solid fa-plus" style="color:var(--sc);font-size:11px"></i></div>`).join('')||'<div class="es" style="padding:10px">Nenhum disponível</div>';renderSel();}
@@ -816,7 +834,7 @@ function sv(type){
     r.readAsDataURL(file);
   }else{saveFinal(type,d);}
 }
-function saveFinal(type,d){spin(true);const path={empresa:'empresas',funcionario:'funcionarios',texto:'textos',material:'materiais',cargo:'cargos'}[type];const id=d.id||uid();d.id=id;db.ref(path+'/'+id).set(d).then(()=>{
+function saveFinal(type,d){spin(true);  const path={empresa:'empresas',funcionario:'funcionarios',texto:'textos',material:'materiais',cargo:'cargos',pessoa:'pessoas'}[type];const id=d.id||uid();d.id=id;db.ref(path+'/'+id).set(d).then(()=>{
     if(type==='funcionario'){
       db.ref('alunos/'+id).set({nome:d.nome,cpf:d.cpf,matricula:d.funcao,empresaVinculoId:d.empresaId}).catch(()=>{});
     }
@@ -835,6 +853,7 @@ function getFormData(t){
   if(t==='texto'){const cargos=getChecked('tCgChk');return{id:v('tid'),titulo:v('i-t-ti'),conteudo:v('i-t-co'),categoria:getTxtCategoria(),cargosVinculados:cargos};}
   if(t==='material')return{id:v('mid'),nome:v('i-m-nm'),ca:v('i-m-ca'),tipo:document.getElementById('i-m-tp').value,unidade:v('i-m-un'),estoque:parseInt(v('i-m-es'))||0};
   if(t==='cargo'){const epiData=CARGO_EPI_CART.map(c=>({id:c.id,qtd:c.qtd||1,tipo:c.tipo||'EPI'}));return{id:v('cid'),nome:v('i-c-nm'),cbo:v('i-c-cb'),epi:epiData};}
+  if(t==='pessoa'){const cpfRaw=v('i-p-cp').replace(/\D/g,'');const idAtual=v('pid');const existente=toArr(DATA.pessoas).find(p=>p.id!==idAtual&&(p.cpf||'').replace(/\D/g,'')===cpfRaw);if(existente){alert('CPF j\u00e1 cadastrado para: '+existente.nome);return null;}return{id:idAtual,nome:v('i-p-nm'),cpf:v('i-p-cp'),endereco:v('i-p-ender')};}
   return null;
 }
 function editEmp(x){v('eid',x.id);v('i-e-nm',x.nome||'');v('i-e-cj',x.cnpj||'');v('i-e-ender',x.endereco||'');v('i-e-lid',x.logoUrl||'');document.getElementById('i-e-logo').value='';openM('mdl-e');}
@@ -858,6 +877,7 @@ function editCargo(x){
   openM('mdl-c');
 }
 function editFunc(x){v('fid',x.id);document.getElementById('i-f-ep').value=x.empresaId||'';v('i-f-nm',x.nome||'');v('i-f-cp',x.cpf||'');v('i-f-fn',x.funcao||'');v('i-f-cb',x.cbo||'');v('i-f-st',x.setor||'');v('i-f-dt',x.dataAdm||'');openM('mdl-f');}
+function editPessoa(x){v('pid',x.id);v('i-p-nm',x.nome||'');v('i-p-cp',x.cpf||'');v('i-p-ender',x.endereco||'');openM('mdl-p');}
 function setTxtCategoria(val){
   const sel=document.getElementById('i-t-ca');
   const outroWrap=document.getElementById('i-t-ca-outro-wrap');

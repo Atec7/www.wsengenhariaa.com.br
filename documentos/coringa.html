@@ -226,7 +226,18 @@ hr.dv{border:none;border-top:1px solid var(--bd);margin:18px 0}
               <span class="coringa-step">01</span>
               <span>Empresa Contratante</span>
             </div>
+            <div style="display:flex;gap:12px;margin-bottom:10px">
+              <label style="display:flex;align-items:center;gap:4px;font-size:11px;cursor:pointer;font-weight:600">
+                <input type="radio" name="dc-tipo-contratante" value="cnpj" checked onchange="dcTipoContratanteChange()"> CNPJ (Empresa)
+              </label>
+              <label style="display:flex;align-items:center;gap:4px;font-size:11px;cursor:pointer;font-weight:600">
+                <input type="radio" name="dc-tipo-contratante" value="cpf" onchange="dcTipoContratanteChange()"> CPF (Pessoa F&iacute;sica)
+              </label>
+            </div>
             <select id="dc-contratante" onchange="updateDcPreview('contra')">
+              <option value="">Selecione...</option>
+            </select>
+            <select id="dc-contratante-pessoa" style="display:none" onchange="updateDcPreview('contra')">
               <option value="">Selecione...</option>
             </select>
             <div id="dc-contratante-preview" class="coringa-preview"></div>
@@ -364,7 +375,7 @@ const RESP={nome:"WEDSON DE JESUS SANTOS",registro:"CREA 0516926055",funcao:"Eng
 const IMGBB_KEY="95bb16ee776d7e20f26857cec98bd372";
 
 // ── STATE ───────────────────────────────────────────────────────
-let DATA={empresas:{},config:{},coringaTextos:{}};
+let DATA={empresas:{},config:{},coringaTextos:{},pessoas:{}};
 let DC_FOTOS=[];
 let DC_TABELAS=[];
 let DC_CAMPOS=[];
@@ -381,7 +392,7 @@ function voltar(){
 
 // ── INIT ────────────────────────────────────────────────────────
 function initListeners(){
-  ['empresas','config','coringaTextos'].forEach(p=>{
+  ['empresas','config','coringaTextos','pessoas'].forEach(p=>{
     db.ref(p).on('value',snap=>{
       const raw=snap.val()||{};const norm={};
       Object.entries(raw).forEach(([k,v])=>{norm[k]=(typeof v==='object'&&v!==null)?{...v,id:v.id||k}:v;});
@@ -441,6 +452,10 @@ function populateSelects(){
   const emps=toArr(DATA.empresas);
   const opts='<option value="">Selecione...</option>'+emps.map(e=>`<option value="${esc(e.id)}">${esc(e.nome)}</option>`).join('');
   ['dc-contratante','dc-prestadora'].forEach(id=>{const el=document.getElementById(id);if(!el)return;const cur=el.value;el.innerHTML=opts;if(cur)el.value=cur;});
+  const pessoas=toArr(DATA.pessoas);
+  const pessOpts='<option value="">Selecione...</option>'+pessoas.map(p=>`<option value="${esc(p.id)}">${esc(p.nome)} - CPF: ${esc(p.cpf||'')}</option>`).join('');
+  const dcPessoa=document.getElementById('dc-contratante-pessoa');
+  if(dcPessoa){const cur=dcPessoa.value;dcPessoa.innerHTML=pessOpts;if(cur)dcPessoa.value=cur;}
   const dcCarregar=document.getElementById('dc-carregar-texto');
   if(dcCarregar){
     const cur=dcCarregar.value;
@@ -450,24 +465,71 @@ function populateSelects(){
   }
 }
 
+function dcTipoContratanteChange(){
+  const tipo=document.querySelector('input[name="dc-tipo-contratante"]:checked')?.value;
+  const elEmpresa=document.getElementById('dc-contratante');
+  const elPessoa=document.getElementById('dc-contratante-pessoa');
+  const preview=document.getElementById('dc-contratante-preview');
+  if(tipo==='cpf'){
+    elEmpresa.style.display='none';
+    elPessoa.style.display='block';
+  }else{
+    elEmpresa.style.display='block';
+    elPessoa.style.display='none';
+  }
+  preview.innerHTML='';
+  preview.classList.remove('active');
+  dcRenderEditorPages();
+}
+
 async function updateDcPreview(type){
   const seletId=type==='contra'?'dc-contratante':'dc-prestadora';
   const previewId=type==='contra'?'dc-contratante-preview':'dc-prestadora-preview';
-  const el=document.getElementById(seletId);
   const pv=document.getElementById(previewId);
-  if(!el||!pv)return;
-  const emp=DATA.empresas[el.value];
-  if(emp){
-    let imgHtml='';
-    if(emp.logoUrl && emp.logoUrl.startsWith('http')){
-      imgHtml='<img src="'+emp.logoUrl+'" class="coringa-preview-logo" crossorigin="anonymous">';
-    }else if(emp.logoUrl && emp.logoUrl.startsWith('data:')){
-      imgHtml='<img src="'+emp.logoUrl+'" class="coringa-preview-logo">';
+  if(!pv)return;
+  if(type==='contra'){
+    const tipo=document.querySelector('input[name="dc-tipo-contratante"]:checked')?.value;
+    if(tipo==='cpf'){
+      const pessId=document.getElementById('dc-contratante-pessoa').value;
+      const pess=DATA.pessoas[pessId];
+      if(pess){
+        pv.innerHTML='<div class="coringa-preview-info"><div class="coringa-preview-nome">'+esc(pess.nome||'')+'</div><div class="coringa-preview-cnpj">CPF: '+esc(pess.cpf||'\u2014')+'</div><div class="coringa-preview-end">'+esc((pess.endereco||'').substring(0,60))+((pess.endereco||'').length>60?'...':'')+'</div></div>';
+        pv.classList.add('active');
+      }else{
+        pv.innerHTML='';pv.classList.remove('active');
+      }
+      dcRenderEditorPages();
+      return;
     }
-    pv.innerHTML=imgHtml+'<div class="coringa-preview-info"><div class="coringa-preview-nome">'+esc(emp.nome||'')+'</div><div class="coringa-preview-cnpj">CNPJ: '+esc(emp.cnpj||'\u2014')+'</div><div class="coringa-preview-end">'+esc((emp.endereco||'').substring(0,60))+((emp.endereco||'').length>60?'...':'')+'</div></div>';
-    pv.classList.add('active');
+    const el=document.getElementById(seletId);
+    const emp=DATA.empresas[el.value];
+    if(emp){
+      let imgHtml='';
+      if(emp.logoUrl && emp.logoUrl.startsWith('http')){
+        imgHtml='<img src="'+emp.logoUrl+'" class="coringa-preview-logo" crossorigin="anonymous">';
+      }else if(emp.logoUrl && emp.logoUrl.startsWith('data:')){
+        imgHtml='<img src="'+emp.logoUrl+'" class="coringa-preview-logo">';
+      }
+      pv.innerHTML=imgHtml+'<div class="coringa-preview-info"><div class="coringa-preview-nome">'+esc(emp.nome||'')+'</div><div class="coringa-preview-cnpj">CNPJ: '+esc(emp.cnpj||'\u2014')+'</div><div class="coringa-preview-end">'+esc((emp.endereco||'').substring(0,60))+((emp.endereco||'').length>60?'...':'')+'</div></div>';
+      pv.classList.add('active');
+    }else{
+      pv.innerHTML='';pv.classList.remove('active');
+    }
   }else{
-    pv.innerHTML='';pv.classList.remove('active');
+    const el=document.getElementById(seletId);
+    const emp=DATA.empresas[el.value];
+    if(emp){
+      let imgHtml='';
+      if(emp.logoUrl && emp.logoUrl.startsWith('http')){
+        imgHtml='<img src="'+emp.logoUrl+'" class="coringa-preview-logo" crossorigin="anonymous">';
+      }else if(emp.logoUrl && emp.logoUrl.startsWith('data:')){
+        imgHtml='<img src="'+emp.logoUrl+'" class="coringa-preview-logo">';
+      }
+      pv.innerHTML=imgHtml+'<div class="coringa-preview-info"><div class="coringa-preview-nome">'+esc(emp.nome||'')+'</div><div class="coringa-preview-cnpj">CNPJ: '+esc(emp.cnpj||'\u2014')+'</div><div class="coringa-preview-end">'+esc((emp.endereco||'').substring(0,60))+((emp.endereco||'').length>60?'...':'')+'</div></div>';
+      pv.classList.add('active');
+    }else{
+      pv.innerHTML='';pv.classList.remove('active');
+    }
   }
   dcRenderEditorPages();
 }
@@ -702,8 +764,8 @@ function dcUpdatePageIndicators(){
   const info=document.getElementById('dc-page-info');
   if(!overlay||!editor||!info)return;
   requestAnimationFrame(()=>{
-    const pdfLineH=4.8;
-    const usableContentH=250;
+    const pdfLineH=PAG.LINE_H;
+    const usableContentH=PAG.CONTENT_H;
     const editorLineH=parseFloat(getComputedStyle(editor).lineHeight)||(14*1.7);
     const pageH=Math.round(usableContentH/pdfLineH*editorLineH);
     const contentH=Math.max(editor.scrollHeight,1);
@@ -975,7 +1037,7 @@ async function addVerificationOverlay(pdfBytes, docId, validationUrl) {
 const {jsPDF}=window.jspdf;
 
 const C={h1:[60,62,68],h2:[78,80,88],dark:[62,64,70],mid:[98,100,110],sub:[128,130,140],bdr:[210,212,218],bg:[246,247,249],wh:[255,255,255],twh:[244,245,248],tlt:[182,184,196]};
-const PAG={PW:210,PH:297,PM:12,get UW(){return this.PW-this.PM*2;},get UH(){return this.PH-this.PM*2;},LW:297,LH:210,LM:10,get LUW(){return this.LW-this.LM*2;}};
+const PAG={PW:210,PH:297,PM:12,HEADER_H:22,BOTTOM_M:25,LINE_H:4.8,get UW(){return this.PW-this.PM*2;},get UH(){return this.PH-this.PM*2;},get CONTENT_H(){return this.PH-this.BOTTOM_M-this.HEADER_H;},get CONTENT_TOP(){return this.HEADER_H;},get CONTENT_BOTTOM(){return this.PH-this.BOTTOM_M;},LW:297,LH:210,LM:10,get LUW(){return this.LW-this.LM*2;}};
 
 const IMG_CACHE={};
 async function loadImg(url){
@@ -1022,7 +1084,7 @@ function P_footer(doc,isLandscape,dataDoc,dataValidade,empresaNome,local){
 
 function P_section(doc,title,y,isLandscape){
   const W=isLandscape?PAG.LW:PAG.PW,m=isLandscape?PAG.LM:PAG.PM,uw=W-m*2,H=isLandscape?PAG.LH:PAG.PH;
-  if(y+10>H-18){doc.addPage();y=18;}
+  if(y+10>H-PAG.BOTTOM_M){doc.addPage();y=PAG.HEADER_H;}
   doc.setFillColor(...C.bg);doc.rect(m,y,uw,6,'F');doc.setFillColor(...C.h2);doc.rect(m,y,2,6,'F');
   doc.setDrawColor(...C.bdr);doc.setLineWidth(0.15);doc.rect(m,y,uw,6,'S');
   doc.setFont('helvetica','bold');doc.setFontSize(7);doc.setTextColor(...C.h2);
@@ -1032,7 +1094,7 @@ function P_section(doc,title,y,isLandscape){
 
 function P_text(doc,text,y,isLandscape,italic){
   const W=isLandscape?PAG.LW:PAG.PW,m=isLandscape?PAG.LM:PAG.PM,uw=W-m*2,H=isLandscape?PAG.LH:PAG.PH,lh=4.6;
-  const bottomLimit=H-20;y+=5;
+  const bottomLimit=H-PAG.BOTTOM_M;y+=5;
   doc.setFont('helvetica',italic?'italic':'normal');doc.setFontSize(8.5);doc.setTextColor(...C.mid);
   const cleaned=cleanForPdf(text||'');const paragraphs=cleaned.split('\n');const allLines=[];
   for(const para of paragraphs){
@@ -1040,7 +1102,7 @@ function P_text(doc,text,y,isLandscape,italic){
     const wrapped=doc.splitTextToSize(para,uw-4);allLines.push(...wrapped);
   }
   for(const line of allLines){
-    if(y+lh>bottomLimit){doc.addPage();y=18;doc.setFont('helvetica',italic?'italic':'normal');doc.setFontSize(8.5);doc.setTextColor(...C.mid);}
+    if(y+lh>bottomLimit){doc.addPage();y=PAG.HEADER_H;doc.setFont('helvetica',italic?'italic':'normal');doc.setFontSize(8.5);doc.setTextColor(...C.mid);}
     if(line.trim()!=='')doc.text(line,m+3,y);
     y+=lh;
   }
@@ -1049,7 +1111,7 @@ function P_text(doc,text,y,isLandscape,italic){
 
 function P_checkPage(doc,y,needed,isLandscape){
   const H=isLandscape?PAG.LH:PAG.PH;
-  if(y+needed>H-20){doc.addPage();return 18;}
+  if(y+needed>H-PAG.BOTTOM_M){doc.addPage();return PAG.HEADER_H;}
   return y;
 }
 
@@ -1074,15 +1136,21 @@ function P_signatures(doc,y,left,right,assData,isLandscape,localData){
 // ══════════════════════════════════════════════════════════════════
 
 async function genDocCoringa(){
+  const tipoContratante=document.querySelector('input[name="dc-tipo-contratante"]:checked')?.value;
   const cid=document.getElementById('dc-contratante').value;
+  const cpid=document.getElementById('dc-contratante-pessoa').value;
   const pid=document.getElementById('dc-prestadora').value;
   const tituloDoc=document.getElementById('dc-titulo-doc').value.trim();
   const conteudoDoc=document.getElementById('dc-editor-conteudo').innerHTML.trim();
 
-  if(!cid){alert('Selecione a empresa contratante');return;}
+  if(tipoContratante==='cpf'){
+    if(!cpid){alert('Selecione a pessoa contratante');return;}
+  }else{
+    if(!cid){alert('Selecione a empresa contratante');return;}
+    if(cid===pid){alert('Empresa contratante e prestadora n\u00e3o podem ser iguais');return;}
+  }
   if(!pid){alert('Selecione a empresa prestadora');return;}
   if(!tituloDoc){alert('Defina o t\u00edtulo do documento');return;}
-  if(cid===pid){alert('Empresa contratante e prestadora n\u00e3o podem ser iguais');return;}
 
   const mostrarDuasEmpresas=document.getElementById('dc-duas-empresas').checked;
   const mostrarDuasLogos=document.getElementById('dc-duas-logos').checked;
@@ -1092,9 +1160,17 @@ async function genDocCoringa(){
 
   spin(true);setStatus('Preparando dados...');await yieldToBrowser();
   try{
-    const contratante=DATA.empresas[cid];
+    let contratante;
+    if(tipoContratante==='cpf'){
+      const pess=DATA.pessoas[cpid];
+      if(!pess){alert('Dados da pessoa n\u00e3o encontrados');spin(false);return;}
+      contratante={nome:pess.nome,cnpj:pess.cpf,endereco:pess.endereco,logoUrl:null,ehPessoa:true};
+    }else{
+      contratante=DATA.empresas[cid];
+      if(!contratante){alert('Dados da empresa n\u00e3o encontrados');spin(false);return;}
+    }
     const prestadora=DATA.empresas[pid];
-    if(!contratante||!prestadora){alert('Dados n\u00e3o encontrados');spin(false);return;}
+    if(!prestadora){alert('Dados da empresa prestadora n\u00e3o encontrados');spin(false);return;}
 
     const texto={titulo:dcCleanTitle(tituloDoc),conteudo:''};
     const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
@@ -1180,7 +1256,7 @@ async function genDocCoringa(){
       doc.text(label.toUpperCase(),x+4,yy);yy+=7;
       doc.setFont('helvetica','bold');doc.setFontSize(8.5);doc.setTextColor(30,30,30);
       doc.text(emp.nome||'\u2014',x+4,yy);yy+=4.5;
-      if(emp?.cnpj){doc.setFont('helvetica','normal');doc.setFontSize(7);doc.setTextColor(80,80,80);doc.text('CNPJ: '+emp.cnpj,x+4,yy);yy+=4;}
+      if(emp?.cnpj){const rotulo=emp.ehPessoa?'CPF: ':'CNPJ: ';doc.setFont('helvetica','normal');doc.setFontSize(7);doc.setTextColor(80,80,80);doc.text(rotulo+emp.cnpj,x+4,yy);yy+=4;}
       if(emp?.endereco){const lines=doc.splitTextToSize(emp.endereco,w-8);doc.setFont('helvetica','normal');doc.setFontSize(6.5);doc.setTextColor(100,100,100);lines.forEach((l,i)=>{doc.text(l,x+4,yy+i*3.5);});}
       return h;
     };
@@ -1226,12 +1302,11 @@ async function genDocCoringa(){
     doc.setFont('helvetica','bold');doc.setFontSize(12);doc.setTextColor(...C.twh);
     doc.text(P_fitTitle(doc,(texto.titulo||'DOCUMENTO').toUpperCase(),headerTitleMaxW,12),W-m,hh/2+1,{align:'right'});
     doc.setDrawColor(...C.bdr);doc.setLineWidth(0.4);doc.line(0,hh,W,hh);
-    contentY=hh+8;
+    contentY=hh+2;
 
     setStatus('Renderizando texto...');await yieldToBrowser();
     if(txtConteudo&&txtConteudo!=='<br>'){
-      contentY=P_section(doc,texto.titulo||'Descricao',contentY,false);
-      contentY=dcRenderHtml(doc,txtConteudo,m+2,contentY+5,uw-3,H,25);
+      contentY=dcRenderHtml(doc,txtConteudo,m+2,contentY,uw-3,H,PAG.BOTTOM_M);
       contentY+=6;
     }
 
@@ -1303,7 +1378,8 @@ async function genDocCoringa(){
     setStatus('Criptografando PDF (pode levar alguns segundos)...');await yieldToBrowser();
     const nomeDoc=(texto.titulo||'documento').replace(/[^\w\u0080-\uFFFF]/g,'_').replace(/_+/g,'_');
     const filename='DOCUMENTO_'+nomeDoc+'_'+(dataVal?dataVal.replace(/-/g,''):new Date().toISOString().slice(0,10))+'.pdf';
-    await saveSecurely(doc, filename, { contratanteId: cid, prestadoraId: pid });
+    const metaContratante=tipoContratante==='cpf'?{pessoaId:cpid}:{contratanteId:cid};
+    await saveSecurely(doc, filename, { ...metaContratante, prestadoraId: pid });
     showResult('dc-results','Documento gerado com sucesso!');
   }catch(e){console.error('Erro:',e);alert('Erro ao gerar documento: '+e.message);}
   finally{spin(false);}
@@ -1325,7 +1401,7 @@ function parseColor(val){
   if(named[nv])return named[nv];
   return null;
 }
-function dcCheckPage(doc,y,need,pageH,bottomM){if(y+need>pageH-bottomM){doc.addPage();return 22;}return y;}
+function dcCheckPage(doc,y,need,pageH,bottomM){if(y+need>pageH-bottomM){doc.addPage();return PAG.HEADER_H;}return y;}
 function dcRenderHtml(doc,html,x0,y0,maxW,pageH,bottomM){
   if(!html||html.trim()===''||html==='<br>')return y0;
   html=html.replace(/white-space\s*:\s*(nowrap|pre|pre-wrap|pre-line)\s*;?/gi,'').replace(/overflow\s*:\s*(auto|scroll|hidden)\s*;?/gi,'');
