@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebWord Professional - Arquivo Único</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --word-blue: #107c41;
+            --word-blue-dark: #0b592e;
+            --bg-gray: #e6e6e6;
+            --border-color: #d2d0ce;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Calibri, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-gray);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* --- BARRA DE TITULO --- */
+        .title-bar {
+            background-color: var(--word-blue);
+            color: white;
+            padding: 8px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14px;
+            z-index: 10;
+        }
+
+        .title-bar .actions button {
+            background: transparent;
+            border: none;
+            color: white;
+            padding: 4px 12px;
+            cursor: pointer;
+            border-radius: 4px;
+            font-weight: 500;
+        }
+
+        .title-bar .actions button:hover {
+            background-color: var(--word-blue-dark);
+        }
+
+        /* --- RIBBON (BARRA DE FERRAMENTAS) --- */
+        .ribbon {
+            background-color: #fff;
+            border-bottom: 1px solid var(--border-color);
+            padding: 8px 16px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: center;
+            z-index: 10;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        .tool-group {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            border-right: 1px solid var(--border-color);
+            padding-right: 12px;
+        }
+
+        select {
+            padding: 4px 8px;
+            border: 1px solid #d2d0ce;
+            border-radius: 4px;
+            height: 30px;
+            cursor: pointer;
+        }
+
+        .btn {
+            background: none;
+            border: 1px solid transparent;
+            border-radius: 4px;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: #323130;
+        }
+
+        .btn:hover {
+            background-color: #f3f2f1;
+            border-color: #dadada;
+        }
+
+        /* --- ÁREA DO DOCUMENTO --- */
+        .viewport {
+            flex: 1;
+            overflow-y: auto;
+            padding: 40px 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 30px;
+            scroll-behavior: smooth;
+        }
+
+        /* DIMENSÕES ABSOLUTAS DO PADRÃO A4 */
+        .page {
+            background-color: #fff;
+            width: 210mm;
+            height: 297mm;
+            min-height: 297mm;
+            max-height: 297mm;
+            padding: 25mm; /* Margens padrão de 2,5 cm */
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            border: 1px solid #bfbfbf;
+            outline: none;
+            font-size: 11pt;
+            line-height: 1.15;
+            color: #000;
+            word-wrap: break-word;
+            overflow: hidden; /* Ocula o estouro para o JS tratar */
+            position: relative;
+            box-sizing: border-box;
+        }
+
+        .page p {
+            margin-bottom: 0px;
+            padding-bottom: 6pt;
+        }
+
+        /* ESTRUTURA CRÍTICA QUE EVITA PÁGINAS EM BRANCO NO PDF */
+        .pdf-wrapper {
+            width: 210mm;
+            background: transparent;
+        }
+
+        .pdf-page-container {
+            height: 297mm;
+            max-height: 297mm;
+            overflow: hidden;
+            box-sizing: border-box;
+            page-break-after: always;
+            break-after: page;
+        }
+        
+        .pdf-page-container:last-child {
+            page-break-after: avoid;
+            break-after: avoid;
+        }
+
+        /* --- BARRA DE STATUS --- */
+        .status-bar {
+            background-color: var(--word-blue);
+            color: white;
+            padding: 4px 16px;
+            font-size: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 10;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="title-bar">
+        <div class="doc-title"><i class="fa-regular fa-file-word"></i> <strong>Documento Real A4</strong> - WebWord</div>
+        <div class="actions">
+            <button onclick="saveDocument()"><i class="fa-regular fa-floppy-disk"></i> Salvar Local</button>
+            <button onclick="exportToPDF()"><i class="fa-regular fa-file-pdf"></i> Exportar para PDF</button>
+        </div>
+    </div>
+
+    <div class="ribbon">
+        <div class="tool-group">
+            <select id="fontName" onchange="executeCmd('fontName', this.value)">
+                <option value="Calibri" selected>Calibri</option>
+                <option value="Arial">Arial</option>
+                <option value="Times New Roman">Times New Roman</option>
+            </select>
+            <select id="fontSize" onchange="executeCmd('fontSize', this.value)">
+                <option value="2">10 pt</option>
+                <option value="3" selected>12 pt</option>
+                <option value="4">14 pt</option>
+                <option value="5">18 pt</option>
+            </select>
+        </div>
+        <div class="tool-group">
+            <button class="btn" onclick="executeCmd('bold')" title="Negrito"><i class="fa-solid fa-bold"></i></button>
+            <button class="btn" onclick="executeCmd('italic')" title="Itálico"><i class="fa-solid fa-italic"></i></button>
+            <button class="btn" onclick="executeCmd('underline')" title="Sublinhado"><i class="fa-solid fa-underline"></i></button>
+        </div>
+        <div class="tool-group">
+            <button class="btn" onclick="executeCmd('justifyLeft')"><i class="fa-solid fa-align-left"></i></button>
+            <button class="btn" onclick="executeCmd('justifyCenter')"><i class="fa-solid fa-align-center"></i></button>
+            <button class="btn" onclick="executeCmd('justifyRight')"><i class="fa-solid fa-align-right"></i></button>
+            <button class="btn" onclick="executeCmd('justifyFull')"><i class="fa-solid fa-align-justify"></i></button>
+        </div>
+    </div>
+
+    <div class="viewport" id="document-container">
+        <div class="page" contenteditable="true">
+            <p>Este editor funciona de forma 100% integrada em um único arquivo HTML.</p>
+            <p>O problema das páginas em branco saltadas foi corrigido. Ao clicar em "Exportar para PDF", o JavaScript limpa os elementos ocultos, remove as sombras de monitor e agrupa os blocos A4 respeitando o limite físico de impressão.</p>
+            <p>Experimente preencher esta página para ver a quebra dinâmica em ação!</p>
+        </div>
+    </div>
+
+    <div class="status-bar">
+        <div id="word-count">Palavras: 0</div>
+        <div id="page-count">Páginas: 1</div>
+    </div>
+
+    <script>
+        const container = document.getElementById('document-container');
+
+        // Função para executar comandos de texto
+        function executeCmd(command, value = null) {
+            document.execCommand(command, false, value);
+        }
+
+        // Monitora as entradas de texto nas páginas
+        container.addEventListener('input', function(e) {
+            if (e.target.classList.contains('page')) {
+                handlePageContent(e.target);
+            }
+        });
+
+        // Gerencia dinamicamente o fluxo do texto entre as páginas A4
+        function handlePageContent(page) {
+            if (page.scrollHeight > page.clientHeight) {
+                let nextPage = page.nextElementSibling;
+                
+                if (!nextPage || !nextPage.classList.contains('page')) {
+                    nextPage = document.createElement('div');
+                    nextPage.className = 'page';
+                    nextPage.contentEditable = 'true';
+                    page.after(nextPage);
+                }
+
+                // Move o conteúdo que transbordou para a próxima folha
+                while (page.scrollHeight > page.clientHeight && page.lastChild) {
+                    if (nextPage.firstChild) {
+                        nextPage.insertBefore(page.lastChild, nextPage.firstChild);
+                    } else {
+                        nextPage.appendChild(page.lastChild);
+                    }
+                }
+
+                // Move o cursor do usuário de forma fluida para a nova página
+                nextPage.focus();
+                const range = document.createRange();
+                const sel = window.getSelection();
+                range.selectNodeContents(nextPage);
+                range.collapse(true);
+                sel.removeAllRanges();
+                sel.addRange(range);
+            }
+            updateStatus();
+        }
+
+        // Atualiza contadores na barra inferior
+        function updateStatus() {
+            const pages = document.querySelectorAll('.page');
+            document.getElementById('page-count').innerText = `Páginas: ${pages.length}`;
+            
+            let totalWords = 0;
+            pages.forEach(p => {
+                let text = p.innerText.trim();
+                if(text) totalWords += text.split(/\s+/).length;
+            });
+            document.getElementById('word-count').innerText = `Palavras: ${totalWords}`;
+        }
+
+        // Salva o documento no LocalStorage do navegador
+        function saveDocument() {
+            localStorage.setItem('webword_single_file_a4', container.innerHTML);
+            alert('Documento gravado com sucesso no navegador!');
+        }
+
+        // Carrega o documento ao iniciar a página
+        window.addEventListener('load', () => {
+            const saved = localStorage.getItem('webword_single_file_a4');
+            if (saved) {
+                container.innerHTML = saved;
+            }
+            updateStatus();
+        });
+
+        // Exportação limpa e sem páginas puladas
+        function exportToPDF() {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'pdf-wrapper';
+            
+            const originalPages = document.querySelectorAll('.page');
+            
+            originalPages.forEach((page, index) => {
+                const pageContainer = document.createElement('div');
+                pageContainer.className = 'pdf-page-container';
+                
+                const clone = page.cloneNode(true);
+                clone.removeAttribute('contenteditable');
+                clone.style.boxShadow = 'none';
+                clone.style.border = 'none';
+                clone.style.margin = '0';
+                
+                pageContainer.appendChild(clone);
+                wrapper.appendChild(pageContainer);
+            });
+
+            const opt = {
+                margin:       0,
+                filename:     'meu-documento-word.pdf',
+                image:        { type: 'jpeg', quality: 1.0 },
+                html2canvas:  { scale: 2, useCORS: true, logging: false },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+
+            html2pdf().set(opt).from(wrapper).save();
+        }
+    </script>
+</body>
+</html>
