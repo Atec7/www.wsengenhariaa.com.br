@@ -460,7 +460,7 @@ hr.dv{border:none;border-top:1px solid var(--bd);margin:18px 0}
   <div class="fg"><label class="fl">Empresa</label><select id="i-f-ep"><option value="">Selecione...</option></select></div>
   <div class="fg"><label class="fl">Nome</label><input id="i-f-nm"></div>
 <div class="g2"><div class="fg"><label class="fl">CPF</label><input id="i-f-cp" placeholder="000.000.000-00"></div><div class="fg"><label class="fl">Data de Admiss&atilde;o</label><input type="date" id="i-f-dt"></div></div>
-<div class="g2"><div class="fg"><label class="fl">Fun&ccedil;&atilde;o</label><select id="i-f-fn"><option value="">Selecione...</option></select></div><div class="fg"><label class="fl">CBO</label><input id="i-f-cb"></div></div>
+<div class="g2"><div class="fg"><label class="fl">Fun&ccedil;&atilde;o</label><select id="i-f-fn" onchange="autoFillCBO()"><option value="">Selecione...</option></select></div><div class="fg"><label class="fl">CBO</label><input id="i-f-cb"></div></div>
 <div class="fg"><label class="fl">Setor</label><input id="i-f-st"></div>
   <div class="ma"><button class="btn bp" onclick="sv('funcionario')"><i class="fa-solid fa-save"></i> Salvar</button><button class="btn bg2" onclick="cls()">Cancelar</button></div>
 </div></div>
@@ -876,7 +876,15 @@ function editCargo(x){
   document.getElementById('c-epi-search').value='';filterCargoEpiMat();
   openM('mdl-c');
 }
-function editFunc(x){v('fid',x.id);document.getElementById('i-f-ep').value=x.empresaId||'';v('i-f-nm',x.nome||'');v('i-f-cp',x.cpf||'');v('i-f-fn',x.funcao||'');v('i-f-cb',x.cbo||'');v('i-f-st',x.setor||'');v('i-f-dt',x.dataAdm||'');openM('mdl-f');}
+function editFunc(x){v('fid',x.id);document.getElementById('i-f-ep').value=x.empresaId||'';v('i-f-nm',x.nome||'');v('i-f-cp',x.cpf||'');v('i-f-fn',x.funcao||'');v('i-f-cb',x.cbo||'');v('i-f-st',x.setor||'');v('i-f-dt',x.dataAdm||'');autoFillCBO();openM('mdl-f');}
+
+function autoFillCBO(){
+  const sel=document.getElementById('i-f-fn');
+  const cb=document.getElementById('i-f-cb');
+  if(!sel||!cb)return;
+  const cargo=resolveCargo(sel.value);
+  cb.value=cargo?cargo.cbo||'':'';
+}
 function editPessoa(x){v('pid',x.id);v('i-p-nm',x.nome||'');v('i-p-cp',x.cpf||'');v('i-p-ender',x.endereco||'');openM('mdl-p');}
 function setTxtCategoria(val){
   const sel=document.getElementById('i-t-ca');
