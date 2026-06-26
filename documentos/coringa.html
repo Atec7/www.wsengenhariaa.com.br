@@ -647,6 +647,7 @@ function initListeners(){
   if(p3ed)_attachEditableListeners(p3ed);
   buildRuler();
   dcUpdatePagePreview();
+  _dcPushUndo();
   setTimeout(dcUpdateOverflow,300);
 }
 
@@ -901,7 +902,46 @@ function _updateHeaderFull(headerId,slotName,prestadora,contratante,duasLogos,ti
 ═══════════════════════════════════════════════════════════════ */
 let _dcUpdatingOverflow=false;
 let _dcOverflowTimer=null;
-const DC_CONTENT_MAX_H=978; // px — (a4-h 1123 - header 83 - footer 34) - content padding 16+12
+const DC_CONTENT_MAX_H=978;   // page 3  (a4-h 1123 - header 83 - footer 34 - pad 16+12)
+const DC_CONTENT_MAX_H_NOHDR=1061; // pages 4+ (a4-h 1123 - footer 34 - pad 16+12)
+
+/* Incremental overflow helpers */
+function _getEditors(){return Array.from(document.querySelectorAll('.dc-content-editable'));}
+function _getMaxH(idx){return idx===0?DC_CONTENT_MAX_H:DC_CONTENT_MAX_H_NOHDR;}
+function _measW(){const e=document.getElementById('dc-editor-host');return e?e.offsetWidth:704;}
+
+function _makeMeas(){
+  const m=document.createElement('div');
+  m.className='dc-content-editable';
+  const w=_measW();
+  m.style.cssText='position:fixed;left:-9999px;top:0;width:'+w+'px;min-height:0;padding:0;margin:0;';
+  document.body.appendChild(m);
+  return m;
+}
+
+function _contentHeight(html){
+  const m=_makeMeas();
+  m.innerHTML=html||'<p><br></p>';
+  const h=m.scrollHeight;
+  document.body.removeChild(m);
+  return h;
+}
+
+/* Find which child index makes the content exceed maxH.
+   Returns index of first child that should move to next page (or -1). */
+function _findCutIndex(editor,maxH){
+  const kids=Array.from(editor.childNodes).filter(n=>n.nodeType===1||(n.nodeType===3&&n.textContent.trim()));
+  if(!kids.length)return-1;
+  const m=_makeMeas();
+  let html='';
+  for(let i=0;i<kids.length;i++){
+    html+=kids[i].nodeType===1?kids[i].outerHTML:escHtml(kids[i].textContent);
+    m.innerHTML=html;
+    if(m.scrollHeight>maxH){document.body.removeChild(m);return i;}
+  }
+  document.body.removeChild(m);
+  return-1;
+}
 
 function _footerTxt_pg(pgNum){
   const pSel=document.getElementById('dc-prestadora');
@@ -910,12 +950,6 @@ function _footerTxt_pg(pgNum){
   const local=document.getElementById('dc-local')?.value||'';
   const dataValidade=document.getElementById('dc-validade')?.value||'';
   return _footerTxt(empNome,dataVal,dataValidade,local,pgNum);
-}
-
-function _getActiveEditor(){
-  const ae=document.activeElement;
-  if(ae&&ae.closest('.dc-content-editable'))return ae.closest('.dc-content-editable');
-  return document.querySelector('.dc-content-editable')||null;
 }
 
 function dcCollectAllHTML(){
@@ -963,19 +997,29 @@ function _attachEditableListeners(ed){
 }
 
 function dcSaveCursorOffset(){
-  const sel=document.getSelection();
+  const sel=window.getSelection();
   if(!sel||!sel.rangeCount||!sel.anchorNode)return-1;
+  const anchor=sel.anchorNode;
+  const off=sel.anchorOffset;
+  let ed=anchor.nodeType===Node.ELEMENT_NODE
+    ? (anchor.closest?anchor.closest('.dc-content-editable'):null)
+    : (anchor.parentElement?anchor.parentElement.closest('.dc-content-editable'):null);
+  if(!ed)return-1;
   const eds=document.querySelectorAll('.dc-content-editable');
   let charOffset=0;
-  for(const ed of eds){
-    const walker=document.createTreeWalker(ed,NodeFilter.SHOW_TEXT,null,false);
-    let node;
-    while((node=walker.nextNode())!==null){
-      if(node===sel.anchorNode){charOffset+=sel.anchorOffset;return charOffset;}
-      charOffset+=(node.textContent||'').length;
+  for(const e of eds){if(e===ed)break;charOffset+=e.textContent.length;}
+  if(anchor.nodeType===Node.TEXT_NODE){
+    const w=document.createTreeWalker(ed,NodeFilter.SHOW_TEXT,null,false);
+    let n;while((n=w.nextNode())!==null){
+      if(n===anchor){charOffset+=off;return charOffset;}
+      charOffset+=(n.textContent||'').length;
     }
+    return charOffset;
   }
-  return-1;
+  try{
+    const r=document.createRange();r.selectNodeContents(ed);r.setEnd(anchor,off);
+    return charOffset+r.toString().length;
+  }catch(e){return-1;}
 }
 
 function dcRestoreCursorOffset(charOffset){
@@ -1005,91 +1049,99 @@ function dcUpdateOverflow(){
   if(_dcUpdatingOverflow)return;
   _dcUpdatingOverflow=true;
   try{
-    // ── 1. Save cursor as character offset ──
+    // ── 1. Save cursor offset (fallback) ──
     const cursorOffset=dcSaveCursorOffset();
 
-    // ── 2. Collect all content ──
+    // ── 2. Quick empty check ──
     const allHTML=dcCollectAllHTML();
-
-    // ── 3. Parse into blocks ──
-    const parser=document.createElement('div');
-    parser.innerHTML=allHTML;
-    const blocks=[];
-    for(let c=parser.firstChild;c;c=c.nextSibling){
-      if(c.nodeType===1)blocks.push(c.outerHTML);
-      else if(c.nodeType===3&&c.textContent.trim())blocks.push('<p>'+escHtml(c.textContent.trim())+'</p>');
-    }
-    const isEmpty=!blocks.length||(blocks.length===1&&(blocks[0]==='<p><br></p>'||blocks[0]==='<br>'));
-    if(isEmpty){
-      const p3ed=document.getElementById('dc-editor-host');
-      if(p3ed)p3ed.innerHTML='<p><br></p>';
-      document.getElementById('dc-preview-pages').innerHTML='';
+    if(allHTML==='<p><br></p>'||allHTML===''){
+      const p3=document.getElementById('dc-editor-host');
+      if(p3&&p3.innerHTML!=='<p><br></p>')p3.innerHTML='<p><br></p>';
+      const cont=document.getElementById('dc-preview-pages');
+      if(cont&&cont.children.length)cont.innerHTML='';
       _setTxt('content-footer-text',_footerTxt_pg(3));
       _setTxt('dc-content-page-num','Pg. 3');
       _setTxt('sb-pages','1');
       dcUpdateStatusBar();
+      _dcPushUndo();
       return;
     }
 
-    // ── 4. Measure blocks and split ──
-    const meas=document.createElement('div');
-    meas.className='dc-content-editable';
-    const _edW=document.getElementById('dc-editor-host');
-    const measW=_edW?(_edW.offsetWidth||630):630;
-    meas.style.cssText='position:fixed;left:-9999px;top:0;width:'+measW+'px;min-height:0;padding:0;margin:0;';
-    document.body.appendChild(meas);
-    const pageHTMLs=[];let pageBuf='';
-    for(const b of blocks){
-      const testHTML=pageBuf+b;
-      meas.innerHTML=testHTML;
-      if(meas.scrollHeight>DC_CONTENT_MAX_H&&pageBuf){
-        pageHTMLs.push(pageBuf);pageBuf=b;
-      }else{pageBuf=testHTML;}
-    }
-    if(pageBuf)pageHTMLs.push(pageBuf);
-    document.body.removeChild(meas);
-    if(!pageHTMLs.length)pageHTMLs.push('<p><br></p>');
-    const totalPages=pageHTMLs.length;
-
-    // ── 5. Update page 3 (has header) ──
-    const p3ed=document.getElementById('dc-editor-host');
-    if(p3ed) p3ed.innerHTML=pageHTMLs[0];
-    _setTxt('content-footer-text',_footerTxt_pg(3));
-    _setTxt('dc-content-page-num','Pg. 3');
-
-    // ── 6. Sync pages 4+ (no header) ──
+    // ── 3. Incremental overflow fix ──
+    const eds=_getEditors();
     const container=document.getElementById('dc-preview-pages');
-    const needed=totalPages-1;
-    let extras=container?Array.from(container.children):[];
-    while(extras.length>needed){extras.pop().remove();}
-    while(extras.length<needed&&container){
-      const idx=extras.length;
-      const pg=dcBuildContentPage(4+idx,pageHTMLs[1+idx]||'<p><br></p>',false);
-      container.appendChild(pg);
-      extras.push(pg);
+
+    // 3a. Move overflow forward
+    for(let i=0;i<eds.length;i++){
+      const ed=eds[i];
+      const maxH=_getMaxH(i);
+      const cutIdx=_findCutIndex(ed,maxH);
+      if(cutIdx<0)continue;
+
+      let nextEd;
+      if(i+1<eds.length){
+        nextEd=eds[i+1];
+      }else if(container){
+        const pgNum=3+eds.length; // eds hasn't grown yet
+        const pg=dcBuildContentPage(pgNum,'',false);
+        container.appendChild(pg);
+        nextEd=pg.querySelector('.dc-content-editable');
+        eds.push(nextEd);
+      }else break;
+
+      // Move excess children to START of next editor
+      const kids=Array.from(ed.childNodes).filter(n=>n.nodeType===1||(n.nodeType===3&&n.textContent.trim()));
+      for(let k=cutIdx;k<kids.length;k++){
+        const kid=kids[k];
+        if(kid.parentNode!==ed)continue;
+        ed.removeChild(kid);
+        nextEd.insertBefore(kid,nextEd.firstChild);
+      }
     }
-    extras.forEach((w,i)=>{
-      const pgNum=4+i;
-      const ed=w.querySelector('.dc-content-editable');
-      const html=pageHTMLs[i+1]||'<p><br></p>';
-      if(ed)ed.innerHTML=html;
-      const pn=w.querySelector('.dc-pg-number');
-      if(pn)pn.textContent='Pg. '+pgNum;
-      const ft=w.querySelector('.dc-pg-footer-text');
-      if(ft)ft.textContent=_footerTxt_pg(pgNum);
+
+    // 3b. Remove empty pages 4+ (backward loop avoids index issues)
+    let vacs=_getEditors();
+    for(let i=vacs.length-1;i>0;i--){
+      const ed=vacs[i];
+      const h=ed.innerHTML.trim();
+      if(!h||h==='<p><br></p>'){
+        const wrap=ed.closest('.dc-a4-page');
+        if(wrap)wrap.parentNode.removeChild(wrap);
+      }
+    }
+
+    // ── 4. Refresh page labels ──
+    const finalEds=_getEditors();
+    finalEds.forEach((ed,i)=>{
+      if(i===0){
+        _setTxt('content-footer-text',_footerTxt_pg(3));
+        _setTxt('dc-content-page-num','Pg. 3');
+      }else{
+        const wrap=ed.closest('.dc-a4-page');
+        if(wrap){
+          const pn=wrap.querySelector('.dc-pg-number');
+          if(pn)pn.textContent='Pg. '+(3+i);
+          const ft=wrap.querySelector('.dc-pg-footer-text');
+          if(ft)ft.textContent=_footerTxt_pg(3+i);
+        }
+      }
     });
 
-    // ── 7. Restore cursor from offset ──
-    dcRestoreCursorOffset(cursorOffset);
+    // ── 5. Restore cursor only if DOM manipulation lost it ──
+    const sel=window.getSelection();
+    if(!sel||!sel.rangeCount||!sel.anchorNode||!document.body.contains(sel.anchorNode)){
+      dcRestoreCursorOffset(cursorOffset);
+    }
 
-    // Ensure _dcLastEditor points to a live element
+    // Ensure _dcLastEditor
     if(!_dcLastEditor||!document.body.contains(_dcLastEditor)){
       const fe=document.querySelector('.dc-content-editable');
       if(fe)_dcLastEditor=fe;
     }
 
-    _setTxt('sb-pages',totalPages);
+    _setTxt('sb-pages',finalEds.length);
     dcUpdateStatusBar();
+    _dcPushUndo();
   }catch(e){
     console.error('Overflow engine error:',e);
   }finally{
@@ -1160,8 +1212,9 @@ function initEditorListeners(){
   area.addEventListener('keydown',function(e){
     if(!e.target.closest('.dc-content-editable'))return;
     if(e.key==='Tab'){e.preventDefault();document.execCommand('insertHTML',false,'&emsp;');return;}
-    if(e.ctrlKey&&e.key==='z'){document.execCommand('undo');e.preventDefault();return;}
-    if(e.ctrlKey&&e.key==='y'){document.execCommand('redo');e.preventDefault();return;}
+    if(e.ctrlKey&&e.key==='z'){dcUndo();e.preventDefault();return;}
+    if(e.ctrlKey&&e.key==='y'){dcRedo();e.preventDefault();return;}
+    if(e.ctrlKey&&e.shiftKey&&e.key==='Z'){dcRedo();e.preventDefault();return;}
   });
   area.addEventListener('mouseup',function(e){
     if(e.target.closest('.dc-content-editable'))dcAtualizarToolbar();
@@ -1198,6 +1251,42 @@ function dcAtualizarToolbar(){
 }
 
 /* ═══════════════════════════════════════════════════════════════
+   UNDO / REDO  (custom, because dcUpdateOverflow destroys native undo)
+═══════════════════════════════════════════════════════════════ */
+let _dcUndoStack=[];
+let _dcRedoStack=[];
+let _dcUndoing=false;
+const _DC_UNDO_MAX=50;
+
+function _dcPushUndo(){
+  if(_dcUndoing)return;
+  _dcRedoStack=[];
+  const h=dcCollectAllHTML();
+  if(!_dcUndoStack.length||_dcUndoStack[_dcUndoStack.length-1]!==h){
+    _dcUndoStack.push(h);
+    if(_dcUndoStack.length>_DC_UNDO_MAX)_dcUndoStack.shift();
+  }
+}
+
+function dcUndo(){
+  if(_dcUndoStack.length<2)return;
+  _dcUndoing=true;
+  _dcRedoStack.push(_dcUndoStack.pop());
+  dcSetAllHTML(_dcUndoStack[_dcUndoStack.length-1]);
+  dcUpdateOverflow();
+  _dcUndoing=false;
+}
+
+function dcRedo(){
+  if(!_dcRedoStack.length)return;
+  _dcUndoing=true;
+  _dcUndoStack.push(dcCollectAllHTML());
+  dcSetAllHTML(_dcRedoStack.pop());
+  dcUpdateOverflow();
+  _dcUndoing=false;
+}
+
+/* ═══════════════════════════════════════════════════════════════
    EDITOR FORMAT
 ═══════════════════════════════════════════════════════════════ */
 let _dcLastEditor=null;
@@ -1214,6 +1303,8 @@ function _getActiveEditor(){
 }
 
 function dcFormat(cmd,val){
+  if(cmd==='undo'){dcUndo();return;}
+  if(cmd==='redo'){dcRedo();return;}
   const ed=_getActiveEditor();
   if(!ed)return;
   if(!ed.contains(document.activeElement))ed.focus();
