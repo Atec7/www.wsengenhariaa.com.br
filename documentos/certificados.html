@@ -942,6 +942,15 @@ function renderCursos(){
     renderCourseDateSelectors();
 }
 
+function getCourseHours(courseId) {
+    const c = cursosData[courseId];
+    return parseInt((c?.carga || "").replace(/\D/g, '')) || 0;
+}
+
+function canStackOnDay(existingHours, newHours) {
+    return newHours <= 4 && newHours > 0 && existingHours + newHours <= 8;
+}
+
 function renderCourseDateSelectors() {
     const selectedCourseIds = courseSelectionOrder.filter(id => cursosData[id]);
     const container = el("courseDatesContainer");
@@ -955,20 +964,28 @@ function renderCourseDateSelectors() {
     const today = new Date().toISOString().slice(0, 10);
 
     const courseDates = [];
-    let lastEndDate = null;
+    let dayStart = today;
+    let dayHours = 0;
 
     selectedCourseIds.forEach(courseId => {
         const curso = cursosData[courseId];
         if (!curso) { courseDates.push(null); return; }
 
-        const horas = parseInt((curso.carga || "").replace(/\D/g, '')) || 0;
+        const horas = getCourseHours(courseId);
         const extraDays = horas > 0 ? Math.ceil(horas / 8) - 1 : 0;
 
-        let start = today;
-        if (lastEndDate) {
-            const nextDay = new Date(lastEndDate + "T00:00:00");
-            nextDay.setDate(nextDay.getDate() + 1);
-            start = nextDay.toISOString().slice(0, 10);
+        let start;
+        if (courseDates.length === 0) {
+            start = today;
+        } else if (canStackOnDay(dayHours, horas)) {
+            start = dayStart;
+        } else {
+            const last = courseDates.filter(d => d !== null).pop();
+            const d = new Date(last.end + "T00:00:00");
+            d.setDate(d.getDate() + 1);
+            start = d.toISOString().slice(0, 10);
+            dayStart = start;
+            dayHours = 0;
         }
 
         const d = new Date(start + "T00:00:00");
@@ -976,7 +993,7 @@ function renderCourseDateSelectors() {
         const end = d.toISOString().slice(0, 10);
 
         courseDates.push({ courseId, curso, extraDays, start, end });
-        lastEndDate = end;
+        dayHours += horas;
     });
 
     courseDates.forEach((item, index) => {
@@ -1028,31 +1045,62 @@ function renderCourseDateSelectors() {
 
 function detectConflicts() {
     const conflicts = [];
+
+    const dayTotals = {};
+    for (const id of courseSelectionOrder) {
+        const start = document.getElementById(`dataInicio_${id}`)?.value;
+        if (!start) continue;
+        if (!dayTotals[start]) dayTotals[start] = { horas: 0, ids: [] };
+        dayTotals[start].horas += getCourseHours(id);
+        dayTotals[start].ids.push(id);
+    }
+
+    for (const [day, info] of Object.entries(dayTotals)) {
+        if (info.horas > 8) {
+            conflicts.push({
+                type: 'overflow', day, ids: info.ids,
+                msg: `Dia ${fmtDateBR(day)} excede 8h (total: ${info.horas}h) — ${info.ids.map(id => cursosData[id]?.nome || id).join(', ')}`
+            });
+        }
+    }
+
     for (let i = 0; i < courseSelectionOrder.length - 1; i++) {
         const idA = courseSelectionOrder[i];
         const idB = courseSelectionOrder[i + 1];
-        const endA = document.getElementById(`dataFim_${idA}`)?.value;
+        const startA = document.getElementById(`dataInicio_${idA}`)?.value;
         const startB = document.getElementById(`dataInicio_${idB}`)?.value;
+        const endA = document.getElementById(`dataFim_${idA}`)?.value;
+
+        if (startA === startB) continue;
         if (endA && startB && startB <= endA) {
             const nomeA = cursosData[idA]?.nome || idA;
             const nomeB = cursosData[idB]?.nome || idB;
             conflicts.push({
-                idA, idB,
+                type: 'overlap', idA, idB,
                 msg: `${nomeB} (início: ${fmtDateBR(startB)}) sobrepõe ${nomeA} (término: ${fmtDateBR(endA)})`
             });
         }
     }
+
     return conflicts;
 }
 
 function highlightConflicts(conflicts) {
-    document.querySelectorAll('.date-conflict').forEach(el => el.classList.remove('date-conflict'));
-    document.querySelectorAll('.conflict-msg.visible').forEach(el => el.classList.remove('visible'));
+    clearConflictHighlights();
     conflicts.forEach(c => {
-        const endA = document.getElementById(`dataFim_${c.idA}`);
-        const startB = document.getElementById(`dataInicio_${c.idB}`);
-        if (endA) endA.classList.add('date-conflict');
-        if (startB) startB.classList.add('date-conflict');
+        if (c.type === 'overflow') {
+            c.ids.forEach(id => {
+                const s = document.getElementById(`dataInicio_${id}`);
+                const e = document.getElementById(`dataFim_${id}`);
+                if (s) s.classList.add('date-conflict');
+                if (e) e.classList.add('date-conflict');
+            });
+        } else {
+            const endA = document.getElementById(`dataFim_${c.idA}`);
+            const startB = document.getElementById(`dataInicio_${c.idB}`);
+            if (endA) endA.classList.add('date-conflict');
+            if (startB) startB.classList.add('date-conflict');
+        }
     });
 }
 
@@ -1147,16 +1195,33 @@ function recalcChainFrom(courseId) {
         const nextId = courseSelectionOrder[i + 1];
         const currentEndInput = document.getElementById(`dataFim_${currentId}`);
         const nextStartInput = document.getElementById(`dataInicio_${nextId}`);
-        if (currentEndInput && nextStartInput && currentEndInput.value) {
-            const d = new Date(currentEndInput.value + "T00:00:00");
-            if (!isNaN(d.getTime())) {
-                d.setDate(d.getDate() + 1);
-                const yyyy = d.getFullYear();
-                const mm = String(d.getMonth() + 1).padStart(2, '0');
-                const dd = String(d.getDate()).padStart(2, '0');
-                nextStartInput.value = `${yyyy}-${mm}-${dd}`;
+        const currentStartVal = document.getElementById(`dataInicio_${currentId}`)?.value;
+
+        if (!currentEndInput || !nextStartInput || !currentStartVal) continue;
+
+        const nextHours = getCourseHours(nextId);
+
+        const sameDayHours = courseSelectionOrder.reduce((sum, id) => {
+            if (id === nextId) return sum;
+            const s = document.getElementById(`dataInicio_${id}`)?.value;
+            return s === currentStartVal ? sum + getCourseHours(id) : sum;
+        }, 0);
+
+        if (canStackOnDay(sameDayHours, nextHours)) {
+            nextStartInput.value = currentStartVal;
+        } else {
+            if (currentEndInput.value) {
+                const d = new Date(currentEndInput.value + "T00:00:00");
+                if (!isNaN(d.getTime())) {
+                    d.setDate(d.getDate() + 1);
+                    const yyyy = d.getFullYear();
+                    const mm = String(d.getMonth() + 1).padStart(2, '0');
+                    const dd = String(d.getDate()).padStart(2, '0');
+                    nextStartInput.value = `${yyyy}-${mm}-${dd}`;
+                }
             }
         }
+
         atualizarDataFim(nextId);
     }
 }
