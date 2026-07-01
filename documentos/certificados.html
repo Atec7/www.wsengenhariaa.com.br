@@ -293,6 +293,22 @@ button.danger:hover { background: #c82333; }
   text-align: center;
   
 }
+.info-balloon {
+    background: #f0f7ff;
+    border: 1px solid #bae0ff;
+    border-radius: 6px;
+    padding: 8px 12px;
+    margin-top: 10px;
+    font-size: 12px;
+    color: #0050b3;
+    line-height: 1.4;
+}
+.date-hint {
+    color: var(--muted);
+    font-size: 11px;
+    display: block;
+    margin-top: 4px;
+}
 </style>
 </head>
 <body>
@@ -308,7 +324,7 @@ button.danger:hover { background: #c82333; }
 
 <div class="main-content">
     <header class="nome-sistema">
-        Sistema de Certificados WS ENGENHARIA CONSULTORIA E TREINAMENTOS (Versão V2.8 - Atecseven Tecnologia LTDA)
+        Sistema de Certificados WS ENGENHARIA CONSULTORIA E TREINAMENTOS (Versão V4.8 - Atecseven Tecnologia LTDA)
     </header>
     <div class="container">
 
@@ -614,6 +630,7 @@ let alunosData = {};
 let cursosData = {};
 let certificadosGeradosData = {}; 
 let currentCertificadoId = null;
+let courseSelectionOrder = [];
 
 const el=id=>document.getElementById(id);
 const toBase64File=input=>new Promise(res=>{
@@ -810,44 +827,150 @@ function renderCursos(){
     const listaCursosCheckbox = el("listaCursosCheckbox");
     listaCursosCheckbox.innerHTML = cursos.map(c=>`<label><input type="checkbox" class="course-checkbox" value="${c.id}"> <span>${c.nome} — ${c.carga}</span></label>`).join("");
 
+    courseSelectionOrder = [];
+
     listaCursosCheckbox.querySelectorAll('.course-checkbox').forEach(input => {
-        input.addEventListener('change', renderCourseDateSelectors);
+        input.addEventListener('change', (e) => {
+            const val = e.target.value;
+            if (e.target.checked) {
+                if (!courseSelectionOrder.includes(val)) {
+                    courseSelectionOrder.push(val);
+                }
+            } else {
+                courseSelectionOrder = courseSelectionOrder.filter(id => id !== val);
+            }
+            renderCourseDateSelectors();
+        });
     });
 
     renderCourseDateSelectors();
 }
 
 function renderCourseDateSelectors() {
-    const selectedCourseIds = Array.from(el("listaCursosCheckbox").querySelectorAll("input[type=checkbox]:checked")).map(i => i.value);
+    const selectedCourseIds = courseSelectionOrder.filter(id => cursosData[id]);
     const container = el("courseDatesContainer");
-    container.innerHTML = ''; 
+    container.innerHTML = '';
 
     if (selectedCourseIds.length === 0) {
         container.innerHTML = '<p style="color:var(--muted)">Selecione um ou mais cursos para definir as datas.</p>';
         return;
     }
 
+    const today = new Date().toISOString().slice(0, 10);
+
+    const courseDates = [];
+    let lastEndDate = null;
+
     selectedCourseIds.forEach(courseId => {
         const curso = cursosData[courseId];
-        if (!curso) return;
+        if (!curso) { courseDates.push(null); return; }
+
+        const horas = parseInt((curso.carga || "").replace(/\D/g, '')) || 0;
+        const extraDays = horas > 0 ? Math.ceil(horas / 8) - 1 : 0;
+
+        let start = today;
+        if (lastEndDate) {
+            const nextDay = new Date(lastEndDate + "T00:00:00");
+            nextDay.setDate(nextDay.getDate() + 1);
+            start = nextDay.toISOString().slice(0, 10);
+        }
+
+        const d = new Date(start + "T00:00:00");
+        d.setDate(d.getDate() + extraDays);
+        const end = d.toISOString().slice(0, 10);
+
+        courseDates.push({ courseId, curso, extraDays, start, end });
+        lastEndDate = end;
+    });
+
+    courseDates.forEach((item, index) => {
+        if (!item) return;
+        const { courseId, curso, extraDays, start, end } = item;
 
         const html = `
-            <div class="course-date-selector" data-course-id="${courseId}">
-                <h4>${curso.nome} (${curso.carga})</h4>
+            <div class="course-date-selector" data-course-id="${courseId}" data-extra-days="${extraDays}">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+                    <span style="display:inline-flex;align-items:center;justify-content:center;background:var(--primary);color:#fff;border-radius:50%;width:26px;height:26px;font-size:13px;font-weight:bold;flex-shrink:0;">${index + 1}</span>
+                    <h4 style="margin:0;">${curso.nome} (${curso.carga})</h4>
+                </div>
                 <div class="grid">
                     <div class="col-6">
                         <label for="dataInicio_${courseId}">Data de Início:</label>
-                        <input type="date" id="dataInicio_${courseId}" required>
+                        <input type="date" id="dataInicio_${courseId}" value="${start}" required>
+                        <small class="date-hint">ⓘ Data de início do treinamento</small>
                     </div>
                     <div class="col-6">
                         <label for="dataFim_${courseId}">Data de Fim:</label>
-                        <input type="date" id="dataFim_${courseId}" required>
+                        <input type="date" id="dataFim_${courseId}" value="${end}" required>
+                        <small class="date-hint">ⓘ Calculada automaticamente conforme carga horária</small>
                     </div>
+                </div>
+                <div class="info-balloon">
+                    📄 Certificado: <strong>${curso.nome}</strong> — data fim prevista: <strong class="data-fim-preview-${courseId}">${fmtDateBR(end)}</strong>.
+                    A data fim é calculada com base na carga horária de <strong>${curso.carga}</strong>.
                 </div>
             </div>
         `;
         container.innerHTML += html;
     });
+
+    selectedCourseIds.forEach(courseId => {
+        const startInput = document.getElementById(`dataInicio_${courseId}`);
+        if (startInput) {
+            startInput.addEventListener('change', () => recalcChainFrom(courseId));
+        }
+    });
+}
+
+function atualizarDataFim(courseId) {
+    const startInput = document.getElementById(`dataInicio_${courseId}`);
+    const endInput = document.getElementById(`dataFim_${courseId}`);
+    const selector = document.querySelector(`.course-date-selector[data-course-id="${courseId}"]`);
+    if (!startInput || !endInput || !selector) return;
+
+    const startDate = startInput.value;
+    const extraDays = parseInt(selector.dataset.extraDays) || 0;
+    
+    if (startDate) {
+        const d = new Date(startDate + "T00:00:00");
+        if (!isNaN(d.getTime())) {
+            d.setDate(d.getDate() + extraDays);
+            const yyyy = d.getFullYear();
+            const mm = String(d.getMonth() + 1).padStart(2, '0');
+            const dd = String(d.getDate()).padStart(2, '0');
+            endInput.value = `${yyyy}-${mm}-${dd}`;
+            
+            const preview = document.querySelector(`.data-fim-preview-${courseId}`);
+            if (preview) {
+                preview.textContent = d.toLocaleDateString('pt-BR');
+            }
+        }
+    }
+}
+
+function recalcChainFrom(courseId) {
+    atualizarDataFim(courseId);
+
+    const idx = courseSelectionOrder.indexOf(courseId);
+    if (idx === -1) return;
+
+    for (let i = idx; i < courseSelectionOrder.length - 1; i++) {
+        const currentId = courseSelectionOrder[i];
+        const nextId = courseSelectionOrder[i + 1];
+        const currentEndInput = document.getElementById(`dataFim_${currentId}`);
+        const nextStartInput = document.getElementById(`dataInicio_${nextId}`);
+        if (currentEndInput && nextStartInput && currentEndInput.value) {
+            const d = new Date(currentEndInput.value + "T00:00:00");
+            if (!isNaN(d.getTime())) {
+                d.setDate(d.getDate() + 1);
+                const yyyy = d.getFullYear();
+                const mm = String(d.getMonth() + 1).padStart(2, '0');
+                const dd = String(d.getDate()).padStart(2, '0');
+                nextStartInput.value = `${yyyy}-${mm}-${dd}`;
+            }
+        }
+        atualizarDataFim(nextId);
+    }
 }
 
 function renderCertificadosGerados(){
