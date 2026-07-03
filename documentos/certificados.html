@@ -948,7 +948,7 @@ function getCourseHours(courseId) {
 }
 
 function canStackOnDay(existingHours, newHours) {
-    return newHours <= 4 && newHours > 0 && existingHours + newHours <= 8;
+    return newHours <= 4 && newHours > 0 && existingHours <= 4 && (existingHours + newHours <= 8);
 }
 
 function renderCourseDateSelectors() {
@@ -1045,40 +1045,47 @@ function renderCourseDateSelectors() {
 
 function detectConflicts() {
     const conflicts = [];
+    const dailyHours = {};
 
-    const dayTotals = {};
     for (const id of courseSelectionOrder) {
-        const start = document.getElementById(`dataInicio_${id}`)?.value;
-        if (!start) continue;
-        if (!dayTotals[start]) dayTotals[start] = { horas: 0, ids: [] };
-        dayTotals[start].horas += getCourseHours(id);
-        dayTotals[start].ids.push(id);
-    }
+        const startStr = document.getElementById(`dataInicio_${id}`)?.value;
+        if (!startStr) continue;
+        
+        const horas = getCourseHours(id);
+        let remaining = horas;
+        let currentDate = new Date(startStr + "T00:00:00");
 
-    for (const [day, info] of Object.entries(dayTotals)) {
-        if (info.horas > 8) {
-            conflicts.push({
-                type: 'overflow', day, ids: info.ids,
-                msg: `Dia ${fmtDateBR(day)} excede 8h (total: ${info.horas}h) — ${info.ids.map(id => cursosData[id]?.nome || id).join(', ')}`
-            });
+        while (remaining > 0) {
+            const dayKey = currentDate.toISOString().slice(0, 10);
+            if (!dailyHours[dayKey]) dailyHours[dayKey] = { total: 0, courses: [] };
+            
+            const hoursToday = Math.min(remaining, 8);
+            dailyHours[dayKey].total += hoursToday;
+            dailyHours[dayKey].courses.push({ id, hours: hoursToday });
+            
+            remaining -= hoursToday;
+            currentDate.setDate(currentDate.getDate() + 1);
         }
     }
 
-    for (let i = 0; i < courseSelectionOrder.length - 1; i++) {
-        const idA = courseSelectionOrder[i];
-        const idB = courseSelectionOrder[i + 1];
-        const startA = document.getElementById(`dataInicio_${idA}`)?.value;
-        const startB = document.getElementById(`dataInicio_${idB}`)?.value;
-        const endA = document.getElementById(`dataFim_${idA}`)?.value;
-
-        if (startA === startB) continue;
-        if (endA && startB && startB <= endA) {
-            const nomeA = cursosData[idA]?.nome || idA;
-            const nomeB = cursosData[idB]?.nome || idB;
+    for (const [day, info] of Object.entries(dailyHours)) {
+        if (info.total > 8) {
             conflicts.push({
-                type: 'overlap', idA, idB,
-                msg: `${nomeB} (início: ${fmtDateBR(startB)}) sobrepõe ${nomeA} (término: ${fmtDateBR(endA)})`
+                type: 'overflow', day, ids: info.courses.map(c => c.id),
+                msg: `Dia ${fmtDateBR(day)} excede 8h (total: ${info.total}h) — ${info.courses.map(c => cursosData[c.id]?.nome || c.id).join(', ')}`
             });
+        }
+        
+        if (info.courses.length > 1) {
+            const hasViolation = info.courses.some(c => c.hours > 4);
+            if (hasViolation) {
+                const idA = info.courses[0].id;
+                const idB = info.courses[1].id;
+                conflicts.push({
+                    type: 'overlap', idA, idB,
+                    msg: `Sobreposição no dia ${fmtDateBR(day)}: cursos simultâneos não podem exceder 4h cada`
+                });
+            }
         }
     }
 
