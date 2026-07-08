@@ -150,6 +150,7 @@ button.danger:hover { background: #c82333; }
 .table th, .table td { padding: 10px; text-align: left; border-bottom: 1px solid #eee; font-size: 14px; }
 .table th { background-color: #f1f1f1; font-weight: 700; color: var(--text); }
 .table tr:hover { background-color: #f9f9f9; }
+.table td.vencido { color: #e74c3c; font-weight: bold; }
 
 /* Novo estilo para a seleção de datas por curso */
 .course-date-selector {
@@ -568,6 +569,16 @@ button.danger:hover { background: #c82333; }
                     <div class="col-3">
                         <label>Carga horária</label>
                         <input id="cursoCarga" placeholder="Ex.: 40h">
+                    </div>
+                    <div class="col-2">
+                        <label>Validade</label>
+                        <select id="cursoValidade">
+                            <option value="none">Não vence</option>
+                            <option value="1">1 Ano</option>
+                            <option value="2">2 Anos</option>
+                            <option value="3">3 Anos</option>
+                            <option value="5">5 Anos</option>
+                        </select>
                     </div>
                     <div class="col-12">
                         <label class="branco"><b>*SEMPRE DEIXAR EM BRANCO</b></label>
@@ -1236,17 +1247,24 @@ function recalcChainFrom(courseId) {
 function renderCertificadosGerados(){
     const certs = getArrayFromData(certificadosGeradosData).sort((a,b) => new Date(b.dataGeracao) - new Date(a.dataGeracao));
     el("tabelaCertificadosGerados").innerHTML =
-        `<tr><th>ID Aluno</th><th>Curso</th><th>Data Evento</th><th>Data Geração</th><th>Ações</th></tr>`+
-        certs.map(c=>`<tr>
+        `<tr><th>ID Aluno</th><th>Curso</th><th>Data Evento</th><th>Data Geração</th><th>Vencimento</th><th>Ações</th></tr>`+
+        certs.map(c=>{
+            const exp = c.expiracao ? fmtDateBR(c.expiracao) : 'N/A';
+            const hoje = new Date();
+            const vence = c.expiracao ? new Date(c.expiracao + "T23:59:59") : null;
+            const expClass = vence && vence < hoje ? 'vencido' : '';
+            return `<tr>
             <td>${c.aluno.matricula || c.aluno.id} - ${c.aluno.nome}</td>
             <td>${c.curso.nome} (${c.curso.carga})</td>
             <td>${c.dataInicioBR} a ${c.dataFimBR}</td>
             <td>${fmtDateBR(c.dataGeracao)}</td>
+            <td class="${expClass}">${exp}</td>
             <td class="actions">
                 <button class="secondary" onclick="window.viewCertificado('${c.id}')">Ver/Editar</button>
                 <button class="danger" onclick="window.deleteCertificado('${c.id}')">Excluir</button>
             </td>
-        </tr>`).join("");
+        </tr>`;
+        }).join("");
 }
 
 function openModal(title, bodyHTML, saveHandler) {
@@ -1327,6 +1345,14 @@ window.openEditModal = (type, id) => {
             <input type="hidden" id="modal_cursoId" value="${id}">
             <label>Nome do Curso:</label><input id="modal_cursoNome" value="${item.nome}">
             <label>Carga Horária:</label><input id="modal_cursoCarga" value="${item.carga}">
+            <label>Validade:</label>
+            <select id="modal_cursoValidade">
+                <option value="none" ${item.validade==='none'?'selected':''}>Não vence</option>
+                <option value="1" ${item.validade=='1'?'selected':''}>1 Ano</option>
+                <option value="2" ${item.validade=='2'?'selected':''}>2 Anos</option>
+                <option value="3" ${item.validade=='3'?'selected':''}>3 Anos</option>
+                <option value="5" ${item.validade=='5'?'selected':''}>5 Anos</option>
+            </select>
             <label>Logo do Curso (aparece na página 1 do certificado):</label>
             <input type="file" id="edit_logoCurso" accept="image/*">
             <label>Mensagem Padrão (Pág 1):</label><textarea id="modal_cursoMensagem" rows="5">${item.mensagem || ''}</textarea>
@@ -1456,6 +1482,7 @@ window.saveEditCurso = async (id) => {
         const patch = {
             nome: el('modal_cursoNome').value.trim(),
             carga: el('modal_cursoCarga').value.trim(),
+            validade: el('modal_cursoValidade').value,
             mensagem: el('modal_cursoMensagem').value.trim(),
             conteudo: el('modal_cursoConteudo').value.trim(),
         };
@@ -1526,6 +1553,14 @@ function buildMensagemCurso(curso, aluno, dataInicioBR, dataFimBR, empresa){
         .replaceAll("{NOME_EMPRESA}", empresa.nome)
         .replaceAll("{CIDADE_EMPRESA}", empresa.cidade)
         .replaceAll("{DATA_FIM_TREINAMENTO}", dataFimBR);
+}
+
+function calcExpiracao(dataFim, validade) {
+    if (!validade || validade === 'none') return null;
+    const d = new Date(dataFim + "T23:59:59");
+    if (isNaN(d.getTime())) return null;
+    d.setFullYear(d.getFullYear() + parseInt(validade));
+    return d.toISOString().slice(0, 10);
 }
 
 async function gerarCertificados(){
@@ -1602,7 +1637,8 @@ async function gerarCertificados(){
                 empresa: empresa, 
                 dataInicio: dataInicio, dataFim: dataFim,
                 dataInicioBR: dataInicioBR, dataFimBR: dataFimBR,
-                dataGeracao: new Date().toISOString().slice(0, 10) 
+                dataGeracao: new Date().toISOString().slice(0, 10),
+                expiracao: calcExpiracao(dataFim, curso.validade)
             };
 
             printArea.innerHTML += window.buildPage1(certData);
@@ -1642,6 +1678,26 @@ async function gerarCertificados(){
 
     try {
         await update(ref(db), updates);
+
+        const historyData = new Date().toLocaleDateString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+        const historyTs = Date.now();
+        const funcIds = selecionadosAlunos.map(a => a.id);
+
+        selectedCoursesWithDates.forEach(courseDateItem => {
+            const exp = calcExpiracao(courseDateItem.dataFim, courseDateItem.curso.validade);
+            push(ref(db, 'historico'), {
+                nome: `Certificado - ${courseDateItem.curso.nome}`,
+                data: historyData,
+                ts: historyTs,
+                empresaId: empresaId,
+                funcionarioIds: funcIds,
+                expiracao: exp,
+                tipo: 'certificado',
+                certificadoCursoId: courseDateItem.curso.id,
+                qtd: selecionadosAlunos.length
+            });
+        });
+
         alert(`clique em "OK" Para liberar a visualização de ${certCount} certificado(s). Clique em "Baixar PDF".`);
         printArea.style.display="flex";
     } catch (e) {
@@ -1988,8 +2044,10 @@ window.saveCurso = async () => {
         }
     }
     
+    const validade = el('cursoValidade').value;
+
     try { 
-        await push(ref(db, 'cursos'), { nome, carga, mensagem, conteudo, logoCurso: logoCursoUrl }); 
+        await push(ref(db, 'cursos'), { nome, carga, validade, mensagem, conteudo, logoCurso: logoCursoUrl }); 
         alert("Curso salvo!"); 
         window.clearCursoForm(); 
     } catch(e) { 
@@ -2000,6 +2058,7 @@ window.saveCurso = async () => {
 window.clearCursoForm = () => { 
     ["cursoNome","cursoCarga","cursoMensagem","cursoConteudo"].forEach(i=>el(i).value=""); 
     el("cursoLogoCurso").value = "";
+    el("cursoValidade").value = "none";
 }
 window.clearAllCursos = async () => {
     if (!confirm("Tem certeza que deseja apagar TODOS os cursos?")) return;

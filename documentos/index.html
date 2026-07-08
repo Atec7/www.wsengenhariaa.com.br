@@ -238,12 +238,75 @@ hr.dv{border:none;border-top:1px solid var(--bd);margin:18px 0}
 
 <main>
 <div id="dash" class="view active">
-  <div class="ph"><div><div class="pt">Dashboard</div><div class="pd">Vis&atilde;o geral do sistema</div></div></div>
-  <div class="sg">
-    <div class="sc2"><div class="sl">Empresas</div><div class="sv2" id="c-e">0</div></div>
-    <div class="sc2"><div class="sl">Colaboradores</div><div class="sv2" id="c-f">0</div></div>
-    <div class="sc2"><div class="sl">Textos</div><div class="sv2" id="c-t">0</div></div>
+  <div class="ph"><div><div class="pt">Dashboard</div><div class="pd">Vis&atilde;o geral do sistema</div></div><button class="btn bp" onclick="openRelModal()" style="display:none"><i class="fa-solid fa-file-pdf"></i> Relat&oacute;rio PDF</button></div>
+   
+  <div class="rmbar" style="margin-bottom:20px">
+    <div style="display:flex;gap:15px;align-items:center;flex-wrap:wrap">
+       <div style="display:flex;align-items:center;gap:8px"><i class="fa-solid fa-calendar-days" style="color:var(--tm)"></i><span style="font-size:12px;font-weight:600">Per&iacute;odo:</span></div>
+       <div style="display:flex;gap:6px"><input type="date" id="dash-date-start" style="width:140px;padding:5px 8px;font-size:12px" onchange="updateDashboard()"> <span style="align-self:center">at&eacute;</span> <input type="date" id="dash-date-end" style="width:140px;padding:5px 8px;font-size:12px" onchange="updateDashboard()"></div>
+       <div style="display:flex;align-items:center;gap:8px;margin-left:10px"><i class="fa-solid fa-building" style="color:var(--tm)"></i><span style="font-size:12px;font-weight:600">Empresa:</span></div>
+        <select id="dash-filter-emp" style="width:180px;padding:5px 8px;font-size:12px" onchange="updateDashboard();populateSubTipo()"><option value="">Todas</option></select>
+       <div style="display:flex;align-items:center;gap:8px;margin-left:10px"><i class="fa-solid fa-file-lines" style="color:var(--tm)"></i><span style="font-size:12px;font-weight:600">Tipo:</span></div>
+        <select id="dash-doc-type" style="width:140px;padding:5px 8px;font-size:12px" onchange="updateDashboard();populateSubTipo()"><option value="">Todos</option><option value="Ordem de Serviço">Ordem de Serviço</option><option value="Lista de Presença">Lista de Presença</option><option value="Ficha Admissional">Ficha Admissional</option><option value="Ficha EPI/EPC">Ficha EPI/EPC</option><option value="Proposta Comercial">Proposta Comercial</option><option value="Certificado">Certificado</option></select>
+        <select id="dash-sub-tipo" style="width:160px;padding:5px 8px;font-size:12px" onchange="updateDashboard()"><option value="">Todos</option></select>
+        <select id="dash-rel-status" style="width:120px;padding:5px 8px;font-size:12px"><option value="">Todos Status</option><option value="emdia">Em Dia</option><option value="vencido">Vencido</option></select>
+       <button class="btn bp" style="padding:5px 12px;font-size:11px" onclick="dashRelPDF()"><i class="fa-solid fa-file-pdf"></i> Gerar Relat&oacute;rio PDF</button>
+       <button class="btn bg2" style="padding:5px 12px;font-size:11px" onclick="resetDashFilters()"><i class="fa-solid fa-rotate-left"></i> Limpar</button>
+    </div>
   </div>
+
+  <div class="sg" style="grid-template-columns:repeat(4,1fr)">
+    <div class="sc2" style="cursor:pointer;background:linear-gradient(135deg,#eef2ff,#e0e7ff);border-color:#a5b4fc" onclick="showIndicatorDetail('empresas')"><div class="sl" style="color:#4338ca">Empresas</div><div class="sv2" id="c-e" style="color:#1e1b4b">0</div></div>
+    <div class="sc2" style="cursor:pointer;background:linear-gradient(135deg,#f0fdf4,#dcfce7);border-color:#86efac" onclick="showIndicatorDetail('colaboradores')"><div class="sl" style="color:#15803d">Colaboradores</div><div class="sv2" id="c-f" style="color:#052e16">0</div></div>
+    <div class="sc2" style="cursor:pointer;background:linear-gradient(135deg,#fefce8,#fef9c3);border-color:#fde047" onclick="showIndicatorDetail('textos')"><div class="sl" style="color:#a16207">DOCUMENTOS CADASTRADOS</div><div class="sv2" id="c-t" style="color:#422006">0</div></div>
+    <div class="sc2" style="cursor:pointer;background:linear-gradient(135deg,#f0f9ff,#e0f2fe);border-color:#7dd3fc" onclick="showIndicatorDetail('documentos')"><div class="sl" style="color:#0369a1">Doc. Gerados</div><div class="sv2" id="c-d-gen" style="color:#0c4a6e"><i class="fa-solid fa-file-export" style="font-size:14px;margin-right:4px"></i>0</div></div>
+    <div class="sc2" style="cursor:pointer;background:linear-gradient(135deg,#fef2f2,#fee2e2);border-color:#fca5a5" onclick="showIndicatorDetail('asoVencido')"><div class="sl" style="color:#b91c1c">ASO Vencido</div><div class="sv2" id="c-aso-v" style="color:#7f1d1d"><i class="fa-solid fa-user-xmark" style="font-size:14px;margin-right:4px"></i>0</div></div>
+    <div class="sc2" style="cursor:pointer;background:linear-gradient(135deg,#fff7ed,#ffedd5);border-color:#fdba74" onclick="showIndicatorDetail('aso30')"><div class="sl" style="color:#c2410c">ASO Vence em 30d</div><div class="sv2" id="c-aso-30" style="color:#7c2d12"><i class="fa-solid fa-clock" style="font-size:14px;margin-right:4px"></i>0</div></div>
+    <div class="sc2" style="cursor:pointer;background:linear-gradient(135deg,#fef2f2,#fee2e2);border-color:#fca5a5" onclick="showIndicatorDetail('exp30')"><div class="sl" style="color:#b91c1c">Docs Vencendo 30d</div><div class="sv2" id="c-d-exp" style="color:#7f1d1d"><i class="fa-solid fa-triangle-exclamation" style="font-size:14px;margin-right:4px"></i>0</div></div>
+    <div class="sc2" style="cursor:pointer;background:linear-gradient(135deg,#fff7ed,#ffedd5);border-color:#fdba74" onclick="showIndicatorDetail('exp90')"><div class="sl" style="color:#c2410c">Docs Vencendo 3m</div><div class="sv2" id="c-d-exp90" style="color:#7c2d12"><i class="fa-solid fa-clock" style="font-size:14px;margin-right:4px"></i>0</div></div>
+  </div>
+
+  <div class="g3" style="grid-template-columns:2fr 1fr;margin-bottom:16px">
+    <div class="card">
+      <div class="ct">Resumo de Documentos (Período)</div>
+      <div id="dash-doc-summary" style="min-height:150px">
+        <div class="es">Selecione um período para ver o resumo.</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="ct">Ranking de Vencimentos Próximos</div>
+      <div id="dash-exp-ranking" style="min-height:150px">
+        <div class="es">Nenhum vencimento próximo detectado.</div>
+      </div>
+    </div>
+  </div>
+  <div class="g2" style="margin-bottom:16px">
+    <div class="card">
+      <div class="ct">Distribuição por Tipo</div>
+      <canvas id="dash-bar-chart" style="width:100%;height:200px"></canvas>
+    </div>
+    <div class="card">
+      <div class="ct">Documentos por Empresa</div>
+      <div id="dash-emp-chart" style="min-height:180px"></div>
+    </div>
+  </div>
+
+  <div class="g2" style="margin-bottom:16px">
+    <div class="card">
+      <div class="ct">Vencimentos por Mês (Ano Vigente)</div>
+      <canvas id="dash-venc-chart" style="width:100%;height:200px"></canvas>
+    </div>
+    <div class="card">
+      <div class="ct">Situação ASO dos Colaboradores</div>
+      <div id="dash-aso-summary" style="min-height:180px"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="ct">Certificados por Curso</div>
+    <canvas id="dash-cert-chart" style="width:100%;height:200px"></canvas>
+  </div>
+
   <div class="card">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px"><div class="ct" style="margin:0">Blindar PDF Externo</div></div>
     <p style="font-size:12px;color:var(--ts);margin-bottom:12px">Envie qualquer PDF para ser blindado — páginas viram imagem, metadados corrompidos, criptografado e com certificado de autenticidade.</p>
@@ -462,6 +525,7 @@ hr.dv{border:none;border-top:1px solid var(--bd);margin:18px 0}
 <div class="g2"><div class="fg"><label class="fl">CPF</label><input id="i-f-cp" placeholder="000.000.000-00"></div><div class="fg"><label class="fl">Data de Admiss&atilde;o</label><input type="date" id="i-f-dt"></div></div>
 <div class="g2"><div class="fg"><label class="fl">Fun&ccedil;&atilde;o</label><select id="i-f-fn" onchange="autoFillCBO()"><option value="">Selecione...</option></select></div><div class="fg"><label class="fl">CBO</label><input id="i-f-cb"></div></div>
 <div class="fg"><label class="fl">Setor</label><input id="i-f-st"></div>
+<div class="g2"><div class="fg"><label class="fl">Vencimento ASO <span style="color:var(--dn)">*</span></label><input type="date" id="i-f-aso-date" required></div><div class="fg"><label class="fl">Tipo ASO <span style="color:var(--dn)">*</span></label><select id="i-f-aso-tipo" required><option value="">Selecione...</option><option value="ADMISSIONAL">Admissional</option><option value="DEMISSIONAL">Demissional</option><option value="PERIODICO">Periódico</option><option value="MUDANCA_FUNCAO">Mudança de Função</option><option value="RETORNO_TRABALHO">Retorno ao Trabalho</option></select></div></div>
   <div class="ma"><button class="btn bp" onclick="sv('funcionario')"><i class="fa-solid fa-save"></i> Salvar</button><button class="btn bg2" onclick="cls()">Cancelar</button></div>
 </div></div>
 
@@ -479,6 +543,7 @@ hr.dv{border:none;border-top:1px solid var(--bd);margin:18px 0}
   <input type="hidden" id="tid">
   <div class="fg"><label class="fl">T&iacute;tulo</label><input id="i-t-ti"></div>
   <div class="fg"><label class="fl">Categoria <span style="font-weight:400;color:var(--tm);text-transform:none;letter-spacing:0">(define o tipo do documento)</span></label><select id="i-t-ca" onchange="onTxtCatChange()"><option value="">Selecione...</option><option value="OS">OS — Ordem de Serviço</option><option value="ADMISSIONAL">ADMISSIONAL — Ficha Admissional</option><option value="LISTA">LISTA — Lista de Presença</option><option value="EPI">EPI — Ficha EPI/EPC</option><option value="NR-06">NR-06 (EPI)</option><option value="NR-35">NR-35 (Trabalho em Altura)</option><option value="NR-33">NR-33 (Espaço Confinado)</option><option value="NR-12">NR-12 (Segurança em Máquinas)</option><option value="NR-17">NR-17 (Ergonomia)</option><option value="NR-20">NR-20 (Inflamáveis)</option><option value="NR-23">NR-23 (Proteção contra Incêndios)</option><option value="NR-10">NR-10 (Segurança em Instalações Elétricas)</option><option value="PCMAT">PCMAT</option><option value="PCMSO">PCMSO</option><option value="LTCAT">LTCAT</option><option value="__outro__">Outro (digitar manualmente)</option></select><div id="i-t-ca-outro-wrap" style="display:none;margin-top:5px"><input id="i-t-ca-outro" placeholder="Digite a categoria personalizada"></div></div>
+  <div class="fg"><label class="fl">Validade</label><select id="i-t-val"><option value="none">Não vence</option><option value="1">1 Ano</option><option value="2">2 Anos</option><option value="3">3 Anos</option></select></div>
   <div class="fg"><label class="fl">Cargo(s) vinculado(s) <span style="font-weight:400;color:var(--tm);text-transform:none;letter-spacing:0">(usado automaticamente na geração em massa)</span></label><div class="sbar"><button class="bxs bxn" onclick="selAll('tCgChk',true)">Todos</button><button class="bxs bxd" onclick="selAll('tCgChk',false)">Nenhum</button></div><div id="i-t-cg-list" class="cl" style="max-height:150px"></div></div>
   <div class="fg"><label class="fl">Conte&uacute;do</label><textarea id="i-t-co" style="min-height:130px"></textarea></div>
   <div class="ma"><button class="btn bp" onclick="sv('texto')"><i class="fa-solid fa-save"></i> Salvar</button><button class="btn bg2" onclick="cls()">Cancelar</button></div>
@@ -526,6 +591,41 @@ hr.dv{border:none;border-top:1px solid var(--bd);margin:18px 0}
   <iframe id="cert-iframe" src="" title="Sistema de Certificados WS Engenharia" allowfullscreen></iframe>
 </div>
 
+<div class="modal" id="mdl-dash-detail"><div class="mb" style="width:600px">
+  <div class="mt2" id="dd-title">Detalhes</div>
+  <div id="dd-body" style="font-size:13px;line-height:1.6"></div>
+  <div class="ma"><button class="btn bg2" onclick="cls()">Fechar</button></div>
+</div></div>
+
+<!-- MODAL RELATORIO PDF -->
+<div class="modal" id="mdl-rel"><div class="mb" style="width:560px">
+  <div class="mt2"><i class="fa-solid fa-file-pdf" style="color:var(--dn);margin-right:6px"></i> Exportar Relat&oacute;rio PDF</div>
+  <div class="fg">
+    <label class="fl">Status do Documento</label>
+    <select id="rel-status" style="padding:7px 10px;font-size:12px">
+      <option value="">Todos</option>
+      <option value="emdia">Em Dia</option>
+      <option value="vencido">Vencido</option>
+    </select>
+  </div>
+  <div class="fg">
+    <label class="fl">Empresa(s)</label>
+    <div class="sbar">
+      <button class="bxs bxn" onclick="selAll('relEmpChk',true)">Todos</button>
+      <button class="bxs bxd" onclick="selAll('relEmpChk',false)">Nenhum</button>
+    </div>
+    <div id="rel-emp-list" class="cl" style="max-height:180px"></div>
+  </div>
+  <div class="g2">
+    <div class="fg"><label class="fl">Data In&iacute;cio</label><input type="date" id="rel-date-start"></div>
+    <div class="fg"><label class="fl">Data Fim</label><input type="date" id="rel-date-end"></div>
+  </div>
+  <div class="ma">
+    <button class="btn bg2" onclick="cls()">Cancelar</button>
+    <button class="btn bp" onclick="genRelatorioPDF()"><i class="fa-solid fa-file-pdf"></i> Gerar Relat&oacute;rio</button>
+  </div>
+</div></div>
+
 <script>
 // ── FIREBASE ────────────────────────────────────────────────────
 const FIREBASE_CONFIG={apiKey:"AIzaSyBehqlRiCiDniyPi3bjHtkH7q2-Px-KoZc",authDomain:"cadastr-produtos-clevir.firebaseapp.com",databaseURL:"https://cadastr-produtos-clevir-default-rtdb.firebaseio.com",projectId:"cadastr-produtos-clevir",storageBucket:"cadastr-produtos-clevir.firebasestorage.app",messagingSenderId:"1028296092810",appId:"1:1028296092810:web:86859328b19c1fdf511173"};
@@ -539,6 +639,8 @@ const IMGBB_KEY="95bb16ee776d7e20f26857cec98bd372";
 // ── STATE ───────────────────────────────────────────────────────
 let DATA={empresas:{},funcionarios:{},textos:{},materiais:{},config:{},historico:{},cargos:{}};
 let CART=[],SEL_TEXTS=[],CARGO_EPI_CART=[];
+let _replaceHistoryKey=null;
+let certCursoMap=null;
 
 // ── INIT ────────────────────────────────────────────────────────
 function initListeners(){
@@ -577,9 +679,32 @@ function initListeners(){
   if(to) document.getElementById('o-intro').value=to;
   const hoje=new Date().toISOString().slice(0,10);
   ['o-data','e-data','list-data','adm-data'].forEach(id=>{const el=document.getElementById(id);if(el&&!el.value)el.value=hoje;});
+  const mesInicio=new Date();mesInicio.setDate(1);
+  const ds=document.getElementById('dash-date-start');if(ds&&!ds.value)ds.value=mesInicio.toISOString().slice(0,10);
+  const de=document.getElementById('dash-date-end');if(de&&!de.value)de.value=hoje;
   addOrcItem();
 }
-function renderAll(){updateDashboard();renderEmps();renderCargos();renderFuncs();renderPessoas();renderTexts();renderMats();renderHistory();populateSelects();renderPool();renderCart();}
+function renderAll(){updateDashboard();renderEmps();renderCargos();renderFuncs();renderPessoas();renderTexts();renderMats();renderHistory();populateSelects();renderPool();renderCart();setTimeout(()=>fixOldCertHistory(),2000);}
+function loadCertCache(){firebase.database().ref('certificadosGerados').once('value').then(snap=>{const raw=snap.val();if(!raw)return;const map={};Object.values(raw).forEach(c=>{if(!c.curso?.id||!c.empresa?.id)return;const key=c.empresa.id+'||'+c.curso.id;if(c.curso.nome&&!map[key])map[key]=c.curso.nome;});certCursoMap=map;updateDashboard();if(document.getElementById('dash-doc-type').value==='Certificado')populateSubTipo();});}
+function getCertCursoName(h){if(certCursoMap&&h.certificadoCursoId){const key=(h.empresaId||'')+'||'+h.certificadoCursoId;if(certCursoMap[key])return certCursoMap[key];}const sn=stripCert(h.nome).trim();return sn.match(/emitido/i)?'Certificado':sn||'Certificado';}
+function populateSubTipo(){
+  const sel=document.getElementById('dash-sub-tipo');
+  const docType=document.getElementById('dash-doc-type').value;
+  const empId=document.getElementById('dash-filter-emp').value;
+  sel.innerHTML='<option value="">'+(docType?'Todos os sub':'Todos')+'</option>';
+  if(!docType)return;
+  const set=new Set();
+  toArr(DATA.historico).filter(h=>{
+    if(empId&&h.empresaId!==empId)return false;
+    return getDocTipo(h.nome)===docType;
+  }).forEach(h=>{
+    set.add(docType==='Certificado'?getCertCursoName(h):h.nome);
+  });
+  [...set].sort().forEach(v=>{
+    const opt=document.createElement('option');
+    opt.value=v;opt.textContent=v;sel.appendChild(opt);
+  });
+}
 
 // ── UTILS ───────────────────────────────────────────────────────
 function uid(){return db.ref().push().key;}
@@ -601,6 +726,8 @@ function fmtDataExtenso(d){
   return dias[dt.getDay()]+' '+dt.getDate()+' de '+meses[dt.getMonth()]+' de '+dt.getFullYear();
 }
 function fmtMoeda(n){return'R$ '+Number(n||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function stripCert(n){return String(n||'').replace(/^Certificado[s]?\s*-\s*/i,'');}
+function getExpirationDate(textId){const t=DATA.textos[textId];if(!t||!t.validade||t.validade==='none')return null;const d=new Date();const years=parseInt(t.validade);d.setFullYear(d.getFullYear()+years);return d.toISOString().slice(0,10);}
 function toArr(obj){if(!obj)return[];return Object.entries(obj).map(([k,v])=>(typeof v==='object'&&v!==null)?{...v,id:v.id||k}:v);}
 function spin(on){document.getElementById('loader').style.display=on?'flex':'none';}
 function fmtCnpj(c){if(!c)return'—';return c;}
@@ -614,8 +741,8 @@ function openM(id,mode){
   if(mode==='new'){
     if(id==='mdl-e'){v('eid','');v('i-e-nm','');v('i-e-cj','');v('i-e-ender','');v('i-e-lid','');document.getElementById('i-e-logo').value='';const p=document.getElementById('prev-emp-logo');if(p)p.style.display='none';}
     if(id==='mdl-c'){v('cid','');v('i-c-nm','');v('i-c-cb','');CARGO_EPI_CART=[];renderCargoEpiCart();document.getElementById('c-epi-search').value='';filterCargoEpiMat();}
-    if(id==='mdl-f'){v('fid','');v('i-f-nm','');v('i-f-cp','');v('i-f-fn','');v('i-f-cb','');v('i-f-st','');v('i-f-dt','');document.getElementById('i-f-ep').value='';}
-    if(id==='mdl-t'){v('tid','');v('i-t-ti','');v('i-t-co','');setTxtCategoria('');selAll('tCgChk',false);}
+    if(id==='mdl-f'){v('fid','');v('i-f-nm','');v('i-f-cp','');v('i-f-fn','');v('i-f-cb','');v('i-f-st','');v('i-f-dt','');v('i-f-aso-date','');document.getElementById('i-f-aso-tipo').value='';document.getElementById('i-f-ep').value='';}
+    if(id==='mdl-t'){v('tid','');v('i-t-ti','');v('i-t-co','');v('i-t-val','none');setTxtCategoria('');selAll('tCgChk',false);}
     if(id==='mdl-m'){v('mid','');v('i-m-nm','');v('i-m-ca','');document.getElementById('i-m-tp').value='EPI';v('i-m-un','');v('i-m-es','0');}
     if(id==='mdl-p'){v('pid','');v('i-p-nm','');v('i-p-cp','');v('i-p-ender','');}
   }
@@ -638,14 +765,1041 @@ function cleanForPdf(str){
 }
 
 // ── DASHBOARD ───────────────────────────────────────────────────
-function updateDashboard(){document.getElementById('c-e').textContent=Object.keys(DATA.empresas||{}).length;document.getElementById('c-f').textContent=Object.keys(DATA.funcionarios||{}).length;document.getElementById('c-t').textContent=Object.keys(DATA.textos||{}).length;}
+function dashEmpName(empresaId){
+  if(!empresaId)return '—';
+  const e=DATA.empresas[empresaId]||toArr(DATA.empresas).find(e=>e.id==empresaId);
+  return e?e.nome:'—';
+}
+function dashFuncNames(funcionarioIds){
+  if(!funcionarioIds||!funcionarioIds.length)return [];
+  return funcionarioIds.map(fid=>{
+    const f=DATA.funcionarios[fid];
+    return f?f.nome:'ID: '+fid;
+  });
+}
+function showIndicatorDetail(type){
+  const startVal=document.getElementById('dash-date-start').value;
+  const endVal=document.getElementById('dash-date-end').value;
+  const empId=document.getElementById('dash-filter-emp').value;
+  const startTs=startVal?new Date(startVal+'T00:00:00').getTime():0;
+  const endTs=endVal?new Date(endVal+'T23:59:59').getTime():Infinity;
+  let allHistory=toArr(DATA.historico);
+  if(empId)allHistory=allHistory.filter(h=>h.empresaId==empId);
+  const filtered=allHistory.filter(h=>(h.ts||0)>=startTs&&(h.ts||0)<=endTs);
+  const now=new Date();
+  const thirtyDays=30*24*60*60*1000;
+  const ninetyDays=90*24*60*60*1000;
+  const funcs=toArr(DATA.funcionarios);
+  const filteredFuncs=empId?funcs.filter(f=>f.empresaId==empId):funcs;
+
+  let title,items;
+  if(type==='empresas'){
+    title='Empresas Cadastradas';
+    const emps=empId?toArr(DATA.empresas).filter(e=>e.id==empId):toArr(DATA.empresas);
+    items=emps.map(e=>`<div style="padding:4px 0">🏢 ${esc(e.nome)}${e.cnpj?' <span style="color:var(--tm)">'+esc(e.cnpj)+'</span>':''}</div>`);
+  }else if(type==='colaboradores'){
+    title='Colaboradores Cadastrados';
+    function fmtAsoTipo(t){return{'ADMISSIONAL':'Admissional','DEMISSIONAL':'Demissional','PERIODICO':'Periódico','MUDANCA_FUNCAO':'Mudança Função','RETORNO_TRABALHO':'Retorno Trabalho'}[t]||t;}    items=filteredFuncs.map(f=>`<div style="padding:4px 0">👤 ${esc(f.nome)}${f.funcao?' <span style="color:var(--tm)">'+esc(f.funcao)+'</span>':''}${f.asoDate?'<br><span style="font-size:11px;color:var(--ts)">ASO: '+esc(fmtAsoTipo(f.asoTipo)||'')+' · Vence: '+esc(f.asoDate)+'</span>':''}</div>`);
+  }else if(type==='textos'){
+    title='Textos Cadastrados';
+    items=toArr(DATA.textos).map(t=>`<div style="padding:4px 0">📄 ${esc(t.titulo)}${t.categoria?' <span class="bdg">'+esc(t.categoria)+'</span>':''}</div>`);
+  }else if(type==='asoVencido'){
+    title='Colaboradores com ASO Vencido';
+    const venc=filteredFuncs.filter(f=>f.asoDate&&new Date(f.asoDate+'T23:59:59')<now);
+    items=venc.length?venc.map(f=>`<div style="padding:4px 0">🚫 ${esc(f.nome)} <span style="color:var(--dn);font-weight:600">Venceu: ${esc(f.asoDate)}</span> <span class="bdg">${esc(f.asoTipo||'')}</span></div>`):['<div class="es">Nenhum ASO vencido.</div>'];
+  }else if(type==='aso30'){
+    title='Colaboradores com ASO Vencendo em 30 Dias';
+    const prox=filteredFuncs.filter(f=>{if(!f.asoDate)return false;const d=new Date(f.asoDate+'T23:59:59');return d>now&&d.getTime()-now.getTime()<=thirtyDays;});
+    items=prox.length?prox.map(f=>{const days=Math.ceil((new Date(f.asoDate+'T23:59:59')-now)/(864e5));return`<div style="padding:4px 0">⏰ ${esc(f.nome)} <span style="color:var(--wn);font-weight:600">${days}d</span> · ${esc(f.asoDate)} <span class="bdg">${esc(f.asoTipo||'')}</span></div>`;}):['<div class="es">Nenhum ASO a vencer em 30 dias.</div>'];
+  }else if(type==='documentos'){
+    title='Documentos Gerados no Período';
+    items=filtered.length?filtered.map(h=>`<div style="padding:6px 0;border-bottom:1px solid var(--bd);font-size:12px;cursor:pointer" onclick="showDashDetail('${h.id||''}')">
+      <div style="font-weight:600">${esc(h.nome||'')}</div>
+      <div style="color:var(--tm);font-size:11px">${esc(h.data||'')} · ${esc(dashEmpName(h.empresaId))}</div>
+    </div>`):['<div class="es">Nenhum documento no período.</div>'];
+  }else if(type==='exp30'){
+    title='Documentos Vencendo em 30 Dias';
+    const exp30=allHistory.filter(h=>h.expiracao&&new Date(h.expiracao).getTime()>now.getTime()&&new Date(h.expiracao).getTime()-now.getTime()<=thirtyDays);
+    items=exp30.length?exp30.map(h=>`<div style="padding:6px 0;border-bottom:1px solid var(--bd);font-size:12px;cursor:pointer" onclick="showDashDetail('${h.id||''}')">
+      <div style="font-weight:600">${esc(h.nome||'')}</div>
+      <div style="color:var(--tm);font-size:11px">Vence: ${esc(h.expiracao||'')} · ${esc(dashEmpName(h.empresaId))}</div>
+    </div>`):['<div class="es">Nenhum documento vencendo em 30 dias.</div>'];
+  }else if(type==='exp90'){
+    title='Documentos Vencendo em 3 Meses';
+    const exp90=allHistory.filter(h=>h.expiracao&&new Date(h.expiracao).getTime()>now.getTime()&&new Date(h.expiracao).getTime()-now.getTime()<=ninetyDays);
+    items=exp90.length?exp90.map(h=>`<div style="padding:6px 0;border-bottom:1px solid var(--bd);font-size:12px;cursor:pointer" onclick="showDashDetail('${h.id||''}')">
+      <div style="font-weight:600">${esc(h.nome||'')}</div>
+      <div style="color:var(--tm);font-size:11px">Vence: ${esc(h.expiracao||'')} · ${esc(dashEmpName(h.empresaId))}</div>
+    </div>`):['<div class="es">Nenhum documento vencendo em 3 meses.</div>'];
+  }
+  document.getElementById('dd-title').textContent=title;
+  document.getElementById('dd-body').innerHTML=items.join('');
+  document.getElementById('mdl-dash-detail').style.display='flex';
+}
+function showDashDetail(key){
+  if(!key)return;
+  const h=DATA.historico[key];
+  if(!h)return;
+  const funcs=dashFuncNames(h.funcionarioIds);
+  const empsName=dashEmpName(h.empresaId);
+  const now=new Date();
+  const daysLeft=h.expiracao?Math.ceil((new Date(h.expiracao).getTime()-now.getTime())/(24*60*60*1000)):null;
+  const tsStr=h.ts?new Date(h.ts).toLocaleString('pt-BR'):'';
+  const genDateStr=h.data||tsStr;
+  const statusColor=h.expiracao?(daysLeft<=0?'var(--dn)':daysLeft<=15?'var(--wn)':daysLeft<=30?'#d97706':'var(--sc)'):'var(--ts)';
+  const statusText=h.expiracao?(daysLeft<=0?'VENCIDO HÁ '+Math.abs(daysLeft)+' DIA(S)':'VENCE EM '+daysLeft+' DIA(S)'):'NÃO VENCE';
+  let html=`<table style="width:100%;border-collapse:collapse">
+    <tr><td style="padding:6px 8px;font-weight:600;color:var(--ts);width:140px">Documento</td><td style="padding:6px 8px">${esc(h.nome||'')}</td></tr>
+    <tr><td style="padding:6px 8px;font-weight:600;color:var(--ts)">Data de Geração</td><td style="padding:6px 8px">${esc(genDateStr)}</td></tr>
+    <tr><td style="padding:6px 8px;font-weight:600;color:var(--ts)">Vencimento</td><td style="padding:6px 8px;color:${statusColor};font-weight:700">${h.expiracao?esc(h.expiracao):'—'} — ${statusText}</td></tr>
+    <tr><td style="padding:6px 8px;font-weight:600;color:var(--ts)">Empresa</td><td style="padding:6px 8px">${esc(empsName)}</td></tr>
+    <tr><td style="padding:6px 8px;font-weight:600;color:var(--ts)">Responsável</td><td style="padding:6px 8px">${esc(RESP.nome)}</td></tr>`;
+  if(funcs.length){
+    html+=`<tr><td style="padding:6px 8px;font-weight:600;color:var(--ts);vertical-align:top">Colaboradores</td><td style="padding:6px 8px">${funcs.map(f=>'<div>👤 '+esc(f)+'</div>').join('')}</td></tr>`;
+  }
+  if(h.treino){
+    html+=`<tr><td style="padding:6px 8px;font-weight:600;color:var(--ts)">Treinamento</td><td style="padding:6px 8px">${esc(h.treino)}</td></tr>`;
+  }
+  html+=`</table>`;
+  const nomeLower=(h.nome||'').toLowerCase();
+  const isCert=h.tipo==='certificado'||nomeLower.startsWith('certificados - ');
+  const isRenewable=nomeLower.startsWith('proposta')||nomeLower.startsWith('os lote')||nomeLower.startsWith('lista')||nomeLower.startsWith('ficha admiss')||nomeLower.startsWith('ficha epi');
+  if(isCert){
+    const labelCert=h.qtd?h.qtd+' certificado(s) emitido(s)':'Certificado(s) emitido(s)';
+    html+=`<div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--bd);text-align:center">
+      <p style="font-size:12px;color:var(--ts);margin-bottom:10px">${labelCert}</p>
+      <button class="btn bp" onclick="showCertDetail('${key}')"><i class="fa-solid fa-certificate"></i> Ver Certificados</button>
+      <button class="btn bd2" style="margin-left:6px" onclick="deleteHistoryItem('${key}')"><i class="fa-solid fa-trash"></i> Excluir</button>
+    </div>`;
+  }else if(isRenewable){
+    html+=`<div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--bd)">
+      <button class="btn bp bf" onclick="renewDoc('${key}')"><i class="fa-solid fa-rotate"></i> Renovar Documento</button>
+      <p style="font-size:11px;color:var(--tm);margin-top:6px">Ao renovar, os dados serão carregados para edição. Ao gerar o novo documento, o registro atual será substituído.</p>
+    </div>`;
+  }else{
+    html+=`<div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--bd);text-align:center">
+      <p style="font-size:12px;color:var(--ts);margin-bottom:10px">Este é um documento dinâmico não padronizado e não pode ser regenerado automaticamente.</p>
+      <button class="btn bd2" onclick="deleteHistoryItem('${key}')"><i class="fa-solid fa-trash"></i> Excluir Registro</button>
+    </div>`;
+  }
+  document.getElementById('dd-title').textContent='Detalhe do Documento';
+  document.getElementById('dd-body').innerHTML=html;
+  document.getElementById('mdl-dash-detail').style.display='flex';
+}
+function showCertDetail(key){
+  if(!key)return;
+  const h=DATA.historico[key];
+  if(!h)return;
+  const empsName=dashEmpName(h.empresaId);
+
+  document.getElementById('dd-title').textContent='Certificados: '+esc(getCertCursoName(h));
+  document.getElementById('dd-body').innerHTML='<div class="es">Carregando...</div>';
+  document.getElementById('mdl-dash-detail').style.display='flex';
+
+  firebase.database().ref('certificadosGerados').once('value').then(snap=>{
+    const allCerts=snap.val();
+    if(!allCerts){
+      document.getElementById('dd-body').innerHTML='<div class="es">Nenhum certificado encontrado.</div>';
+      return;
+    }
+    const certList=Object.entries(allCerts).filter(([id,c])=>{
+      if(h.certificadoCursoId && c.curso && c.curso.id !== h.certificadoCursoId)return false;
+      if(h.empresaId && c.empresa && c.empresa.id !== h.empresaId)return false;
+      return true;
+    }).map(([id,c])=>({id,...c}));
+
+    if(!certList.length){
+      document.getElementById('dd-body').innerHTML='<div class="es">Nenhum certificado encontrado para este curso.</div>';
+      return;
+    }
+
+    const now=new Date();
+
+    function renderCertTable(certs){
+      const vencidos=[],avencer=[],emdia=[];
+      certs.forEach(c=>{
+        const exp=c.expiracao?new Date(c.expiracao+'T23:59:59'):null;
+        if(exp&&exp<now)vencidos.push(c);
+        else if(exp&&exp.getTime()-now.getTime()<=30*24*60*60*1000)avencer.push(c);
+        else emdia.push(c);
+      });
+
+      let t=`<div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap">
+        <span class="bdg" style="background:#fee2e2;color:#b91c1c">${vencidos.length} Vencido(s)</span>
+        <span class="bdg" style="background:#ffedd5;color:#c2410c">${avencer.length} A Vencer (30d)</span>
+        <span class="bdg" style="background:#dcfce7;color:#15803d">${emdia.length} Em Dia</span>
+      </div>`;
+
+      t+=`<table style="width:100%;border-collapse:collapse;font-size:12px">
+        <tr style="background:#f1f1f1"><th style="padding:6px 8px;text-align:left">Aluno</th><th style="padding:6px 8px;text-align:left">CPF</th><th style="padding:6px 8px;text-align:left">Data</th><th style="padding:6px 8px;text-align:left">Vencimento</th><th style="padding:6px 8px;text-align:left">Status</th></tr>`;
+
+      certs.sort((a,b)=>((a.aluno?.nome||'')).localeCompare((b.aluno?.nome||'')));
+      certs.forEach(c=>{
+        const exp=c.expiracao?new Date(c.expiracao+'T23:59:59'):null;
+        const daysLeft=exp?Math.ceil((exp.getTime()-now.getTime())/(24*60*60*1000)):null;
+        let status,sc;
+        if(!exp){status='NÃO VENCE';sc='var(--ts)';}
+        else if(daysLeft<=0){status='VENCIDO';sc='var(--dn)';}
+        else if(daysLeft<=15){status=daysLeft+' dia(s)';sc='var(--wn)';}
+        else if(daysLeft<=30){status=daysLeft+' dia(s)';sc='#d97706';}
+        else{status='EM DIA';sc='var(--sc)';}
+        const expStr=c.expiracao?new Date(c.expiracao+'T23:59:59').toLocaleDateString('pt-BR'):'—';
+        t+=`<tr style="border-bottom:1px solid var(--bd)">
+          <td style="padding:6px 8px">${esc(c.aluno?.nome||'')}</td>
+          <td style="padding:6px 8px">${esc(c.aluno?.cpf||'')}</td>
+          <td style="padding:6px 8px">${c.dataInicioBR||'—'} a ${c.dataFimBR||'—'}</td>
+          <td style="padding:6px 8px">${expStr}</td>
+          <td style="padding:6px 8px;color:${sc};font-weight:600">${status}</td>
+        </tr>`;
+      });
+      t+=`</table>`;
+      return t;
+    }
+
+    let html='';
+    if(h.certificadoCursoId){
+      html+=`<div style="margin-bottom:12px;font-size:13px;color:var(--ts)">Curso: <strong>${esc(certList[0].curso?.nome||'')}</strong> · Empresa: <strong>${esc(empsName)}</strong> · Total: <strong>${certList.length}</strong></div>`;
+      html+=renderCertTable(certList);
+    }else{
+      const grupos={};
+      certList.forEach(c=>{
+        const nomeCurso=c.curso?.nome||'Sem curso';
+        if(!grupos[nomeCurso])grupos[nomeCurso]=[];
+        grupos[nomeCurso].push(c);
+      });
+      html+=`<div style="margin-bottom:12px;font-size:13px;color:var(--ts)">Empresa: <strong>${esc(empsName)}</strong> · Total: <strong>${certList.length}</strong></div>`;
+      Object.entries(grupos).forEach(([nomeCurso, certs]) => {
+        html+=`<div style="margin:16px 0 8px;font-size:14px;font-weight:700;color:var(--hi);border-bottom:2px solid var(--bd);padding-bottom:4px">${esc(nomeCurso)} (${certs.length})</div>`;
+        html+=renderCertTable(certs);
+      });
+    }
+
+    html+=`<div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--bd);text-align:center">
+      <button class="btn bd2" onclick="deleteHistoryItem('${key}')"><i class="fa-solid fa-trash"></i> Excluir Registro</button>
+    </div>`;
+
+    document.getElementById('dd-body').innerHTML=html;
+  }).catch(e=>{
+    console.error(e);
+    document.getElementById('dd-body').innerHTML='<div class="es">Erro ao carregar certificados.</div>';
+  });
+}
+function updateDashboard(){
+  const startVal=document.getElementById('dash-date-start').value;
+  const endVal=document.getElementById('dash-date-end').value;
+  const empId=document.getElementById('dash-filter-emp').value;
+  const docType=document.getElementById('dash-doc-type').value;
+  const subTipo=document.getElementById('dash-sub-tipo').value;
+
+  const startTs=startVal?new Date(startVal+'T00:00:00').getTime():0;
+  const endTs=endVal?new Date(endVal+'T23:59:59').getTime():Infinity;
+
+  // Aplicar filtro de empresa em todos os dados
+  const emps=toArr(DATA.empresas);
+  const filteredEmps=empId?emps.filter(e=>e.id==empId):emps;
+  document.getElementById('c-e').textContent=filteredEmps.length;
+
+  const funcs=toArr(DATA.funcionarios);
+  const filteredFuncs=empId?funcs.filter(f=>f.empresaId==empId):funcs;
+  document.getElementById('c-f').textContent=filteredFuncs.length;
+
+  document.getElementById('c-t').textContent=Object.keys(DATA.textos||{}).length;
+
+  let allHistory=toArr(DATA.historico);
+  if(empId){allHistory=allHistory.filter(h=>h.empresaId==empId);}
+  if(docType){allHistory=allHistory.filter(h=>getDocTipo(h.nome)===docType);}
+  if(subTipo){allHistory=allHistory.filter(h=>{const v=docType==='Certificado'?getCertCursoName(h):h.nome;return v===subTipo;});}
+  const filtered=allHistory.filter(h=>(h.ts||0)>=startTs&&(h.ts||0)<=endTs);
+
+  document.getElementById('c-d-gen').innerHTML='<i class="fa-solid fa-file-export" style="font-size:14px;margin-right:4px"></i>'+filtered.length;
+
+  const now=new Date();
+  const thirtyDays=30*24*60*60*1000;
+  const ninetyDays=90*24*60*60*1000;
+
+  const exp30=allHistory.filter(h=>h.expiracao&&new Date(h.expiracao).getTime()>now.getTime()&&new Date(h.expiracao).getTime()-now.getTime()<=thirtyDays);
+  const exp90=allHistory.filter(h=>h.expiracao&&new Date(h.expiracao).getTime()>now.getTime()&&new Date(h.expiracao).getTime()-now.getTime()<=ninetyDays);
+  document.getElementById('c-d-exp').innerHTML='<i class="fa-solid fa-triangle-exclamation" style="font-size:14px;margin-right:4px"></i>'+exp30.length;
+  document.getElementById('c-d-exp90').innerHTML='<i class="fa-solid fa-clock" style="font-size:14px;margin-right:4px"></i>'+exp90.length;
+
+  // ASO indicators
+  const asoVencido=filteredFuncs.filter(f=>f.asoDate&&new Date(f.asoDate+'T23:59:59')<now);
+  const aso30=filteredFuncs.filter(f=>{if(!f.asoDate)return false;const d=new Date(f.asoDate+'T23:59:59');return d>now&&d.getTime()-now.getTime()<=thirtyDays;});
+  document.getElementById('c-aso-v').innerHTML='<i class="fa-solid fa-user-xmark" style="font-size:14px;margin-right:4px"></i>'+asoVencido.length;
+  document.getElementById('c-aso-30').innerHTML='<i class="fa-solid fa-clock" style="font-size:14px;margin-right:4px"></i>'+aso30.length;
+
+  const ranked=[...allHistory].filter(h=>h.expiracao).sort((a,b)=>new Date(a.expiracao)-new Date(b.expiracao));
+  const rankingEl=document.getElementById('dash-exp-ranking');
+  if(ranked.length){
+    rankingEl.innerHTML=ranked.slice(0,30).map(h=>{
+      const daysLeft=Math.ceil((new Date(h.expiracao).getTime()-now.getTime())/(24*60*60*1000));
+      const color=daysLeft<=0?'var(--dn)':daysLeft<=15?'var(--wn)':'var(--ts)';
+      const funcs=dashFuncNames(h.funcionarioIds);
+      const funcStr=funcs.length?'<div style="color:var(--tm);font-size:10px">👤 '+funcs.slice(0,3).join(', ')+(funcs.length>3?' +'+(funcs.length-3):'')+'</div>':'';
+      const nomeExib = h.tipo==='certificado'||(h.nome||'').toLowerCase().startsWith('certificado')?getCertCursoName(h):h.nome;
+      const icone = h.tipo==='certificado' ? 'fa-certificate' : 'fa-file';
+      return `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--bd);font-size:12px;cursor:pointer" onclick="showDashDetail('${h.id||''}')">
+        <div><i class="fa-solid ${icone}" style="color:var(--tm);margin-right:6px"></i>${esc(nomeExib)}${funcStr}</div>
+        <span style="color:${color};font-weight:600">${daysLeft<=0?'VENCIDO':daysLeft+' dia(s)'}</span>
+      </div>`;
+    }).join('');
+  }else{
+    rankingEl.innerHTML='<div class="es">Nenhum vencimento próximo detectado.</div>';
+  }
+
+  const summaryEl=document.getElementById('dash-doc-summary');
+  if(filtered.length){
+    const groups={};
+    filtered.forEach(h=>{
+      const n=(h.nome||'').toLowerCase();
+      let key;
+      if(h.tipo==='certificado'||n.startsWith('certificado')){
+        key=getCertCursoName(h);
+      }else{
+        key=h.nome?.replace(/\s*-\s*.*$/,'')||'Outros';
+      }
+      groups[key]=(groups[key]||0)+1;
+    });
+    const sorted=Object.entries(groups).sort((a,b)=>b[1]-a[1]);
+    summaryEl.innerHTML=sorted.map(([k,v])=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--bd);font-size:12px;cursor:pointer" onclick="showSummaryDetail('${esc(k)}')">
+      <span>${esc(k)}</span><span style="font-weight:700;color:var(--hi)">${v}</span>
+    </div>`).join('');
+    drawDashCharts(groups);
+    renderDashEmpChart(filtered);
+  }else{
+    summaryEl.innerHTML='<div class="es">Nenhum documento no período selecionado.</div>';
+    const barC=document.getElementById('dash-bar-chart');if(barC){const ctx=barC.getContext('2d');ctx.clearRect(0,0,barC.width,barC.height);}
+    const empC=document.getElementById('dash-emp-chart');if(empC)empC.innerHTML='<div class="es">Nenhum dado no período.</div>';
+  }
+
+  // Certificados por Curso (aplicar filtro)
+  const certCtx=document.getElementById('dash-cert-chart');
+  if(certCtx){
+    const certGroups={};
+    (empId?allHistory:toArr(DATA.historico)).filter(h=>{
+      const n=(h.nome||'').toLowerCase();
+      return h.tipo==='certificado'||n.startsWith('certificado');
+    }).forEach(h=>{
+      const cursoNome=getCertCursoName(h);
+      certGroups[cursoNome]=(certGroups[cursoNome]||0)+1;
+    });
+    drawDashCertChart(certGroups);
+  }
+
+  // Gráfico anual de vencimentos (JAN-DEZ ano vigente)
+  drawVencChart(filteredFuncs,allHistory);
+
+  // Resumo ASO
+  renderAsoSummary(filteredFuncs);
+}
+function showSummaryDetail(key){
+  const startVal=document.getElementById('dash-date-start').value;
+  const endVal=document.getElementById('dash-date-end').value;
+  const empId=document.getElementById('dash-filter-emp').value;
+  const startTs=startVal?new Date(startVal+'T00:00:00').getTime():0;
+  const endTs=endVal?new Date(endVal+'T23:59:59').getTime():Infinity;
+  let allHistory=toArr(DATA.historico);
+  if(empId)allHistory=allHistory.filter(h=>h.empresaId==empId);
+  const filtered=allHistory.filter(h=>(h.ts||0)>=startTs&&(h.ts||0)<=endTs);
+  const docs=filtered.filter(h=>{
+    const prefix=(h.nome||'').replace(/\s*-\s*.*$/,'');
+    if(prefix===key)return true;
+    const n=(h.nome||'').toLowerCase();
+    if(h.tipo==='certificado'||n.startsWith('certificado')){
+      if(getCertCursoName(h)===key)return true;
+    }
+    return false;
+  });
+  document.getElementById('dd-title').textContent='Documentos: '+esc(key);
+  if(docs.length){
+    const isCert=docs[0].tipo==='certificado'||(docs[0].nome||'').toLowerCase().startsWith('certificado');
+    if(isCert){
+      const grupos={};
+      docs.forEach(h=>{
+        const curso=getCertCursoName(h);
+        if(!grupos[curso])grupos[curso]={entries:[],count:0};
+        grupos[curso].entries.push(h);
+        grupos[curso].count++;
+      });
+      if(Object.keys(grupos).length===1){
+        const primeiro=Object.values(grupos)[0];
+        document.getElementById('dd-body').innerHTML=primeiro.entries.map(h=>`<div style="padding:6px 0;border-bottom:1px solid var(--bd);font-size:12px;cursor:pointer" onclick="showDashDetail('${h.id||''}')">
+          <div style="font-weight:600"><i class="fa-solid fa-certificate" style="color:var(--sc);margin-right:6px"></i>${esc(getCertCursoName(h))}</div>
+          <div style="color:var(--tm);font-size:11px">${esc(h.data||'')} · ${esc(dashEmpName(h.empresaId))}</div>
+        </div>`).join('');
+      }else{
+        document.getElementById('dd-body').innerHTML=Object.entries(grupos).map(([curso, g])=>{
+          const firstKey=g.entries[0]?.id||'';
+          return `<div style="padding:6px 0;border-bottom:1px solid var(--bd);font-size:12px;cursor:pointer" onclick="showCertDetail('${firstKey}')">
+            <div style="font-weight:600"><i class="fa-solid fa-certificate" style="color:var(--sc);margin-right:6px"></i>${esc(curso)}</div>
+            <div style="color:var(--tm);font-size:11px">${g.count} emissão(ões) · ${esc(dashEmpName(g.entries[0].empresaId))}</div>
+          </div>`;
+        }).join('');
+      }
+    }else{
+      document.getElementById('dd-body').innerHTML=docs.map(h=>`<div style="padding:6px 0;border-bottom:1px solid var(--bd);font-size:12px;cursor:pointer" onclick="showDashDetail('${h.id||''}')">
+        <div style="font-weight:600">${esc(h.nome||'')}</div>
+        <div style="color:var(--tm);font-size:11px">${esc(h.data||'')} · ${esc(dashEmpName(h.empresaId))}</div>
+      </div>`).join('');
+    }
+  }else{
+    document.getElementById('dd-body').innerHTML='<div class="es">Nenhum documento encontrado.</div>';
+  }
+  document.getElementById('mdl-dash-detail').style.display='flex';
+}
+function drawDashCharts(groups){
+  const entries=Object.entries(groups).sort((a,b)=>b[1]-a[1]);
+  const labels=entries.map(([k])=>k.length>12?k.slice(0,12)+'…':k);
+  const values=entries.map(([,v])=>v);
+  const colors=['#122419','#2563eb','#d97706','#dc2626','#7c3aed','#0891b2','#be123c','#15803d','#9333ea','#ca8a04'];
+  const total=values.reduce((a,b)=>a+b,0);
+
+  const barC=document.getElementById('dash-bar-chart');
+  if(barC){
+    const dpr=window.devicePixelRatio||1;
+    const rect=barC.parentElement.getBoundingClientRect();
+    const w=Math.max(rect.width-32,300);
+    const h=200;
+    barC.width=w*dpr;barC.height=h*dpr;
+    barC.style.width=w+'px';barC.style.height=h+'px';
+    const ctx=barC.getContext('2d');
+    ctx.scale(dpr,dpr);
+    const pad={t:20,r:16,b:36,l:48};
+    const cw=w-pad.l-pad.r,ch=h-pad.t-pad.b;
+    const max=Math.max(...values,1);
+    ctx.clearRect(0,0,w,h);
+
+    ctx.font='11px sans-serif';ctx.fillStyle='#18181b';
+    const steps=4;for(let i=0;i<=steps;i++){const y=pad.t+ch-(i/steps)*ch;ctx.textAlign='left';ctx.fillText(Math.round(max*i/steps),4,y+4);ctx.strokeStyle='#e4e4e7';ctx.lineWidth=0.5;ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(w-pad.r,y);ctx.stroke();}
+
+    const gap=Math.max(2,Math.min(8,(cw/entries.length)*0.15));
+    const bw=Math.max(6,(cw-gap*(entries.length+1))/entries.length);
+    const offsetX=entries.length>1?pad.l+gap+(cw-(entries.length*(bw+gap))+gap)/2:pad.l+(cw-bw)/2;
+    const barRects=[];
+    entries.forEach(([k,v],i)=>{
+      const bh=Math.max(1,(v/max)*ch);
+      const x=offsetX+i*(bw+gap);
+      const y=pad.t+ch-bh;
+      barRects.push({x,y,w:bw,h:bh,key:k});
+      ctx.fillStyle=colors[i%colors.length];
+      ctx.beginPath();
+      ctx.roundRect?ctx.roundRect(x,y,bw,bh,[2]):ctx.rect(x,y,bw,bh);
+      ctx.fill();
+      ctx.fillStyle='#fff';ctx.font='bold 11px sans-serif';ctx.textAlign='center';ctx.textBaseline='bottom';
+      const tw=ctx.measureText(String(v)).width;
+      ctx.beginPath();ctx.fillStyle='rgba(255,255,255,.85)';ctx.roundRect?ctx.roundRect(x+bw/2-tw/2-3,y-16,tw+6,14,[3]):ctx.rect(x+bw/2-tw/2-3,y-16,tw+6,14);ctx.fill();
+      ctx.fillStyle='#18181b';ctx.fillText(v,x+bw/2,y-3);
+      ctx.fillStyle='#fff';ctx.font='bold 10px sans-serif';ctx.textBaseline='bottom';
+      ctx.save();ctx.translate(x+bw/2,pad.t+ch+14);ctx.rotate(0.4);
+      const lw=ctx.measureText(labels[i]).width;
+      ctx.beginPath();ctx.fillStyle='rgba(255,255,255,.85)';ctx.roundRect?ctx.roundRect(-lw/2-2,-13,lw+4,15,[2]):ctx.rect(-lw/2-2,-13,lw+4,15);ctx.fill();
+      ctx.fillStyle='#18181b';ctx.fillText(labels[i],0,0);ctx.restore();
+    });
+    barC.onclick=function(e){
+      const r=barC.getBoundingClientRect();
+      const mx=(e.clientX-r.left)*dpr/barC.width*w;
+      const my=(e.clientY-r.top)*dpr/barC.height*h;
+      for(const br of barRects){
+        if(mx>=br.x&&mx<=br.x+br.w&&my>=br.y&&my<=br.y+br.h){
+          showSummaryDetail(br.key);return;
+        }
+      }
+    };
+    barC.style.cursor='pointer';
+  }
+}
+function renderDashEmpChart(filtered){
+  const el=document.getElementById('dash-emp-chart');
+  if(!el)return;
+  const groups={};
+  filtered.forEach(h=>{const n=dashEmpName(h.empresaId);groups[n]=(groups[n]||0)+1;});
+  const sorted=Object.entries(groups).sort((a,b)=>b[1]-a[1]);
+  if(!sorted.length){el.innerHTML='<div class="es">Nenhum dado no período.</div>';return;}
+  const max=Math.max(...sorted.map(([,v])=>v));
+  const colors=['#122419','#2563eb','#d97706','#dc2626','#7c3aed','#0891b2','#be123c','#15803d','#9333ea','#ca8a04'];
+  el.innerHTML=sorted.map(([k,v],i)=>{
+    const pct=max>0?Math.round((v/max)*100):0;
+    return `<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--bd);font-size:12px">
+      <span style="width:14px;height:14px;border-radius:3px;background:${colors[i%colors.length]};flex-shrink:0"></span>
+      <span style="flex:1">${esc(k)}</span>
+      <div style="width:80px;height:14px;background:var(--hl);border-radius:4px;overflow:hidden;flex-shrink:0">
+        <div style="height:100%;width:${pct}%;background:${colors[i%colors.length]};border-radius:4px;transition:width .4s"></div>
+      </div>
+      <span style="font-weight:700;color:var(--hi);min-width:30px;text-align:right">${v}</span>
+    </div>`;
+  }).join('');
+}
+function drawDashCertChart(groups){
+  const entries=Object.entries(groups).sort((a,b)=>b[1]-a[1]);
+  if(!entries.length){
+    const canvas=document.getElementById('dash-cert-chart');
+    if(canvas){const ctx=canvas.getContext('2d');ctx.clearRect(0,0,canvas.width,canvas.height);}
+    return;
+  }
+  const labels=entries.map(([k])=>k.length>14?k.slice(0,14)+'…':k);
+  const values=entries.map(([,v])=>v);
+  const colors=['#122419','#2563eb','#d97706','#dc2626','#7c3aed','#0891b2','#be123c','#15803d','#9333ea','#ca8a04','#0d9488','#65a30d'];
+
+  const canvas=document.getElementById('dash-cert-chart');
+  if(!canvas)return;
+  const dpr=window.devicePixelRatio||1;
+  const rect=canvas.parentElement.getBoundingClientRect();
+  const w=Math.max(rect.width-32,300);
+  const h=200;
+  canvas.width=w*dpr;canvas.height=h*dpr;
+  canvas.style.width=w+'px';canvas.style.height=h+'px';
+  const ctx=canvas.getContext('2d');
+  ctx.scale(dpr,dpr);
+  const pad={t:20,r:16,b:36,l:48};
+  const cw=w-pad.l-pad.r,ch=h-pad.t-pad.b;
+  const max=Math.max(...values,1);
+  ctx.clearRect(0,0,w,h);
+
+  ctx.font='11px sans-serif';ctx.fillStyle='#18181b';
+  const steps=4;for(let i=0;i<=steps;i++){const y=pad.t+ch-(i/steps)*ch;ctx.textAlign='left';ctx.fillText(Math.round(max*i/steps),4,y+4);ctx.strokeStyle='#e4e4e7';ctx.lineWidth=0.5;ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(w-pad.r,y);ctx.stroke();}
+
+  const gap=Math.max(2,Math.min(8,(cw/entries.length)*0.15));
+  const bw=Math.max(6,(cw-gap*(entries.length+1))/entries.length);
+  const offsetX=entries.length>1?pad.l+gap+(cw-(entries.length*(bw+gap))+gap)/2:pad.l+(cw-bw)/2;
+  const barRects=[];
+  entries.forEach(([k,v],i)=>{
+    const bh=Math.max(1,(v/max)*ch);
+    const x=offsetX+i*(bw+gap);
+    const y=pad.t+ch-bh;
+    barRects.push({x,y,w:bw,h:bh,key:k});
+    ctx.fillStyle=colors[i%colors.length];
+    ctx.beginPath();
+    ctx.roundRect?ctx.roundRect(x,y,bw,bh,[2]):ctx.rect(x,y,bw,bh);
+    ctx.fill();
+    ctx.fillStyle='#fff';ctx.font='bold 11px sans-serif';ctx.textAlign='center';ctx.textBaseline='bottom';
+    const tw=ctx.measureText(String(v)).width;
+    ctx.beginPath();ctx.fillStyle='rgba(255,255,255,.85)';ctx.roundRect?ctx.roundRect(x+bw/2-tw/2-3,y-16,tw+6,14,[3]):ctx.rect(x+bw/2-tw/2-3,y-16,tw+6,14);ctx.fill();
+    ctx.fillStyle='#18181b';ctx.fillText(v,x+bw/2,y-3);
+    ctx.fillStyle='#fff';ctx.font='bold 10px sans-serif';ctx.textBaseline='bottom';
+    ctx.save();ctx.translate(x+bw/2,pad.t+ch+14);ctx.rotate(0.4);
+    const lw=ctx.measureText(labels[i]).width;
+    ctx.beginPath();ctx.fillStyle='rgba(255,255,255,.85)';ctx.roundRect?ctx.roundRect(-lw/2-2,-13,lw+4,15,[2]):ctx.rect(-lw/2-2,-13,lw+4,15);ctx.fill();
+    ctx.fillStyle='#18181b';ctx.fillText(labels[i],0,0);ctx.restore();
+  });
+  canvas.onclick=function(e){
+    const r=canvas.getBoundingClientRect();
+    const mx=(e.clientX-r.left)*dpr/canvas.width*w;
+    const my=(e.clientY-r.top)*dpr/canvas.height*h;
+    for(const br of barRects){
+      if(mx>=br.x&&mx<=br.x+br.w&&my>=br.y&&my<=br.y+br.h){
+        const matche=toArr(DATA.historico).find(h=>
+          (h.tipo==='certificado'||(h.nome||'').toLowerCase().startsWith('certificado'))&&getCertCursoName(h)===br.key
+        );
+        if(matche)showCertDetail(matche.id);
+        return;
+      }
+    }
+  };
+}
+// ── GRÁFICO ANUAL DE VENCIMENTOS ──────────────────────────────────
+function drawVencChart(filteredFuncs,allHistory){
+  const canvas=document.getElementById('dash-venc-chart');
+  if(!canvas)return;
+  const now=new Date();
+  const ano=now.getFullYear();
+  const meses=['JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV','DEZ'];
+  const mesesFull=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+
+  // Coletar vencimentos de documentos (histórico) + ASO (funcionários)
+  const counts=new Array(12).fill(0);
+  allHistory.forEach(h=>{
+    if(!h.expiracao)return;
+    const d=new Date(h.expiracao+'T23:59:59');
+    if(d.getFullYear()!==ano)return;
+    counts[d.getMonth()]++;
+  });
+  filteredFuncs.forEach(f=>{
+    if(!f.asoDate)return;
+    const d=new Date(f.asoDate+'T23:59:59');
+    if(d.getFullYear()!==ano)return;
+    counts[d.getMonth()]++;
+  });
+
+  const max=Math.max(...counts,1);
+  const dpr=window.devicePixelRatio||1;
+  const rect=canvas.parentElement.getBoundingClientRect();
+  const w=Math.max(rect.width-32,300);
+  const h=200;
+  canvas.width=w*dpr;canvas.height=h*dpr;
+  canvas.style.width=w+'px';canvas.style.height=h+'px';
+  const ctx=canvas.getContext('2d');
+  ctx.scale(dpr,dpr);
+  const pad={t:20,r:16,b:40,l:36};
+  const cw=w-pad.l-pad.r,ch=h-pad.t-pad.b;
+  ctx.clearRect(0,0,w,h);
+
+  ctx.font='10px sans-serif';ctx.fillStyle='#18181b';
+  const steps=4;for(let i=0;i<=steps;i++){const y=pad.t+ch-(i/steps)*ch;ctx.textAlign='left';ctx.fillText(Math.round(max*i/steps),4,y+3);ctx.strokeStyle='#e4e4e7';ctx.lineWidth=0.5;ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(w-pad.r,y);ctx.stroke();}
+
+  const gap=3,bw=Math.max(4,(cw-gap*13)/12-1);
+  const offsetX=pad.l+(cw-(12*(bw+gap)))/2;
+  const colors=['#122419','#2563eb','#d97706','#dc2626','#7c3aed','#0891b2','#be123c','#15803d','#9333ea','#ca8a04','#0d9488','#65a30d'];
+  const barRects=[];
+  meses.forEach((m,i)=>{
+    const bh=Math.max(1,(counts[i]/max)*ch);
+    const x=offsetX+i*(bw+gap);
+    const y=pad.t+ch-bh;
+    barRects.push({x,y,w:bw,h:bh,month:i});
+    ctx.fillStyle=colors[i%colors.length];
+    ctx.beginPath();
+    ctx.roundRect?ctx.roundRect(x,y,bw,bh,[2]):ctx.rect(x,y,bw,bh);
+    ctx.fill();
+    if(counts[i]>0){
+      ctx.fillStyle='#fff';ctx.font='bold 10px sans-serif';ctx.textAlign='center';ctx.textBaseline='bottom';
+      const tw=ctx.measureText(String(counts[i])).width;
+      ctx.beginPath();ctx.fillStyle='rgba(255,255,255,.85)';
+      ctx.roundRect?ctx.roundRect(x+bw/2-tw/2-3,y-14,tw+6,12,[3]):ctx.rect(x+bw/2-tw/2-3,y-14,tw+6,12);ctx.fill();
+      ctx.fillStyle='#18181b';ctx.fillText(counts[i],x+bw/2,y-3);
+    }
+    ctx.fillStyle='#18181b';ctx.font='9px sans-serif';ctx.textAlign='center';ctx.textBaseline='top';
+    ctx.fillText(m,x+bw/2,pad.t+ch+4);
+  });
+  canvas.onclick=function(e){
+    const r=canvas.getBoundingClientRect();
+    const mx=(e.clientX-r.left)*dpr/canvas.width*w;
+    const my=(e.clientY-r.top)*dpr/canvas.height*h;
+    for(const br of barRects){
+      if(mx>=br.x&&mx<=br.x+br.w&&my>=br.y&&my<=br.y+br.h){
+        showVencMonthDetail(br.month,filteredFuncs,allHistory,ano,mesesFull);
+        break;
+      }
+    }
+  };
+}
+function showVencMonthDetail(month,filteredFuncs,allHistory,ano,mesesFull){
+  const docs=allHistory.filter(h=>{
+    if(!h.expiracao)return false;
+    const d=new Date(h.expiracao+'T23:59:59');
+    return d.getFullYear()===ano&&d.getMonth()===month;
+  });
+  const asos=filteredFuncs.filter(f=>{
+    if(!f.asoDate)return false;
+    const d=new Date(f.asoDate+'T23:59:59');
+    return d.getFullYear()===ano&&d.getMonth()===month;
+  });
+  const nomeMes=mesesFull[month];
+  const total=docs.length+asos.length;
+  if(!total){
+    document.getElementById('dd-title').textContent=nomeMes+' — Nenhum vencimento';
+    document.getElementById('dd-body').innerHTML='<div class="es">Nenhum documento ou ASO vence neste mês.</div>';
+    document.getElementById('mdl-dash-detail').style.display='flex';
+    return;
+  }
+  let html='';
+  if(docs.length){
+    html+=`<div style="font-size:13px;font-weight:700;color:var(--hi);margin-bottom:6px;border-bottom:2px solid var(--bd);padding-bottom:4px">📄 Documentos (${docs.length})</div>`;
+    docs.forEach(h=>{
+      const fn=dashFuncNames(h.funcionarioIds);
+      const fnStr=fn.length?' 👤 '+fn.join(', '):'';
+      html+=`<div style="padding:5px 0;border-bottom:1px solid var(--bd);font-size:12px;cursor:pointer" onclick="showDashDetail('${h.id||''}')">
+        <div style="font-weight:600">${esc(h.nome||'')}${fnStr}</div>
+        <div style="color:var(--tm);font-size:11px">Vence: ${esc(h.expiracao?fmtData(h.expiracao):'—')} · ${esc(dashEmpName(h.empresaId))}</div>
+      </div>`;
+    });
+  }
+  if(asos.length){
+    html+=`<div style="font-size:13px;font-weight:700;color:var(--wn);margin:12px 0 6px;border-bottom:2px solid var(--bd);padding-bottom:4px">🩺 ASO Colaboradores (${asos.length})</div>`;
+    const fmtAsoTipo=t=>{return{'ADMISSIONAL':'Admissional','DEMISSIONAL':'Demissional','PERIODICO':'Periódico','MUDANCA_FUNCAO':'Mudança Função','RETORNO_TRABALHO':'Retorno Trabalho'}[t]||t;};
+    asos.forEach(f=>{
+      html+=`<div style="padding:5px 0;border-bottom:1px solid var(--bd);font-size:12px">
+        <div style="font-weight:600">👤 ${esc(f.nome)}${f.funcao?' <span style="color:var(--tm)">'+esc(f.funcao)+'</span>':''}</div>
+        <div style="color:var(--tm);font-size:11px">ASO: ${esc(fmtAsoTipo(f.asoTipo))} · Vence: ${esc(f.asoDate?fmtData(f.asoDate):'—')}</div>
+      </div>`;
+    });
+  }
+  document.getElementById('dd-title').textContent=nomeMes+' — Total: '+total;
+  document.getElementById('dd-body').innerHTML=html;
+  document.getElementById('mdl-dash-detail').style.display='flex';
+}
+
+function renderAsoSummary(filteredFuncs){
+  const el=document.getElementById('dash-aso-summary');
+  if(!el)return;
+  const now=new Date();
+  const admissional=filteredFuncs.filter(f=>f.asoTipo==='ADMISSIONAL');
+  const demissional=filteredFuncs.filter(f=>f.asoTipo==='DEMISSIONAL');
+  const periodico=filteredFuncs.filter(f=>f.asoTipo==='PERIODICO');
+  const mudancaFuncao=filteredFuncs.filter(f=>f.asoTipo==='MUDANCA_FUNCAO');
+  const retornoTrabalho=filteredFuncs.filter(f=>f.asoTipo==='RETORNO_TRABALHO');
+  const semAso=filteredFuncs.filter(f=>!f.asoDate);
+  const vencidos=filteredFuncs.filter(f=>f.asoDate&&new Date(f.asoDate+'T23:59:59')<now);
+  const emDia=filteredFuncs.filter(f=>f.asoDate&&new Date(f.asoDate+'T23:59:59')>=now);
+  const total=filteredFuncs.length;
+  if(!total){el.innerHTML='<div class="es">Nenhum colaborador cadastrado.</div>';return;}
+  el.innerHTML=`
+    <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--bd);font-size:12px"><span>Total Colaboradores</span><span style="font-weight:700">${total}</span></div>
+    <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--bd);font-size:12px;color:var(--sc)"><span>✅ Em dia</span><span style="font-weight:700">${emDia.length}</span></div>
+    <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--bd);font-size:12px;color:var(--dn)"><span>🚫 Vencidos</span><span style="font-weight:700">${vencidos.length}</span></div>
+    <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--bd);font-size:12px;color:var(--ts)"><span>📋 Admissional</span><span style="font-weight:700">${admissional.length}</span></div>
+    <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--bd);font-size:12px;color:var(--ts)"><span>📋 Demissional</span><span style="font-weight:700">${demissional.length}</span></div>
+    <div style="display:flex;justify-content:space-between;padding:5px 0;font-size:12px;color:var(--ts)"><span>📋 Periódico</span><span style="font-weight:700">${periodico.length}</span></div>
+    <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--bd);font-size:12px;color:var(--ts)"><span>📋 Mudança Função</span><span style="font-weight:700">${mudancaFuncao.length}</span></div>
+    <div style="display:flex;justify-content:space-between;padding:5px 0;font-size:12px;color:var(--ts)"><span>📋 Retorno Trabalho</span><span style="font-weight:700">${retornoTrabalho.length}</span></div>
+    ${semAso.length?`<div style="display:flex;justify-content:space-between;padding:5px 0;font-size:12px;color:var(--wn)"><span>⚠️ Sem ASO</span><span style="font-weight:700">${semAso.length}</span></div>`:''}
+  `;
+}
+
+function resetDashFilters(){
+  const hoje=new Date();const mesInicio=new Date();mesInicio.setDate(1);
+  document.getElementById('dash-date-start').value=mesInicio.toISOString().slice(0,10);
+  document.getElementById('dash-date-end').value=hoje.toISOString().slice(0,10);
+  document.getElementById('dash-filter-emp').value='';
+  document.getElementById('dash-doc-type').value='';
+  document.getElementById('dash-sub-tipo').innerHTML='<option value="">Todos</option>';
+  document.getElementById('dash-rel-status').value='';
+  updateDashboard();
+}
+function dashRelPDF(){
+  const empId=document.getElementById('dash-filter-emp').value;
+  const startDate=document.getElementById('dash-date-start').value;
+  const endDate=document.getElementById('dash-date-end').value;
+  const status=document.getElementById('dash-rel-status').value;
+  const docType=document.getElementById('dash-doc-type').value;
+  const subTipo=document.getElementById('dash-sub-tipo').value;
+
+  populateRelEmpresas();
+  document.getElementById('rel-status').value=status;
+  document.getElementById('rel-date-start').value=startDate;
+  document.getElementById('rel-date-end').value=endDate;
+  const checkboxes=document.querySelectorAll('#rel-emp-list input[name=relEmpChk]');
+  checkboxes.forEach(cb=>cb.checked=!empId||cb.value===empId);
+  if(!getChecked('relEmpChk').length){alert('Nenhuma empresa disponível para o filtro selecionado.');return;}
+
+  genRelatorioPDF(docType,subTipo);
+}
+async function fixOldCertHistory(){
+  const snap=await firebase.database().ref('certificadosGerados').once('value');
+  const allCerts=snap.val();
+  if(!allCerts)return;
+  const certsArr=Object.entries(allCerts).map(([id,c])=>({id,...c}));
+  const updates={};
+  toArr(DATA.historico).forEach(h=>{
+    if(!h.id)return;
+    const n=(h.nome||'').toLowerCase();
+    if(!n.startsWith('certificados - ')||h.tipo==='certificado')return;
+    const matchCerts=certsArr.filter(c=>c.empresa?.id===h.empresaId);
+    if(!matchCerts.length)return;
+    const cursos=[...new Set(matchCerts.map(c=>c.curso?.nome).filter(Boolean))];
+    const cursoIds=[...new Set(matchCerts.map(c=>c.curso?.id).filter(Boolean))];
+    if(cursos.length===1){
+      updates[`historico/${h.id}/nome`]=`Certificado - ${cursos[0]}`;
+      if(cursoIds.length===1)updates[`historico/${h.id}/certificadoCursoId`]=cursoIds[0];
+    }else if(!updates[`historico/${h.id}/nome`]){
+      updates[`historico/${h.id}/nome`]='Certificado';
+    }
+    updates[`historico/${h.id}/tipo`]='certificado';
+    updates[`historico/${h.id}/qtd`]=matchCerts.length;
+  });
+  const keys=Object.keys(updates);
+  if(keys.length){
+    await firebase.database().ref().update(updates);
+    console.log('Cert history fix: '+keys.length+' entry(s) patched');
+  }
+}
 function renderHistory(){
   const q=(document.getElementById('hist-search').value||'').toLowerCase();
   const items=toArr(DATA.historico).sort((a,b)=>(b.ts||0)-(a.ts||0)).filter(h=>(h.nome||'').toLowerCase().includes(q)||(h.data||'').includes(q));
-  document.getElementById('hist-list').innerHTML=items.length?items.map(h=>`<div class="hr2"><span><i class="fa-solid fa-file-pdf" style="color:var(--dn);margin-right:7px"></i>${esc(h.nome)}</span><button class="btn" style="padding:3px 6px;font-size:10px;" onclick="regenDoc('${esc(h.nome)}')"><i class="fa-solid fa-download"></i></button><span style="color:var(--tm);font-size:11px">${esc(h.data)}</span></div>`).join(''):'<div class="es">Nenhum documento gerado ainda.</div>';
+  document.getElementById('hist-list').innerHTML=items.length?items.map(h=>{
+    const isCert=h.tipo==='certificado'||(h.nome||'').toLowerCase().startsWith('certificado');
+    const icone=isCert?'fa-certificate':'fa-file-pdf';
+    const corIcone=isCert?'var(--sc)':'var(--dn)';
+    return `<div class="hr2"><span><i class="fa-solid ${icone}" style="color:${corIcone};margin-right:7px"></i>${esc(h.nome)}</span><button class="btn" style="padding:3px 6px;font-size:10px;" onclick="regenDoc('${esc(h.nome)}')"><i class="fa-solid fa-download"></i></button><span style="color:var(--tm);font-size:11px">${esc(h.data)}</span></div>`;
+  }).join(''):'<div class="es">Nenhum documento gerado ainda.</div>';
 }
-function logHistory(nome, dadosExtras={}){const data=new Date().toLocaleDateString('pt-BR',{hour:'2-digit',minute:'2-digit'});db.ref('historico').push({nome,data,ts:Date.now(),...dadosExtras});}
+function logHistory(nome, dadosExtras={}){
+  const data=new Date().toLocaleDateString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+  const ref=db.ref('historico').push({nome,data,ts:Date.now(),...dadosExtras});
+  if(_replaceHistoryKey){db.ref('historico/'+_replaceHistoryKey).remove();_replaceHistoryKey=null;}
+}
+function deleteHistoryItem(key){
+  if(!confirm('Excluir este registro do hist\u00f3rico?'))return;
+  db.ref('historico/'+key).remove().then(()=>{cls();}).catch(e=>{alert('Erro: '+e.message);});
+}
 function clearHistory(){if(!confirm('Tem certeza que deseja limpar todo o hist\u00f3rico de documentos?'))return;db.ref('historico').remove().then(()=>{renderHistory();}).catch(e=>{alert('Erro ao limpar hist\u00f3rico: '+e.message);});}
+
+// ── RELATORIO PDF ──────────────────────────────────────────────────
+function getDocTipo(nome){
+  const n=(nome||'').toLowerCase();
+  if(n.startsWith('proposta'))return'Proposta Comercial';
+  if(n.startsWith('os lote')||n.startsWith('os'))return'Ordem de Serviço';
+  if(n.startsWith('lista'))return'Lista de Presença';
+  if(n.startsWith('ficha admiss'))return'Ficha Admissional';
+  if(n.startsWith('ficha epi'))return'Ficha EPI/EPC';
+  if(n.startsWith('certificado'))return'Certificado';
+  return nome||'Documento';
+}
+function getDocCategoria(nome){
+  const n=(nome||'').toLowerCase();
+  if(n.startsWith('proposta'))return'Comercial';
+  if(n.startsWith('os lote')||n.startsWith('os'))return'Ordem de Serviço';
+  if(n.startsWith('lista'))return'Treinamento';
+  if(n.startsWith('ficha admiss'))return'Admissional';
+  if(n.startsWith('ficha epi'))return'Segurança';
+  if(n.startsWith('certificado'))return'Treinamento';
+  return'Outros';
+}
+function openRelModal(){
+  const hoje=new Date().toISOString().slice(0,10);
+  const umAno=new Date();umAno.setFullYear(umAno.getFullYear()-1);
+  document.getElementById('rel-date-start').value=umAno.toISOString().slice(0,10);
+  document.getElementById('rel-date-end').value=hoje;
+  document.getElementById('rel-status').value='';
+  populateRelEmpresas();
+  document.getElementById('mdl-rel').style.display='flex';
+}
+function populateRelEmpresas(){
+  const emps=toArr(DATA.empresas);
+  const el=document.getElementById('rel-emp-list');
+  el.innerHTML=emps.length?emps.map(e=>`<div class="ci"><input type="checkbox" name="relEmpChk" value="${esc(e.id)}" id="ck_relEmp_${esc(e.id)}" checked><label for="ck_relEmp_${esc(e.id)}">${esc(e.nome)}</label></div>`).join(''):'<div class="es">Nenhuma empresa cadastrada</div>';
+}
+async function genRelatorioPDF(docType,subTipo){
+  cls();spin(true);
+  const statusFilter=document.getElementById('rel-status').value;
+  const selectedEmpresas=getChecked('relEmpChk');
+  const startDate=document.getElementById('rel-date-start').value;
+  const endDate=document.getElementById('rel-date-end').value;
+  if(!selectedEmpresas.length){spin(false);alert('Selecione pelo menos uma empresa.');return;}
+
+  let items=toArr(DATA.historico).filter(h=>{
+    if(!h.empresaId||!selectedEmpresas.includes(h.empresaId))return false;
+    if(startDate&&h.ts&&h.ts<new Date(startDate+'T00:00:00').getTime())return false;
+    if(endDate&&h.ts&&h.ts>new Date(endDate+'T23:59:59').getTime())return false;
+    if(docType&&getDocTipo(h.nome)!==docType)return false;
+    if(subTipo){const v=docType==='Certificado'?getCertCursoName(h):h.nome;if(v!==subTipo)return false;}
+    return true;
+  });
+  if(!items.length){spin(false);alert('Nenhum registro encontrado para os filtros selecionados.');return;}
+
+  const now=new Date();
+  if(statusFilter==='emdia')items=items.filter(h=>!h.expiracao||new Date(h.expiracao).getTime()>=now.getTime());
+  else if(statusFilter==='vencido')items=items.filter(h=>h.expiracao&&new Date(h.expiracao).getTime()<now.getTime());
+
+  items.sort((a,b)=>(a.empresaId||'').localeCompare(b.empresaId||'')||(a.nome||'').localeCompare(b.nome||''));
+
+  const catOrder=['Ordem de Serviço','Treinamento','Admissional','Segurança','Comercial','Outros'];
+  const tipoOrder=['Ordem de Serviço','Lista de Presença','Certificado','Ficha Admissional','Ficha EPI/EPC','Proposta Comercial'];
+
+  const rows=[];
+  items.forEach(h=>{
+    const funcs=dashFuncNames(h.funcionarioIds);
+    const empName=dashEmpName(h.empresaId);
+    const docTipo=getDocTipo(h.nome);
+    const categoria=getDocCategoria(h.nome);
+    const tsStr=h.ts?new Date(h.ts).toLocaleString('pt-BR'):h.data||'';
+    const expDate=h.expiracao?fmtData(h.expiracao):'—';
+    let daysLeft=null,status='NÃO VENCE';
+    if(h.expiracao){
+      daysLeft=Math.ceil((new Date(h.expiracao).getTime()-now.getTime())/(24*60*60*1000));
+      status=daysLeft<=0?'VENCIDO':'EM DIA';
+    }
+    let docNome=h.nome;
+    if(h.tipo==='certificado'||(h.nome||'').toLowerCase().startsWith('certificado')){
+      docNome=getCertCursoName(h);
+    }
+    if(funcs.length){
+      funcs.forEach(fname=>{
+        rows.push({empresa:empName,empresaId:h.empresaId,categoria,catIdx:catOrder.indexOf(categoria),docTipo,tipoIdx:tipoOrder.indexOf(docTipo),colaborador:fname,documento:docNome,dataHora:tsStr,vencimento:expDate,diasRestantes:daysLeft!==null?daysLeft:'—',status});
+      });
+    }else{
+      rows.push({empresa:empName,empresaId:h.empresaId,categoria,catIdx:catOrder.indexOf(categoria),docTipo,tipoIdx:tipoOrder.indexOf(docTipo),colaborador:'—',documento:docNome,dataHora:tsStr,vencimento:expDate,diasRestantes:daysLeft!==null?daysLeft:'—',status});
+    }
+  });
+
+  rows.sort((a,b)=>{
+    if(a.empresaId!==b.empresaId)return a.empresaId.localeCompare(b.empresaId);
+    if(a.catIdx!==b.catIdx)return a.catIdx-b.catIdx;
+    if(a.tipoIdx!==b.tipoIdx)return a.tipoIdx-b.tipoIdx;
+    return(a.colaborador||'').localeCompare(b.colaborador||'');
+  });
+
+  const wsLogo=DATA.config?.logoUrl?await loadImg(DATA.config.logoUrl):null;
+  const singleEmpId=selectedEmpresas.length===1?selectedEmpresas[0]:null;
+  const singleEmp=singleEmpId?resolveEmp(singleEmpId):null;
+  const singleEmpLogo=singleEmp?.logoUrl?await loadImg(singleEmp.logoUrl):null;
+  const doc=new jsPDF({orientation:'landscape',unit:'mm',format:'a4'});
+  const W=PAG.LW,H=PAG.LH,m=PAG.LM,uw=PAG.LUW;
+
+  // Cover page
+  doc.setFillColor(...C.h1);doc.rect(0,0,W,H,'F');
+  const coverLogo=singleEmpLogo||wsLogo;
+  const coverNome=singleEmp?singleEmp.nome:WS_EMPRESA.nome;
+  const coverCnpj=singleEmp?singleEmp.cnpj:WS_EMPRESA.cnpj;
+  if(coverLogo){try{doc.addImage(coverLogo,'PNG',W/2-25,45,50,50);}catch(_){}}
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(26);doc.setTextColor(...C.twh);
+  doc.text('RELATÓRIO DE DOCUMENTOS',W/2,125,{align:'center'});
+  doc.setFontSize(13);doc.setTextColor(...C.tlt);
+  doc.text(coverNome,W/2,142,{align:'center'});
+  doc.setFontSize(9);
+  doc.text('CNPJ: '+coverCnpj,W/2,153,{align:'center'});
+  doc.setDrawColor(...C.tlt);doc.setLineWidth(0.4);
+  doc.line(W/2-60,162,W/2+60,162);
+  const statusLabel=statusFilter==='emdia'?'Em Dia':statusFilter==='vencido'?'Vencido':'Todos';
+  doc.setFontSize(10);doc.setTextColor(...C.twh);
+  doc.text('FILTROS APLICADOS',W/2,178,{align:'center'});
+  doc.setFont('helvetica','normal');doc.setFontSize(8.5);doc.setTextColor(...C.tlt);
+  doc.text('Status: '+statusLabel+'  |  Período: '+(startDate?fmtData(startDate):'—')+' a '+(endDate?fmtData(endDate):'—')+(docType?'  |  Tipo: '+docType:'')+(subTipo?'  |  Sub: '+subTipo:''),W/2,190,{align:'center'});
+  doc.text('Empresa(s): '+selectedEmpresas.length+' selecionada(s)  |  Registros: '+rows.length,W/2,202,{align:'center'});
+  const nowStr=new Date().toLocaleString('pt-BR');
+  if(singleEmp){
+    doc.setFont('helvetica','bold');doc.setFontSize(16);doc.setTextColor(...C.twh);
+    doc.text(singleEmp.nome.toUpperCase(),W/2,220,{align:'center'});
+    doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(...C.tlt);
+    doc.text('Empresa gerando o relatório',W/2,228,{align:'center'});
+    doc.setFont('helvetica','italic');doc.setFontSize(7.5);doc.setTextColor(...C.tlt);
+    doc.text('Gerado em: '+nowStr,W/2,242,{align:'center'});
+    doc.text('Responsável: '+RESP.nome+' — '+RESP.registro,W/2,252,{align:'center'});
+  }else{
+    doc.setFont('helvetica','italic');doc.setFontSize(7.5);doc.setTextColor(...C.tlt);
+    doc.text('Gerado em: '+nowStr,W/2,225,{align:'center'});
+    doc.text('Responsável: '+RESP.nome+' — '+RESP.registro,W/2,235,{align:'center'});
+  }
+
+  // Page header/footer helpers
+  const headerNome=singleEmp?singleEmp.nome:WS_EMPRESA.nome;
+  const headerCnpj=singleEmp?singleEmp.cnpj:WS_EMPRESA.cnpj;
+  const footerNome=singleEmp?singleEmp.nome:'WS ENGENHARIA';
+  const drawPageHeader=(dw,dW,dM,dLogo)=>{
+    dw.setFillColor(...C.h1);dw.rect(0,0,dW,25,'F');
+    const hLogo=singleEmpLogo||dLogo;
+    if(hLogo){try{dw.addImage(hLogo,'PNG',dM,2,18,21);}catch(_){}}
+    dw.setFont('helvetica','bold');dw.setFontSize(9);dw.setTextColor(...C.twh);
+    dw.text('RELATÓRIO DE DOCUMENTOS',dW/2,10,{align:'center'});
+    dw.setFont('helvetica','normal');dw.setFontSize(6.5);dw.setTextColor(...C.tlt);
+    dw.text(headerNome,dW/2,16,{align:'center'});
+    dw.setDrawColor(...C.bdr);dw.setLineWidth(0.3);dw.line(0,25,dW,25);
+  };
+  const drawPageFooter=(dw,dW,dH,dM)=>{
+    const fy2=dH-8;
+    dw.setDrawColor(...C.bdr);dw.setLineWidth(0.15);dw.line(dM,fy2-2,dW-dM,fy2-2);
+    dw.setFont('helvetica','normal');dw.setFontSize(6);dw.setTextColor(...C.sub);
+    const pg=dw.internal.getCurrentPageInfo().pageNumber;
+    dw.text(footerNome+' | '+(singleEmp?'':'CREA: 0516926055 | ')+'Pg. '+pg,dW/2,fy2+2,{align:'center'});
+  };
+
+  // Group rows
+  const grouped={};
+  rows.forEach(r=>{
+    if(!grouped[r.empresaId])grouped[r.empresaId]={empresa:r.empresa,categorias:{}};
+    if(!grouped[r.empresaId].categorias[r.categoria])grouped[r.empresaId].categorias[r.categoria]={};
+    if(!grouped[r.empresaId].categorias[r.categoria][r.docTipo])grouped[r.empresaId].categorias[r.categoria][r.docTipo]=[];
+    grouped[r.empresaId].categorias[r.categoria][r.docTipo].push(r);
+  });
+
+  const tableBase={
+    headStyles:{fillColor:C.h1,textColor:C.twh,fontStyle:'bold',fontSize:6.5,halign:'center',cellPadding:2},
+    alternateRowStyles:{fillColor:C.bg},
+    styles:{fontSize:6.5,textColor:C.dark,cellPadding:1.8},
+    theme:'grid',lineColor:C.bdr,lineWidth:0.12,
+    tableWidth:uw,margin:{left:m,right:m},
+    columnStyles:{
+      0:{cellWidth:42},
+      1:{cellWidth:uw-164},
+      2:{cellWidth:32,halign:'center'},
+      3:{cellWidth:24,halign:'center'},
+      4:{cellWidth:18,halign:'center'},
+      5:{cellWidth:24,halign:'center'}
+    }
+  };
+
+  let lastPageNum=0;
+
+  for(const empId of Object.keys(grouped)){
+    const g=grouped[empId];
+    doc.addPage();
+    let y=32;
+
+    doc.setFont('helvetica','bold');doc.setFontSize(12);doc.setTextColor(...C.h1);
+    doc.text(g.empresa,m+2,y);y+=8;
+
+    for(const cat of Object.keys(g.categorias)){
+      if(y+12>H-20){doc.addPage();y=32;}
+      doc.setFillColor(...C.bg);doc.rect(m,y,uw,5.5,'F');
+      doc.setFillColor(...C.h2);doc.rect(m,y,2,5.5,'F');
+      doc.setDrawColor(...C.bdr);doc.setLineWidth(0.12);doc.rect(m,y,uw,5.5,'S');
+      doc.setFont('helvetica','bold');doc.setFontSize(7);doc.setTextColor(...C.h2);
+      doc.text(cat.toUpperCase(),m+5,y+3.8);y+=7.5;
+
+      for(const tipo of Object.keys(g.categorias[cat])){
+        const tipoRows=g.categorias[cat][tipo];
+        if(y+14>H-25){doc.addPage();y=32;}
+        if(tipo!==cat){
+          doc.setFont('helvetica','bold');doc.setFontSize(8.5);doc.setTextColor(...C.dark);
+          doc.text(tipo,m+4,y);y+=5;
+        }
+
+        doc.autoTable({
+          startY:y,
+          head:[['Colaborador','Documento','Data/Hora','Vencimento','Dias','Status']],
+          body:tipoRows.map(r=>[r.colaborador,r.documento,r.dataHora,r.vencimento,String(r.diasRestantes),r.status]),
+          margin:{top:32,bottom:14},
+          didDrawPage:function(data){
+            if(data.pageNumber!==lastPageNum){
+              drawPageHeader(doc,W,m,wsLogo);
+              drawPageFooter(doc,W,H,m);
+              lastPageNum=data.pageNumber;
+            }
+          },
+          ...tableBase,
+          didParseCell:function(data){
+            if(data.section==='body'&&data.column.index===5){
+              if(data.cell.raw==='VENCIDO'){data.cell.styles.textColor=[220,38,38];data.cell.styles.fontStyle='bold';}
+              else if(data.cell.raw==='EM DIA'){data.cell.styles.textColor=[22,163,74];data.cell.styles.fontStyle='bold';}
+            }
+            if(data.section==='body'&&data.column.index===4){
+              data.cell.styles.halign='center';
+              const val=parseInt(data.cell.raw);
+              if(!isNaN(val)){
+                if(val<=0)data.cell.styles.textColor=[220,38,38];
+                else if(val<=15)data.cell.styles.textColor=[217,119,6];
+              }
+            }
+          }
+        });
+
+        y=doc.lastAutoTable.finalY+3;
+        const tDoc=tipoRows.length;
+        const tVen=tipoRows.filter(r=>r.status==='VENCIDO').length;
+        doc.setFont('helvetica','normal');doc.setFontSize(6.5);doc.setTextColor(...C.sub);
+        doc.text('Total: '+tDoc+' registro(s)  |  Em dia: '+(tDoc-tVen)+(tVen?'  |  Vencido(s): '+tVen:''),m+4,y);
+        y+=7;
+      }
+    }
+  }
+
+  // Summary page
+  doc.addPage();
+  let sy=45;
+  doc.setFont('helvetica','bold');doc.setFontSize(14);doc.setTextColor(...C.h1);
+  doc.text('RESUMO GERAL',W/2,sy,{align:'center'});sy+=14;
+  const tg=rows.length,tv=rows.filter(r=>r.status==='VENCIDO').length,tnv=rows.filter(r=>r.status==='NÃO VENCE').length;
+  doc.setFont('helvetica','normal');doc.setFontSize(11);doc.setTextColor(...C.dark);
+  doc.text('Total de registros: '+tg,W/2,sy+4,{align:'center'});
+  doc.text('Em dia: '+(tg-tv-tnv),W/2,sy+16,{align:'center'});
+  doc.text('Vencidos: '+tv,W/2,sy+28,{align:'center'});
+  doc.text('Não vence: '+tnv,W/2,sy+40,{align:'center'});
+  const nowStr2=new Date().toLocaleString('pt-BR');
+  doc.setFont('helvetica','italic');doc.setFontSize(8);doc.setTextColor(...C.sub);
+  doc.text('Relatório gerado em: '+nowStr2,W/2,H-14,{align:'center'});
+  drawPageFooter(doc,W,H,m);
+  drawPageHeader(doc,W,m,wsLogo);
+
+  const filename='relatorio_documentos_'+new Date().toISOString().slice(0,10)+'.pdf';
+  try{
+    const pdfBlob=doc.output('blob');
+    const url=URL.createObjectURL(pdfBlob);
+    const a=document.createElement('a');
+    a.href=url;a.download=filename;
+    document.body.appendChild(a);a.click();
+    setTimeout(()=>{document.body.removeChild(a);URL.revokeObjectURL(url);},1000);
+  }catch(e){doc.save(filename);}
+  spin(false);
+}
 
 async function regenDoc(nome){
   const nomeLower=nome.toLowerCase();
@@ -661,7 +1815,7 @@ async function regenDoc(nome){
     if(!item.empresaId||!item.funcionarioIds?.length){alert('Dados insuficientes para regenerar');return;}
     const sel=document.getElementById('g-e');if(sel)sel.value=item.empresaId;await fltG();
     item.funcionarioIds.forEach(fid=>{const ck=document.getElementById('ck_gChk_'+fid);if(ck)ck.checked=true;});
-    alert('Colaboradores seleccionados. Vá em Emitir OS e clique em Gerar PDF.');
+    showView('gen');await gen();
   }else if(nomeLower.startsWith('lista')){
     if(!item.empresaId||!item.treino){alert('Dados insuficientes para regenerar');return;}
     const sel=document.getElementById('list-empresa');if(sel)sel.value=item.empresaId;
@@ -683,14 +1837,20 @@ async function regenDoc(nome){
     showView('gen');showResult('epi-results','');
     alert('Dados carregados. Gere as fichas novamente.');
   }else{
-    alert('Documento não reconhecido para regeneração.');
+    alert('Este é um documento dinâmico não padronizado e não pode ser regenerado automaticamente.');
   }
+}
+function renewDoc(key){
+  const item=DATA.historico[key];
+  if(!item){alert('Registro não encontrado');return;}
+  _replaceHistoryKey=key;
+  regenDoc(item.nome);
 }
 
 // ── LISTAGENS ─────────────────────────────────────────────────────
 function renderEmps(){const q=(document.getElementById('filter-empresas').value||'').toLowerCase();const emps=toArr(DATA.empresas).filter(e=>(e.nome||'').toLowerCase().includes(q)||(e.cnpj||'').toLowerCase().includes(q));document.getElementById('lst-e').innerHTML=emps.length?emps.map(e=>`<div class="tr2"><div><div class="rn">${esc(e.nome)}</div><div class="rs">CNPJ: ${esc(e.cnpj||'—')}${e.endereco?' | '+esc(e.endereco).substring(0,50):''}</div></div><div class="ra"><button class="btn bw" onclick='editEmp(${safeJSON(e)})'><i class="fa-solid fa-pen"></i></button><button class="btn bd2" onclick="del('empresas','${e.id}')"><i class="fa-solid fa-trash"></i></button></div></div>`).join(''):'<div class="es">Nenhuma empresa encontrada</div>';}
 function renderCargos(){const q=(document.getElementById('filter-cargos').value||'').toLowerCase();const cargos=toArr(DATA.cargos).filter(c=>(c.nome||'').toLowerCase().includes(q)||(c.cbo||'').toLowerCase().includes(q));const resolveEpiNomes=c=>{if(!c.epi)return'';const list=Array.isArray(c.epi)?c.epi:typeof c.epi==='string'?c.epi.split(',').map(s=>s.trim()).filter(s=>s).map(id=>({id})):[];return list.map(item=>{const id=typeof item==='object'?item.id:item;const qtd=typeof item==='object'?(item.qtd||1):1;const m=DATA.materiais[id]||toArr(DATA.materiais).find(mm=>(mm.nome||'').toLowerCase().includes(id.toLowerCase()));return m?m.nome+(qtd>1?' x'+qtd:''):null;}).filter(Boolean).join(', ');};document.getElementById('lst-c').innerHTML=cargos.length?cargos.map(c=>{const epiStr=resolveEpiNomes(c);return`<div class="tr2"><div><div class="rn">${esc(c.nome)}</div><div class="rs">CBO: ${esc(c.cbo||'—')}${epiStr?' | EPIs: '+esc(epiStr.substring(0,60)):''}</div></div><div class="ra"><button class="btn bw" onclick='editCargo(${safeJSON(c)})'><i class="fa-solid fa-pen"></i></button><button class="btn bd2" onclick="del('cargos','${c.id}')"><i class="fa-solid fa-trash"></i></button></div></div>`;}).join(''):'<div class="es">Nenhum cargo encontrado</div>';}
-function renderFuncs(){const q=(document.getElementById('filter-colaboradores').value||'').toLowerCase();const funcs=toArr(DATA.funcionarios).filter(f=>(f.nome||'').toLowerCase().includes(q)||(f.funcao||'').toLowerCase().includes(q));const em={};toArr(DATA.empresas).forEach(e=>{em[String(e.id||'').trim()]=e.nome;});const cg={};toArr(DATA.cargos).forEach(c=>{cg[String(c.id||'').trim()]=c.nome;});document.getElementById('lst-f').innerHTML=funcs.length?funcs.map(f=>`<div class="tr2"><div><div class="rn">${esc(f.nome)}</div><div class="rs">${esc(em[String(f.empresaId||'').trim()]||'?')} · ${esc(cg[String(f.funcao||'').trim()]||f.funcao||'—')}</div></div><div class="ra"><button class="btn bw" onclick='editFunc(${safeJSON(f)})'><i class="fa-solid fa-pen"></i></button><button class="btn bd2" onclick="del('funcionarios','${f.id}')"><i class="fa-solid fa-trash"></i></button></div></div>`).join(''):'<div class="es">Nenhum colaborador encontrado</div>';}
+function renderFuncs(){const q=(document.getElementById('filter-colaboradores').value||'').toLowerCase();const funcs=toArr(DATA.funcionarios).filter(f=>(f.nome||'').toLowerCase().includes(q)||(f.funcao||'').toLowerCase().includes(q));const em={};toArr(DATA.empresas).forEach(e=>{em[String(e.id||'').trim()]=e.nome;});const cg={};toArr(DATA.cargos).forEach(c=>{cg[String(c.id||'').trim()]=c.nome;});const now=new Date();const fmtAsoTipo=t=>{return{'ADMISSIONAL':'Admissional','DEMISSIONAL':'Demissional','PERIODICO':'Periódico','MUDANCA_FUNCAO':'Mudança Função','RETORNO_TRABALHO':'Retorno Trabalho'}[t]||t;};function asoStatus(f){if(!f.asoDate)return'';const d=new Date(f.asoDate+'T23:59:59');const days=Math.ceil((d-now)/(864e5));if(days<0)return'<span class="bdg" style="background:#fee2e2;color:#b91c1c">ASO Vencido</span>';if(days<=30)return'<span class="bdg" style="background:#ffedd5;color:#c2410c">ASO '+days+'d</span>';return'<span class="bdg" style="background:#dcfce7;color:#15803d">ASO OK</span>';}document.getElementById('lst-f').innerHTML=funcs.length?funcs.map(f=>`<div class="tr2"><div><div class="rn">${esc(f.nome)} ${asoStatus(f)}</div><div class="rs">${esc(em[String(f.empresaId||'').trim()]||'?')} · ${esc(cg[String(f.funcao||'').trim()]||f.funcao||'—')}${f.asoTipo?' · ASO: '+esc(fmtAsoTipo(f.asoTipo)):''}${f.asoDate?' · Vence: '+esc(f.asoDate):''}</div></div><div class="ra"><button class="btn bw" onclick='editFunc(${safeJSON(f)})'><i class="fa-solid fa-pen"></i></button><button class="btn bd2" onclick="del('funcionarios','${f.id}')"><i class="fa-solid fa-trash"></i></button></div></div>`).join(''):'<div class="es">Nenhum colaborador encontrado</div>';}
 function renderPessoas(){const q=(document.getElementById('filter-pessoas').value||'').toLowerCase();const pessoas=toArr(DATA.pessoas).filter(p=>(p.nome||'').toLowerCase().includes(q)||(p.cpf||'').toLowerCase().includes(q));document.getElementById('lst-p').innerHTML=pessoas.length?pessoas.map(p=>`<div class="tr2"><div><div class="rn">${esc(p.nome)}</div><div class="rs">CPF: ${esc(p.cpf||'—')}${p.endereco?' | '+esc(p.endereco).substring(0,50):''}</div></div><div class="ra"><button class="btn bw" onclick='editPessoa(${safeJSON(p)})'><i class="fa-solid fa-pen"></i></button><button class="btn bd2" onclick="del('pessoas','${p.id}')"><i class="fa-solid fa-trash"></i></button></div></div>`).join(''):'<div class="es">Nenhuma pessoa encontrada</div>';}
 function renderTexts(){const q=(document.getElementById('filter-texts').value||'').toLowerCase();const texts=toArr(DATA.textos).filter(t=>(t.titulo||'').toLowerCase().includes(q));document.getElementById('lst-t').innerHTML=texts.length?texts.map(t=>`<div class="tr2"><div><div class="rn">${esc(t.titulo)} <span class="bdg">${esc(t.categoria||'')}</span></div><div class="rs">${esc((t.conteudo||'').substring(0,80))}${(t.conteudo||'').length>80?'...':''}</div></div><div class="ra"><button class="btn bw" onclick='editText(${safeJSON(t)})'><i class="fa-solid fa-pen"></i></button><button class="btn bd2" onclick="del('textos','${t.id}')"><i class="fa-solid fa-trash"></i></button></div></div>`).join(''):'<div class="es">Nenhum texto cadastrado</div>';}
 function renderMats(){const q=(document.getElementById('filter-mat').value||'').toLowerCase();const mats=toArr(DATA.materiais).filter(m=>(m.nome||'').toLowerCase().includes(q)||(m.ca||'').toLowerCase().includes(q));document.getElementById('lst-m').innerHTML=mats.length?mats.map(m=>`<div class="tr2"><div><div class="rn">${esc(m.nome)} <span class="bdg">${esc(m.tipo||'EPI')}</span></div><div class="rs">C.A.: ${esc(m.ca||'—')} · Estoque: ${esc(m.estoque||0)} ${esc(m.unidade||'')}</div></div><div class="ra"><button class="btn bw" onclick='editMat(${safeJSON(m)})'><i class="fa-solid fa-pen"></i></button><button class="btn bd2" onclick="del('materiais','${m.id}')"><i class="fa-solid fa-trash"></i></button></div></div>`).join(''):'<div class="es">Nenhum material cadastrado</div>';}
@@ -775,7 +1935,7 @@ function calcTotal(){let t=0;document.querySelectorAll('#orc-body tr').forEach(t
 function populateSelects(){
   const emps=toArr(DATA.empresas);
   const opts='<option value="">Selecione...</option>'+emps.map(e=>`<option value="${esc(e.id)}">${esc(e.nome)}</option>`).join('');
-  ['i-f-ep','o-e','g-e','list-empresa','adm-empresa','e-e'].forEach(id=>{const el=document.getElementById(id);if(!el)return;const cur=el.value;el.innerHTML=opts;if(cur)el.value=cur;});
+  ['i-f-ep','o-e','g-e','list-empresa','adm-empresa','e-e','dash-filter-emp'].forEach(id=>{const el=document.getElementById(id);if(!el)return;const cur=el.value;el.innerHTML=opts;if(cur)el.value=cur;});
   const mats=toArr(DATA.materiais);
   const sm=document.getElementById('e-sel-mat');
   if(sm){const cur=sm.value;sm.innerHTML='<option value="">Selecione...</option>'+mats.map(m=>`<option value="${esc(m.id)}" data-un="${esc(m.unidade||'')}">${esc(m.nome)} (C.A.${m.ca||''})</option>`).join('');if(cur)sm.value=cur;}
@@ -848,9 +2008,13 @@ function getFormData(t){
     const idAtual=v('fid');
     const existente=toArr(DATA.funcionarios).find(f=>f.id!==idAtual&&(f.cpf||'').replace(/\D/g,'')===cpfRaw);
     if(existente){alert('CPF j\u00e1 cadastrado para: '+existente.nome);return null;}
-    return{id:idAtual,empresaId:v('i-f-ep'),nome:v('i-f-nm'),cpf:v('i-f-cp'),funcao:v('i-f-fn'),cbo:v('i-f-cb'),setor:v('i-f-st'),dataAdm:v('i-f-dt')};
+    const asoDate=v('i-f-aso-date');
+    const asoTipo=v('i-f-aso-tipo');
+    if(!asoDate){alert('O campo Vencimento ASO \u00e9 obrigat\u00f3rio.');return null;}
+    if(!asoTipo){alert('O campo Tipo ASO \u00e9 obrigat\u00f3rio.');return null;}
+    return{id:idAtual,empresaId:v('i-f-ep'),nome:v('i-f-nm'),cpf:v('i-f-cp'),funcao:v('i-f-fn'),cbo:v('i-f-cb'),setor:v('i-f-st'),dataAdm:v('i-f-dt'),asoDate,asoTipo};
   }
-  if(t==='texto'){const cargos=getChecked('tCgChk');return{id:v('tid'),titulo:v('i-t-ti'),conteudo:v('i-t-co'),categoria:getTxtCategoria(),cargosVinculados:cargos};}
+  if(t==='texto'){const cargos=getChecked('tCgChk');return{id:v('tid'),titulo:v('i-t-ti'),conteudo:v('i-t-co'),categoria:getTxtCategoria(),cargosVinculados:cargos,validade:v('i-t-val')};}
   if(t==='material')return{id:v('mid'),nome:v('i-m-nm'),ca:v('i-m-ca'),tipo:document.getElementById('i-m-tp').value,unidade:v('i-m-un'),estoque:parseInt(v('i-m-es'))||0};
   if(t==='cargo'){const epiData=CARGO_EPI_CART.map(c=>({id:c.id,qtd:c.qtd||1,tipo:c.tipo||'EPI'}));return{id:v('cid'),nome:v('i-c-nm'),cbo:v('i-c-cb'),epi:epiData};}
   if(t==='pessoa'){const cpfRaw=v('i-p-cp').replace(/\D/g,'');const idAtual=v('pid');const existente=toArr(DATA.pessoas).find(p=>p.id!==idAtual&&(p.cpf||'').replace(/\D/g,'')===cpfRaw);if(existente){alert('CPF j\u00e1 cadastrado para: '+existente.nome);return null;}return{id:idAtual,nome:v('i-p-nm'),cpf:v('i-p-cp'),endereco:v('i-p-ender')};}
@@ -876,7 +2040,7 @@ function editCargo(x){
   document.getElementById('c-epi-search').value='';filterCargoEpiMat();
   openM('mdl-c');
 }
-function editFunc(x){v('fid',x.id);document.getElementById('i-f-ep').value=x.empresaId||'';v('i-f-nm',x.nome||'');v('i-f-cp',x.cpf||'');v('i-f-fn',x.funcao||'');v('i-f-cb',x.cbo||'');v('i-f-st',x.setor||'');v('i-f-dt',x.dataAdm||'');autoFillCBO();openM('mdl-f');}
+function editFunc(x){v('fid',x.id);document.getElementById('i-f-ep').value=x.empresaId||'';v('i-f-nm',x.nome||'');v('i-f-cp',x.cpf||'');v('i-f-fn',x.funcao||'');v('i-f-cb',x.cbo||'');v('i-f-st',x.setor||'');v('i-f-dt',x.dataAdm||'');v('i-f-aso-date',x.asoDate||'');document.getElementById('i-f-aso-tipo').value=x.asoTipo||'';autoFillCBO();openM('mdl-f');}
 
 function autoFillCBO(){
   const sel=document.getElementById('i-f-fn');
@@ -906,7 +2070,7 @@ function getTxtCategoria(){
   return sel.value;
 }
 function editText(x){
-  v('tid',x.id);v('i-t-ti',x.titulo||'');v('i-t-co',x.conteudo||'');
+  v('tid',x.id);v('i-t-ti',x.titulo||'');v('i-t-co',x.conteudo||'');v('i-t-val',x.validade||'none');
   setTxtCategoria(x.categoria||'');
   selAll('tCgChk',false);
   const ids=(x.cargosVinculados||[]).map(i=>String(i).trim());
@@ -1510,7 +2674,15 @@ async function genOrc(){
   spin(false);
   const filename = 'PROPOSTA_'+(empCliente?.nome||'cliente').replace(/\s+/g,'_')+'_'+dataStr.replace(/\//g,'-')+'.pdf';
   await saveSecurely(doc, filename, { empresaId: empCliente?.id });
-  logHistory('Proposta - '+(empCliente?.nome||'?'), {empresaId:empCliente?.id});
+
+  const valDias = parseInt(document.getElementById('o-val').value) || 0;
+  let expiracao = null;
+  if (valDias > 0) {
+    const d = new Date();
+    d.setDate(d.getDate() + valDias);
+    expiracao = d.toISOString().slice(0, 10);
+  }
+  logHistory('Proposta - '+(empCliente?.nome||'?'), {empresaId:empCliente?.id,expiracao});
 }
 
 // ── LISTAS ─────────────────────────────────────────────────────
@@ -1520,6 +2692,10 @@ async function gen(){
   const fIds=getChecked('gChk');
   if(!fIds.length){alert('Selecione pelo menos um collaborator');return;}
   if(!SEL_TEXTS.length){alert('Selecione pelo menos um texto');return;}
+  
+  const empId = document.getElementById('g-e').value;
+  if(!empId){alert('Selecione uma empresa primeiro');return;}
+
   for(const fid of fIds){
     const func=DATA.funcionarios[fid];
     if(!func || !func.dataAdm){
@@ -1539,7 +2715,10 @@ async function gen(){
   spin(false);
   const filename = 'LOTE_OS_'+new Date().toLocaleDateString('pt-BR').replace(/\//g,'-')+'.pdf';
   await saveSecurely(doc, filename, { funcionarioIds: fIds });
-  logHistory('OS Lote - '+fIds.length+' collaborator(es)', {empresaId:emp?.id,funcionarioIds:fIds});
+
+  const firstTextId = SEL_TEXTS[0];
+  const expiracao = getExpirationDate(firstTextId);
+  logHistory('OS Lote - '+fIds.length+' collaborator(es)', {empresaId:empId,funcionarioIds:fIds,expiracao});
   showResult('gen-results','PDF gerado e baixado com sucesso!');
 }
 async function drawOS(doc,func,emp){
@@ -1593,6 +2772,10 @@ async function genList(){
   const carga=document.getElementById('list-carga').value||'';
   const dataFmt=fmtData(dataVal);
   const conteudo=document.getElementById('list-cont').value||'';
+  
+  const textId = document.getElementById('list-sel-texto').value;
+  const expiracao = getExpirationDate(textId);
+
   const m=PAG.PM,uw=PAG.UW;
   const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
   const{y:sy,assData}=await P_header(doc,emp,'Lista de Presenca',false);
@@ -1646,7 +2829,7 @@ async function genList(){
   spin(false);
   const filename = 'LISTA_PRESENCA_'+(treino||'treinamento').replace(/\s+/g,'_')+'_'+dataFmt.replace(/\//g,'-')+'.pdf';
   await saveSecurely(doc, filename, { treino: treino, empresaId: eid });
-  logHistory('Lista Presenca - '+treino, {empresaId:emp?.id,treino:treino,data:dataFmt});
+  logHistory('Lista Presenca - '+treino, {empresaId:emp?.id,treino:treino,data:dataFmt,expiracao});
   showResult('list-results','Lista gerada e baixada com sucesso!');
 }
 
@@ -1677,7 +2860,10 @@ async function genAdm(){
   spin(false);
   const filename = 'FICHAS_ADMISSIONAL_'+dataFmt.replace(/\//g,'-')+'.pdf';
   await saveSecurely(doc, filename, { empresaId: eid, funcionarioIds: fIds });
-  logHistory('Ficha Admissional - '+fIds.length+' colaborador(es)', {empresaId:eid,funcionarioIds:fIds,data:dataVal});
+  
+  const textId = document.getElementById('adm-sel-texto').value;
+  const expiracao = getExpirationDate(textId);
+  logHistory('Ficha Admissional - '+fIds.length+' colaborador(es)', {empresaId:eid,funcionarioIds:fIds,data:dataVal,expiracao});
   showResult('adm-results','Fichas geradas e baixadas com sucesso!');
 }
 async function drawAdm(doc,func,emp,dataFmt,local,conteudo){
@@ -1928,7 +3114,7 @@ async function addVerificationOverlay(pdfBytes, docId, validationUrl) {
 }
 
 // ── START ─────────────────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded',()=>{initListeners();});
+document.addEventListener('DOMContentLoaded',()=>{initListeners();loadCertCache();});
 </script>
 </body>
 </html>
