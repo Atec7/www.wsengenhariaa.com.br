@@ -269,26 +269,24 @@ hr.dv{border:none;border-top:1px solid var(--bd);margin:18px 0}
   <div class="g3" style="grid-template-columns:2fr 1fr;margin-bottom:16px">
     <div class="card">
       <div class="ct">Resumo de Documentos (Período)</div>
-      <div id="dash-doc-summary" style="min-height:150px">
+      <div id="dash-doc-summary" style="min-height:150px;max-height:220px;overflow-y:auto">
         <div class="es">Selecione um período para ver o resumo.</div>
       </div>
     </div>
     <div class="card">
       <div class="ct">Ranking de Vencimentos Próximos</div>
-      <div id="dash-exp-ranking" style="min-height:150px">
+      <div id="dash-exp-ranking" style="min-height:150px;max-height:220px;overflow-y:auto">
         <div class="es">Nenhum vencimento próximo detectado.</div>
       </div>
     </div>
   </div>
-  <div class="g2" style="margin-bottom:16px">
-    <div class="card">
-      <div class="ct">Distribuição por Tipo</div>
-      <canvas id="dash-bar-chart" style="width:100%;height:200px"></canvas>
-    </div>
-    <div class="card">
-      <div class="ct">Documentos por Empresa</div>
-      <div id="dash-emp-chart" style="min-height:180px"></div>
-    </div>
+  <div class="card" style="margin-bottom:16px">
+    <div class="ct">Distribuição por Tipo</div>
+    <canvas id="dash-bar-chart" style="width:100%;height:200px"></canvas>
+  </div>
+  <div class="card" style="margin-bottom:16px">
+    <div class="ct">Documentos por Empresa</div>
+    <div id="dash-emp-chart" style="min-height:180px"></div>
   </div>
 
   <div class="g2" style="margin-bottom:16px">
@@ -591,14 +589,14 @@ hr.dv{border:none;border-top:1px solid var(--bd);margin:18px 0}
   <iframe id="cert-iframe" src="" title="Sistema de Certificados WS Engenharia" allowfullscreen></iframe>
 </div>
 
-<div class="modal" id="mdl-dash-detail"><div class="mb" style="width:600px">
+<div class="modal" id="mdl-dash-detail" onclick="cls()"><div class="mb" style="width:600px" onclick="event.stopPropagation()">
   <div class="mt2" id="dd-title">Detalhes</div>
   <div id="dd-body" style="font-size:13px;line-height:1.6"></div>
   <div class="ma"><button class="btn bg2" onclick="cls()">Fechar</button></div>
 </div></div>
 
 <!-- MODAL RELATORIO PDF -->
-<div class="modal" id="mdl-rel"><div class="mb" style="width:560px">
+<div class="modal" id="mdl-rel" onclick="cls()"><div class="mb" style="width:560px" onclick="event.stopPropagation()">
   <div class="mt2"><i class="fa-solid fa-file-pdf" style="color:var(--dn);margin-right:6px"></i> Exportar Relat&oacute;rio PDF</div>
   <div class="fg">
     <label class="fl">Status do Documento</label>
@@ -1164,7 +1162,7 @@ function drawDashCharts(groups){
     barC.style.width=w+'px';barC.style.height=h+'px';
     const ctx=barC.getContext('2d');
     ctx.scale(dpr,dpr);
-    const pad={t:20,r:16,b:36,l:48};
+    const pad={t:20,r:12,b:36,l:36};
     const cw=w-pad.l-pad.r,ch=h-pad.t-pad.b;
     const max=Math.max(...values,1);
     ctx.clearRect(0,0,w,h);
@@ -1172,9 +1170,9 @@ function drawDashCharts(groups){
     ctx.font='11px sans-serif';ctx.fillStyle='#18181b';
     const steps=4;for(let i=0;i<=steps;i++){const y=pad.t+ch-(i/steps)*ch;ctx.textAlign='left';ctx.fillText(Math.round(max*i/steps),4,y+4);ctx.strokeStyle='#e4e4e7';ctx.lineWidth=0.5;ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(w-pad.r,y);ctx.stroke();}
 
-    const gap=Math.max(2,Math.min(8,(cw/entries.length)*0.15));
+    const gap=Math.max(2,Math.min(6,(cw/entries.length)*0.12));
     const bw=Math.max(6,(cw-gap*(entries.length+1))/entries.length);
-    const offsetX=entries.length>1?pad.l+gap+(cw-(entries.length*(bw+gap))+gap)/2:pad.l+(cw-bw)/2;
+    const offsetX=pad.l+gap;
     const barRects=[];
     entries.forEach(([k,v],i)=>{
       const bh=Math.max(1,(v/max)*ch);
