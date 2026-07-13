@@ -523,7 +523,7 @@ hr.dv{border:none;border-top:1px solid var(--bd);margin:18px 0}
 <div class="g2"><div class="fg"><label class="fl">CPF</label><input id="i-f-cp" placeholder="000.000.000-00"></div><div class="fg"><label class="fl">Data de Admiss&atilde;o</label><input type="date" id="i-f-dt"></div></div>
 <div class="g2"><div class="fg"><label class="fl">Fun&ccedil;&atilde;o</label><select id="i-f-fn" onchange="autoFillCBO()"><option value="">Selecione...</option></select></div><div class="fg"><label class="fl">CBO</label><input id="i-f-cb"></div></div>
 <div class="fg"><label class="fl">Setor</label><input id="i-f-st"></div>
-<div class="g2"><div class="fg"><label class="fl">Vencimento ASO <span style="color:var(--dn)">*</span></label><input type="date" id="i-f-aso-date" required></div><div class="fg"><label class="fl">Tipo ASO <span style="color:var(--dn)">*</span></label><select id="i-f-aso-tipo" required><option value="">Selecione...</option><option value="ADMISSIONAL">Admissional</option><option value="DEMISSIONAL">Demissional</option><option value="PERIODICO">Periódico</option><option value="MUDANCA_FUNCAO">Mudança de Função</option><option value="RETORNO_TRABALHO">Retorno ao Trabalho</option></select></div></div>
+<div class="g2"><div class="fg"><label class="fl">Vencimento ASO</label><input type="date" id="i-f-aso-date"></div><div class="fg"><label class="fl">Tipo ASO</label><select id="i-f-aso-tipo"><option value="">Selecione...</option><option value="ADMISSIONAL">Admissional</option><option value="DEMISSIONAL">Demissional</option><option value="PERIODICO">Periódico</option><option value="MUDANCA_FUNCAO">Mudança de Função</option><option value="RETORNO_TRABALHO">Retorno ao Trabalho</option></select></div></div>
   <div class="ma"><button class="btn bp" onclick="sv('funcionario')"><i class="fa-solid fa-save"></i> Salvar</button><button class="btn bg2" onclick="cls()">Cancelar</button></div>
 </div></div>
 
@@ -1506,7 +1506,7 @@ function renderHistory(){
     const isCert=h.tipo==='certificado'||(h.nome||'').toLowerCase().startsWith('certificado');
     const icone=isCert?'fa-certificate':'fa-file-pdf';
     const corIcone=isCert?'var(--sc)':'var(--dn)';
-    return `<div class="hr2"><span><i class="fa-solid ${icone}" style="color:${corIcone};margin-right:7px"></i>${esc(h.nome)}</span><button class="btn" style="padding:3px 6px;font-size:10px;" onclick="regenDoc('${esc(h.nome)}')"><i class="fa-solid fa-download"></i></button><span style="color:var(--tm);font-size:11px">${esc(h.data)}</span></div>`;
+    return `<div class="hr2"><span><i class="fa-solid ${icone}" style="color:${corIcone};margin-right:7px"></i>${esc(h.nome)}</span><button class="btn" style="padding:3px 6px;font-size:10px;" onclick="regenDoc('${esc(h.nome)}')"><i class="fa-solid fa-download"></i></button><button class="btn bd2" style="padding:3px 6px;font-size:10px;" onclick="deleteHistoryItem('${h.id}')"><i class="fa-solid fa-trash"></i></button><span style="color:var(--tm);font-size:11px">${esc(h.data)}</span></div>`;
   }).join(''):'<div class="es">Nenhum documento gerado ainda.</div>';
 }
 function logHistory(nome, dadosExtras={}){
@@ -1516,7 +1516,7 @@ function logHistory(nome, dadosExtras={}){
 }
 function deleteHistoryItem(key){
   if(!confirm('Excluir este registro do hist\u00f3rico?'))return;
-  db.ref('historico/'+key).remove().then(()=>{cls();}).catch(e=>{alert('Erro: '+e.message);});
+  db.ref('historico/'+key).remove().then(()=>{renderHistory();}).catch(e=>{alert('Erro: '+e.message);});
 }
 function clearHistory(){if(!confirm('Tem certeza que deseja limpar todo o hist\u00f3rico de documentos?'))return;db.ref('historico').remove().then(()=>{renderHistory();}).catch(e=>{alert('Erro ao limpar hist\u00f3rico: '+e.message);});}
 
@@ -2008,8 +2008,6 @@ function getFormData(t){
     if(existente){alert('CPF j\u00e1 cadastrado para: '+existente.nome);return null;}
     const asoDate=v('i-f-aso-date');
     const asoTipo=v('i-f-aso-tipo');
-    if(!asoDate){alert('O campo Vencimento ASO \u00e9 obrigat\u00f3rio.');return null;}
-    if(!asoTipo){alert('O campo Tipo ASO \u00e9 obrigat\u00f3rio.');return null;}
     return{id:idAtual,empresaId:v('i-f-ep'),nome:v('i-f-nm'),cpf:v('i-f-cp'),funcao:v('i-f-fn'),cbo:v('i-f-cb'),setor:v('i-f-st'),dataAdm:v('i-f-dt'),asoDate,asoTipo};
   }
   if(t==='texto'){const cargos=getChecked('tCgChk');return{id:v('tid'),titulo:v('i-t-ti'),conteudo:v('i-t-co'),categoria:getTxtCategoria(),cargosVinculados:cargos,validade:v('i-t-val')};}
