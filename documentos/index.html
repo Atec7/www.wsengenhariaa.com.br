@@ -442,6 +442,10 @@ hr.dv{border:none;border-top:1px solid var(--bd);margin:18px 0}
       </div>
       <div class="rmbar"><input type="checkbox" id="chk-lembrar-epi"><label for="chk-lembrar-epi">Lembrar itens para pr&oacute;ximas emiss&otilde;es <small>&mdash; salvo localmente</small></label><button class="bxs bxd" onclick="limparEpiSalvo()"><i class="fa-solid fa-trash"></i> Limpar</button></div>
       <div class="fg"><label class="fl">Itens a Entregar</label><div id="epi-cart" style="min-height:46px;border:1px dashed var(--bd);padding:9px;border-radius:6px"><div class="es" style="padding:6px">Nenhum item adicionado</div></div></div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <input type="checkbox" id="epi-show-venc" checked>
+        <label for="epi-show-venc" style="font-size:12px;font-weight:600;color:var(--tp);cursor:pointer">Mostrar coluna Vencimento CA</label>
+      </div>
       <button class="btn bp bf" onclick="genEPI()"><i class="fa-solid fa-file-pdf"></i> GERAR FICHAS</button>
       <div id="epi-results" style="margin-top:10px;display:none"></div>
     </div>
@@ -553,6 +557,7 @@ hr.dv{border:none;border-top:1px solid var(--bd);margin:18px 0}
   <div class="fg"><label class="fl">Nome</label><input id="i-m-nm"></div>
   <div class="g2"><div class="fg"><label class="fl">C.A.</label><input id="i-m-ca"></div><div class="fg"><label class="fl">Tipo</label><select id="i-m-tp"><option value="EPI">EPI</option><option value="EPC">EPC</option><option value="UNIFORME">UNIFORME</option></select></div></div>
   <div class="g2"><div class="fg"><label class="fl">Unidade</label><input id="i-m-un" placeholder="Par, Un, Cx..."></div><div class="fg"><label class="fl">Estoque</label><input type="number" id="i-m-es" value="0"></div></div>
+  <div class="fg"><label class="fl">Vencimento C.A.</label><input type="date" id="i-m-vc"></div>
   <div class="ma"><button class="btn bp" onclick="sv('material')"><i class="fa-solid fa-save"></i> Salvar</button><button class="btn bg2" onclick="cls()">Cancelar</button></div>
 </div></div>
 
@@ -741,7 +746,7 @@ function openM(id,mode){
     if(id==='mdl-c'){v('cid','');v('i-c-nm','');v('i-c-cb','');CARGO_EPI_CART=[];renderCargoEpiCart();document.getElementById('c-epi-search').value='';filterCargoEpiMat();}
     if(id==='mdl-f'){v('fid','');v('i-f-nm','');v('i-f-cp','');v('i-f-fn','');v('i-f-cb','');v('i-f-st','');v('i-f-dt','');v('i-f-aso-date','');document.getElementById('i-f-aso-tipo').value='';document.getElementById('i-f-ep').value='';}
     if(id==='mdl-t'){v('tid','');v('i-t-ti','');v('i-t-co','');v('i-t-val','none');setTxtCategoria('');selAll('tCgChk',false);}
-    if(id==='mdl-m'){v('mid','');v('i-m-nm','');v('i-m-ca','');document.getElementById('i-m-tp').value='EPI';v('i-m-un','');v('i-m-es','0');}
+    if(id==='mdl-m'){v('mid','');v('i-m-nm','');v('i-m-ca','');document.getElementById('i-m-tp').value='EPI';v('i-m-un','');v('i-m-es','0');v('i-m-vc','');}
     if(id==='mdl-p'){v('pid','');v('i-p-nm','');v('i-p-cp','');v('i-p-ender','');}
   }
   document.getElementById(id).style.display='flex';
@@ -794,20 +799,20 @@ function showIndicatorDetail(type){
   if(type==='empresas'){
     title='Empresas Cadastradas';
     const emps=empId?toArr(DATA.empresas).filter(e=>e.id==empId):toArr(DATA.empresas);
-    items=emps.map(e=>`<div style="padding:4px 0">🏢 ${esc(e.nome)}${e.cnpj?' <span style="color:var(--tm)">'+esc(e.cnpj)+'</span>':''}</div>`);
+    items=emps.sort((a,b)=>(a.nome||'').localeCompare(b.nome||'')).map(e=>`<div style="padding:4px 0">🏢 ${esc(e.nome)}${e.cnpj?' <span style="color:var(--tm)">'+esc(e.cnpj)+'</span>':''}</div>`);
   }else if(type==='colaboradores'){
     title='Colaboradores Cadastrados';
-    function fmtAsoTipo(t){return{'ADMISSIONAL':'Admissional','DEMISSIONAL':'Demissional','PERIODICO':'Periódico','MUDANCA_FUNCAO':'Mudança Função','RETORNO_TRABALHO':'Retorno Trabalho'}[t]||t;}    items=filteredFuncs.map(f=>`<div style="padding:4px 0">👤 ${esc(f.nome)}${f.funcao?' <span style="color:var(--tm)">'+esc(f.funcao)+'</span>':''}${f.asoDate?'<br><span style="font-size:11px;color:var(--ts)">ASO: '+esc(fmtAsoTipo(f.asoTipo)||'')+' · Vence: '+esc(f.asoDate)+'</span>':''}</div>`);
+    function fmtAsoTipo(t){return{'ADMISSIONAL':'Admissional','DEMISSIONAL':'Demissional','PERIODICO':'Periódico','MUDANCA_FUNCAO':'Mudança Função','RETORNO_TRABALHO':'Retorno Trabalho'}[t]||t;}    items=filteredFuncs.sort((a,b)=>(a.nome||'').localeCompare(b.nome||'')).map(f=>`<div style="padding:4px 0">👤 ${esc(f.nome)}${f.funcao?' <span style="color:var(--tm)">'+esc(f.funcao)+'</span>':''}${f.asoDate?'<br><span style="font-size:11px;color:var(--ts)">ASO: '+esc(fmtAsoTipo(f.asoTipo)||'')+' · Vence: '+esc(f.asoDate)+'</span>':''}</div>`);
   }else if(type==='textos'){
     title='Textos Cadastrados';
-    items=toArr(DATA.textos).map(t=>`<div style="padding:4px 0">📄 ${esc(t.titulo)}${t.categoria?' <span class="bdg">'+esc(t.categoria)+'</span>':''}</div>`);
+    items=toArr(DATA.textos).sort((a,b)=>(a.titulo||'').localeCompare(b.titulo||'')).map(t=>`<div style="padding:4px 0">📄 ${esc(t.titulo)}${t.categoria?' <span class="bdg">'+esc(t.categoria)+'</span>':''}</div>`);
   }else if(type==='asoVencido'){
     title='Colaboradores com ASO Vencido';
-    const venc=filteredFuncs.filter(f=>f.asoDate&&new Date(f.asoDate+'T23:59:59')<now);
+    const venc=filteredFuncs.filter(f=>f.asoDate&&new Date(f.asoDate+'T23:59:59')<now).sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));
     items=venc.length?venc.map(f=>`<div style="padding:4px 0">🚫 ${esc(f.nome)} <span style="color:var(--dn);font-weight:600">Venceu: ${esc(f.asoDate)}</span> <span class="bdg">${esc(f.asoTipo||'')}</span></div>`):['<div class="es">Nenhum ASO vencido.</div>'];
   }else if(type==='aso30'){
     title='Colaboradores com ASO Vencendo em 30 Dias';
-    const prox=filteredFuncs.filter(f=>{if(!f.asoDate)return false;const d=new Date(f.asoDate+'T23:59:59');return d>now&&d.getTime()-now.getTime()<=thirtyDays;});
+    const prox=filteredFuncs.filter(f=>{if(!f.asoDate)return false;const d=new Date(f.asoDate+'T23:59:59');return d>now&&d.getTime()-now.getTime()<=thirtyDays;}).sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));
     items=prox.length?prox.map(f=>{const days=Math.ceil((new Date(f.asoDate+'T23:59:59')-now)/(864e5));return`<div style="padding:4px 0">⏰ ${esc(f.nome)} <span style="color:var(--wn);font-weight:600">${days}d</span> · ${esc(f.asoDate)} <span class="bdg">${esc(f.asoTipo||'')}</span></div>`;}):['<div class="es">Nenhum ASO a vencer em 30 dias.</div>'];
   }else if(type==='documentos'){
     title='Documentos Gerados no Período';
@@ -872,6 +877,7 @@ function showDashDetail(key){
   }else if(isRenewable){
     html+=`<div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--bd)">
       <button class="btn bp bf" onclick="renewDoc('${key}')"><i class="fa-solid fa-rotate"></i> Renovar Documento</button>
+      <button class="btn bd2" style="margin-left:6px" onclick="deleteHistoryItem('${key}')"><i class="fa-solid fa-trash"></i> Excluir Registro</button>
       <p style="font-size:11px;color:var(--tm);margin-top:6px">Ao renovar, os dados serão carregados para edição. Ao gerar o novo documento, o registro atual será substituído.</p>
     </div>`;
   }else{
@@ -1551,7 +1557,7 @@ function openRelModal(){
   document.getElementById('mdl-rel').style.display='flex';
 }
 function populateRelEmpresas(){
-  const emps=toArr(DATA.empresas);
+  const emps=toArr(DATA.empresas).sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));
   const el=document.getElementById('rel-emp-list');
   el.innerHTML=emps.length?emps.map(e=>`<div class="ci"><input type="checkbox" name="relEmpChk" value="${esc(e.id)}" id="ck_relEmp_${esc(e.id)}" checked><label for="ck_relEmp_${esc(e.id)}">${esc(e.nome)}</label></div>`).join(''):'<div class="es">Nenhuma empresa cadastrada</div>';
 }
@@ -1846,13 +1852,13 @@ function renewDoc(key){
 }
 
 // ── LISTAGENS ─────────────────────────────────────────────────────
-function renderEmps(){const q=(document.getElementById('filter-empresas').value||'').toLowerCase();const emps=toArr(DATA.empresas).filter(e=>(e.nome||'').toLowerCase().includes(q)||(e.cnpj||'').toLowerCase().includes(q));document.getElementById('lst-e').innerHTML=emps.length?emps.map(e=>`<div class="tr2"><div><div class="rn">${esc(e.nome)}</div><div class="rs">CNPJ: ${esc(e.cnpj||'—')}${e.endereco?' | '+esc(e.endereco).substring(0,50):''}</div></div><div class="ra"><button class="btn bw" onclick='editEmp(${safeJSON(e)})'><i class="fa-solid fa-pen"></i></button><button class="btn bd2" onclick="del('empresas','${e.id}')"><i class="fa-solid fa-trash"></i></button></div></div>`).join(''):'<div class="es">Nenhuma empresa encontrada</div>';}
-function renderCargos(){const q=(document.getElementById('filter-cargos').value||'').toLowerCase();const cargos=toArr(DATA.cargos).filter(c=>(c.nome||'').toLowerCase().includes(q)||(c.cbo||'').toLowerCase().includes(q));const resolveEpiNomes=c=>{if(!c.epi)return'';const list=Array.isArray(c.epi)?c.epi:typeof c.epi==='string'?c.epi.split(',').map(s=>s.trim()).filter(s=>s).map(id=>({id})):[];return list.map(item=>{const id=typeof item==='object'?item.id:item;const qtd=typeof item==='object'?(item.qtd||1):1;const m=DATA.materiais[id]||toArr(DATA.materiais).find(mm=>(mm.nome||'').toLowerCase().includes(id.toLowerCase()));return m?m.nome+(qtd>1?' x'+qtd:''):null;}).filter(Boolean).join(', ');};document.getElementById('lst-c').innerHTML=cargos.length?cargos.map(c=>{const epiStr=resolveEpiNomes(c);return`<div class="tr2"><div><div class="rn">${esc(c.nome)}</div><div class="rs">CBO: ${esc(c.cbo||'—')}${epiStr?' | EPIs: '+esc(epiStr.substring(0,60)):''}</div></div><div class="ra"><button class="btn bw" onclick='editCargo(${safeJSON(c)})'><i class="fa-solid fa-pen"></i></button><button class="btn bd2" onclick="del('cargos','${c.id}')"><i class="fa-solid fa-trash"></i></button></div></div>`;}).join(''):'<div class="es">Nenhum cargo encontrado</div>';}
-function renderFuncs(){const q=(document.getElementById('filter-colaboradores').value||'').toLowerCase();const funcs=toArr(DATA.funcionarios).filter(f=>(f.nome||'').toLowerCase().includes(q)||(f.funcao||'').toLowerCase().includes(q));const em={};toArr(DATA.empresas).forEach(e=>{em[String(e.id||'').trim()]=e.nome;});const cg={};toArr(DATA.cargos).forEach(c=>{cg[String(c.id||'').trim()]=c.nome;});const now=new Date();const fmtAsoTipo=t=>{return{'ADMISSIONAL':'Admissional','DEMISSIONAL':'Demissional','PERIODICO':'Periódico','MUDANCA_FUNCAO':'Mudança Função','RETORNO_TRABALHO':'Retorno Trabalho'}[t]||t;};function asoStatus(f){if(!f.asoDate)return'';const d=new Date(f.asoDate+'T23:59:59');const days=Math.ceil((d-now)/(864e5));if(days<0)return'<span class="bdg" style="background:#fee2e2;color:#b91c1c">ASO Vencido</span>';if(days<=30)return'<span class="bdg" style="background:#ffedd5;color:#c2410c">ASO '+days+'d</span>';return'<span class="bdg" style="background:#dcfce7;color:#15803d">ASO OK</span>';}document.getElementById('lst-f').innerHTML=funcs.length?funcs.map(f=>`<div class="tr2"><div><div class="rn">${esc(f.nome)} ${asoStatus(f)}</div><div class="rs">${esc(em[String(f.empresaId||'').trim()]||'?')} · ${esc(cg[String(f.funcao||'').trim()]||f.funcao||'—')}${f.asoTipo?' · ASO: '+esc(fmtAsoTipo(f.asoTipo)):''}${f.asoDate?' · Vence: '+esc(f.asoDate):''}</div></div><div class="ra"><button class="btn bw" onclick='editFunc(${safeJSON(f)})'><i class="fa-solid fa-pen"></i></button><button class="btn bd2" onclick="del('funcionarios','${f.id}')"><i class="fa-solid fa-trash"></i></button></div></div>`).join(''):'<div class="es">Nenhum colaborador encontrado</div>';}
-function renderPessoas(){const q=(document.getElementById('filter-pessoas').value||'').toLowerCase();const pessoas=toArr(DATA.pessoas).filter(p=>(p.nome||'').toLowerCase().includes(q)||(p.cpf||'').toLowerCase().includes(q));document.getElementById('lst-p').innerHTML=pessoas.length?pessoas.map(p=>`<div class="tr2"><div><div class="rn">${esc(p.nome)}</div><div class="rs">CPF: ${esc(p.cpf||'—')}${p.endereco?' | '+esc(p.endereco).substring(0,50):''}</div></div><div class="ra"><button class="btn bw" onclick='editPessoa(${safeJSON(p)})'><i class="fa-solid fa-pen"></i></button><button class="btn bd2" onclick="del('pessoas','${p.id}')"><i class="fa-solid fa-trash"></i></button></div></div>`).join(''):'<div class="es">Nenhuma pessoa encontrada</div>';}
-function renderTexts(){const q=(document.getElementById('filter-texts').value||'').toLowerCase();const texts=toArr(DATA.textos).filter(t=>(t.titulo||'').toLowerCase().includes(q));document.getElementById('lst-t').innerHTML=texts.length?texts.map(t=>`<div class="tr2"><div><div class="rn">${esc(t.titulo)} <span class="bdg">${esc(t.categoria||'')}</span></div><div class="rs">${esc((t.conteudo||'').substring(0,80))}${(t.conteudo||'').length>80?'...':''}</div></div><div class="ra"><button class="btn bw" onclick='editText(${safeJSON(t)})'><i class="fa-solid fa-pen"></i></button><button class="btn bd2" onclick="del('textos','${t.id}')"><i class="fa-solid fa-trash"></i></button></div></div>`).join(''):'<div class="es">Nenhum texto cadastrado</div>';}
-function renderMats(){const q=(document.getElementById('filter-mat').value||'').toLowerCase();const mats=toArr(DATA.materiais).filter(m=>(m.nome||'').toLowerCase().includes(q)||(m.ca||'').toLowerCase().includes(q));document.getElementById('lst-m').innerHTML=mats.length?mats.map(m=>`<div class="tr2"><div><div class="rn">${esc(m.nome)} <span class="bdg">${esc(m.tipo||'EPI')}</span></div><div class="rs">C.A.: ${esc(m.ca||'—')} · Estoque: ${esc(m.estoque||0)} ${esc(m.unidade||'')}</div></div><div class="ra"><button class="btn bw" onclick='editMat(${safeJSON(m)})'><i class="fa-solid fa-pen"></i></button><button class="btn bd2" onclick="del('materiais','${m.id}')"><i class="fa-solid fa-trash"></i></button></div></div>`).join(''):'<div class="es">Nenhum material cadastrado</div>';}
-function renderPool(){const q=(document.getElementById('g-search').value||'').toLowerCase();const texts=toArr(DATA.textos).filter(t=>!SEL_TEXTS.includes(t.id)&&((t.titulo||'').toLowerCase().includes(q)||(t.categoria||'').toLowerCase().includes(q)));document.getElementById('g-pool').innerHTML=texts.map(t=>`<div class="ti" onclick="addText('${t.id}')"><span>${esc(t.titulo)}${t.categoria?' <small style="color:var(--tm)">['+esc(t.categoria)+']</small>':''}</span><i class="fa-solid fa-plus" style="color:var(--sc);font-size:11px"></i></div>`).join('')||'<div class="es" style="padding:10px">Nenhum disponível</div>';renderSel();}
+function renderEmps(){const q=(document.getElementById('filter-empresas').value||'').toLowerCase();const emps=toArr(DATA.empresas).filter(e=>(e.nome||'').toLowerCase().includes(q)||(e.cnpj||'').toLowerCase().includes(q)).sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));document.getElementById('lst-e').innerHTML=emps.length?emps.map(e=>`<div class="tr2"><div><div class="rn">${esc(e.nome)}</div><div class="rs">CNPJ: ${esc(e.cnpj||'—')}${e.endereco?' | '+esc(e.endereco).substring(0,50):''}</div></div><div class="ra"><button class="btn bw" onclick='editEmp(${safeJSON(e)})'><i class="fa-solid fa-pen"></i></button><button class="btn bd2" onclick="del('empresas','${e.id}')"><i class="fa-solid fa-trash"></i></button></div></div>`).join(''):'<div class="es">Nenhuma empresa encontrada</div>';}
+function renderCargos(){const q=(document.getElementById('filter-cargos').value||'').toLowerCase();const cargos=toArr(DATA.cargos).filter(c=>(c.nome||'').toLowerCase().includes(q)||(c.cbo||'').toLowerCase().includes(q)).sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));const resolveEpiNomes=c=>{if(!c.epi)return'';const list=Array.isArray(c.epi)?c.epi:typeof c.epi==='string'?c.epi.split(',').map(s=>s.trim()).filter(s=>s).map(id=>({id})):[];return list.map(item=>{const id=typeof item==='object'?item.id:item;const qtd=typeof item==='object'?(item.qtd||1):1;const m=DATA.materiais[id]||toArr(DATA.materiais).find(mm=>(mm.nome||'').toLowerCase().includes(id.toLowerCase()));return m?m.nome+(qtd>1?' x'+qtd:''):null;}).filter(Boolean).join(', ');};document.getElementById('lst-c').innerHTML=cargos.length?cargos.map(c=>{const epiStr=resolveEpiNomes(c);return`<div class="tr2"><div><div class="rn">${esc(c.nome)}</div><div class="rs">CBO: ${esc(c.cbo||'—')}${epiStr?' | EPIs: '+esc(epiStr.substring(0,60)):''}</div></div><div class="ra"><button class="btn bw" onclick='editCargo(${safeJSON(c)})'><i class="fa-solid fa-pen"></i></button><button class="btn bd2" onclick="del('cargos','${c.id}')"><i class="fa-solid fa-trash"></i></button></div></div>`;}).join(''):'<div class="es">Nenhum cargo encontrado</div>';}
+function renderFuncs(){const q=(document.getElementById('filter-colaboradores').value||'').toLowerCase();const funcs=toArr(DATA.funcionarios).filter(f=>(f.nome||'').toLowerCase().includes(q)||(f.funcao||'').toLowerCase().includes(q)).sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));const em={};toArr(DATA.empresas).forEach(e=>{em[String(e.id||'').trim()]=e.nome;});const cg={};toArr(DATA.cargos).forEach(c=>{cg[String(c.id||'').trim()]=c.nome;});const now=new Date();const fmtAsoTipo=t=>{return{'ADMISSIONAL':'Admissional','DEMISSIONAL':'Demissional','PERIODICO':'Periódico','MUDANCA_FUNCAO':'Mudança Função','RETORNO_TRABALHO':'Retorno Trabalho'}[t]||t;};function asoStatus(f){if(!f.asoDate)return'';const d=new Date(f.asoDate+'T23:59:59');const days=Math.ceil((d-now)/(864e5));if(days<0)return'<span class="bdg" style="background:#fee2e2;color:#b91c1c">ASO Vencido</span>';if(days<=30)return'<span class="bdg" style="background:#ffedd5;color:#c2410c">ASO '+days+'d</span>';return'<span class="bdg" style="background:#dcfce7;color:#15803d">ASO OK</span>';}document.getElementById('lst-f').innerHTML=funcs.length?funcs.map(f=>`<div class="tr2"><div><div class="rn">${esc(f.nome)} ${asoStatus(f)}</div><div class="rs">${esc(em[String(f.empresaId||'').trim()]||'?')} · ${esc(cg[String(f.funcao||'').trim()]||f.funcao||'—')}${f.asoTipo?' · ASO: '+esc(fmtAsoTipo(f.asoTipo)):''}${f.asoDate?' · Vence: '+esc(f.asoDate):''}</div></div><div class="ra"><button class="btn bw" onclick='editFunc(${safeJSON(f)})'><i class="fa-solid fa-pen"></i></button><button class="btn bd2" onclick="del('funcionarios','${f.id}')"><i class="fa-solid fa-trash"></i></button></div></div>`).join(''):'<div class="es">Nenhum colaborador encontrado</div>';}
+function renderPessoas(){const q=(document.getElementById('filter-pessoas').value||'').toLowerCase();const pessoas=toArr(DATA.pessoas).filter(p=>(p.nome||'').toLowerCase().includes(q)||(p.cpf||'').toLowerCase().includes(q)).sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));document.getElementById('lst-p').innerHTML=pessoas.length?pessoas.map(p=>`<div class="tr2"><div><div class="rn">${esc(p.nome)}</div><div class="rs">CPF: ${esc(p.cpf||'—')}${p.endereco?' | '+esc(p.endereco).substring(0,50):''}</div></div><div class="ra"><button class="btn bw" onclick='editPessoa(${safeJSON(p)})'><i class="fa-solid fa-pen"></i></button><button class="btn bd2" onclick="del('pessoas','${p.id}')"><i class="fa-solid fa-trash"></i></button></div></div>`).join(''):'<div class="es">Nenhuma pessoa encontrada</div>';}
+function renderTexts(){const q=(document.getElementById('filter-texts').value||'').toLowerCase();const texts=toArr(DATA.textos).filter(t=>(t.titulo||'').toLowerCase().includes(q)).sort((a,b)=>(a.titulo||'').localeCompare(b.titulo||''));document.getElementById('lst-t').innerHTML=texts.length?texts.map(t=>`<div class="tr2"><div><div class="rn">${esc(t.titulo)} <span class="bdg">${esc(t.categoria||'')}</span></div><div class="rs">${esc((t.conteudo||'').substring(0,80))}${(t.conteudo||'').length>80?'...':''}</div></div><div class="ra"><button class="btn bw" onclick='editText(${safeJSON(t)})'><i class="fa-solid fa-pen"></i></button><button class="btn bd2" onclick="del('textos','${t.id}')"><i class="fa-solid fa-trash"></i></button></div></div>`).join(''):'<div class="es">Nenhum texto cadastrado</div>';}
+function renderMats(){const q=(document.getElementById('filter-mat').value||'').toLowerCase();const mats=toArr(DATA.materiais).filter(m=>(m.nome||'').toLowerCase().includes(q)||(m.ca||'').toLowerCase().includes(q)).sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));document.getElementById('lst-m').innerHTML=mats.length?mats.map(m=>`<div class="tr2"><div><div class="rn">${esc(m.nome)} <span class="bdg">${esc(m.tipo||'EPI')}</span></div><div class="rs">C.A.: ${esc(m.ca||'—')} · Estoque: ${esc(m.estoque||0)} ${esc(m.unidade||'')}</div></div><div class="ra"><button class="btn bw" onclick='editMat(${safeJSON(m)})'><i class="fa-solid fa-pen"></i></button><button class="btn bd2" onclick="del('materiais','${m.id}')"><i class="fa-solid fa-trash"></i></button></div></div>`).join(''):'<div class="es">Nenhum material cadastrado</div>';}
+function renderPool(){const q=(document.getElementById('g-search').value||'').toLowerCase();const texts=toArr(DATA.textos).filter(t=>!SEL_TEXTS.includes(t.id)&&((t.titulo||'').toLowerCase().includes(q)||(t.categoria||'').toLowerCase().includes(q))).sort((a,b)=>(a.titulo||'').localeCompare(b.titulo||''));document.getElementById('g-pool').innerHTML=texts.map(t=>`<div class="ti" onclick="addText('${t.id}')"><span>${esc(t.titulo)}${t.categoria?' <small style="color:var(--tm)">['+esc(t.categoria)+']</small>':''}</span><i class="fa-solid fa-plus" style="color:var(--sc);font-size:11px"></i></div>`).join('')||'<div class="es" style="padding:10px">Nenhum disponível</div>';renderSel();}
 function renderSel(){document.getElementById('g-sel').innerHTML=SEL_TEXTS.map(id=>{const t=DATA.textos[id];return t?`<div class="ti"><span>${esc(t.titulo)}${t.categoria?' <small style="color:var(--tm)">['+esc(t.categoria)+']</small>':''}</span><i class="fa-solid fa-xmark" style="color:var(--dn);cursor:pointer;font-size:11px" onclick="remText('${id}')"></i></div>`:''}).join('')||'<div class="es" style="padding:10px">Nenhum selecionado</div>';}
 function addText(id){if(!SEL_TEXTS.includes(id)){SEL_TEXTS.push(id);renderPool();}}
 function remText(id){SEL_TEXTS=SEL_TEXTS.filter(i=>i!==id);renderPool();}
@@ -1861,7 +1867,7 @@ function remCart(i){CART.splice(i,1);renderCart();if(document.getElementById('ch
 function limparEpiSalvo(){CART=[];localStorage.removeItem('epi_cart_memory');renderCart();}
 function filterCargoEpiMat(){
   const q=document.getElementById('c-epi-search').value.toLowerCase();
-  const mats=toArr(DATA.materiais).filter(m=>(m.nome||'').toLowerCase().includes(q)||(m.ca||'').toLowerCase().includes(q));
+  const mats=toArr(DATA.materiais).filter(m=>(m.nome||'').toLowerCase().includes(q)||(m.ca||'').toLowerCase().includes(q)).sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));
   const sel=document.getElementById('c-epi-sel');
   if(sel){const cur=sel.value;sel.innerHTML='<option value="">Selecione...</option>'+mats.map(m=>`<option value="${esc(m.id)}">${esc(m.nome)} (C.A.${m.ca||''})</option>`).join('');if(cur)sel.value=cur;}
 }
@@ -1885,8 +1891,8 @@ function renderCargoEpiCart(){
   const el=document.getElementById('c-epi-list');
   el.innerHTML=CARGO_EPI_CART.length?CARGO_EPI_CART.map((c,i)=>`<div class="cait" style="margin:0 0 4px 0;padding:6px 10px;font-size:11px"><span><strong>${esc(c.nome)}</strong> ${c.ca?'&middot; C.A.: '+esc(c.ca):''} &middot; <span class="bdg">${esc(c.tipo)}</span> &middot; Qtd: <strong>${c.qtd||1}</strong></span><button class="bxs bxd" onclick="remCargoEpi(${i})" style="padding:2px 6px"><i class="fa-solid fa-xmark"></i></button></div>`).join(''):'<div style="color:var(--tm);text-align:center;padding:10px">Nenhum EPI adicionado</div>';
 }
-function addToCart(){const s=document.getElementById('e-sel-mat');const o=s.options[s.selectedIndex];if(!o||!o.value){alert('Selecione um material');return;}const qtd=parseInt(document.getElementById('e-qtd').value)||1;const mat=DATA.materiais[o.value];if(!mat)return;const ex=CART.find(c=>c.id===mat.id);if(ex){ex.qtd+=qtd;}else{CART.push({id:mat.id,nome:mat.nome,ca:mat.ca||'',unidade:mat.unidade||'',tipo:mat.tipo||'EPI',qtd});}renderCart();if(document.getElementById('chk-lembrar-epi').checked)localStorage.setItem('epi_cart_memory',JSON.stringify(CART));}
-function filterEmissionSelect(){const q=document.getElementById('e-search-input').value.toLowerCase();const mats=toArr(DATA.materiais).filter(m=>(m.nome||'').toLowerCase().includes(q)||(m.ca||'').toLowerCase().includes(q));document.getElementById('e-sel-mat').innerHTML='<option value="">Selecione...</option>'+mats.map(m=>`<option value="${m.id}" data-un="${esc(m.unidade||'')}">${esc(m.nome)} (C.A.${m.ca||''})</option>`).join('');}
+function addToCart(){const s=document.getElementById('e-sel-mat');const o=s.options[s.selectedIndex];if(!o||!o.value){alert('Selecione um material');return;}const qtd=parseInt(document.getElementById('e-qtd').value)||1;const mat=DATA.materiais[o.value];if(!mat)return;const ex=CART.find(c=>c.id===mat.id);if(ex){ex.qtd+=qtd;}else{CART.push({id:mat.id,nome:mat.nome,ca:mat.ca||'',unidade:mat.unidade||'',tipo:mat.tipo||'EPI',qtd,vencimentoCa:mat.vencimentoCa||''});}renderCart();if(document.getElementById('chk-lembrar-epi').checked)localStorage.setItem('epi_cart_memory',JSON.stringify(CART));}
+function filterEmissionSelect(){const q=document.getElementById('e-search-input').value.toLowerCase();const mats=toArr(DATA.materiais).filter(m=>(m.nome||'').toLowerCase().includes(q)||(m.ca||'').toLowerCase().includes(q)).sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));document.getElementById('e-sel-mat').innerHTML='<option value="">Selecione...</option>'+mats.map(m=>`<option value="${m.id}" data-un="${esc(m.unidade||'')}">${esc(m.nome)} (C.A.${m.ca||''})</option>`).join('');}
 function updateUnid(){const s=document.getElementById('e-sel-mat');const o=s.options[s.selectedIndex];document.getElementById('e-unid').value=o?(o.dataset.un||''):'';}
 function fltG(){renderFuncList('g-e','g-f-list','gChk');}
 function fltList(){renderFuncList('list-empresa','list-f-list','lChk');}
@@ -1894,7 +1900,7 @@ function fltAdm(){renderFuncList('adm-empresa','adm-f-list','admChk');}
 function fltEpi(){renderFuncList('e-e','e-f-list','eChk');}
 function renderFuncList(selId,cId,name){
   const eid=document.getElementById(selId).value;
-  const funcs=toArr(DATA.funcionarios).filter(f=>String(f.empresaId||'').trim()===String(eid||'').trim());
+  const funcs=toArr(DATA.funcionarios).filter(f=>String(f.empresaId||'').trim()===String(eid||'').trim()).sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));
   const el=document.getElementById(cId);
   if(!eid){el.innerHTML='<div class="es">Selecione uma empresa primeiro</div>';return;}
   el.innerHTML=funcs.length?funcs.map(f=>`<div class="ci"><input type="checkbox" name="${name}" value="${f.id}" id="ck_${name}_${f.id}" onchange="handleColabSelect('${f.id}','${name}')"><label for="ck_${name}_${f.id}">${esc(f.nome)} <span>(${esc(resolveCargo(f.funcao)?.nome||f.funcao||'')})</span></label></div>`).join(''):'<div class="es">Nenhum colaborador nesta empresa</div>';
@@ -1931,19 +1937,19 @@ function calcTotal(){let t=0;document.querySelectorAll('#orc-body tr').forEach(t
 
 // ── SELECTS ─────────────────────────────────────────────────────
 function populateSelects(){
-  const emps=toArr(DATA.empresas);
+  const emps=toArr(DATA.empresas).sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));
   const opts='<option value="">Selecione...</option>'+emps.map(e=>`<option value="${esc(e.id)}">${esc(e.nome)}</option>`).join('');
   ['i-f-ep','o-e','g-e','list-empresa','adm-empresa','e-e','dash-filter-emp'].forEach(id=>{const el=document.getElementById(id);if(!el)return;const cur=el.value;el.innerHTML=opts;if(cur)el.value=cur;});
-  const mats=toArr(DATA.materiais);
+  const mats=toArr(DATA.materiais).sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));
   const sm=document.getElementById('e-sel-mat');
   if(sm){const cur=sm.value;sm.innerHTML='<option value="">Selecione...</option>'+mats.map(m=>`<option value="${esc(m.id)}" data-un="${esc(m.unidade||'')}">${esc(m.nome)} (C.A.${m.ca||''})</option>`).join('');if(cur)sm.value=cur;}
-  const textos=toArr(DATA.textos);
+  const textos=toArr(DATA.textos).sort((a,b)=>(a.titulo||'').localeCompare(b.titulo||''));
   const textOpts='<option value="">-- selecione para preencher automaticamente --</option>'+textos.map(t=>`<option value="${esc(t.id)}">${esc(t.titulo)}${t.categoria?' ['+esc(t.categoria)+']':''}</option>`).join('');
   const sl=document.getElementById('list-sel-texto');
   if(sl){const cur=sl.value;sl.innerHTML=textOpts;if(cur)sl.value=cur;}
   const sa=document.getElementById('adm-sel-texto');
   if(sa){const cur=sa.value;sa.innerHTML=textOpts;if(cur)sa.value=cur;}
-  const cargos=toArr(DATA.cargos);
+  const cargos=toArr(DATA.cargos).sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));
   const cargoOpts='<option value="">Selecione...</option>'+cargos.map(c=>`<option value="${esc(c.id)}">${esc(c.nome)}</option>`).join('');
   const fnSel=document.getElementById('i-f-fn');
   if(fnSel){const cur=fnSel.value;fnSel.innerHTML=cargoOpts;if(cur)fnSel.value=cur;}
@@ -2011,7 +2017,7 @@ function getFormData(t){
     return{id:idAtual,empresaId:v('i-f-ep'),nome:v('i-f-nm'),cpf:v('i-f-cp'),funcao:v('i-f-fn'),cbo:v('i-f-cb'),setor:v('i-f-st'),dataAdm:v('i-f-dt'),asoDate,asoTipo};
   }
   if(t==='texto'){const cargos=getChecked('tCgChk');return{id:v('tid'),titulo:v('i-t-ti'),conteudo:v('i-t-co'),categoria:getTxtCategoria(),cargosVinculados:cargos,validade:v('i-t-val')};}
-  if(t==='material')return{id:v('mid'),nome:v('i-m-nm'),ca:v('i-m-ca'),tipo:document.getElementById('i-m-tp').value,unidade:v('i-m-un'),estoque:parseInt(v('i-m-es'))||0};
+  if(t==='material')return{id:v('mid'),nome:v('i-m-nm'),ca:v('i-m-ca'),tipo:document.getElementById('i-m-tp').value,unidade:v('i-m-un'),estoque:parseInt(v('i-m-es'))||0,vencimentoCa:v('i-m-vc')};
   if(t==='cargo'){const epiData=CARGO_EPI_CART.map(c=>({id:c.id,qtd:c.qtd||1,tipo:c.tipo||'EPI'}));return{id:v('cid'),nome:v('i-c-nm'),cbo:v('i-c-cb'),epi:epiData};}
   if(t==='pessoa'){const cpfRaw=v('i-p-cp').replace(/\D/g,'');const idAtual=v('pid');const existente=toArr(DATA.pessoas).find(p=>p.id!==idAtual&&(p.cpf||'').replace(/\D/g,'')===cpfRaw);if(existente){alert('CPF j\u00e1 cadastrado para: '+existente.nome);return null;}return{id:idAtual,nome:v('i-p-nm'),cpf:v('i-p-cp'),endereco:v('i-p-ender')};}
   return null;
@@ -2073,7 +2079,7 @@ function editText(x){
   ids.forEach(id=>{const cb=document.getElementById('ck_tCg_'+id);if(cb)cb.checked=true;});
   openM('mdl-t');
 }
-function editMat(x){v('mid',x.id);v('i-m-nm',x.nome||'');v('i-m-ca',x.ca||'');document.getElementById('i-m-tp').value=x.tipo||'EPI';v('i-m-un',x.unidade||'');v('i-m-es',x.estoque||0);openM('mdl-m');}
+function editMat(x){v('mid',x.id);v('i-m-nm',x.nome||'');v('i-m-ca',x.ca||'');document.getElementById('i-m-tp').value=x.tipo||'EPI';v('i-m-un',x.unidade||'');v('i-m-es',x.estoque||0);v('i-m-vc',x.vencimentoCa||'');openM('mdl-m');}
 
 async function uploadToImgbb(file,cb){
   const reader=new FileReader();
@@ -2891,6 +2897,7 @@ async function genEPI(){
   const dataVal=document.getElementById('e-data').value;if(!dataVal){alert('Informe a data de entrega');return;}
   spin(true);
   const dataFmt=fmtData(dataVal);
+  const showVencCa=document.getElementById('epi-show-venc').checked;
   const cartItems=CART.map(c=>({...c}));
   if(!cartItems.length){alert('Adicione pelo menos um item ao carrinho');spin(false);return;}
   const firstFunc=DATA.funcionarios[fIds[0]];
@@ -2905,12 +2912,12 @@ async function genEPI(){
       cargo.epi.forEach(cepi=>{
         if(!items.find(i=>i.id===cepi.id)){
           const mat=DATA.materiais[cepi.id];
-          if(mat)items.push({id:mat.id,nome:mat.nome,ca:mat.ca||'',unidade:mat.unidade||'',tipo:cepi.tipo||mat.tipo||'EPI',qtd:cepi.qtd||1});
+          if(mat)items.push({id:mat.id,nome:mat.nome,ca:mat.ca||'',unidade:mat.unidade||'',tipo:cepi.tipo||mat.tipo||'EPI',qtd:cepi.qtd||1,vencimentoCa:mat.vencimentoCa||''});
         }
       });
     }
     if(!first)doc.addPage();first=false;
-    await drawEPI(doc,func,emp,dataFmt,items);
+    await drawEPI(doc,func,emp,dataFmt,items,showVencCa);
   }
   spin(false);
   const filename='FICHAS_EPI_'+dataFmt.replace(/\//g,'-')+'.pdf';
@@ -2918,7 +2925,7 @@ async function genEPI(){
   logHistory('Ficha EPI - '+fIds.length+' colaborador(es)',{empresaId:eid,funcionarioIds:fIds,data:dataVal});
   showResult('epi-results','Fichas geradas e baixadas com sucesso!');
 }
-async function drawEPI(doc,func,emp,dataFmt,items){
+async function drawEPI(doc,func,emp,dataFmt,items,showVencCa=true){
   const W=PAG.LW,H=PAG.LH,m=PAG.LM,uw=PAG.LUW;
   const logo=emp?.logoUrl?await loadImg(emp.logoUrl):null;
   doc.setFillColor(...C.h1);doc.rect(0,0,W,25,'F');
@@ -2950,18 +2957,40 @@ async function drawEPI(doc,func,emp,dataFmt,items){
   const termoEPI = "Declaro que recebi os EPI's abaixo relacionados em perfeitas condições, estando ciente das obrigações da NR-6 (Portaria 3.214/78), subitem 6.7.1: a) usar somente para a finalidade destinada; b) responsabilizar-se pela guarda e conservação; c) comunicar ao empregador qualquer alteração que o torne impróprio; d) cumprir as determinações do empregador. Estou ciente do Art. 462 §1º CLT, autorizando desconto por mau uso, e que a recusa injustificada ao uso dos EPI's constitui ato faltoso.\n\nII – Declaro que os EPI's adiante relacionados me foram entregues em perfeitas condições de uso, bem como que recebo os treinamentos necessários para a perfeita utilização dos mesmos.\n\nIII – Declaro que me encontro ciente do disposto no artigo 462, parágrafo 1º, da CLT, autorizando o desconto proporcional ao custo da reparação do dano que eu eventualmente venha a provocar nos EPI's, em razão de mau uso.\n\nIV – Declaro, por fim, que me encontro ciente do quanto disposto no NR-1, aprovada pela Portaria nº 3.214/78 do Ministério do Trabalho e Emprego, no sentido de que constitui ato faltoso a recusa injustificada ao uso dos EPI's, ora fornecidos pela empresa, incorrendo nas penalidades da Lei.";
   const tlines=doc.splitTextToSize(termoEPI,uw);
   doc.text(tlines,m,cy);cy+=tlines.length*3.2+2;
-  const fixedW=10+16+12+20+52+20+52;
+  const tipoW=20;
+  const vencW=24;
+  const fixedW=showVencCa ? 10+16+vencW+tipoW+20+52+20+52 : 10+16+tipoW+20+52+20+52;
   const descW=Math.max(50,uw-fixedW);
+  const head=showVencCa
+    ? ['QTD','C.A.','DESCRICAO DO EPI / EPC','VENCIMENTO/CA','TIPO','DATA\nENTREGA','ASSINATURA\nRECEBIMENTO','DATA\nDEVOLUCAO','ASSINATURA\nDEVOLUCAO']
+    : ['QTD','C.A.','DESCRICAO DO EPI / EPC','TIPO','DATA\nENTREGA','ASSINATURA\nRECEBIMENTO','DATA\nDEVOLUCAO','ASSINATURA\nDEVOLUCAO'];
+  const body=items.map(i=>{
+    const row=[String(i.qtd||1),i.ca||'—',i.nome||''];
+    if(showVencCa)row.push(i.vencimentoCa?fmtData(i.vencimentoCa):'—');
+    row.push(i.tipo||'EPI',dataFmt,'','','');
+    return row;
+  });
+  const colStyles={0:{cellWidth:10,halign:'center'},1:{cellWidth:16,halign:'center'},2:{cellWidth:descW}};
+  if(showVencCa){
+    colStyles[3]={cellWidth:vencW,halign:'center'};
+    colStyles[4]={cellWidth:tipoW,halign:'center'};
+    colStyles[5]={cellWidth:20,halign:'center'};
+    colStyles[6]={cellWidth:52};
+    colStyles[7]={cellWidth:20,halign:'center'};
+    colStyles[8]={cellWidth:52};
+  }else{
+    colStyles[3]={cellWidth:tipoW,halign:'center'};
+    colStyles[4]={cellWidth:20,halign:'center'};
+    colStyles[5]={cellWidth:52};
+    colStyles[6]={cellWidth:20,halign:'center'};
+    colStyles[7]={cellWidth:52};
+  }
   doc.autoTable({
     startY:cy,
-    head:[['QTD','C.A.','DESCRICAO DO EPI / EPC','TIPO','DATA\nENTREGA','ASSINATURA\nRECEBIMENTO','DATA\nDEVOLUCAO','ASSINATURA\nDEVOLUCAO']],
-    body:items.map(i=>[String(i.qtd||1),i.ca||'—',i.nome||'',i.tipo||'EPI',dataFmt,'','','']),
+    head:[head],
+    body:body,
     headStyles:{fillColor:C.h1,textColor:C.twh,fontStyle:'bold',fontSize:6.8,halign:'center',cellPadding:2},
-    columnStyles:{
-      0:{cellWidth:10,halign:'center'},1:{cellWidth:16,halign:'center'},2:{cellWidth:descW},
-      3:{cellWidth:12,halign:'center'},4:{cellWidth:20,halign:'center'},
-      5:{cellWidth:52},6:{cellWidth:20,halign:'center'},7:{cellWidth:52}
-    },
+    columnStyles:colStyles,
     alternateRowStyles:{fillColor:C.bg},
     styles:{fontSize:7,textColor:C.dark,cellPadding:1.8},
     theme:'grid',lineColor:C.bdr,lineWidth:0.15,

@@ -243,6 +243,10 @@ hr.dv{border:none;border-top:1px solid var(--bd);margin:18px 0}
             <button class="btn bs" onclick="addMassEpi()" style="padding:8px 12px;font-size:11px"><i class="fa-solid fa-plus"></i></button>
           </div>
           <div id="m-epi-cart" style="min-height:36px;border:1px dashed var(--bd);padding:6px;border-radius:6px;font-size:12px;color:var(--tm)">Nenhum item adicionado</div>
+          <div style="display:flex;align-items:center;gap:8px;margin-top:8px">
+            <input type="checkbox" id="m-epi-show-venc" checked>
+            <label for="m-epi-show-venc" style="font-size:12px;font-weight:600;color:var(--tp);cursor:pointer">Mostrar coluna Vencimento CA</label>
+          </div>
         </div>
       </div>
 
@@ -449,7 +453,7 @@ function renderAll(){populateSelects();populateMassEpiSel();fltMCargos();updateM
 function populateMassEpiSel(){
   const sel=document.getElementById('m-epi-sel');if(!sel)return;
   const cur=sel.value;
-  sel.innerHTML='<option value="">Selecione...</option>'+toArr(DATA.materiais).map(m=>`<option value="${esc(m.id)}" data-un="${esc(m.unidade||'')}">${esc(m.nome)} (C.A.${m.ca||''})</option>`).join('');
+  sel.innerHTML='<option value="">Selecione...</option>'+toArr(DATA.materiais).sort((a,b)=>(a.nome||'').localeCompare(b.nome||'')).map(m=>`<option value="${esc(m.id)}" data-un="${esc(m.unidade||'')}">${esc(m.nome)} (C.A.${m.ca||''})</option>`).join('');
   if(cur)sel.value=cur;
 }
 
@@ -506,7 +510,7 @@ function resolveCargoEpis(cargoId){
     const qtd=typeof item==='object'?(item.qtd||1):1;
     const savedTipo=typeof item==='object'?item.tipo:null;
     const mat=DATA.materiais[id]||toArr(DATA.materiais).find(m=>(m.nome||'').toLowerCase().includes(id.toLowerCase()));
-    if(mat)items.push({id:mat.id,nome:mat.nome,ca:mat.ca||'',unidade:mat.unidade||'',tipo:savedTipo||mat.tipo||'EPI',qtd});
+    if(mat)items.push({id:mat.id,nome:mat.nome,ca:mat.ca||'',unidade:mat.unidade||'',tipo:savedTipo||mat.tipo||'EPI',qtd,vencimentoCa:mat.vencimentoCa||''});
   });
   return items;
 }
@@ -526,7 +530,7 @@ function getCheckedEmpresas(){
 }
 
 function populateSelects(){
-  const emps=toArr(DATA.empresas);
+  const emps=toArr(DATA.empresas).sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));
   const el=document.getElementById('m-e-list');
   if(!emps.length){el.innerHTML='<div class="es">Nenhuma empresa</div>';return;}
   el.innerHTML=emps.map(e=>`<div class="ci"><input type="checkbox" name="mEChk" value="${esc(e.id)}" id="ck_mEChk_${e.id}" onchange="fltMCargos()"><label for="ck_mEChk_${e.id}">${esc(e.nome)}</label></div>`).join('');
@@ -536,7 +540,7 @@ function populateSelects(){
 function fltMCargos(){
   const empIds=getCheckedEmpresas();
   const hasEmpFilter=empIds.length>0&&empIds[0]!=='';
-  const cargos=toArr(DATA.cargos);
+  const cargos=toArr(DATA.cargos).sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));
   const el=document.getElementById('m-c-list');
   let filtered=cargos;
   if(hasEmpFilter){
@@ -565,6 +569,7 @@ function fltM(){
   let funcs=toArr(DATA.funcionarios);
   if(hasEmpFilter)funcs=funcs.filter(f=>empIds.includes(String(f.empresaId||'').trim()));
   if(hasCgFilter)funcs=funcs.filter(f=>cargoIds.includes(String(f.funcao||'').trim()));
+  funcs.sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));
   el.innerHTML=funcs.length?funcs.map(f=>`<div class="ci"><input type="checkbox" name="mChk" value="${f.id}" id="ck_mChk_${f.id}" onchange="updateMassSummary()"><label for="ck_mChk_${f.id}">${esc(f.nome)} <span>(${esc(resolveCargo(f.funcao)?.nome||f.funcao||'')})</span></label></div>`).join(''):'<div class="es">Nenhum colaborador encontrado</div>';
   document.getElementById('m-f-src').value='';
   fltMTextos(hasCgFilter?cargoIds:null);
@@ -574,12 +579,12 @@ function fltMTextos(cids){
   const el=document.getElementById('m-os-textos');
   let textos;
   if(!cids){
-    textos=toArr(DATA.textos);
+    textos=toArr(DATA.textos).sort((a,b)=>(a.titulo||'').localeCompare(b.titulo||''));
     if(!textos.length){el.innerHTML='<div class="es">Nenhum texto cadastrado</div>';updateMassFieldsVisibility();return;}
     el.innerHTML=textos.map(t=>`<div class="ci"><input type="checkbox" name="mOsChk" value="${t.id}" id="ck_mOsChk_${t.id}" onchange="onTextCheckChange()"><label for="ck_mOsChk_${t.id}">${esc(t.titulo)} <span class="bdg">${esc(t.categoria||'')}</span></label></div>`).join('');
     updateMassFieldsVisibility();return;
   }
-  const raw=toArr(DATA.textos);
+  const raw=toArr(DATA.textos).sort((a,b)=>(a.titulo||'').localeCompare(b.titulo||''));
   textos=raw.filter(t=>{
     let vinculados=t.cargosVinculados||[];
     if(typeof vinculados==='string')vinculados=vinculados.split(',').map(s=>s.trim());
@@ -598,7 +603,7 @@ function fltMTextos(cids){
 // ── TOGGLE CONDITIONAL FIELDS ───────────────────────────────────
 function filterMassEpi(){
   const q=document.getElementById('m-epi-search').value.toLowerCase();
-  const mats=toArr(DATA.materiais).filter(m=>(m.nome||'').toLowerCase().includes(q)||(m.ca||'').toLowerCase().includes(q));
+  const mats=toArr(DATA.materiais).filter(m=>(m.nome||'').toLowerCase().includes(q)||(m.ca||'').toLowerCase().includes(q)).sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));
   document.getElementById('m-epi-sel').innerHTML='<option value="">Selecione...</option>'+mats.map(m=>`<option value="${esc(m.id)}" data-un="${esc(m.unidade||'')}">${esc(m.nome)} (C.A.${m.ca||''})</option>`).join('');
 }
 
@@ -610,7 +615,7 @@ function addMassEpi(){
   const mat=DATA.materiais[opt.value];
   if(!mat)return;
   const ex=massEpiCart.find(c=>c.id===mat.id);
-  if(ex){ex.qtd+=qtd;}else{massEpiCart.push({id:mat.id,nome:mat.nome,ca:mat.ca||'',unidade:mat.unidade||'',tipo:mat.tipo||'EPI',qtd});}
+  if(ex){ex.qtd+=qtd;}else{massEpiCart.push({id:mat.id,nome:mat.nome,ca:mat.ca||'',unidade:mat.unidade||'',tipo:mat.tipo||'EPI',qtd,vencimentoCa:mat.vencimentoCa||''});}
   renderMassEpi();
 }
 
@@ -971,7 +976,7 @@ async function massDrawAdmPage(doc,func,emp,dataFmt,local,conteudo){
   P_footer(doc,false,func.dataAdm,undefined,emp?.nome||'',local);
 }
 
-async function massDrawEpiPage(doc,func,emp,dataFmt,items){
+async function massDrawEpiPage(doc,func,emp,dataFmt,items,showVencCa=true){
   const W=PAG.LW,H=PAG.LH,m=PAG.LM,uw=PAG.LUW;
   const logo=emp?.logoUrl?await loadImg(emp.logoUrl):null;
   doc.setFillColor(...C.h1);doc.rect(0,0,W,25,'F');
@@ -997,13 +1002,40 @@ async function massDrawEpiPage(doc,func,emp,dataFmt,items){
   doc.setFont('helvetica','italic');doc.setFontSize(6.5);doc.setTextColor(...C.sub);
   const termoEPI="Declaro que recebi os EPI's abaixo relacionados em perfeitas condicoes, estando ciente das obrigacoes da NR-6 (Portaria 3.214/78), subitem 6.7.1: a) usar somente para a finalidade destinada; b) responsabilizar-se pela guarda e conservacao; c) comunicar ao empregador qualquer alteracao que o torne improprio; d) cumprir as determinacoes do empregador. Estou ciente do Art. 462 §1 CLT, autorizando desconto por mau uso, e que a recusa injustificada ao uso dos EPI's constitui ato faltoso.\n\nDeclaro que os EPI's adiante relacionados me foram entregues em perfeitas condicoes de uso, bem como que recebo os treinamentos necessarios para a perfeita utilizacao dos mesmos.\n\nDeclaro que me encontro ciente do disposto no artigo 462, paragrafo 1, da CLT, autorizando o desconto proporcional ao custo da reparacao do dano que eu eventualmente venha a provocar nos EPI's, em razao de mau uso.\n\nDeclaro, por fim, que me encontro ciente do quanto disposto no NR-1, aprovada pela Portaria nº 3.214/78 do Ministerio do Trabalho e Emprego, no sentido de que constitui ato faltoso a recusa injustificada ao uso dos EPI's, ora fornecidos pela empresa, incorrendo nas penalidades da Lei.";
   const tlines=doc.splitTextToSize(termoEPI,uw);doc.text(tlines,m,cy);cy+=tlines.length*3.2+2;
-  const fixedW=10+16+12+20+52+20+52;const descW=Math.max(50,uw-fixedW);
+  const tipoW=20;
+  const vencW=24;
+  const fixedW=showVencCa ? 10+16+vencW+tipoW+20+52+20+52 : 10+16+tipoW+20+52+20+52;
+  const descW=Math.max(50,uw-fixedW);
+  const head=showVencCa
+    ? ['QTD','C.A.','DESCRICAO DO EPI / EPC','VENCIMENTO/CA','TIPO','DATA\nENTREGA','ASSINATURA\nRECEBIMENTO','DATA\nDEVOLUCAO','ASSINATURA\nDEVOLUCAO']
+    : ['QTD','C.A.','DESCRICAO DO EPI / EPC','TIPO','DATA\nENTREGA','ASSINATURA\nRECEBIMENTO','DATA\nDEVOLUCAO','ASSINATURA\nDEVOLUCAO'];
+  const body=items.map(i=>{
+    const row=[String(i.qtd||1),i.ca||'—',i.nome||''];
+    if(showVencCa)row.push(i.vencimentoCa?fmtData(i.vencimentoCa):'—');
+    row.push(i.tipo||'EPI',dataFmt,'','','');
+    return row;
+  });
+  const colStyles={0:{cellWidth:10,halign:'center'},1:{cellWidth:16,halign:'center'},2:{cellWidth:descW}};
+  if(showVencCa){
+    colStyles[3]={cellWidth:vencW,halign:'center'};
+    colStyles[4]={cellWidth:tipoW,halign:'center'};
+    colStyles[5]={cellWidth:20,halign:'center'};
+    colStyles[6]={cellWidth:52};
+    colStyles[7]={cellWidth:20,halign:'center'};
+    colStyles[8]={cellWidth:52};
+  }else{
+    colStyles[3]={cellWidth:tipoW,halign:'center'};
+    colStyles[4]={cellWidth:20,halign:'center'};
+    colStyles[5]={cellWidth:52};
+    colStyles[6]={cellWidth:20,halign:'center'};
+    colStyles[7]={cellWidth:52};
+  }
   doc.autoTable({
     startY:cy,
-    head:[['QTD','C.A.','DESCRICAO DO EPI / EPC','TIPO','DATA\nENTREGA','ASSINATURA\nRECEBIMENTO','DATA\nDEVOLUCAO','ASSINATURA\nDEVOLUCAO']],
-    body:items.map(i=>[String(i.qtd||1),i.ca||'—',i.nome||'',i.tipo||'EPI',dataFmt,'','','']),
+    head:[head],
+    body:body,
     headStyles:{fillColor:C.h1,textColor:C.twh,fontStyle:'bold',fontSize:6.8,halign:'center',cellPadding:2},
-    columnStyles:{0:{cellWidth:10,halign:'center'},1:{cellWidth:16,halign:'center'},2:{cellWidth:descW},3:{cellWidth:12,halign:'center'},4:{cellWidth:20,halign:'center'},5:{cellWidth:52},6:{cellWidth:20,halign:'center'},7:{cellWidth:52}},
+    columnStyles:colStyles,
     alternateRowStyles:{fillColor:C.bg},styles:{fontSize:7,textColor:C.dark,cellPadding:1.8},
     theme:'grid',lineColor:C.bdr,lineWidth:0.15,tableWidth:uw,margin:{left:m,right:m}
   });
@@ -1192,7 +1224,7 @@ async function gerarDocs(func, emp, opts, onStep, results){
     if(finalItems && finalItems.length){
       massGenDetail={func:func.nome||'', docType:'Ficha EPI'};
       const doc = new jsPDF({orientation:'landscape',unit:'mm',format:'a4'});
-      await massDrawEpiPage(doc, func, emp, dataFmt, finalItems);
+      await massDrawEpiPage(doc, func, emp, dataFmt, finalItems, opts.showVencCa);
       const filename = `${func.nome.replace(/\s+/g,'_')} - Ficha_EPI - ${safeDataAdm}.pdf`;
       const r=await saveSecurely(doc, filename, {funcionarioId: func.id}, true);
       if(r&&results)results.push(r);
@@ -1270,7 +1302,8 @@ async function massGen(){
  
   const stepCb=()=>{step++;const pct=Math.round(step/totalSteps*100);massProgress(pct<100?'Gerando documentos...':'Finalizado!',pct);};
  
-  const opts={docOS,docLista,docAdm,docEpi,osTextIds,dataFmt,dataVal,local,treino,carga,conteudo};
+  const showVencCa=document.getElementById('m-epi-show-venc').checked;
+  const opts={docOS,docLista,docAdm,docEpi,osTextIds,dataFmt,dataVal,local,treino,carga,conteudo,showVencCa};
  
   spin(true);
   const results=[];
