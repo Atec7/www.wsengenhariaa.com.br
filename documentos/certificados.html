@@ -832,7 +832,7 @@ function renderEmpresas(){
         const cidade = (e.cidade || "").toLowerCase();
         const certificador = (e.certificadorNome || "").toLowerCase();
         return nome.includes(termo) || cidade.includes(termo) || certificador.includes(termo);
-    });
+    }).sort((a,b)=>(a.nome||'').localeCompare(b.nome||'', 'pt-BR'));
 
     el("tabelaEmpresas").innerHTML =
         `<tr><th>Empresa</th><th>Cidade</th><th>Certificador</th><th>Ações</th></tr>`+
@@ -846,7 +846,7 @@ function renderEmpresas(){
             </td>
         </tr>`).join("");
 
-    const todasEmpresas = getArrayFromData(empresasData);
+    const todasEmpresas = getArrayFromData(empresasData).sort((a,b)=>(a.nome||'').localeCompare(b.nome||'', 'pt-BR'));
     const empresaOptions = todasEmpresas.map(e=>`<option value="${e.id}">${e.nome}</option>`).join("");
 
     el("selEmpresa").innerHTML='<option value="">Selecione a empresa...</option>'+ empresaOptions;
@@ -868,7 +868,7 @@ function renderAlunos(){
         const nome = (a.nome || "").toLowerCase();
         const cpf = formatCPF(a.cpf || "").toLowerCase();
         return nome.includes(termo) || cpf.includes(termo);
-    });
+    }).sort((a,b)=>(a.nome||'').localeCompare(b.nome||'', 'pt-BR'));
 
     el("tabelaAlunos").innerHTML =
         `<tr>
@@ -909,7 +909,7 @@ function renderAlunosCheckboxForGeracao(){
         return;
     }
 
-    const alunosFiltrados = getArrayFromData(alunosData).filter(a => a.empresaVinculoId === empresaIdSelecionada);
+    const alunosFiltrados = getArrayFromData(alunosData).filter(a => a.empresaVinculoId === empresaIdSelecionada).sort((a,b)=>(a.nome||'').localeCompare(b.nome||'', 'pt-BR'));
 
     if (alunosFiltrados.length === 0) {
         listaAlunosCheckbox.innerHTML = 'Nenhum aluno cadastrado para esta empresa.';
@@ -920,7 +920,7 @@ function renderAlunosCheckboxForGeracao(){
 }
 
 function renderCursos(){
-    const cursos = getArrayFromData(cursosData);
+    const cursos = getArrayFromData(cursosData).sort((a,b)=>(a.nome||'').localeCompare(b.nome||'', 'pt-BR'));
     el("tabelaCursos").innerHTML =
         `<tr><th>Curso</th><th>Carga</th><th>Ações</th></tr>`+
         cursos.map(c=>`<tr>
@@ -1280,7 +1280,7 @@ window.closeModal = () => {
 
 window.openEditModal = (type, id) => {
     let title, bodyHTML, item;
-    const empresas = getArrayFromData(empresasData);
+    const empresas = getArrayFromData(empresasData).sort((a,b)=>(a.nome||'').localeCompare(b.nome||'', 'pt-BR'));
 
     if (type === 'empresa') {
         item = empresasData[id];
