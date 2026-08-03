@@ -4,190 +4,168 @@
 <meta charset="UTF-8">
 <title>WS ENGENHARIA CERTIFICADOS</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 
 <style>
-:root{
-  --sb:#1c1c1e;--sb-b:#2c2c2e;--bg:#f4f4f5;--sf:#fff;
-  --bd:#e4e4e7;--tp:#18181b;--ts:#71717a;--tm:#a1a1aa;
-  --hi:#3f3f46;--hl:#f4f4f5;--dn:#dc2626;--wn:#d97706;--sc:#16a34a;
-  --r:8px;--sh:0 1px 3px rgba(0,0,0,.08),0 1px 2px rgba(0,0,0,.05);
+:root {
+    --primary: #004e92;
+    --danger: #dc3545;
+    --bg: #f8f9fa;
+    --text: #212529;
+    --muted: #6c757d;
+    --border: #dee2e6;
+    --sidebar-width: 260px;
+    --header-height: 60px;
+    --radius: 6px;
 }
-* { box-sizing: border-box; margin:0;padding:0 }
-body,html{height:100%}
-body{
+* { box-sizing: border-box; }
+body {
     margin: 0;
-    font-family:'DM Sans',sans-serif;
-    background:var(--bg);
-    color:var(--tp);
+    font-family: Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
     display: flex;
     height: 100vh;
 }
 
 .sidebar {
-    width: 222px;
-    background: var(--sb);
-    display: flex;
-    flex-direction: column;
-    overflow-y: auto;
+    width: var(--sidebar-width);
+    background: #fff;
+    padding: 20px 0;
+    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.05);
     position: fixed;
     top: 0;
     left: 0;
     height: 100%;
+    overflow-y: auto;
     z-index: 100;
-    border-right: 1px solid var(--sb-b);
 }
 .main-content {
-    margin-left: 222px;
-    width: calc(100% - 222px);
+    margin-left: var(--sidebar-width);
+    width: calc(100% - var(--sidebar-width));
     flex-grow: 1;
     padding: 0;
     display: flex;
     flex-direction: column;
 }
 header {
-    background: var(--sb);
-    color: #fbbf24;
-    padding: 18px 24px;
-    height: auto;
+    background: #fff;
+    color: var(--primary);
+    padding: 0 20px;
+    height: var(--header-height);
     display: flex;
     align-items: center;
-    font-size: 15px;
+    font-size: 18px;
     font-weight: 700;
-    border-bottom: 1px solid var(--sb-b);
+    border-bottom: 1px solid #eee;
 }
 .container {
     flex-grow: 1;
     max-width: 1200px;
     margin: 0 auto;
-    padding: 26px 30px;
+    padding: 20px;
     width: 100%;
     overflow-y: auto; 
 }
 
 .sidebar-title {
-    font-size: 14px;
-    font-weight: 700;
-    color: #fafafa;
-    padding: 18px 16px;
-    border-bottom: 1px solid var(--sb-b);
-    display: flex;
-    align-items: center;
-    gap: 9px;
-}
-.sidebar h3 {
-    padding: 6px 16px;
-    font-size: 9px;
-    font-weight: 600;
-    color: #52525b;
-    letter-spacing: 1.5px;
-    text-transform: uppercase;
-    margin-top: 12px;
+    font-size: 22px;
+    font-weight: 900;
+    color: var(--primary);
+    padding: 0 20px 20px;
 }
 .sidebar a {
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 9px 16px;
-    color: #a1a1aa;
+    padding: 10px 20px;
+    color: var(--text);
     text-decoration: none;
-    font-size: 12px;
-    font-weight: 500;
-    border-left: 2px solid transparent;
-    transition: .15s;
+    font-size: 15px;
+    border-left: 3px solid transparent;
+    transition: background-color 0.2s, border-left-color 0.2s;
 }
 .sidebar a:hover, .sidebar a.active {
-    background: rgba(255,255,255,.05); 
-    color: #e4e4e7;
+    background-color: #e9f5ff; 
+    border-left-color: var(--primary);
+    color: var(--primary);
 }
 
 h2 {
     margin-top: 26px;
-    font-size: 21px;
-    font-weight: 700;
-    color: var(--tp);
-    border-bottom: 2px solid var(--bd);
-    padding-bottom: 8px;
-    margin-bottom: 18px;
+    color: var(--primary);
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 5px;
 }
 .card {
-    background: var(--sf);
-    border-radius: var(--r);
-    box-shadow: var(--sh); 
+    background: #fff;
+    border-radius: var(--radius);
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.05); 
     padding: 20px;
-    margin-bottom: 16px;
-    border: 1px solid var(--bd);
+    margin-bottom: 20px;
+    border: 1px solid var(--border);
 }
-label { display: block; font-size: 10px; color: var(--ts); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 4px; font-weight: 700; }
+label { display: block; font-size: 14px; color: var(--muted); margin-top: 10px; font-weight: 600; }
 input:not([type="checkbox"]), textarea, select {
     width: 100%;
-    padding: 8px 11px;
-    border: 1px solid var(--bd);
-    border-radius: 6px;
-    font-family:'DM Sans',sans-serif;
-    font-size: 13px;
-    color: var(--tp);
-    background: var(--sf);
-    transition: border-color .15s,box-shadow .15s;
-    outline: none;
+    padding: 10px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    margin-top: 5px;
+    font-size: 14px;
 }
-input:focus, textarea:focus, select:focus{border-color:var(--hi);box-shadow:0 0 0 3px rgba(63,63,70,.1)}
 button {
-    background: var(--hi);
-    color: #fafafa;
+    background: var(--primary);
+    color: #fff;
     border: none;
-    border-radius: 6px;
-    padding: 8px 15px;
+    border-radius: 4px;
+    padding: 10px 15px;
     font-weight: 600;
-    font-size: 12px;
-    font-family:'DM Sans',sans-serif;
     cursor: pointer;
-    transition: .15s;
+    transition: background-color 0.2s;
     margin-top: 10px;
-    display: inline-flex;
-    align-items: center;
-    gap: 7px;
 }
-button:hover { background: #52525b; }
-button.secondary { background: var(--ts); color: #fff; }
-button.secondary:hover { background: var(--tm); }
-button.danger { background: var(--dn); }
-button.danger:hover { background: #b91c1c; }
+button:hover { background: #003366; }
+button.secondary { background: #6c757d; color: #fff; }
+button.secondary:hover { background: #5a6268; }
+button.danger { background: var(--danger); }
+button.danger:hover { background: #c82333; }
 .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 15px; }
-.grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 13px; }
+.grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 15px; }
 .col-3{grid-column:span 3}.col-4{grid-column:span 4}.col-6{grid-column:span 6}.col-12{grid-column:span 12}
 
 /* Checklist e Tabela */
 .checklist { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 10px; margin-top: 10px; }
 .checklist label { 
-    display: flex; align-items: center; gap: 8px; background: var(--hl); border: 1px solid var(--bd); 
-    border-radius: 6px; padding: 8px 12px; margin:0; font-size: 12px; color: var(--tp); cursor: pointer; font-weight: 500;
+    display: flex; align-items: center; gap: 8px; background: #f8f9fa; border: 1px solid var(--border); 
+    border-radius: 4px; padding: 10px; margin:0; font-size: 14px; color: var(--text); cursor: pointer;
 }
-.checklist input[type="checkbox"] { width: 14px; height: 14px; accent-color: var(--hi); }
-.checklist label:hover { background: var(--bd); }
-.checklist input[type="checkbox"]:checked + span { font-weight: 600; color: var(--hi); }
+.checklist input[type="checkbox"] { width: auto; margin: 0; }
+.checklist label:hover { background: #e9ecef; border-color: var(--primary); }
+.checklist input[type="checkbox"]:checked + span { font-weight: bold; color: var(--primary); }
 .table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-.table th, .table td { padding: 9px 12px; text-align: left; border-bottom: 1px solid var(--bd); font-size: 13px; }
-.table th { background-color: var(--hl); font-weight: 700; color: var(--ts); text-transform: uppercase; letter-spacing: .5px; font-size: 10px; }
-.table tr:hover { background-color: var(--hl); }
+.table th, .table td { padding: 10px; text-align: left; border-bottom: 1px solid #eee; font-size: 14px; }
+.table th { background-color: #f1f1f1; font-weight: 700; color: var(--text); }
+.table tr:hover { background-color: #f9f9f9; }
+.table td.vencido { color: #e74c3c; font-weight: bold; }
 
 /* Novo estilo para a seleção de datas por curso */
 .course-date-selector {
     padding: 15px;
-    border: 1px dashed var(--hi);
-    border-radius: var(--r);
+    border: 1px dashed var(--primary);
+    border-radius: var(--radius);
     margin-top: 15px;
-    background: var(--hl);
+    background: #e9f5ff;
 }
 .course-date-selector h4 {
     margin-top: 0;
-    color: var(--tp);
-    font-size: 14px;
-    font-weight: 700;
-    border-bottom: 1px solid var(--bd);
-    padding-bottom: 8px;
-    margin-bottom: 12px;
+    color: var(--primary);
+    font-size: 16px;
+    border-bottom: 1px solid var(--primary);
+    padding-bottom: 5px;
 }
 
 /* 📄 ESTILOS DE PREVIEW (A4 Landscape) */
@@ -267,51 +245,42 @@ button.danger:hover { background: #b91c1c; }
 .modal-overlay {
     position: fixed;
     top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0, 0, 0, .45);
+    background: rgba(0, 0, 0, 0.6);
     display: none; 
     justify-content: center;
     align-items: center;
     z-index: 1000;
-    backdrop-filter: blur(2px);
 }
 .modal-content {
-    background: var(--sf);
-    padding: 26px;
-    border-radius: 12px;
+    background: #fff;
+    padding: 30px;
+    border-radius: 8px;
     max-width: 600px;
     width: 90%;
-    box-shadow: 0 20px 40px rgba(0,0,0,.15);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
     position: relative;
     max-height: 90vh;
     overflow-y: auto;
-    border: 1px solid var(--bd);
 }
 .modal-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-bottom: 1px solid var(--bd);
+    border-bottom: 1px solid var(--border);
     padding-bottom: 10px;
     margin-bottom: 15px;
 }
 .modal-header h3 {
     margin: 0;
-    font-size: 15px;
-    font-weight: 700;
-    color: var(--tp);
+    color: var(--primary);
 }
 .close-btn {
-    background: rgba(255,255,255,.08);
-    border: 1px solid rgba(255,255,255,.15);
-    color: #e4e4e7;
-    border-radius: 6px;
-    padding: 6px 14px;
+    background: none;
+    border: none;
+    font-size: 20px;
     cursor: pointer;
-    font-size: 12px;
-    font-weight: 600;
-    font-family:'DM Sans',sans-serif;
+    color: var(--muted);
 }
-.close-btn:hover{background:rgba(255,255,255,.14);color:#fff}
 .branco{
   color: red;
 }
@@ -321,23 +290,118 @@ button.danger:hover { background: #b91c1c; }
   background-color:white;
   border-radius: 50px;
 }
+.curso-logo-tabela{
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+  vertical-align: middle;
+  margin-right: 8px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: #fff;
+  padding: 2px;
+}
 .nome-sistema{
   text-align: center;
   
 }
+.info-balloon {
+    background: #f0f7ff;
+    border: 1px solid #bae0ff;
+    border-radius: 6px;
+    padding: 8px 12px;
+    margin-top: 10px;
+    font-size: 12px;
+    color: #0050b3;
+    line-height: 1.4;
+}
+.date-hint {
+    color: var(--muted);
+    font-size: 11px;
+    display: block;
+    margin-top: 4px;
+}
+.date-conflict {
+    border-color: #dc3545 !important;
+    background-color: #fff0f0 !important;
+    box-shadow: 0 0 0 2px rgba(220, 53, 69, 0.25) !important;
+}
+.conflict-msg {
+    color: #dc3545;
+    font-size: 12px;
+    margin-top: 4px;
+    display: none;
+}
+.conflict-msg.visible {
+    display: block;
+}
+.conflict-balloon-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: none;
+    justify-content: center;
+    align-items: flex-start;
+    z-index: 2000;
+    padding-top: 80px;
+}
+.conflict-balloon {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25);
+    max-width: 520px;
+    width: 90%;
+    overflow: hidden;
+    animation: slideDown 0.25s ease-out;
+}
+@keyframes slideDown {
+    from { transform: translateY(-30px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+.conflict-balloon-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    background: #dc3545;
+    color: #fff;
+    font-weight: 700;
+    font-size: 16px;
+}
+.conflict-balloon-header .close-btn {
+    color: #fff;
+    font-size: 22px;
+}
+.conflict-balloon-body {
+    padding: 20px;
+    font-size: 14px;
+    line-height: 1.5;
+    color: #333;
+}
+.conflict-balloon-body ul {
+    margin: 0;
+    padding-left: 20px;
+}
+.conflict-balloon-body li {
+    margin-bottom: 10px;
+    padding: 8px 12px;
+    background: #fff0f0;
+    border-radius: 6px;
+    border-left: 4px solid #dc3545;
+}
+.conflict-balloon-footer {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    padding: 14px 20px;
+    border-top: 1px solid #eee;
+}
+.conflict-balloon-footer button {
+    margin-top: 0;
+}
 </style>
 </head>
 <body>
-<div id="acesso-negado" style="display:none;padding:40px;text-align:center;font-family:'DM Sans',sans-serif;">
-  <h2 style="color:#dc2626">Acesso n&atilde;o autorizado</h2>
-  <p style="color:#71717a;margin-top:10px">Fa&ccedil;a login no sistema principal primeiro.</p>
-</div>
-<div id="appShell" style="display:none;">
-  <div style="padding:10px; text-align:right; background:#fff; border-bottom:1px solid #ddd;">
-    <button id="btnLogout" type="button" class="logout-btn">Sair</button>
-  </div>
-</div>
-
 <div class="sidebar">
     <div class="sidebar-title">CERTIFICADOS</div>
     <h3>Cadastros</h3>
@@ -349,6 +413,9 @@ button.danger:hover { background: #b91c1c; }
 </div>
 
 <div class="main-content">
+    <header class="nome-sistema">
+        Sistema de Certificados WS ENGENHARIA CONSULTORIA E TREINAMENTOS (Versão V4.8 - Atecseven Tecnologia LTDA)
+    </header>
     <div class="container">
 
         <div id="secaoEmpresa" class="secao">
@@ -514,6 +581,16 @@ button.danger:hover { background: #b91c1c; }
                         <label>Carga horária</label>
                         <input id="cursoCarga" placeholder="Ex.: 40h">
                     </div>
+                    <div class="col-2">
+                        <label>Validade</label>
+                        <select id="cursoValidade">
+                            <option value="none">Não vence</option>
+                            <option value="1">1 Ano</option>
+                            <option value="2">2 Anos</option>
+                            <option value="3">3 Anos</option>
+                            <option value="5">5 Anos</option>
+                        </select>
+                    </div>
                     <div class="col-12">
                         <label class="branco"><b>*SEMPRE DEIXAR EM BRANCO</b></label>
                         <textarea id="cursoMensagem" placeholder='Certificamos que, o(a) aluno(a) **{NOME_ALUNO}**, portador(a) do CPF **{CPF_ALUNO}**, participou do curso de **{NOME_CURSO}**, realizado no período de **{DATA_INICIO}** a **{DATA_FIM}**, com carga horária total de **{CARGA_HORARIA}**, promovido pela empresa \n **{NOME_EMPRESA}**.
@@ -544,11 +621,18 @@ button.danger:hover { background: #b91c1c; }
                         <label>Empresa (certificadora)</label>
                         <select id="selEmpresa"></select>
                     </div>
+                    <div class="col-4">
+                        <label>Pesquisar empresa</label>
+                        <input id="selEmpresaBusca" placeholder="Digite parte do nome da empresa">
+                    </div>
                 </div>
 
                 <h3>Alunos e Cursos</h3>
                 <p style="color:var(--muted)">*Selecione uma empresa acima para carregar a lista de alunos vinculados a ela.</p>
                 <label>Selecione alunos</label>
+                <div style="margin-bottom:6px;">
+                    <input id="selAlunoBusca" placeholder="Pesquisar aluno por nome ou matrícula" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:4px;font-size:14px;">
+                </div>
                 <div id="listaAlunosCheckbox" class="checklist">Nenhum aluno carregado. Selecione a empresa acima.</div>
 
                 <label>Selecione cursos</label>
@@ -623,8 +707,26 @@ button.danger:hover { background: #b91c1c; }
     </div>
 </div>
 
+<div id="conflictBalloon" class="conflict-balloon-overlay">
+    <div class="conflict-balloon">
+        <div class="conflict-balloon-header">
+            ⚠ Conflitos de Data Detectados
+            <button class="close-btn" onclick="window.hideConflictBalloon()">&times;</button>
+        </div>
+        <div class="conflict-balloon-body">
+            <p style="margin-top:0;">As seguintes sobreposições foram encontradas:</p>
+            <ul id="conflictBalloonList"></ul>
+        </div>
+        <div class="conflict-balloon-footer">
+            <button class="secondary" id="btnConflictCancel">Cancelar alteração</button>
+            <button id="btnConflictContinue">Continuar mesmo assim</button>
+        </div>
+    </div>
+</div>
+
 <script type="module">
   // Importações do Firebase
+
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
 import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-analytics.js";
 import { getDatabase, ref, push, set, update, remove, onValue } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-database.js";
@@ -652,6 +754,8 @@ let alunosData = {};
 let cursosData = {};
 let certificadosGeradosData = {}; 
 let currentCertificadoId = null;
+let courseSelectionOrder = [];
+let previousStartDates = {};
 
 const el=id=>document.getElementById(id);
 const toBase64File=input=>new Promise(res=>{
@@ -746,7 +850,7 @@ function renderEmpresas(){
         const cidade = (e.cidade || "").toLowerCase();
         const certificador = (e.certificadorNome || "").toLowerCase();
         return nome.includes(termo) || cidade.includes(termo) || certificador.includes(termo);
-    });
+    }).sort((a,b)=>(a.nome||'').localeCompare(b.nome||'', 'pt-BR'));
 
     el("tabelaEmpresas").innerHTML =
         `<tr><th>Empresa</th><th>Cidade</th><th>Certificador</th><th>Ações</th></tr>`+
@@ -760,7 +864,7 @@ function renderEmpresas(){
             </td>
         </tr>`).join("");
 
-    const todasEmpresas = getArrayFromData(empresasData);
+    const todasEmpresas = getArrayFromData(empresasData).sort((a,b)=>(a.nome||'').localeCompare(b.nome||'', 'pt-BR'));
     const empresaOptions = todasEmpresas.map(e=>`<option value="${e.id}">${e.nome}</option>`).join("");
 
     el("selEmpresa").innerHTML='<option value="">Selecione a empresa...</option>'+ empresaOptions;
@@ -782,7 +886,7 @@ function renderAlunos(){
         const nome = (a.nome || "").toLowerCase();
         const cpf = formatCPF(a.cpf || "").toLowerCase();
         return nome.includes(termo) || cpf.includes(termo);
-    });
+    }).sort((a,b)=>(a.nome||'').localeCompare(b.nome||'', 'pt-BR'));
 
     el("tabelaAlunos").innerHTML =
         `<tr>
@@ -823,10 +927,18 @@ function renderAlunosCheckboxForGeracao(){
         return;
     }
 
-    const alunosFiltrados = getArrayFromData(alunosData).filter(a => a.empresaVinculoId === empresaIdSelecionada);
+    const termoBusca = (el("selAlunoBusca")?.value || "").trim().toLowerCase();
+
+    const alunosFiltrados = getArrayFromData(alunosData).filter(a => {
+        if (a.empresaVinculoId !== empresaIdSelecionada) return false;
+        if (!termoBusca) return true;
+        const nome = (a.nome || "").toLowerCase();
+        const matricula = (a.matricula || "").toLowerCase();
+        return nome.includes(termoBusca) || matricula.includes(termoBusca);
+    }).sort((a,b)=>(a.nome||'').localeCompare(b.nome||'', 'pt-BR'));
 
     if (alunosFiltrados.length === 0) {
-        listaAlunosCheckbox.innerHTML = 'Nenhum aluno cadastrado para esta empresa.';
+        listaAlunosCheckbox.innerHTML = 'Nenhum aluno encontrado para esta empresa.';
         return;
     }
 
@@ -834,11 +946,11 @@ function renderAlunosCheckboxForGeracao(){
 }
 
 function renderCursos(){
-    const cursos = getArrayFromData(cursosData);
+    const cursos = getArrayFromData(cursosData).sort((a,b)=>(a.nome||'').localeCompare(b.nome||'', 'pt-BR'));
     el("tabelaCursos").innerHTML =
         `<tr><th>Curso</th><th>Carga</th><th>Ações</th></tr>`+
         cursos.map(c=>`<tr>
-            <td>${c.nome}</td><td>${c.carga}</td>
+            <td>${c.logoCurso ? `<img src="${c.logoCurso}" class="curso-logo-tabela" alt="Logo do curso">` : ''}${c.nome}</td><td>${c.carga}</td>
             <td class="actions">
                 <button class="secondary" onclick="window.openEditModal('curso', '${c.id}')">Editar</button>
                 <button class="danger" onclick="window.deleteCurso('${c.id}')">Excluir</button>
@@ -846,62 +958,339 @@ function renderCursos(){
         </tr>`).join("");
     
     const listaCursosCheckbox = el("listaCursosCheckbox");
-    listaCursosCheckbox.innerHTML = cursos.map(c=>`<label><input type="checkbox" class="course-checkbox" value="${c.id}"> <span>${c.nome} — ${c.carga}</span></label>`).join("");
+    listaCursosCheckbox.innerHTML = cursos.map(c=>`<label><input type="checkbox" class="course-checkbox" value="${c.id}"> ${c.logoCurso ? `<img src="${c.logoCurso}" class="curso-logo-tabela" alt="Logo do curso">` : ''}<span>${c.nome} — ${c.carga}</span></label>`).join("");
+
+    courseSelectionOrder = [];
 
     listaCursosCheckbox.querySelectorAll('.course-checkbox').forEach(input => {
-        input.addEventListener('change', renderCourseDateSelectors);
+        input.addEventListener('change', (e) => {
+            const val = e.target.value;
+            if (e.target.checked) {
+                if (!courseSelectionOrder.includes(val)) {
+                    courseSelectionOrder.push(val);
+                }
+            } else {
+                courseSelectionOrder = courseSelectionOrder.filter(id => id !== val);
+            }
+            renderCourseDateSelectors();
+        });
     });
 
     renderCourseDateSelectors();
 }
 
+function getCourseHours(courseId) {
+    const c = cursosData[courseId];
+    return parseInt((c?.carga || "").replace(/\D/g, '')) || 0;
+}
+
+function canStackOnDay(existingHours, newHours) {
+    return newHours <= 4 && newHours > 0 && existingHours <= 4 && (existingHours + newHours <= 8);
+}
+
 function renderCourseDateSelectors() {
-    const selectedCourseIds = Array.from(el("listaCursosCheckbox").querySelectorAll("input[type=checkbox]:checked")).map(i => i.value);
+    const selectedCourseIds = courseSelectionOrder.filter(id => cursosData[id]);
     const container = el("courseDatesContainer");
-    container.innerHTML = ''; 
+    container.innerHTML = '';
 
     if (selectedCourseIds.length === 0) {
         container.innerHTML = '<p style="color:var(--muted)">Selecione um ou mais cursos para definir as datas.</p>';
         return;
     }
 
+    const today = new Date().toISOString().slice(0, 10);
+
+    const courseDates = [];
+    let dayStart = today;
+    let dayHours = 0;
+
     selectedCourseIds.forEach(courseId => {
         const curso = cursosData[courseId];
-        if (!curso) return;
+        if (!curso) { courseDates.push(null); return; }
+
+        const horas = getCourseHours(courseId);
+        const extraDays = horas > 0 ? Math.ceil(horas / 8) - 1 : 0;
+
+        let start;
+        if (courseDates.length === 0) {
+            start = today;
+        } else if (canStackOnDay(dayHours, horas)) {
+            start = dayStart;
+        } else {
+            const last = courseDates.filter(d => d !== null).pop();
+            const d = new Date(last.end + "T00:00:00");
+            d.setDate(d.getDate() + 1);
+            start = d.toISOString().slice(0, 10);
+            dayStart = start;
+            dayHours = 0;
+        }
+
+        const d = new Date(start + "T00:00:00");
+        d.setDate(d.getDate() + extraDays);
+        const end = d.toISOString().slice(0, 10);
+
+        courseDates.push({ courseId, curso, extraDays, start, end });
+        dayHours += horas;
+    });
+
+    courseDates.forEach((item, index) => {
+        if (!item) return;
+        const { courseId, curso, extraDays, start, end } = item;
 
         const html = `
-            <div class="course-date-selector" data-course-id="${courseId}">
-                <h4>${curso.nome} (${curso.carga})</h4>
+            <div class="course-date-selector" data-course-id="${courseId}" data-extra-days="${extraDays}">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+                    <span style="display:inline-flex;align-items:center;justify-content:center;background:var(--primary);color:#fff;border-radius:50%;width:26px;height:26px;font-size:13px;font-weight:bold;flex-shrink:0;">${index + 1}</span>
+                    ${curso.logoCurso ? `<img src="${curso.logoCurso}" class="curso-logo-tabela" alt="Logo do curso">` : ''}<h4 style="margin:0;">${curso.nome} (${curso.carga})</h4>
+                </div>
                 <div class="grid">
                     <div class="col-6">
                         <label for="dataInicio_${courseId}">Data de Início:</label>
-                        <input type="date" id="dataInicio_${courseId}" required>
+                        <input type="date" id="dataInicio_${courseId}" value="${start}" required>
+                        <small class="date-hint">ⓘ Data de início do treinamento</small>
                     </div>
                     <div class="col-6">
                         <label for="dataFim_${courseId}">Data de Fim:</label>
-                        <input type="date" id="dataFim_${courseId}" required>
+                        <input type="date" id="dataFim_${courseId}" value="${end}" required>
+                        <small class="date-hint">ⓘ Calculada automaticamente conforme carga horária</small>
                     </div>
+                </div>
+                <div class="info-balloon">
+                    📄 Certificado: <strong>${curso.nome}</strong> — data fim prevista: <strong class="data-fim-preview-${courseId}">${fmtDateBR(end)}</strong>.
+                    A data fim é calculada com base na carga horária de <strong>${curso.carga}</strong>.
                 </div>
             </div>
         `;
         container.innerHTML += html;
     });
+
+    selectedCourseIds.forEach(courseId => {
+        const startInput = document.getElementById(`dataInicio_${courseId}`);
+        if (startInput) {
+            startInput.addEventListener('focus', (e) => {
+                previousStartDates[courseId] = e.target.value;
+            });
+            startInput.addEventListener('input', () => handleDateChange(courseId));
+        }
+    });
+
+    const initialConflicts = detectConflicts();
+    if (initialConflicts.length > 0) {
+        highlightConflicts(initialConflicts);
+    }
+}
+
+function detectConflicts() {
+    const conflicts = [];
+    const dailyHours = {};
+
+    for (const id of courseSelectionOrder) {
+        const startStr = document.getElementById(`dataInicio_${id}`)?.value;
+        if (!startStr) continue;
+        
+        const horas = getCourseHours(id);
+        let remaining = horas;
+        let currentDate = new Date(startStr + "T00:00:00");
+
+        while (remaining > 0) {
+            const dayKey = currentDate.toISOString().slice(0, 10);
+            if (!dailyHours[dayKey]) dailyHours[dayKey] = { total: 0, courses: [] };
+            
+            const hoursToday = Math.min(remaining, 8);
+            dailyHours[dayKey].total += hoursToday;
+            dailyHours[dayKey].courses.push({ id, hours: hoursToday });
+            
+            remaining -= hoursToday;
+            currentDate.setDate(currentDate.getDate() + 1);
+        }
+    }
+
+    for (const [day, info] of Object.entries(dailyHours)) {
+        if (info.total > 8) {
+            conflicts.push({
+                type: 'overflow', day, ids: info.courses.map(c => c.id),
+                msg: `Dia ${fmtDateBR(day)} excede 8h (total: ${info.total}h) — ${info.courses.map(c => cursosData[c.id]?.nome || c.id).join(', ')}`
+            });
+        }
+        
+        if (info.courses.length > 1) {
+            const hasViolation = info.courses.some(c => c.hours > 4);
+            if (hasViolation) {
+                const idA = info.courses[0].id;
+                const idB = info.courses[1].id;
+                conflicts.push({
+                    type: 'overlap', idA, idB,
+                    msg: `Sobreposição no dia ${fmtDateBR(day)}: cursos simultâneos não podem exceder 4h cada`
+                });
+            }
+        }
+    }
+
+    return conflicts;
+}
+
+function highlightConflicts(conflicts) {
+    clearConflictHighlights();
+    conflicts.forEach(c => {
+        if (c.type === 'overflow') {
+            c.ids.forEach(id => {
+                const s = document.getElementById(`dataInicio_${id}`);
+                const e = document.getElementById(`dataFim_${id}`);
+                if (s) s.classList.add('date-conflict');
+                if (e) e.classList.add('date-conflict');
+            });
+        } else {
+            const endA = document.getElementById(`dataFim_${c.idA}`);
+            const startB = document.getElementById(`dataInicio_${c.idB}`);
+            if (endA) endA.classList.add('date-conflict');
+            if (startB) startB.classList.add('date-conflict');
+        }
+    });
+}
+
+function clearConflictHighlights() {
+    document.querySelectorAll('.date-conflict').forEach(el => el.classList.remove('date-conflict'));
+    document.querySelectorAll('.conflict-msg.visible').forEach(el => el.classList.remove('visible'));
+}
+
+function showConflictBalloon(conflicts, onContinue, onCancel) {
+    const list = document.getElementById('conflictBalloonList');
+    list.innerHTML = conflicts.map((c, i) => `<li><strong>${i + 1}.</strong> ${c.msg}</li>`).join('');
+    document.getElementById('conflictBalloon').style.display = 'flex';
+
+    const continueBtn = document.getElementById('btnConflictContinue');
+    const cancelBtn = document.getElementById('btnConflictCancel');
+
+    const newContinue = continueBtn.cloneNode(true);
+    continueBtn.parentNode.replaceChild(newContinue, continueBtn);
+    const newCancel = cancelBtn.cloneNode(true);
+    cancelBtn.parentNode.replaceChild(newCancel, cancelBtn);
+
+    newContinue.onclick = () => { hideConflictBalloon(); if (onContinue) onContinue(); };
+    newCancel.onclick = () => { hideConflictBalloon(); if (onCancel) onCancel(); };
+}
+
+window.hideConflictBalloon = () => {
+    document.getElementById('conflictBalloon').style.display = 'none';
+};
+
+function handleDateChange(courseId) {
+    const previousValue = previousStartDates[courseId];
+
+    recalcChainFrom(courseId);
+
+    const conflicts = detectConflicts();
+    if (conflicts.length > 0) {
+        highlightConflicts(conflicts);
+        showConflictBalloon(conflicts,
+            () => {
+                previousStartDates[courseId] = document.getElementById(`dataInicio_${courseId}`)?.value;
+            },
+            () => {
+                const startInput = document.getElementById(`dataInicio_${courseId}`);
+                if (startInput && previousValue) {
+                    startInput.value = previousValue;
+                }
+                recalcChainFrom(courseId);
+                clearConflictHighlights();
+                previousStartDates[courseId] = document.getElementById(`dataInicio_${courseId}`)?.value;
+            }
+        );
+    } else {
+        clearConflictHighlights();
+        previousStartDates[courseId] = document.getElementById(`dataInicio_${courseId}`)?.value;
+    }
+}
+
+function atualizarDataFim(courseId) {
+    const startInput = document.getElementById(`dataInicio_${courseId}`);
+    const endInput = document.getElementById(`dataFim_${courseId}`);
+    const selector = document.querySelector(`.course-date-selector[data-course-id="${courseId}"]`);
+    if (!startInput || !endInput || !selector) return;
+
+    const startDate = startInput.value;
+    const extraDays = parseInt(selector.dataset.extraDays) || 0;
+    
+    if (startDate) {
+        const d = new Date(startDate + "T00:00:00");
+        if (!isNaN(d.getTime())) {
+            d.setDate(d.getDate() + extraDays);
+            const yyyy = d.getFullYear();
+            const mm = String(d.getMonth() + 1).padStart(2, '0');
+            const dd = String(d.getDate()).padStart(2, '0');
+            endInput.value = `${yyyy}-${mm}-${dd}`;
+            
+            const preview = document.querySelector(`.data-fim-preview-${courseId}`);
+            if (preview) {
+                preview.textContent = d.toLocaleDateString('pt-BR');
+            }
+        }
+    }
+}
+
+function recalcChainFrom(courseId) {
+    atualizarDataFim(courseId);
+
+    const idx = courseSelectionOrder.indexOf(courseId);
+    if (idx === -1) return;
+
+    for (let i = idx; i < courseSelectionOrder.length - 1; i++) {
+        const currentId = courseSelectionOrder[i];
+        const nextId = courseSelectionOrder[i + 1];
+        const currentEndInput = document.getElementById(`dataFim_${currentId}`);
+        const nextStartInput = document.getElementById(`dataInicio_${nextId}`);
+        const currentStartVal = document.getElementById(`dataInicio_${currentId}`)?.value;
+
+        if (!currentEndInput || !nextStartInput || !currentStartVal) continue;
+
+        const nextHours = getCourseHours(nextId);
+
+        const sameDayHours = courseSelectionOrder.reduce((sum, id) => {
+            if (id === nextId) return sum;
+            const s = document.getElementById(`dataInicio_${id}`)?.value;
+            return s === currentStartVal ? sum + getCourseHours(id) : sum;
+        }, 0);
+
+        if (canStackOnDay(sameDayHours, nextHours)) {
+            nextStartInput.value = currentStartVal;
+        } else {
+            if (currentEndInput.value) {
+                const d = new Date(currentEndInput.value + "T00:00:00");
+                if (!isNaN(d.getTime())) {
+                    d.setDate(d.getDate() + 1);
+                    const yyyy = d.getFullYear();
+                    const mm = String(d.getMonth() + 1).padStart(2, '0');
+                    const dd = String(d.getDate()).padStart(2, '0');
+                    nextStartInput.value = `${yyyy}-${mm}-${dd}`;
+                }
+            }
+        }
+
+        atualizarDataFim(nextId);
+    }
 }
 
 function renderCertificadosGerados(){
     const certs = getArrayFromData(certificadosGeradosData).sort((a,b) => new Date(b.dataGeracao) - new Date(a.dataGeracao));
     el("tabelaCertificadosGerados").innerHTML =
-        `<tr><th>ID Aluno</th><th>Curso</th><th>Data Evento</th><th>Data Geração</th><th>Ações</th></tr>`+
-        certs.map(c=>`<tr>
+        `<tr><th>ID Aluno</th><th>Curso</th><th>Data Evento</th><th>Data Geração</th><th>Vencimento</th><th>Ações</th></tr>`+
+        certs.map(c=>{
+            const exp = c.expiracao ? fmtDateBR(c.expiracao) : 'N/A';
+            const hoje = new Date();
+            const vence = c.expiracao ? new Date(c.expiracao + "T23:59:59") : null;
+            const expClass = vence && vence < hoje ? 'vencido' : '';
+            return `<tr>
             <td>${c.aluno.matricula || c.aluno.id} - ${c.aluno.nome}</td>
             <td>${c.curso.nome} (${c.curso.carga})</td>
             <td>${c.dataInicioBR} a ${c.dataFimBR}</td>
             <td>${fmtDateBR(c.dataGeracao)}</td>
+            <td class="${expClass}">${exp}</td>
             <td class="actions">
                 <button class="secondary" onclick="window.viewCertificado('${c.id}')">Ver/Editar</button>
                 <button class="danger" onclick="window.deleteCertificado('${c.id}')">Excluir</button>
             </td>
-        </tr>`).join("");
+        </tr>`;
+        }).join("");
 }
 
 function openModal(title, bodyHTML, saveHandler) {
@@ -917,7 +1306,7 @@ window.closeModal = () => {
 
 window.openEditModal = (type, id) => {
     let title, bodyHTML, item;
-    const empresas = getArrayFromData(empresasData);
+    const empresas = getArrayFromData(empresasData).sort((a,b)=>(a.nome||'').localeCompare(b.nome||'', 'pt-BR'));
 
     if (type === 'empresa') {
         item = empresasData[id];
@@ -982,6 +1371,14 @@ window.openEditModal = (type, id) => {
             <input type="hidden" id="modal_cursoId" value="${id}">
             <label>Nome do Curso:</label><input id="modal_cursoNome" value="${item.nome}">
             <label>Carga Horária:</label><input id="modal_cursoCarga" value="${item.carga}">
+            <label>Validade:</label>
+            <select id="modal_cursoValidade">
+                <option value="none" ${item.validade==='none'?'selected':''}>Não vence</option>
+                <option value="1" ${item.validade=='1'?'selected':''}>1 Ano</option>
+                <option value="2" ${item.validade=='2'?'selected':''}>2 Anos</option>
+                <option value="3" ${item.validade=='3'?'selected':''}>3 Anos</option>
+                <option value="5" ${item.validade=='5'?'selected':''}>5 Anos</option>
+            </select>
             <label>Logo do Curso (aparece na página 1 do certificado):</label>
             <input type="file" id="edit_logoCurso" accept="image/*">
             <label>Mensagem Padrão (Pág 1):</label><textarea id="modal_cursoMensagem" rows="5">${item.mensagem || ''}</textarea>
@@ -1111,6 +1508,7 @@ window.saveEditCurso = async (id) => {
         const patch = {
             nome: el('modal_cursoNome').value.trim(),
             carga: el('modal_cursoCarga').value.trim(),
+            validade: el('modal_cursoValidade').value,
             mensagem: el('modal_cursoMensagem').value.trim(),
             conteudo: el('modal_cursoConteudo').value.trim(),
         };
@@ -1183,6 +1581,14 @@ function buildMensagemCurso(curso, aluno, dataInicioBR, dataFimBR, empresa){
         .replaceAll("{DATA_FIM_TREINAMENTO}", dataFimBR);
 }
 
+function calcExpiracao(dataFim, validade) {
+    if (!validade || validade === 'none') return null;
+    const d = new Date(dataFim + "T23:59:59");
+    if (isNaN(d.getTime())) return null;
+    d.setFullYear(d.getFullYear() + parseInt(validade));
+    return d.toISOString().slice(0, 10);
+}
+
 async function gerarCertificados(){
     const empresaId = el("selEmpresa").value;
     if(!empresaId) return alert("Selecione a empresa.");
@@ -1220,6 +1626,18 @@ async function gerarCertificados(){
     } catch (e) {
         return alert(e.message);
     }
+
+    const conflictsBeforeGenerate = detectConflicts();
+    if (conflictsBeforeGenerate.length > 0) {
+        highlightConflicts(conflictsBeforeGenerate);
+        const proceed = await new Promise(resolve => {
+            showConflictBalloon(conflictsBeforeGenerate,
+                () => resolve(true),
+                () => resolve(false)
+            );
+        });
+        if (!proceed) return;
+    }
     
     const printArea = el("printArea");
     const printAreaPresencas = el("printAreaPresencas");
@@ -1245,7 +1663,8 @@ async function gerarCertificados(){
                 empresa: empresa, 
                 dataInicio: dataInicio, dataFim: dataFim,
                 dataInicioBR: dataInicioBR, dataFimBR: dataFimBR,
-                dataGeracao: new Date().toISOString().slice(0, 10) 
+                dataGeracao: new Date().toISOString().slice(0, 10),
+                expiracao: calcExpiracao(dataFim, curso.validade)
             };
 
             printArea.innerHTML += window.buildPage1(certData);
@@ -1279,11 +1698,32 @@ async function gerarCertificados(){
             jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
 
-        html2pdf().from(tempContainerPresenca).set(optionsPresenca).save();
+        const blobPresenca = await html2pdf().from(tempContainerPresenca).set(optionsPresenca).output('blob');
+        await saveSecurely(blobPresenca, 'listas_presenca.pdf', { empresaId: empresa.id });
     }
 
     try {
         await update(ref(db), updates);
+
+        const historyData = new Date().toLocaleDateString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+        const historyTs = Date.now();
+        const funcIds = selecionadosAlunos.map(a => a.id);
+
+        selectedCoursesWithDates.forEach(courseDateItem => {
+            const exp = calcExpiracao(courseDateItem.dataFim, courseDateItem.curso.validade);
+            push(ref(db, 'historico'), {
+                nome: `Certificado - ${courseDateItem.curso.nome}`,
+                data: historyData,
+                ts: historyTs,
+                empresaId: empresaId,
+                funcionarioIds: funcIds,
+                expiracao: exp,
+                tipo: 'certificado',
+                certificadoCursoId: courseDateItem.curso.id,
+                qtd: selecionadosAlunos.length
+            });
+        });
+
         alert(`clique em "OK" Para liberar a visualização de ${certCount} certificado(s). Clique em "Baixar PDF".`);
         printArea.style.display="flex";
     } catch (e) {
@@ -1292,7 +1732,119 @@ async function gerarCertificados(){
     }
 }
 
-function downloadPDF(targetElement, filename = 'certificados_gerados.pdf') {
+function corruptPdfBytes(buffer) {
+  const bytes = new Uint8Array(buffer);
+  if (bytes.length < 100) return buffer;
+
+  let s = '';
+  for (let i = 0; i < bytes.length; i++) s += String.fromCharCode(bytes[i]);
+
+  // 1) Metadados malformados (viewers ignoram, conversores tentam ler)
+  s = s.replace(/>>\s*startxref/, '/X-Converter /Nonexistent\n  /X-Version (999.999)\n  /XRefStm (corrupted)\n>>\nstartxref');
+
+  // 2) /Prev falso no trailer apontando para offset inexistente
+  s = s.replace(/\/Size (\d+)/, '/Size $1\n  /Prev 99999999 ');
+
+  const out = new Uint8Array(s.length);
+  for (let i = 0; i < s.length; i++) out[i] = s.charCodeAt(i);
+  return out.buffer;
+}
+
+async function saveSecurely(pdfBlob, filename, metadata = {}) {
+    const arrayBuffer = await pdfBlob.arrayBuffer();
+    const pdfDoc = await PDFLib.PDFDocument.load(arrayBuffer);
+    const pages = pdfDoc.getPages();
+    const baseDir = window.location.href.substring(0, window.location.href.lastIndexOf('/') + 1);
+    const docId = push(ref(db, 'doc_auth')).key;
+    const validationUrl = baseDir + 'verificar.html?id=' + docId;
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(validationUrl)}`;
+    let hashHex = null;
+
+    const pdfLibFont = await pdfDoc.embedFont(PDFLib.StandardFonts.Helvetica);
+
+    try {
+        const qrImgBytes = await fetch(qrUrl).then(res => res.arrayBuffer());
+        const qrImg = await pdfDoc.embedPng(qrImgBytes);
+        const lastPage = pages[pages.length - 1];
+        lastPage.drawImage(qrImg, { x: 12, y: 24, width: 20, height: 20 });
+    } catch (e) { console.error('QR Code error:', e); }
+
+    for(let i = 0; i < pages.length; i++){
+        const pg = pages[i];
+        const pw = pg.getWidth();
+        pg.drawText('ID: ' + docId, { x: 12, y: 1.5, size: 5, font: pdfLibFont, color: PDFLib.rgb(0.7, 0.7, 0.7) });
+        pg.drawText('Aut.: ' + validationUrl, { x: pw - 12, y: 1.5, size: 5, font: pdfLibFont, color: PDFLib.rgb(0.7, 0.7, 0.7) });
+        pg.drawRectangle({
+            x: pw-50, y: 4, width: 46, height: 14,
+            borderColor: PDFLib.rgb(0.78, 0.78, 0.78),
+            color: PDFLib.rgb(0.97, 0.97, 0.97),
+            borderWidth: 0.5
+        });
+        pg.drawText('ID: ' + docId.slice(0,12) + '..', {
+            x: pw-27, y: 11.5, size: 4.5, font: pdfLibFont,
+            color: PDFLib.rgb(0.4, 0.4, 0.4)
+        });
+        pg.drawText('AGUARDE...', {
+            x: pw-27, y: 7, size: 3.5, font: pdfLibFont,
+            color: PDFLib.rgb(0.4, 0.4, 0.4)
+        });
+    }
+
+    pdfDoc.setTitle(filename);
+    const firstBytes = await pdfDoc.save();
+    const firstBlob = new Blob([firstBytes], { type: 'application/pdf' });
+
+    try {
+        const fbArray = await firstBlob.arrayBuffer();
+        const hashBuffer = await crypto.subtle.digest('SHA-256', fbArray);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        hashHex = hashArray.map(b => b.toString(16).padStart(2,'0')).join('');
+        await set(ref(db, 'doc_auth/' + docId), { filename, ts: Date.now(), hash: hashHex, ...metadata });
+        for(let i = 0; i < pages.length; i++){
+            pages[i].drawText('SHA256: ' + hashHex.slice(0,10) + '..', {
+                x: pages[i].getWidth()-27, y: 7, size: 3.5, font: pdfLibFont,
+                color: PDFLib.rgb(0.47, 0.47, 0.47)
+            });
+        }
+        let finalBytes = await pdfDoc.save();
+        finalBytes = await rasterizePdfPages(finalBytes);
+        finalBytes = corruptPdfBytes(finalBytes);
+        finalBytes = await addVerificationOverlay(finalBytes, docId, validationUrl);
+        
+        try {
+            const pdfDoc2 = await PDFLib.PDFDocument.load(finalBytes);
+            pdfDoc2.encrypt({
+                userPassword: '2026',
+                ownerPassword: '2026',
+                permissions: {
+                    printing: 'lowResolution', modifying: false, copying: false,
+                    annotating: false, fillingForms: false,
+                    contentAccessibility: false, documentAssembly: false,
+                }
+            });
+            finalBytes = await pdfDoc2.save();
+        } catch(encErr) { console.error('Erro ao criptografar:', encErr); }
+        
+        const hashBuffer2 = await crypto.subtle.digest('SHA-256', finalBytes);
+        const hashArray2 = Array.from(new Uint8Array(hashBuffer2));
+        const hashHex2 = hashArray2.map(b => b.toString(16).padStart(2,'0')).join('');
+        await update(ref(db, 'doc_auth/' + docId), { hash: hashHex2, encrypted: true });
+        const finalBlob = new Blob([finalBytes], { type: 'application/pdf' });
+        const url = URL.createObjectURL(finalBlob);
+        const link = document.createElement('a'); link.href = url; link.download = filename;
+        document.body.appendChild(link); link.click();
+        setTimeout(() => { document.body.removeChild(link); URL.revokeObjectURL(url); }, 1000);
+    } catch (e) {
+        console.error('Hash error:', e);
+        await set(ref(db, 'doc_auth/' + docId), { filename, ts: Date.now(), ...metadata });
+        const url = URL.createObjectURL(firstBlob);
+        const link = document.createElement('a'); link.href = url; link.download = filename;
+        document.body.appendChild(link); link.click();
+        setTimeout(() => { document.body.removeChild(link); URL.revokeObjectURL(url); }, 1000);
+    }
+}
+
+async function downloadPDF(targetElement, filename = 'certificados_gerados.pdf') {
     if (targetElement.innerHTML.trim() === "") {
         return alert("Nenhum conteúdo carregado para baixar.");
     }
@@ -1323,7 +1875,8 @@ function downloadPDF(targetElement, filename = 'certificados_gerados.pdf') {
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
     };
 
-    html2pdf().from(tempContainer).set(options).save();
+    const blob = await html2pdf().from(tempContainer).set(options).output('blob');
+    await saveSecurely(blob, filename);
 }
 function handleBulkDownload() {
     downloadPDF(el("printArea"), 'certificados_gerados_em_massa.pdf');
@@ -1517,8 +2070,10 @@ window.saveCurso = async () => {
         }
     }
     
+    const validade = el('cursoValidade').value;
+
     try { 
-        await push(ref(db, 'cursos'), { nome, carga, mensagem, conteudo, logoCurso: logoCursoUrl }); 
+        await push(ref(db, 'cursos'), { nome, carga, validade, mensagem, conteudo, logoCurso: logoCursoUrl }); 
         alert("Curso salvo!"); 
         window.clearCursoForm(); 
     } catch(e) { 
@@ -1529,6 +2084,7 @@ window.saveCurso = async () => {
 window.clearCursoForm = () => { 
     ["cursoNome","cursoCarga","cursoMensagem","cursoConteudo"].forEach(i=>el(i).value=""); 
     el("cursoLogoCurso").value = "";
+    el("cursoValidade").value = "none";
 }
 window.clearAllCursos = async () => {
     if (!confirm("Tem certeza que deseja apagar TODOS os cursos?")) return;
@@ -1725,18 +2281,18 @@ window.buildPage2 = ({curso,empresa}) => {
     
     return `
       <section class="cert-page2" style="${pageStyle}">
-        <div style="border:1px solid #aaa;padding:10mm;height:100%;display:flex;flex-direction:column;position:relative;background:#fff;">
-                    <header style="margin-bottom:10mm;background:#fff;padding:5px;">
+        <div style="border:1px solid #aaa;padding:10mm;height:100%;display:flex;flex-direction:column;position:relative;">
+                    <header style="margin-bottom:10mm;">
             <div style="display:flex;justify-content:space-between;align-items:center;height:15mm;">
-                ${empresa.logo1 ? `<img src="${empresa.logo1}" alt="Logo 1" style="max-height:15mm;max-width:18%;object-fit:contain;background:#fff;padding:2px;border-radius:4px;">` : '<div style="width:18%;"></div>'}
-                <div style="flex-grow:1;text-align:center;background:#fff;min-width:200px;">
-                    <h2 style="font-size:20pt;margin:0;color:#000;background:#fff;display:inline-block;padding:2px 10px;">CONTEÚDO PROGRAMÁTICO</h2>
+                ${empresa.logo1 ? `<img src="${empresa.logo1}" alt="Logo 1" style="max-height:15mm;max-width:20%;object-fit:contain;">` : '<div style="width:20%;"></div>'}
+                <div style="flex-grow:1;text-align:center;">
+                    <h2 style="font-size:20pt;margin:0;color:#333;">CONTEÚDO PROGRAMÁTICO</h2>
                 </div>
-                ${empresa.logo2 ? `<img src="${empresa.logo2}" alt="Logo 2" style="max-height:15mm;max-width:18%;object-fit:contain;background:#fff;padding:2px;border-radius:4px;">` : '<div style="width:18%;"></div>'}
+                ${empresa.logo2 ? `<img src="${empresa.logo2}" alt="Logo 2" style="max-height:15mm;max-width:20%;object-fit:contain;">` : '<div style="width:20%;"></div>'}
             </div>
-            <div style="text-align:center;margin-top:6px;background:#fff;">
-                <p style="font-size:12pt;margin:0;color:#000;background:#fff;">${curso.nome}</p>
-                <p style="font-size:11pt;margin:2px 0 0 0;color:#000;background:#fff;">${empresa.nome}</p>
+            <div style="text-align:center;margin-top:6px;">
+                <p style="font-size:12pt;margin:0;">${curso.nome}</p>
+                <p style="font-size:11pt;margin:2px 0 0 0;">${empresa.nome}</p>
             </div>
           </header>
 
@@ -1800,8 +2356,8 @@ window.buildListaPresenca = ({curso, empresa, dataInicioBR, dataFimBR, alunos}) 
                 <tr style="background:#f0f0f0; border-bottom:2px solid #000;">
                     <th style="padding:10px 8px; text-align:center; font-size:11pt; font-weight:bold; width:50px; border-right:1px solid #000;">#</th>
                     <th style="padding:10px 8px; text-align:left; font-size:11pt; font-weight:bold; border-right:1px solid #000;">Nome do Participante</th>
-                    <th style="padding:10px 8px; text-align:center; font-size:11pt; font-weight:bold; width:110px; border-right:1px solid #000;">CPF</th>
-                    <th style="padding:10px 8px; text-align:center; font-size:11pt; font-weight:bold; width:220px;">Assinatura</th>
+                    <th style="padding:10px 8px; text-align:center; font-size:11pt; font-weight:bold; width:130px; border-right:1px solid #000;">CPF</th>
+                    <th style="padding:10px 8px; text-align:center; font-size:11pt; font-weight:bold; width:250px;">Assinatura</th>
                 </tr>
             </thead>
             <tbody>
@@ -1870,28 +2426,135 @@ window.addEventListener('DOMContentLoaded', () => {
     el("btnTransferirAlunos").onclick=transferirAlunosEmMassa;
     el("alunoBuscaRapida").addEventListener("input", renderAlunos);
     el("empresaBuscaRapida").addEventListener("input", renderEmpresas);
+    el("selAlunoBusca").addEventListener("input", renderAlunosCheckboxForGeracao);
+
+    el("selEmpresaBusca").addEventListener("input", () => {
+        const termo = (el("selEmpresaBusca").value || "").trim().toLowerCase();
+        const sel = el("selEmpresa");
+        const currentVal = sel.value;
+        Array.from(sel.options).forEach((opt, i) => {
+            if (i === 0) return;
+            const texto = (opt.text || "").toLowerCase();
+            opt.style.display = (!termo || texto.includes(termo)) ? "" : "none";
+        });
+        if (currentVal) {
+            const selectedOpt = sel.querySelector(`option[value="${currentVal}"]`);
+            if (selectedOpt && selectedOpt.style.display === "none") {
+                sel.value = "";
+            }
+        }
+    });
 
 });
 
 </script>
 <script>
-// Verifica sessão do login do index.html
-(function(){
-  const appShell=document.getElementById('appShell');
-  const acessoNegado=document.getElementById('acesso-negado');
-  const btnLogout=document.getElementById('btnLogout');
-  if(sessionStorage.getItem('ws_logado')==='1'){
-    appShell.style.display='block';
-  }else{
-    acessoNegado.style.display='block';
+(function () {
+  const USER = "wedson";
+  const PASS = "2026";
+
+  const loginScreen = document.getElementById("loginScreen");
+  const appShell = document.getElementById("appShell");
+  const loginUsuario = document.getElementById("loginUsuario");
+  const loginSenha = document.getElementById("loginSenha");
+  const btnEntrar = document.getElementById("btnEntrarSistema");
+  const btnLogout = document.getElementById("btnLogout");
+  const loginError = document.getElementById("loginError");
+
+  function entrar() {
+    const usuario = (loginUsuario.value || "").trim();
+    const senha = (loginSenha.value || "").trim();
+
+    if (usuario === USER && senha === PASS) {
+      loginError.style.display = "none";
+      loginScreen.style.display = "none";
+      appShell.style.display = "block";
+    } else {
+      loginError.style.display = "block";
+    }
   }
-  if(btnLogout){
-    btnLogout.addEventListener('click',function(){
-      sessionStorage.removeItem('ws_logado');
-      window.location.href='index.html';
-    });
+
+  function sair() {
+    appShell.style.display = "none";
+    loginScreen.style.display = "flex";
+    loginUsuario.value = "";
+    loginSenha.value = "";
+    loginError.style.display = "none";
+  }
+
+  btnEntrar.addEventListener("click", entrar);
+  loginSenha.addEventListener("keydown", function (e) {
+    if (e.key === "Enter") entrar();
+  });
+
+  if (btnLogout) {
+    btnLogout.addEventListener("click", sair);
   }
 })();
+
+async function rasterizePdfPages(pdfBytes) {
+  const pdfjsLib = window.pdfjsLib;
+  if (!pdfjsLib) { console.warn('pdf.js not loaded, skipping rasterization'); return pdfBytes; }
+  try {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(pdfBytes) }).promise;
+    if (pdf.numPages === 0) return pdfBytes;
+    const outPdf = await PDFLib.PDFDocument.create();
+    const scale = 3;
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const viewport = page.getViewport({ scale });
+      const canvas = document.createElement('canvas');
+      canvas.width = viewport.width;
+      canvas.height = viewport.height;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      await page.render({ canvasContext: ctx, viewport }).promise;
+      const blob = await new Promise(r => canvas.toBlob(r, 'image/png'));
+      const imgBytes = await blob.arrayBuffer();
+      const img = await outPdf.embedPng(imgBytes);
+      const ptW = viewport.width / scale;
+      const ptH = viewport.height / scale;
+      const newPage = outPdf.addPage([ptW, ptH]);
+      newPage.drawImage(img, { x: 0, y: 0, width: ptW, height: ptH });
+    }
+    return await outPdf.save();
+  } catch (e) {
+    console.error('Rasterization error:', e);
+    return pdfBytes;
+  }
+}
+
+async function addVerificationOverlay(pdfBytes, docId, validationUrl) {
+  try {
+    const PDFName = PDFLib.PDFName;
+    const pdfDoc = await PDFLib.PDFDocument.load(pdfBytes);
+    const pages = pdfDoc.getPages();
+    const action = pdfDoc.context.obj({
+      Type: PDFName.of('Action'),
+      S: PDFName.of('URI'),
+      URI: validationUrl,
+    });
+    const actionRef = pdfDoc.context.register(action);
+    for (const pg of pages) {
+      const pw = pg.getWidth();
+      const ph = pg.getHeight();
+      const linkAnnot = pdfDoc.context.obj({
+        Type: PDFName.of('Annot'),
+        Subtype: PDFName.of('Link'),
+        Rect: [0, 0, pw, ph],
+        Border: [0, 0, 0],
+        A: actionRef,
+      });
+      pg.node.addAnnot(pdfDoc.context.register(linkAnnot));
+    }
+    return await pdfDoc.save();
+  } catch (e) {
+    console.error('Overlay error:', e);
+    return pdfBytes;
+  }
+}
 </script>
 
 </body>

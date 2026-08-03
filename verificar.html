@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Certificado de Autenticidade - AtecServer Security</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Playfair+Display:wght@700&display=swap');
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 50%, #0a0a0f 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .certificate {
+            background: linear-gradient(180deg, #faf8f2 0%, #f5f0e0 100%);
+            max-width: 820px;
+            width: 100%;
+            border-radius: 24px;
+            padding: 50px 60px;
+            box-shadow:
+                0 0 0 3px #c9a84c,
+                0 0 0 6px #1a1a2e,
+                0 0 0 9px #c9a84c,
+                0 20px 80px rgba(0,0,0,0.8);
+            position: relative;
+            overflow: hidden;
+        }
+        .certificate::before {
+            content: '';
+            position: absolute;
+            inset: 12px;
+            border: 1px solid rgba(201,168,76,0.4);
+            border-radius: 16px;
+            pointer-events: none;
+        }
+        .certificate::after {
+            content: '';
+            position: absolute;
+            inset: 18px;
+            border: 1px solid rgba(201,168,76,0.2);
+            border-radius: 12px;
+            pointer-events: none;
+        }
+        .watermark {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%,-50%) rotate(-30deg);
+            font-size: 140px;
+            font-weight: 900;
+            color: rgba(201,168,76,0.06);
+            pointer-events: none;
+            white-space: nowrap;
+            letter-spacing: 20px;
+        }
+        .seal-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 30px;
+            position: relative;
+            z-index: 1;
+        }
+        .seal-badge {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            border: 3px solid #c9a84c;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #faf8f2, #e8dcc0);
+            box-shadow: 0 0 20px rgba(201,168,76,0.3);
+        }
+        .seal-badge i {
+            font-size: 32px;
+            color: #c9a84c;
+        }
+        .seal-badge.valid {
+            border-color: #10b981;
+            box-shadow: 0 0 30px rgba(16,185,129,0.4);
+        }
+        .seal-badge.valid i { color: #10b981; }
+        .seal-badge.invalid {
+            border-color: #ef4444;
+            box-shadow: 0 0 30px rgba(239,68,68,0.4);
+        }
+        .seal-badge.invalid i { color: #ef4444; }
+        .seal-badge.loading {
+            border-color: #c9a84c;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 20px rgba(201,168,76,0.3); }
+            50% { box-shadow: 0 0 40px rgba(201,168,76,0.6); }
+        }
+        .seal-number {
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            color: #8a7a5a;
+            letter-spacing: 2px;
+            text-align: right;
+        }
+        .seal-number span {
+            display: block;
+            color: #c9a84c;
+            font-size: 13px;
+            letter-spacing: 3px;
+        }
+        .main-title {
+            text-align: center;
+            position: relative;
+            z-index: 1;
+        }
+        .main-title h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: 32px;
+            letter-spacing: 4px;
+            color: #1a1a2e;
+            text-transform: uppercase;
+            margin-bottom: 6px;
+        }
+        .main-title .sub {
+            font-size: 13px;
+            letter-spacing: 3px;
+            color: #8a7a5a;
+            text-transform: uppercase;
+        }
+        .main-title .sub strong {
+            color: #c9a84c;
+            font-weight: 700;
+        }
+        .divider {
+            text-align: center;
+            font-size: 22px;
+            color: #c9a84c;
+            letter-spacing: 12px;
+            margin: 18px 0;
+            position: relative;
+            z-index: 1;
+        }
+        .divider-line {
+            height: 1px;
+            background: linear-gradient(90deg, transparent, #c9a84c, transparent);
+            margin: 14px 0;
+        }
+        .status-area {
+            text-align: center;
+            position: relative;
+            z-index: 1;
+        }
+        .status-area h2 {
+            font-size: 24px;
+            margin-bottom: 6px;
+        }
+        .status-area h2.valid { color: #10b981; }
+        .status-area h2.invalid { color: #ef4444; }
+        .status-area h2.loading { color: #c9a84c; }
+        .status-area p {
+            font-size: 14px;
+            color: #6b5d45;
+            max-width: 500px;
+            margin: 0 auto 20px;
+        }
+        .issuer-line {
+            text-align: center;
+            font-size: 12px;
+            color: #8a7a5a;
+            letter-spacing: 2px;
+            margin-bottom: 4px;
+            position: relative;
+            z-index: 1;
+        }
+        .issuer-line strong { color: #1a1a2e; }
+        .serial {
+            text-align: center;
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            color: #6b5d45;
+            letter-spacing: 2px;
+            margin-bottom: 20px;
+            position: relative;
+            z-index: 1;
+        }
+        .serial span {
+            background: rgba(201,168,76,0.15);
+            padding: 4px 14px;
+            border-radius: 20px;
+            border: 1px solid rgba(201,168,76,0.3);
+        }
+        .manual-input {
+            background: rgba(201,168,76,0.08);
+            border: 1px solid rgba(201,168,76,0.3);
+            border-radius: 12px;
+            padding: 18px 20px;
+            margin-bottom: 20px;
+            position: relative;
+            z-index: 1;
+        }
+        .manual-input p {
+            font-size: 13px;
+            color: #6b5d45;
+            margin-bottom: 12px;
+        }
+        .manual-input .row {
+            display: flex;
+            gap: 8px;
+        }
+        .manual-input input {
+            flex: 1;
+            padding: 10px 14px;
+            border: 1px solid rgba(201,168,76,0.4);
+            border-radius: 8px;
+            font-size: 14px;
+            background: #fff;
+            font-family: 'Courier New', monospace;
+            outline: none;
+            transition: border 0.2s;
+        }
+        .manual-input input:focus { border-color: #c9a84c; }
+        .manual-input button {
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #c9a84c, #b8942e);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 700;
+            font-size: 13px;
+            transition: opacity 0.2s;
+        }
+        .manual-input button:hover { opacity: 0.9; }
+        .details-box {
+            background: rgba(255,255,255,0.7);
+            border: 1px solid rgba(201,168,76,0.3);
+            border-radius: 12px;
+            padding: 22px 24px;
+            margin-bottom: 18px;
+            position: relative;
+            z-index: 1;
+        }
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(201,168,76,0.12);
+        }
+        .detail-row:last-child { border-bottom: none; }
+        .detail-label {
+            font-size: 12px;
+            color: #8a7a5a;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .detail-value {
+            font-size: 13px;
+            color: #1a1a2e;
+            font-weight: 500;
+            text-align: right;
+            max-width: 60%;
+        }
+        .detail-value.mono {
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            word-break: break-all;
+        }
+        .detail-actions {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            margin-top: 12px;
+        }
+        .detail-actions button {
+            padding: 6px 14px;
+            background: linear-gradient(135deg, #c9a84c, #b8942e);
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            transition: opacity 0.2s;
+        }
+        .detail-actions button:hover { opacity: 0.85; }
+        .tamper-warning {
+            display: none;
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            border-radius: 10px;
+            padding: 14px 18px;
+            font-size: 13px;
+            color: #dc2626;
+            margin-bottom: 18px;
+            position: relative;
+            z-index: 1;
+        }
+        .tamper-warning i { margin-right: 6px; }
+        .verify-upload {
+            background: rgba(255,255,255,0.5);
+            border: 1px dashed rgba(201,168,76,0.4);
+            border-radius: 10px;
+            padding: 14px 18px;
+            margin-top: 12px;
+            font-size: 12px;
+            color: #6b5d45;
+            text-align: left;
+        }
+        .verify-upload strong { color: #1a1a2e; }
+        .verify-upload input { margin-top: 6px; font-size: 12px; }
+        .verify-upload .result { font-weight: 700; margin-top: 6px; }
+        .legal-section {
+            margin-top: 30px;
+            padding: 24px 28px;
+            background: rgba(26,26,46,0.95);
+            border-radius: 16px;
+            max-width: 820px;
+            width: 100%;
+            color: #d4d4d8;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+            border: 1px solid rgba(201,168,76,0.15);
+        }
+        .legal-section h3 {
+            font-size: 14px;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            color: #c9a84c;
+            margin-bottom: 14px;
+            text-align: center;
+        }
+        .legal-section p {
+            font-size: 12px;
+            line-height: 1.8;
+            text-align: justify;
+            color: #a8a8b3;
+        }
+        .legal-section p strong { color: #e4e4e7; }
+        .legal-section .highlight {
+            color: #f59e0b;
+            font-weight: 700;
+        }
+        .footer-note {
+            text-align: center;
+            margin-top: 18px;
+            font-size: 12px;
+            color: #c9a84c;
+            letter-spacing: 2px;
+            max-width: 820px;
+            width: 100%;
+        }
+        .footer-note a {
+            color: #c9a84c;
+            text-decoration: none;
+            font-weight: 700;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 3px;
+            background: rgba(201,168,76,0.15);
+            border-radius: 3px;
+            overflow: hidden;
+            margin: 16px 0;
+            position: relative;
+            z-index: 1;
+        }
+        .progress-bar .fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #c9a84c, #f59e0b);
+            border-radius: 3px;
+            transition: width 1.5s ease;
+        }
+        .progress-bar .fill.done { width: 100%; }
+        .back-btn {
+            display: inline-block;
+            margin-top: 30px;
+            padding: 12px 32px;
+            background: transparent;
+            color: #c9a84c;
+            border: 2px solid #c9a84c;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 13px;
+            letter-spacing: 2px;
+            transition: all 0.3s;
+        }
+        .back-btn:hover { background: #c9a84c; color: #1a1a2e; }
+        @media (max-width: 600px) {
+            .certificate { padding: 30px 20px; }
+            .main-title h1 { font-size: 22px; letter-spacing: 2px; }
+            .seal-badge { width: 50px; height: 50px; }
+            .seal-badge i { font-size: 22px; }
+            .seal-number { font-size: 9px; }
+            .legal-section { padding: 18px 16px; }
+            .detail-row { flex-direction: column; align-items: flex-start; gap: 4px; }
+            .detail-value { text-align: left; max-width: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="certificate" id="certificate">
+        <div class="watermark">ATECSERVER</div>
+
+        <div class="seal-top">
+            <div class="seal-badge loading" id="sealBadge">
+                <i class="fa-solid fa-shield-halved"></i>
+            </div>
+            <div class="seal-number">
+                CERTIFICATE OF AUTHENTICITY
+            </div>
+        </div>
+
+        <div class="main-title">
+            <h1><i class="fa-solid fa-certificate" style="color:#c9a84c;font-size:28px;margin-right:8px"></i> Certificado de Autenticidade</h1>
+            <div style="font-family:'Playfair Display',serif;font-size:15px;letter-spacing:2px;color:#1a1a2e;margin-top:4px">WS ENGENHARIA CONSULTORIA E TREINAMENTOS</div>
+            <div class="sub">Authenticated &amp; Validated by <strong>AtecServer Security</strong></div>
+        </div>
+
+        <div class="divider">✦ ✦ ✦</div>
+        <div class="divider-line"></div>
+
+        <div class="status-area">
+            <h2 id="statusTitle">VERIFYING...</h2>
+            <p id="statusMsg" style="color:#8a7a5a">Estabelecendo conexão segura com o servidor de validação...</p>
+        </div>
+
+        <div class="progress-bar" id="progressBar">
+            <div class="fill" id="progressFill"></div>
+        </div>
+
+        <div id="manualInput" class="manual-input" style="display:none">
+            <p><i class="fa-solid fa-key" style="color:#c9a84c"></i> Digite o ID de validação presente no rodapé do documento PDF:</p>
+            <div class="row">
+                <input id="manualId" type="text" placeholder="Ex: -O9Xm9kL2zF...">
+                <button id="verifyBtn">Verificar</button>
+            </div>
+        </div>
+
+        <div id="tamperWarning" class="tamper-warning">
+            <i class="fa-solid fa-triangle-exclamation"></i> <strong>ALERTA DE INTEGRIDADE:</strong> O hash deste PDF não corresponde ao registro oficial. O documento pode ter sido adulterado ou falsificado.
+        </div>
+
+        <div id="detailsBox" class="details-box" style="display:none">
+            <div class="detail-row">
+                <span class="detail-label"><i class="fa-regular fa-file"></i> Documento</span>
+                <span class="detail-value" id="detFilename">—</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label"><i class="fa-regular fa-calendar"></i> Data de Emissão</span>
+                <span class="detail-value" id="detDate">—</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label"><i class="fa-solid fa-fingerprint"></i> ID de Validação</span>
+                <span class="detail-value mono" id="detId">—</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label"><i class="fa-regular fa-clock"></i> Emissão</span>
+                <span class="detail-value" id="detAgo">—</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label"><i class="fa-solid fa-hashtag"></i> SHA-256</span>
+                <span class="detail-value mono" id="detHash">—</span>
+            </div>
+            <div class="detail-actions">
+                <button onclick="copyHash()"><i class="fa-regular fa-copy"></i> Copiar Hash</button>
+            </div>
+            <div class="verify-upload">
+                <strong>Verificação automática:</strong> Faça upload do PDF original para confirmar se o hash corresponde.<br>
+                <input type="file" id="pdfUpload" accept=".pdf">
+                <div class="result" id="uploadResult"></div>
+            </div>
+        </div>
+
+        <div class="divider-line"></div>
+        <div class="issuer-line">Issued by <strong>WS ENGENHARIA CONSULTORIA E TREINAMENTOS</strong></div>
+        <div class="serial"><span>SEC-ATEC-2025 · ID#7A3F9C1E</span></div>
+        <div style="text-align:center;font-size:11px;color:#8a7a5a;position:relative;z-index:1">
+            <i class="fa-solid fa-shield"></i> This document is digitally authenticated and tamper-proof
+        </div>
+    </div>
+
+    <div class="legal-section">
+        <h3><i class="fa-solid fa-scale-balanced"></i> Base Legal &amp; Penalidades</h3>
+        <p>
+            <strong>Lei nº 9.605/1998 (Lei de Crimes Ambientais) c/c Art. 297 do Código Penal Brasileiro</strong> — A falsificação ou alteração de documentos relativos à segurança do trabalho constitui crime de <strong>falsificação de documento público/particular</strong>, sujeito a pena de <strong>reclusão de 2 a 6 anos e multa</strong>. O uso indevido de assinatura de profissionais habilitados (engenheiros, técnicos de segurança, médicos do trabalho) sem autorização expressa configura <strong>falsidade ideológica (Art. 299 CP)</strong>, com pena de <strong>reclusão de 1 a 5 anos e multa</strong>.
+        </p>
+        <p style="margin-top:10px">
+            <strong>NR-6 e NR-32 (Ministério do Trabalho e Emprego)</strong> — A emissão de certificados, laudos ou atestados com dados falseados ou omissão de informações viola as normas regulamentadoras, sujeitando o infrator a <strong>multas de R$ 5.000,00 a R$ 500.000,00</strong>, além de interdição e responsabilização criminal solidária em caso de acidente de trabalho.
+        </p>
+        <p style="margin-top:10px">
+            <strong>Marco Civil da Internet (Lei nº 12.965/2014) e LGPD (Lei nº 13.709/2018)</strong> — A adulteração de documentos digitais e o uso não autorizado de dados de terceiros configuram infrações graves, com <strong>multas de até 2% do faturamento da empresa (limitadas a R$ 50.000.000,00)</strong> e responsabilização cível por danos morais e materiais.
+        </p>
+        <p style="margin-top:10px">
+            <strong>Convenção de Budapeste (Decreto nº 11.491/2023)</strong> — No âmbito internacional, a falsificação de documentos eletrônicos e a violação de sistemas de autenticação digital são tipificadas como <strong>crimes cibernéticos</strong>, sujeitos a cooperação jurídica internacional e extradição.
+        </p>
+        <p style="margin-top:10px">
+            <span class="highlight">✦</span> Este sistema utiliza criptografia <strong>SHA-256</strong> e armazenamento imutável em banco de dados, garantindo a <strong>integridade e não repúdio</strong> de todos os documentos emitidos. Qualquer tentativa de adulteração é imediatamente detectada e registrada para fins de <strong>prova judicial</strong>.
+        </p>
+    </div>
+
+    <div class="footer-note">
+        <a href="https://www.atecseven.com.br" target="_blank"><i class="fa-solid fa-globe"></i> www.atecseven.com.br</a>
+        &nbsp;·&nbsp; AtecServer Security v2.4
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+    <script>
+        const FIREBASE_CONFIG={apiKey:"AIzaSyBehqlRiCiDniyPi3bjHtkH7q2-Px-KoZc",authDomain:"cadastr-produtos-clevir.firebaseapp.com",databaseURL:"https://cadastr-produtos-clevir-default-rtdb.firebaseio.com",projectId:"cadastr-produtos-clevir",storageBucket:"cadastr-produtos-clevir.firebasestorage.app",messagingSenderId:"1028296092810",appId:"1:1028296092810:web:86859328b19c1fdf511173"};
+        firebase.initializeApp(FIREBASE_CONFIG);
+        const db = firebase.database();
+
+        async function verify() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const hashParams = new URLSearchParams((window.location.hash||'').replace(/^#/,''));
+            let docId = urlParams.get('id') || hashParams.get('id');
+
+            if (!docId) {
+                document.getElementById('manualInput').style.display = 'block';
+                document.getElementById('verifyBtn').onclick = function(){
+                    const val = document.getElementById('manualId').value.trim();
+                    if(val){
+                        history.replaceState(null,'','?id='+encodeURIComponent(val));
+                        verify();
+                    }
+                };
+                setStatus('loading', 'Aguardando ID', 'Digite o ID de validação que aparece no rodapé do seu documento PDF.');
+                return;
+            }
+
+            setStatus('loading', 'Verificando Autenticidade', 'Conectando ao servidor seguro AtecServer...');
+            document.getElementById('sealBadge').className = 'seal-badge loading';
+
+            const fill = document.getElementById('progressFill');
+            fill.classList.remove('done');
+            setTimeout(() => fill.style.width = '70%', 100);
+
+            try {
+                const snapshot = await db.ref('doc_auth/' + docId).once('value');
+                const data = snapshot.val();
+
+                fill.style.width = '100%';
+                setTimeout(() => fill.classList.add('done'), 300);
+
+                if (data) {
+                    document.getElementById('sealBadge').className = 'seal-badge valid';
+                    document.getElementById('manualInput').style.display = 'none';
+                    document.getElementById('detailsBox').style.display = 'block';
+
+                    setStatus('valid', 'Documento Autêntico ✓', 'Este documento foi oficialmente emitido, registrado e assinado digitalmente pela plataforma AtecServer Security. Todas as verificações criptográficas foram aprovadas.');
+                    document.getElementById('detFilename').textContent = data.filename || 'Não informado';
+                    const ts = data.ts || 0;
+                    document.getElementById('detDate').textContent = ts ? new Date(ts).toLocaleString('pt-BR') : 'Não informada';
+                    document.getElementById('detId').textContent = docId;
+                    document.getElementById('detHash').textContent = data.hash || 'Não disponível';
+                    if(ts){
+                        const diff = Date.now() - ts;
+                        const days = Math.floor(diff / 86400000);
+                        const hours = Math.floor((diff % 86400000) / 3600000);
+                        document.getElementById('detAgo').textContent = days > 0 ? days + ' dia(s) atrás' : hours > 0 ? hours + ' hora(s) atrás' : 'Menos de 1 hora';
+                    }
+                } else {
+                    document.getElementById('sealBadge').className = 'seal-badge invalid';
+                    setStatus('invalid', 'Documento Inválido ✗', 'Não encontramos nenhum registro deste documento em nossa base de dados oficial. Este arquivo <strong>não foi emitido</strong> pelo sistema AtecServer Security e pode ser fraudulento. Recomendamos não aceitar este documento e denunciar às autoridades competentes.');
+                }
+            } catch (e) {
+                console.error(e);
+                fill.style.width = '100%';
+                setTimeout(() => fill.classList.add('done'), 300);
+                document.getElementById('sealBadge').className = 'seal-badge invalid';
+                setStatus('invalid', 'Erro na Verificação', 'Falha ao conectar ao servidor de validação AtecServer: ' + e.message + '. Verifique sua conexão com a internet e tente novamente.');
+            }
+        }
+
+        function setStatus(type, title, msg) {
+            const titleEl = document.getElementById('statusTitle');
+            const msgEl = document.getElementById('statusMsg');
+            titleEl.textContent = title;
+            titleEl.className = type;
+            msgEl.innerHTML = msg;
+        }
+
+        function copyHash(){
+            const hash = document.getElementById('detHash').textContent;
+            if(hash && hash !== 'Não disponível'){
+                if(navigator.clipboard){navigator.clipboard.writeText(hash);}
+                else{const ta=document.createElement('textarea');ta.value=hash;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);}
+                const btn = event.target;
+                const orig = btn.innerHTML;
+                btn.innerHTML = '<i class="fa-solid fa-check"></i> Copiado!';
+                setTimeout(() => btn.innerHTML = orig, 1500);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function(){
+            document.getElementById('pdfUpload')?.addEventListener('change', async function(e){
+                const file = e.target.files?.[0];
+                if(!file) return;
+                const resultEl = document.getElementById('uploadResult');
+                const storedHash = document.getElementById('detHash').textContent;
+                if(!storedHash || storedHash === 'Não disponível'){
+                    resultEl.innerHTML = '<span style="color:#8a7a5a">Carregue um ID de validação primeiro.</span>';
+                    return;
+                }
+                resultEl.innerHTML = '<span style="color:#8a7a5a"><i class="fa-solid fa-spinner fa-spin"></i> Calculando hash do arquivo...</span>';
+                try{
+                    const buf = await file.arrayBuffer();
+                    const hb = await crypto.subtle.digest('SHA-256', buf);
+                    const ha = Array.from(new Uint8Array(hb));
+                    const fileHash = ha.map(b=>b.toString(16).padStart(2,'0')).join('');
+                    if(fileHash === storedHash){
+                        resultEl.innerHTML = '<span style="color:#10b981"><i class="fa-solid fa-circle-check"></i> Hash corresponde! O arquivo é autêntico e não foi alterado.</span>';
+                        document.getElementById('tamperWarning').style.display = 'none';
+                    }else{
+                        resultEl.innerHTML = '<span style="color:#ef4444"><i class="fa-solid fa-circle-xmark"></i> Hash NÃO corresponde! O arquivo foi adulterado ou corrompido.</span>';
+                        document.getElementById('tamperWarning').style.display = 'block';
+                    }
+                }catch(err){
+                    resultEl.innerHTML = '<span style="color:#ef4444">Erro ao ler o PDF.</span>';
+                }
+            });
+        });
+
+        window.onload = verify;
+    </script>
+</body>
+</html>

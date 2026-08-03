@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>WS Documentos — Passo a Passo</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter',sans-serif;background:#f4f4f5;color:#18181b;padding:30px;max-width:800px;margin:0 auto}
+h1{font-size:24px;margin-bottom:4px}
+.sub{color:#71717a;font-size:13px;margin-bottom:24px}
+.card{background:#fff;border:1px solid #e4e4e7;border-radius:10px;padding:20px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+h2{font-size:15px;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+h2 .num{background:#18181b;color:#fff;width:24px;height:24px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0}
+h3{font-size:13px;margin:10px 0 5px;color:#3f3f46}
+p,li{font-size:12.5px;line-height:1.6;color:#3f3f46}
+ul{padding-left:18px;margin:4px 0}
+li{margin-bottom:2px}
+.tag{display:inline-block;font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;background:#f4f4f5;color:#52525b;border:1px solid #e4e4e7;margin:1px 0}
+.tag-blue{background:#eff6ff;color:#2563eb;border-color:#bfdbfe}
+.tag-green{background:#f0fdf4;color:#16a34a;border-color:#bbf7d0}
+.tag-yellow{background:#fefce8;color:#d97706;border-color:#fde68a}
+.tag-red{background:#fef2f2;color:#dc2626;border-color:#fecaca}
+.tag-purple{background:#faf5ff;color:#9333ea;border-color:#e9d5ff}
+.tag-teal{background:#f0fdfa;color:#0d9488;border-color:#ccfbf1}
+table{width:100%;border-collapse:collapse;font-size:12px;margin:8px 0}
+th{background:#f4f4f5;padding:7px 9px;text-align:left;font-size:10px;font-weight:700;color:#71717a;text-transform:uppercase;border-bottom:2px solid #e4e4e7}
+td{padding:6px 9px;border-bottom:1px solid #e4e4e7}
+.rule{background:#fffbeb;border:1px solid #fde68a;border-radius:6px;padding:12px 14px;font-size:12px;color:#92400e;margin-top:10px}
+.rule strong{color:#78350f}
+.rule::before{content:"\26A0";margin-right:6px}
+@media print{body{background:#fff;padding:15px}.card{box-shadow:none;break-inside:avoid}}
+</style>
+</head>
+<body>
+
+<h1>WS Documentos — Passo a Passo Completo</h1>
+<div class="sub">Fluxo completo para cadastro e geração de documentos em massa</div>
+
+<!-- 1 -->
+<div class="card">
+<h2><span class="num">1</span> Empresas</h2>
+<p>Vá em <strong>Cadastros → Empresas</strong> → "Nova"</p>
+<ul>
+  <li><strong>Nome</strong> — nome completo da empresa contratante</li>
+  <li><strong>CNPJ</strong> — com pontuação (00.000.000/0000-00)</li>
+  <li><strong>Endereço</strong> — endereço completo (aparece nos rodapés dos PDFs)</li>
+  <li><strong>Logo</strong> — opcional, aparece no cabeçalho dos PDFs</li>
+</ul>
+</div>
+
+<!-- 2 -->
+<div class="card">
+<h2><span class="num">2</span> Cargos</h2>
+<p>Vá em <strong>Cadastros → Cargos</strong> → "Novo"</p>
+<ul>
+  <li><strong>Nome</strong> — ex: Servente, Pedreiro, Auxiliar Administrativo</li>
+  <li><strong>CBO</strong> — código brasileiro de ocupação</li>
+  <li><strong>EPIs Padrão</strong> — vincule EPIs que todo colaborador deste cargo deve receber (opcional, mas recomendado)</li>
+</ul>
+<p>Os EPIs vinculados ao cargo aparecem automaticamente na Ficha EPI durante a geração em massa.</p>
+</div>
+
+<!-- 3 -->
+<div class="card">
+<h2><span class="num">3</span> Materiais EPI/EPC</h2>
+<p>Vá em <strong>Documentos → Ficha EPI/EPC → Gerenciar Materiais</strong> → "Cadastrar"</p>
+<ul>
+  <li><strong>Nome</strong> — descrição do equipamento (ex: Capacete de Segurança)</li>
+  <li><strong>C.A.</strong> — número do certificado de aprovação</li>
+  <li><strong>Tipo</strong> — EPI, EPC ou UNIFORME</li>
+  <li><strong>Unidade</strong> — Un, Par, Cx, etc.</li>
+  <li><strong>Estoque</strong> — quantidade em estoque</li>
+</ul>
+<p>Depois de cadastrar, volte aos <strong>Cargos</strong> (passo 2) para vincular os materiais.</p>
+</div>
+
+<!-- 4 -->
+<div class="card">
+<h2><span class="num">4</span> Colaboradores</h2>
+<p>Vá em <strong>Cadastros → Colaboradores</strong> → "Novo"</p>
+<ul>
+  <li><strong>Empresa</strong> — selecione a empresa do colaborador</li>
+  <li><strong>Nome</strong> — nome completo</li>
+  <li><strong>CPF</strong> — com pontuação</li>
+  <li><strong>Data de Admissão</strong> — <span class="tag tag-red">obrigatório</span> para gerar OS e Ficha Admissional</li>
+  <li><strong>Função</strong> — selecione o cargo criado no passo 2</li>
+  <li><strong>CBO</strong> — preenchido automaticamente pelo cargo</li>
+  <li><strong>Setor</strong> — ex: Produção, Administrativo</li>
+</ul>
+</div>
+
+<!-- 5 -->
+<div class="card">
+<h2><span class="num">5</span> Textos &amp; NRs</h2>
+<p>Vá em <strong>Cadastros → Textos &amp; NRs</strong> → "Novo"</p>
+<p style="color:#dc2626;font-size:12px;font-weight:600">Passo mais crítico — a categoria define onde o texto aparece.</p>
+<ul>
+  <li><strong>Título</strong> — nome do texto (ex: "NR-06 EPI", "Treinamento Admissional")</li>
+  <li><strong>Categoria</strong> — use conforme a tabela abaixo</li>
+  <li><strong>Cargo(s) vinculado(s)</strong> — marque os cargos que este texto atende. Na Geração em Massa, ao selecionar o cargo, os textos vinculados aparecem automaticamente</li>
+  <li><strong>Conteúdo</strong> — texto completo que aparecerá no documento</li>
+</ul>
+
+<table>
+<thead><tr><th>Usar em</th><th>Categoria exata</th></tr></thead>
+<tbody>
+<tr><td>Ordem de Serviço</td><td><span class="tag tag-blue">OS</span> ou <span class="tag tag-blue">NR-XX</span> (ex: NR-35)</td></tr>
+<tr><td>Ficha Admissional</td><td><span class="tag tag-yellow">ADMISSIONAL</span></td></tr>
+<tr><td>Ficha EPI / EPC</td><td><span class="tag tag-green">EPI</span> ou <span class="tag tag-green">NR-06</span></td></tr>
+<tr><td>Lista de Presença</td><td><span class="tag tag-purple">LISTA</span> ou <span class="tag tag-purple">TREINAMENTO</span></td></tr>
+<tr><td>Documento Coringa</td><td>qualquer uma (escolha manual)</td></tr>
+</tbody>
+</table>
+
+<div class="rule"><strong>Atenção:</strong> categoria errada = documento gerado com título ou seção trocada. Um texto com categoria <strong>ADMISSIONAL</strong> não deve ser selecionado como texto de Ordem de Serviço.</div>
+</div>
+
+<!-- 6 -->
+<div class="card">
+<h2><span class="num">6</span> Geração em Massa</h2>
+<p>Clique em <strong>"Geração em Massa"</strong> no menu lateral.</p>
+
+<h3>6.1 — Selecionar Colaboradores</h3>
+<ul>
+  <li><strong>Empresa</strong> — marque uma ou mais empresas (ou nenhuma para buscar em todas)</li>
+  <li><strong>Função/Cargo</strong> — marque os cargos desejados. Os textos vinculados aparecerão automaticamente</li>
+  <li><strong>Colaboradores</strong> — marque manualmente quem receberá os documentos</li>
+</ul>
+
+<h3>6.2 — Configurar Documentos</h3>
+<ul>
+  <li><strong>Data</strong> e <strong>Local</strong> — preenchidos automaticamente com a data atual</li>
+  <li><strong>Textos para Ordem de Serviço</strong> — marque apenas textos com categoria <span class="tag tag-blue">OS</span> / <span class="tag tag-blue">NR</span></li>
+</ul>
+
+<p style="font-weight:600;margin:8px 0">Marque os tipos de documento desejados:</p>
+<table>
+<thead><tr><th>Marcar</th><th>Gera</th></tr></thead>
+<tbody>
+<tr><td><span class="tag tag-blue">Ordem de Serviço</span></td><td>1 PDF por texto OS × colaborador</td></tr>
+<tr><td><span class="tag tag-yellow">Ficha Admissional</span></td><td>1 ficha por colaborador (usa o conteúdo programático da Lista)</td></tr>
+<tr><td><span class="tag tag-green">Ficha EPI</span></td><td>1 ficha por colaborador (EPIs do cargo + itens avulsos)</td></tr>
+<tr><td><span class="tag tag-purple">Lista de Presença</span></td><td>1 lista por empresa</td></tr>
+</tbody>
+</table>
+
+<p style="margin-top:8px">Se marcar <strong>Ficha EPI</strong>, a seção para adicionar itens avulsos aparece. Se marcar <strong>Lista de Presença</strong>, aparecem campos para nome do treinamento, carga horária e conteúdo.</p>
+
+<h3>6.3 — Revisar e Gerar</h3>
+<ul>
+  <li>Confira o <strong>resumo</strong> com a quantidade exata de cada documento</li>
+  <li>Clique <strong>"GERAR TODOS OS DOCUMENTOS"</strong></li>
+  <li>Um arquivo <strong>.zip</strong> é baixado com todos os PDFs gerados</li>
+</ul>
+</div>
+
+<!-- Regras de ouro -->
+<div class="card" style="background:#fefce8;border-color:#fde68a">
+<h2 style="color:#92400e">Regras de Ouro</h2>
+<ul style="color:#78350f">
+  <li><strong>Categoria do texto define onde ele aparece</strong> — texto <span class="tag tag-yellow">ADMISSIONAL</span> gera Ficha Admissional, não OS</li>
+  <li><strong>Data de admissão</strong> é obrigatória no colaborador para gerar OS e Ficha Admissional</li>
+  <li><strong>EPIs vinculados ao cargo</strong> aparecem automaticamente na Ficha EPI; se não vincular, adicione manualmente no carrinho</li>
+  <li>Ao marcar <strong>Ficha EPI</strong>, o sistema <strong>não auto-seleciona</strong> textos EPI na lista de OS — cada tipo de documento gera seu próprio PDF independente</li>
+  <li>O <strong>resumo</strong> mostra a contagem real de cada tipo, filtrando textos OS por categoria corretamente</li>
+</ul>
+</div>
+
+</body>
+</html>
