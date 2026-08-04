@@ -378,7 +378,20 @@ hr.dv{border:none;border-top:1px solid var(--bd);margin:18px 0}
 
 <div id="funcs" class="view">
   <div class="ph"><div><div class="pt">Colaboradores</div><div class="pd">Gerencie os colaboradores cadastrados</div></div><button class="btn bp" onclick="openM('mdl-f','new')"><i class="fa-solid fa-plus"></i> Novo</button></div>
-  <div class="sw"><input type="text" id="filter-colaboradores" placeholder="Buscar colaborador..." onkeyup="renderFuncs()"><i class="fa-solid fa-magnifying-glass"></i></div>
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <div><div class="pt" style="margin:0">Vincular em massa</div><div class="pd">Aplique Filial, Obra e Cidade a TODOS os colaboradores de uma empresa</div></div>
+    </div>
+    <div class="g2">
+      <div class="fg"><label class="fl">Empresa</label><select id="b-f-ep" onchange="popBulkVinculos()"><option value="">Selecione...</option></select></div>
+      <div class="g3" style="grid-template-columns:1fr 1fr 1fr"><div class="fg"><label class="fl">Filial</label><select id="b-f-fl"><option value="">Selecione...</option></select></div><div class="fg"><label class="fl">Obra</label><select id="b-f-ob"><option value="">Selecione...</option></select></div><div class="fg"><label class="fl">Cidade</label><select id="b-f-cd"><option value="">Selecione...</option></select></div></div>
+    </div>
+    <div style="margin-top:8px"><button class="btn bp" onclick="vincularEmMassa()"><i class="fa-solid fa-link"></i> Vincular todos os colaboradores da empresa</button></div>
+  </div>
+  <div class="sw" style="display:flex;gap:10px">
+    <select id="filter-colaboradores-emp" onchange="renderFuncs()" style="max-width:320px"><option value="">Todas as empresas</option></select>
+    <div style="position:relative;flex:1"><input type="text" id="filter-colaboradores" placeholder="Buscar colaborador..." onkeyup="renderFuncs()"><i class="fa-solid fa-magnifying-glass"></i></div>
+  </div>
   <div class="card" style="padding:0;overflow:hidden"><div id="lst-f"></div></div>
 </div>
 
@@ -592,7 +605,8 @@ hr.dv{border:none;border-top:1px solid var(--bd);margin:18px 0}
 <div class="modal" id="mdl-f"><div class="mb">
   <div class="mt2">Colaborador</div>
   <input type="hidden" id="fid">
-  <div class="fg"><label class="fl">Empresa</label><select id="i-f-ep"><option value="">Selecione...</option></select></div>
+  <div class="fg"><label class="fl">Empresa</label><select id="i-f-ep" onchange="popFuncVinculos(true)"><option value="">Selecione...</option></select></div>
+  <div class="g3" style="grid-template-columns:1fr 1fr 1fr"><div class="fg"><label class="fl">Filial <span style="color:var(--danger, #dc2626)">*</span></label><select id="i-f-fl"><option value="">Selecione...</option></select></div><div class="fg"><label class="fl">Obra <span style="color:var(--danger, #dc2626)">*</span></label><select id="i-f-ob"><option value="">Selecione...</option></select></div><div class="fg"><label class="fl">Cidade <span style="color:var(--danger, #dc2626)">*</span></label><select id="i-f-cd"><option value="">Selecione...</option></select></div></div>
   <div class="fg"><label class="fl">Nome</label><input id="i-f-nm"></div>
 <div class="g2"><div class="fg"><label class="fl">CPF</label><input id="i-f-cp" placeholder="000.000.000-00"></div><div class="fg"><label class="fl">Data de Admiss&atilde;o</label><input type="date" id="i-f-dt"></div></div>
 <div class="g2"><div class="fg"><label class="fl">Fun&ccedil;&atilde;o</label><select id="i-f-fn" onchange="autoFillCBO()"><option value="">Selecione...</option></select></div><div class="fg"><label class="fl">CBO</label><input id="i-f-cb"></div></div>
@@ -736,7 +750,10 @@ function initListeners(){
         nome:v.nome||'',
         cpf:v.cpf||'',
         empresaId:v.empresaVinculoId||'',
-        funcao:v.matricula||''
+        funcao:v.matricula||'',
+        filialId:v.filialId||'',
+        obraId:v.obraId||'',
+        cidadeId:v.cidadeId||''
       };
       db.ref('funcionarios/'+k).once('value',ss=>{
         if(ss.val()){
@@ -854,7 +871,7 @@ function openM(id,mode){
   if(mode==='new'){
     if(id==='mdl-e'){v('eid','');v('i-e-nm','');v('i-e-cj','');v('i-e-ender','');v('i-e-lid','');document.getElementById('i-e-logo').value='';const p=document.getElementById('prev-emp-logo');if(p)p.style.display='none';selAll('eCatObraChk',false);selAll('eCatCidadeChk',false);selAll('eCatFilialChk',false);}
     if(id==='mdl-c'){v('cid','');v('i-c-nm','');v('i-c-cb','');CARGO_EPI_CART=[];renderCargoEpiCart();document.getElementById('c-epi-search').value='';filterCargoEpiMat();}
-    if(id==='mdl-f'){v('fid','');v('i-f-nm','');v('i-f-cp','');v('i-f-fn','');v('i-f-cb','');v('i-f-st','');v('i-f-dt','');v('i-f-aso-date','');document.getElementById('i-f-aso-tipo').value='';document.getElementById('i-f-ep').value='';}
+    if(id==='mdl-f'){v('fid','');v('i-f-nm','');v('i-f-cp','');v('i-f-fn','');v('i-f-cb','');v('i-f-st','');v('i-f-dt','');v('i-f-aso-date','');document.getElementById('i-f-aso-tipo').value='';document.getElementById('i-f-ep').value='';popFuncVinculos(false);}
     if(id==='mdl-t'){v('tid','');v('i-t-ti','');v('i-t-co','');v('i-t-val','none');setTxtCategoria('');selAll('tCgChk',false);}
     if(id==='mdl-m'){v('mid','');v('i-m-nm','');v('i-m-ca','');document.getElementById('i-m-tp').value='EPI';v('i-m-un','');v('i-m-es','0');v('i-m-vc','');}
     if(id==='mdl-p'){v('pid','');v('i-p-nm','');v('i-p-cp','');v('i-p-ender','');}
@@ -2036,7 +2053,7 @@ function addCat(col,inputId){const el=document.getElementById(inputId);const nom
 function delCat(col,id){if(!confirm('Confirma a exclus\u00e3o?'))return;db.ref(col+'/'+id).remove().catch(e=>alert('Erro: '+e.message));}
 function addCatAndSel(col,inputId,prefix){const el=document.getElementById(inputId);const nome=(el.value||'').trim();if(!nome){alert('Informe um nome');return;}const k=uid();db.ref(col+'/'+k).set({id:k,nome}).then(()=>{el.value='';const cb=document.getElementById('ck_'+prefix+'_'+k);if(cb){cb.checked=true;updateMsdVal(prefix);}else renderMsd();}).catch(e=>alert('Erro: '+e.message));}
 function renderCargos(){const q=(document.getElementById('filter-cargos').value||'').toLowerCase();const cargos=toArr(DATA.cargos).filter(c=>(c.nome||'').toLowerCase().includes(q)||(c.cbo||'').toLowerCase().includes(q)).sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));const resolveEpiNomes=c=>{if(!c.epi)return'';const list=Array.isArray(c.epi)?c.epi:typeof c.epi==='string'?c.epi.split(',').map(s=>s.trim()).filter(s=>s).map(id=>({id})):[];return list.map(item=>{const id=typeof item==='object'?item.id:item;const qtd=typeof item==='object'?(item.qtd||1):1;const m=DATA.materiais[id]||toArr(DATA.materiais).find(mm=>(mm.nome||'').toLowerCase().includes(id.toLowerCase()));return m?m.nome+(qtd>1?' x'+qtd:''):null;}).filter(Boolean).join(', ');};document.getElementById('lst-c').innerHTML=cargos.length?cargos.map(c=>{const epiStr=resolveEpiNomes(c);return`<div class="tr2"><div><div class="rn">${esc(c.nome)}</div><div class="rs">CBO: ${esc(c.cbo||'—')}${epiStr?' | EPIs: '+esc(epiStr.substring(0,60)):''}</div></div><div class="ra"><button class="btn bw" onclick='editCargo(${safeJSON(c)})'><i class="fa-solid fa-pen"></i></button><button class="btn bd2" onclick="del('cargos','${c.id}')"><i class="fa-solid fa-trash"></i></button></div></div>`;}).join(''):'<div class="es">Nenhum cargo encontrado</div>';}
-function renderFuncs(){const q=(document.getElementById('filter-colaboradores').value||'').toLowerCase();const funcs=toArr(DATA.funcionarios).filter(f=>(f.nome||'').toLowerCase().includes(q)||(f.funcao||'').toLowerCase().includes(q)).sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));const em={};toArr(DATA.empresas).forEach(e=>{em[String(e.id||'').trim()]=e.nome;});const cg={};toArr(DATA.cargos).forEach(c=>{cg[String(c.id||'').trim()]=c.nome;});const now=new Date();const fmtAsoTipo=t=>{return{'ADMISSIONAL':'Admissional','DEMISSIONAL':'Demissional','PERIODICO':'Periódico','MUDANCA_FUNCAO':'Mudança Função','RETORNO_TRABALHO':'Retorno Trabalho'}[t]||t;};function asoStatus(f){if(!f.asoDate)return'';const d=new Date(f.asoDate+'T23:59:59');const days=Math.ceil((d-now)/(864e5));if(days<0)return'<span class="bdg" style="background:#fee2e2;color:#b91c1c">ASO Vencido</span>';if(days<=30)return'<span class="bdg" style="background:#ffedd5;color:#c2410c">ASO '+days+'d</span>';return'<span class="bdg" style="background:#dcfce7;color:#15803d">ASO OK</span>';}document.getElementById('lst-f').innerHTML=funcs.length?funcs.map(f=>`<div class="tr2"><div><div class="rn">${esc(f.nome)} ${asoStatus(f)}</div><div class="rs">${esc(em[String(f.empresaId||'').trim()]||'?')} · ${esc(cg[String(f.funcao||'').trim()]||f.funcao||'—')}${f.asoTipo?' · ASO: '+esc(fmtAsoTipo(f.asoTipo)):''}${f.asoDate?' · Vence: '+esc(f.asoDate):''}</div></div><div class="ra"><button class="btn bw" onclick='editFunc(${safeJSON(f)})'><i class="fa-solid fa-pen"></i></button><button class="btn bd2" onclick="del('funcionarios','${f.id}')"><i class="fa-solid fa-trash"></i></button></div></div>`).join(''):'<div class="es">Nenhum colaborador encontrado</div>';}
+function renderFuncs(){const q=(document.getElementById('filter-colaboradores').value||'').toLowerCase();const eSel=document.getElementById('filter-colaboradores-emp')?.value||'';const funcs=toArr(DATA.funcionarios).filter(f=>(!eSel||String(f.empresaId||'').trim()===String(eSel).trim())&&((f.nome||'').toLowerCase().includes(q)||(f.funcao||'').toLowerCase().includes(q))).sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));const em={};toArr(DATA.empresas).forEach(e=>{em[String(e.id||'').trim()]=e.nome;});const cg={};toArr(DATA.cargos).forEach(c=>{cg[String(c.id||'').trim()]=c.nome;});const nameOf=(col,id)=>{if(!id)return'';const s=String(id||'').trim();const it=DATA[col]&&DATA[col][s]?DATA[col][s]:toArr(DATA[col]).find(c=>String(c.id||'').trim()===s);return it?(it.nome||''):'';};const now=new Date();const fmtAsoTipo=t=>{return{'ADMISSIONAL':'Admissional','DEMISSIONAL':'Demissional','PERIODICO':'Periódico','MUDANCA_FUNCAO':'Mudança Função','RETORNO_TRABALHO':'Retorno Trabalho'}[t]||t;};function asoStatus(f){if(!f.asoDate)return'';const d=new Date(f.asoDate+'T23:59:59');const days=Math.ceil((d-now)/(864e5));if(days<0)return'<span class="bdg" style="background:#fee2e2;color:#b91c1c">ASO Vencido</span>';if(days<=30)return'<span class="bdg" style="background:#ffedd5;color:#c2410c">ASO '+days+'d</span>';return'<span class="bdg" style="background:#dcfce7;color:#15803d">ASO OK</span>';}function vinculoBadge(f){const ok=!!f.filialId&&!!f.obraId&&!!f.cidadeId;if(ok)return'';return' <span class="bdg" style="background:#fee2e2;color:#b91c1c">Sem vínculo completo</span>';}document.getElementById('lst-f').innerHTML=funcs.length?funcs.map(f=>{const fl=nameOf('filiais',f.filialId),ob=nameOf('obras',f.obraId),cd=nameOf('cidades',f.cidadeId);const vinculoTxt=fl&&ob&&cd?` · ${esc(fl)} / ${esc(ob)} / ${esc(cd)}`:'';return`<div class="tr2"><div><div class="rn">${esc(f.nome)} ${asoStatus(f)}${vinculoBadge(f)}</div><div class="rs">${esc(em[String(f.empresaId||'').trim()]||'?')} · ${esc(cg[String(f.funcao||'').trim()]||f.funcao||'—')}${vinculoTxt}${f.asoTipo?' · ASO: '+esc(fmtAsoTipo(f.asoTipo)):''}${f.asoDate?' · Vence: '+esc(f.asoDate):''}</div></div><div class="ra"><button class="btn bw" onclick='editFunc(${safeJSON(f)})'><i class="fa-solid fa-pen"></i></button><button class="btn bd2" onclick="del('funcionarios','${f.id}')"><i class="fa-solid fa-trash"></i></button></div></div>`;}).join(''):'<div class="es">Nenhum colaborador encontrado</div>';}
 function renderPessoas(){const q=(document.getElementById('filter-pessoas').value||'').toLowerCase();const pessoas=toArr(DATA.pessoas).filter(p=>(p.nome||'').toLowerCase().includes(q)||(p.cpf||'').toLowerCase().includes(q)).sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));document.getElementById('lst-p').innerHTML=pessoas.length?pessoas.map(p=>`<div class="tr2"><div><div class="rn">${esc(p.nome)}</div><div class="rs">CPF: ${esc(p.cpf||'—')}${p.endereco?' | '+esc(p.endereco).substring(0,50):''}</div></div><div class="ra"><button class="btn bw" onclick='editPessoa(${safeJSON(p)})'><i class="fa-solid fa-pen"></i></button><button class="btn bd2" onclick="del('pessoas','${p.id}')"><i class="fa-solid fa-trash"></i></button></div></div>`).join(''):'<div class="es">Nenhuma pessoa encontrada</div>';}
 function renderTexts(){const q=(document.getElementById('filter-texts').value||'').toLowerCase();const texts=toArr(DATA.textos).filter(t=>(t.titulo||'').toLowerCase().includes(q)).sort((a,b)=>(a.titulo||'').localeCompare(b.titulo||''));document.getElementById('lst-t').innerHTML=texts.length?texts.map(t=>`<div class="tr2"><div><div class="rn">${esc(t.titulo)} <span class="bdg">${esc(t.categoria||'')}</span></div><div class="rs">${esc((t.conteudo||'').substring(0,80))}${(t.conteudo||'').length>80?'...':''}</div></div><div class="ra"><button class="btn bw" onclick='editText(${safeJSON(t)})'><i class="fa-solid fa-pen"></i></button><button class="btn bd2" onclick="del('textos','${t.id}')"><i class="fa-solid fa-trash"></i></button></div></div>`).join(''):'<div class="es">Nenhum texto cadastrado</div>';}
 function renderMats(){const q=(document.getElementById('filter-mat').value||'').toLowerCase();const mats=toArr(DATA.materiais).filter(m=>(m.nome||'').toLowerCase().includes(q)||(m.ca||'').toLowerCase().includes(q)).sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));document.getElementById('lst-m').innerHTML=mats.length?mats.map(m=>`<div class="tr2"><div><div class="rn">${esc(m.nome)} <span class="bdg">${esc(m.tipo||'EPI')}</span></div><div class="rs">C.A.: ${esc(m.ca||'—')} · Estoque: ${esc(m.estoque||0)} ${esc(m.unidade||'')}</div></div><div class="ra"><button class="btn bw" onclick='editMat(${safeJSON(m)})'><i class="fa-solid fa-pen"></i></button><button class="btn bd2" onclick="del('materiais','${m.id}')"><i class="fa-solid fa-trash"></i></button></div></div>`).join(''):'<div class="es">Nenhum material cadastrado</div>';}
@@ -2121,7 +2138,11 @@ function calcTotal(){let t=0;document.querySelectorAll('#orc-body tr').forEach(t
 function populateSelects(){
   const emps=toArr(DATA.empresas).sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));
   const opts='<option value="">Selecione...</option>'+emps.map(e=>`<option value="${esc(e.id)}">${esc(e.nome)}</option>`).join('');
-  ['i-f-ep','o-e','g-e','list-empresa','adm-empresa','e-e','dash-filter-emp'].forEach(id=>{const el=document.getElementById(id);if(!el)return;const cur=el.value;el.innerHTML=opts;if(cur)el.value=cur;});
+  ['i-f-ep','o-e','g-e','list-empresa','adm-empresa','e-e','dash-filter-emp','b-f-ep'].forEach(id=>{const el=document.getElementById(id);if(!el)return;const cur=el.value;el.innerHTML=opts;if(cur)el.value=cur;});
+  const fltEmp=document.getElementById('filter-colaboradores-emp');
+  if(fltEmp){const cur=fltEmp.value;fltEmp.innerHTML='<option value="">Todas as empresas</option>'+emps.map(e=>`<option value="${esc(e.id)}">${esc(e.nome)}</option>`).join('');if(cur)fltEmp.value=cur;}
+  popFuncVinculos(true);
+  popBulkVinculos();
   const mats=toArr(DATA.materiais).sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));
   const sm=document.getElementById('e-sel-mat');
   if(sm){const cur=sm.value;sm.innerHTML='<option value="">Selecione...</option>'+mats.map(m=>`<option value="${esc(m.id)}" data-un="${esc(m.unidade||'')}">${esc(m.nome)} (C.A.${m.ca||''})</option>`).join('');if(cur)sm.value=cur;}
@@ -2191,7 +2212,7 @@ function sv(type){
 }
 function saveFinal(type,d){spin(true);  const path={empresa:'empresas',funcionario:'funcionarios',texto:'textos',material:'materiais',cargo:'cargos',pessoa:'pessoas'}[type];const id=d.id||uid();d.id=id;db.ref(path+'/'+id).set(d).then(()=>{
     if(type==='funcionario'){
-      db.ref('alunos/'+id).set({nome:d.nome,cpf:d.cpf,matricula:d.funcao,empresaVinculoId:d.empresaId}).catch(()=>{});
+      db.ref('alunos/'+id).set({nome:d.nome,cpf:d.cpf,matricula:d.funcao,empresaVinculoId:d.empresaId,filialId:d.filialId,obraId:d.obraId,cidadeId:d.cidadeId}).catch(()=>{});
     }
     spin(false);cls();
   }).catch(e=>{spin(false);alert('Erro: '+e.message);});}
@@ -2203,9 +2224,14 @@ function getFormData(t){
     const idAtual=v('fid');
     const existente=toArr(DATA.funcionarios).find(f=>f.id!==idAtual&&(f.cpf||'').replace(/\D/g,'')===cpfRaw);
     if(existente){alert('CPF j\u00e1 cadastrado para: '+existente.nome);return null;}
+    const empresaId=v('i-f-ep');
+    const filialId=v('i-f-fl');
+    const obraId=v('i-f-ob');
+    const cidadeId=v('i-f-cd');
+    if(!empresaId||!filialId||!obraId||!cidadeId){alert('É obrigatório vincular o colaborador à Empresa, Filial, Obra e Cidade. Se as opções estiverem vazias, cadastre filiais/obras/cidades no sistema primeiro.');return null;}
     const asoDate=v('i-f-aso-date');
     const asoTipo=v('i-f-aso-tipo');
-    return{id:idAtual,empresaId:v('i-f-ep'),nome:v('i-f-nm'),cpf:v('i-f-cp'),funcao:v('i-f-fn'),cbo:v('i-f-cb'),setor:v('i-f-st'),dataAdm:v('i-f-dt'),asoDate,asoTipo};
+    return{id:idAtual,empresaId,filialId,obraId,cidadeId,nome:v('i-f-nm'),cpf:v('i-f-cp'),funcao:v('i-f-fn'),cbo:v('i-f-cb'),setor:v('i-f-st'),dataAdm:v('i-f-dt'),asoDate,asoTipo};
   }
   if(t==='texto'){const cargos=getChecked('tCgChk');return{id:v('tid'),titulo:v('i-t-ti'),conteudo:v('i-t-co'),categoria:getTxtCategoria(),cargosVinculados:cargos,validade:v('i-t-val')};}
   if(t==='material')return{id:v('mid'),nome:v('i-m-nm'),ca:v('i-m-ca'),tipo:document.getElementById('i-m-tp').value,unidade:v('i-m-un'),estoque:parseInt(v('i-m-es'))||0,vencimentoCa:v('i-m-vc')};
@@ -2233,7 +2259,57 @@ function editCargo(x){
   document.getElementById('c-epi-search').value='';filterCargoEpiMat();
   openM('mdl-c');
 }
-function editFunc(x){v('fid',x.id);document.getElementById('i-f-ep').value=x.empresaId||'';v('i-f-nm',x.nome||'');v('i-f-cp',x.cpf||'');v('i-f-fn',x.funcao||'');v('i-f-cb',x.cbo||'');v('i-f-st',x.setor||'');v('i-f-dt',x.dataAdm||'');v('i-f-aso-date',x.asoDate||'');document.getElementById('i-f-aso-tipo').value=x.asoTipo||'';autoFillCBO();openM('mdl-f');}
+function popFuncVinculos(keep){
+  const make=(col,selId)=>{
+    const sel=document.getElementById(selId);if(!sel)return;
+    const cur=keep?sel.value:'';
+    const items=toArr(DATA[col]).sort((a,b)=>(a.nome||'').localeCompare(b.nome||'','pt-BR'));
+    sel.innerHTML='<option value="">Selecione...</option>'+items.map(c=>`<option value="${esc(c.id)}">${esc(c.nome)}</option>`).join('');
+    if(cur)sel.value=cur;
+  };
+  make('filiais','i-f-fl');
+  make('obras','i-f-ob');
+  make('cidades','i-f-cd');
+}
+function popBulkVinculos(){
+  const make=(col,selId)=>{
+    const sel=document.getElementById(selId);if(!sel)return;
+    const items=toArr(DATA[col]).sort((a,b)=>(a.nome||'').localeCompare(b.nome||'','pt-BR'));
+    sel.innerHTML='<option value="">Selecione...</option>'+items.map(c=>`<option value="${esc(c.id)}">${esc(c.nome)}</option>`).join('');
+  };
+  make('filiais','b-f-fl');
+  make('obras','b-f-ob');
+  make('cidades','b-f-cd');
+}
+async function vincularEmMassa(){
+  const eid=document.getElementById('b-f-ep').value;
+  const fl=document.getElementById('b-f-fl').value;
+  const ob=document.getElementById('b-f-ob').value;
+  const cd=document.getElementById('b-f-cd').value;
+  if(!eid||!fl||!ob||!cd){alert('Selecione empresa, filial, obra e cidade.');return;}
+  const funcs=toArr(DATA.funcionarios).filter(f=>String(f.empresaId||'').trim()===String(eid||'').trim());
+  if(!funcs.length){alert('Nenhum colaborador encontrado para esta empresa.');return;}
+  if(!confirm(`Vincular ${funcs.length} colaborador(es) à filial/obra/cidade selecionadas?`))return;
+  const updates={};
+  funcs.forEach(f=>{
+    const base='funcionarios/'+f.id;
+    updates[base+'/filialId']=fl;
+    updates[base+'/obraId']=ob;
+    updates[base+'/cidadeId']=cd;
+    updates['alunos/'+f.id+'/filialId']=fl;
+    updates['alunos/'+f.id+'/obraId']=ob;
+    updates['alunos/'+f.id+'/cidadeId']=cd;
+  });
+  spin(true);
+  try{
+    await db.ref().update(updates);
+    alert(`${funcs.length} colaborador(es) vinculado(s) com sucesso!`);
+  }catch(e){
+    alert('Erro: '+e.message);
+  }
+  spin(false);
+}
+function editFunc(x){v('fid',x.id);document.getElementById('i-f-ep').value=x.empresaId||'';popFuncVinculos(true);document.getElementById('i-f-fl').value=x.filialId||'';document.getElementById('i-f-ob').value=x.obraId||'';document.getElementById('i-f-cd').value=x.cidadeId||'';v('i-f-nm',x.nome||'');v('i-f-cp',x.cpf||'');v('i-f-fn',x.funcao||'');v('i-f-cb',x.cbo||'');v('i-f-st',x.setor||'');v('i-f-dt',x.dataAdm||'');v('i-f-aso-date',x.asoDate||'');document.getElementById('i-f-aso-tipo').value=x.asoTipo||'';autoFillCBO();openM('mdl-f');}
 
 function autoFillCBO(){
   const sel=document.getElementById('i-f-fn');

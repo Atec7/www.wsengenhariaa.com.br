@@ -758,10 +758,18 @@ let courseSelectionOrder = [];
 let previousStartDates = {};
 
 const el=id=>document.getElementById(id);
-const toBase64File=input=>new Promise(res=>{
+const toDataUrlFile=input=>new Promise(res=>{
     const f=input?.files?.[0]; if(!f) return res(null);
-    const r=new FileReader(); r.onload=e=>res(e.target.result.split(',')[1]); r.readAsDataURL(f);
+    const r=new FileReader(); r.onload=e=>res(e.target.result); r.readAsDataURL(f);
 });
+const toBase64File=input=>toDataUrlFile(input).then(d=>d?d.split(',')[1]:null);
+async function uploadImage(input){
+    const durl = await toDataUrlFile(input);
+    if(!durl) return null;
+    const b64 = durl.split(',')[1];
+    const url = await uploadImageToImgBB(b64);
+    return url || durl;
+}
 const fmtDateBR = (str) => {
     const d=new Date(str + "T00:00:00"); 
     if(isNaN(d.getTime())) return "";
@@ -789,12 +797,10 @@ async function uploadImageToImgBB(base64Payload){
             return result.data.url;
         } else {
             console.error("Erro ao fazer upload para ImgBB:", result);
-            alert(`Erro no upload da imagem: ${result.error?.message || "Erro desconhecido"}`);
             return null;
         }
     } catch(error){
         console.error("Erro na comunicação com ImgBB:", error);
-        alert("Erro de rede ao tentar fazer upload da imagem.");
         return null;
     }
 }
@@ -1459,11 +1465,8 @@ window.saveEditEmpresa = async (id) => {
         for (const up of uploads) {
             const inputElement = el(up.id);
             if (inputElement && inputElement.files && inputElement.files.length > 0) {
-                const base64 = await toBase64File(inputElement);
-                if (base64) {
-                    const url = await uploadImageToImgBB(base64);
-                    if (url) patch[up.key] = url;
-                }
+                const url = await uploadImage(inputElement);
+                if (url) patch[up.key] = url;
             }
         }
 
@@ -1515,11 +1518,8 @@ window.saveEditCurso = async (id) => {
 
         const logoInput = el("edit_logoCurso");
         if (logoInput && logoInput.files && logoInput.files.length > 0) {
-            const base64 = await toBase64File(logoInput);
-            if (base64) {
-                const url = await uploadImageToImgBB(base64);
-                if (url) patch.logoCurso = url;
-            }
+            const url = await uploadImage(logoInput);
+            if (url) patch.logoCurso = url;
         }
 
         await updateItem("cursos", id, patch);
@@ -1988,31 +1988,39 @@ window.saveEmpresa = async () => {
     
     if(!nome) return alert("Informe o nome da empresa.");
 
-    const images = await Promise.all([
-        toBase64File(el("empresaLogo1")), toBase64File(el("empresaLogo2")), toBase64File(el("empresaFundo")),
-        toBase64File(el("assinaturaCertificador")), toBase64File(el("assinaturaImg2")), 
-        toBase64File(el("assinaturaImg3")), toBase64File(el("assinaturaImgAluno")) 
-    ]);
-
-    const urls = await Promise.all(images.map(img => img ? uploadImageToImgBB(img) : null));
-    const [logo1Url, logo2Url, fundoUrl, assinaturaCertUrl, assImg2Url, assImg3Url, assImgAlunoUrl] = urls;
-    
-    const novaEmpresa = {
-        nome, cidade, logo1: logo1Url, logo2: logo2Url, fundo: fundoUrl,
-        certificadorNome, assinaturaCert: assinaturaCertUrl,
-        assinaturaNome2: el("assinaturaNome2").value.trim(), assinaturaImg2: assImg2Url,
-        assinaturaNome3: el("assinaturaNome3").value.trim(), assinaturaImg3: assImg3Url,
-        assinaturaNomeAluno: el("assinaturaNomeAluno").value.trim(), assinaturaImgAluno: assImgAlunoUrl,
-    };
+    const btn = el("btnSalvarEmpresa");
+    const btnOriginal = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = "Enviando imagens...";
+    let usouBase64 = false;
 
     try {
+        const urls = await Promise.all([
+            uploadImage(el("empresaLogo1")), uploadImage(el("empresaLogo2")), uploadImage(el("empresaFundo")),
+            uploadImage(el("assinaturaCertificador")), uploadImage(el("assinaturaImg2")),
+            uploadImage(el("assinaturaImg3")), uploadImage(el("assinaturaImgAluno"))
+        ]);
+        usouBase64 = urls.some(u => u && u.startsWith("data:"));
+        const [logo1Url, logo2Url, fundoUrl, assinaturaCertUrl, assImg2Url, assImg3Url, assImgAlunoUrl] = urls;
+        
+        const novaEmpresa = {
+            nome, cidade, logo1: logo1Url, logo2: logo2Url, fundo: fundoUrl,
+            certificadorNome, assinaturaCert: assinaturaCertUrl,
+            assinaturaNome2: el("assinaturaNome2").value.trim(), assinaturaImg2: assImg2Url,
+            assinaturaNome3: el("assinaturaNome3").value.trim(), assinaturaImg3: assImg3Url,
+            assinaturaNomeAluno: el("assinaturaNomeAluno").value.trim(), assinaturaImgAluno: assImgAlunoUrl,
+        };
+
         Object.keys(novaEmpresa).forEach(key => (novaEmpresa[key] === null) && delete novaEmpresa[key]);
         await push(ref(db, 'empresas'), novaEmpresa); 
-        alert("Empresa salva com sucesso!");
+        alert("Empresa salva com sucesso!" + (usouBase64 ? "\n\nObs.: Algumas imagens foram salvas em formato base64 (o serviço de hospedagem de imagens não respondeu). Elas continuarão funcionando normalmente." : ""));
         window.clearEmpresaForm(); 
     } catch(e) {
         console.error("Erro ao salvar empresa:", e);
         alert("Erro ao salvar empresa no banco de dados.");
+    } finally {
+        btn.disabled = false;
+        btn.textContent = btnOriginal;
     }
 }
 window.clearEmpresaForm = () => {
@@ -2064,10 +2072,7 @@ window.saveCurso = async () => {
     let logoCursoUrl = null;
     const logoInput = el("cursoLogoCurso");
     if (logoInput && logoInput.files && logoInput.files.length > 0) {
-        const base64 = await toBase64File(logoInput);
-        if (base64) {
-            logoCursoUrl = await uploadImageToImgBB(base64);
-        }
+        logoCursoUrl = await uploadImage(logoInput);
     }
     
     const validade = el('cursoValidade').value;
