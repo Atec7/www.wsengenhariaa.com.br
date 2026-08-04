@@ -714,6 +714,7 @@ let DATA={empresas:{},funcionarios:{},textos:{},materiais:{},config:{},historico
 let CART=[],SEL_TEXTS=[],CARGO_EPI_CART=[];
 let _replaceHistoryKey=null;
 let certCursoMap=null;
+let certCache=null;
 
 // ── INIT ────────────────────────────────────────────────────────
 function initListeners(){
@@ -758,7 +759,7 @@ function initListeners(){
   addOrcItem();
 }
 function renderAll(){updateDashboard();renderEmps();renderCargos();renderFuncs();renderPessoas();renderTexts();renderMats();renderHistory();populateSelects();renderPool();renderCart();renderCats();renderMsd();setTimeout(()=>fixOldCertHistory(),2000);}
-function loadCertCache(){firebase.database().ref('certificadosGerados').once('value').then(snap=>{const raw=snap.val();if(!raw)return;const map={};Object.values(raw).forEach(c=>{if(!c.curso?.id||!c.empresa?.id)return;const key=c.empresa.id+'||'+c.curso.id;if(c.curso.nome&&!map[key])map[key]=c.curso.nome;});certCursoMap=map;updateDashboard();if(document.getElementById('dash-doc-type').value==='Certificado')populateSubTipo();});}
+function loadCertCache(){firebase.database().ref('certificadosGerados').on('value',snap=>{certCache=snap.val()||{};const raw=certCache;const map={};Object.values(raw).forEach(c=>{if(!c.curso?.id||!c.empresa?.id)return;const key=c.empresa.id+'||'+c.curso.id;if(c.curso.nome&&!map[key])map[key]=c.curso.nome;});certCursoMap=map;updateDashboard();if(document.getElementById('dash-doc-type').value==='Certificado')populateSubTipo();});}
 function getCertCursoName(h){if(certCursoMap&&h.certificadoCursoId){const key=(h.empresaId||'')+'||'+h.certificadoCursoId;if(certCursoMap[key])return certCursoMap[key];}const sn=stripCert(h.nome).trim();return sn.match(/emitido/i)?'Certificado':sn||'Certificado';}
 function dashEmpFilters(){
   return{
@@ -1005,11 +1006,9 @@ function showCertDetail(key){
   const empsName=dashEmpName(h.empresaId);
 
   document.getElementById('dd-title').textContent='Certificados: '+esc(getCertCursoName(h));
-  document.getElementById('dd-body').innerHTML='<div class="es">Carregando...</div>';
   document.getElementById('mdl-dash-detail').style.display='flex';
 
-  firebase.database().ref('certificadosGerados').once('value').then(snap=>{
-    const allCerts=snap.val();
+  const render=(allCerts)=>{
     if(!allCerts){
       document.getElementById('dd-body').innerHTML='<div class="es">Nenhum certificado encontrado.</div>';
       return;
@@ -1091,10 +1090,19 @@ function showCertDetail(key){
     </div>`;
 
     document.getElementById('dd-body').innerHTML=html;
-  }).catch(e=>{
-    console.error(e);
-    document.getElementById('dd-body').innerHTML='<div class="es">Erro ao carregar certificados.</div>';
-  });
+  };
+
+  if(certCache!==null){
+    render(certCache);
+  }else{
+    firebase.database().ref('certificadosGerados').once('value').then(snap=>{
+      certCache=snap.val()||{};
+      render(certCache);
+    }).catch(e=>{
+      console.error(e);
+      document.getElementById('dd-body').innerHTML='<div class="es">Erro ao carregar certificados.</div>';
+    });
+  }
 }
 function updateDashboard(){
   const startVal=document.getElementById('dash-date-start').value;
