@@ -290,6 +290,17 @@ button.danger:hover { background: #c82333; }
   background-color:white;
   border-radius: 50px;
 }
+.curso-logo-tabela{
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+  vertical-align: middle;
+  margin-right: 8px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: #fff;
+  padding: 2px;
+}
 .nome-sistema{
   text-align: center;
   
@@ -610,11 +621,18 @@ button.danger:hover { background: #c82333; }
                         <label>Empresa (certificadora)</label>
                         <select id="selEmpresa"></select>
                     </div>
+                    <div class="col-4">
+                        <label>Pesquisar empresa</label>
+                        <input id="selEmpresaBusca" placeholder="Digite parte do nome da empresa">
+                    </div>
                 </div>
 
                 <h3>Alunos e Cursos</h3>
                 <p style="color:var(--muted)">*Selecione uma empresa acima para carregar a lista de alunos vinculados a ela.</p>
                 <label>Selecione alunos</label>
+                <div style="margin-bottom:6px;">
+                    <input id="selAlunoBusca" placeholder="Pesquisar aluno por nome ou matrícula" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:4px;font-size:14px;">
+                </div>
                 <div id="listaAlunosCheckbox" class="checklist">Nenhum aluno carregado. Selecione a empresa acima.</div>
 
                 <label>Selecione cursos</label>
@@ -909,10 +927,18 @@ function renderAlunosCheckboxForGeracao(){
         return;
     }
 
-    const alunosFiltrados = getArrayFromData(alunosData).filter(a => a.empresaVinculoId === empresaIdSelecionada).sort((a,b)=>(a.nome||'').localeCompare(b.nome||'', 'pt-BR'));
+    const termoBusca = (el("selAlunoBusca")?.value || "").trim().toLowerCase();
+
+    const alunosFiltrados = getArrayFromData(alunosData).filter(a => {
+        if (a.empresaVinculoId !== empresaIdSelecionada) return false;
+        if (!termoBusca) return true;
+        const nome = (a.nome || "").toLowerCase();
+        const matricula = (a.matricula || "").toLowerCase();
+        return nome.includes(termoBusca) || matricula.includes(termoBusca);
+    }).sort((a,b)=>(a.nome||'').localeCompare(b.nome||'', 'pt-BR'));
 
     if (alunosFiltrados.length === 0) {
-        listaAlunosCheckbox.innerHTML = 'Nenhum aluno cadastrado para esta empresa.';
+        listaAlunosCheckbox.innerHTML = 'Nenhum aluno encontrado para esta empresa.';
         return;
     }
 
@@ -924,7 +950,7 @@ function renderCursos(){
     el("tabelaCursos").innerHTML =
         `<tr><th>Curso</th><th>Carga</th><th>Ações</th></tr>`+
         cursos.map(c=>`<tr>
-            <td>${c.nome}</td><td>${c.carga}</td>
+            <td>${c.logoCurso ? `<img src="${c.logoCurso}" class="curso-logo-tabela" alt="Logo do curso">` : ''}${c.nome}</td><td>${c.carga}</td>
             <td class="actions">
                 <button class="secondary" onclick="window.openEditModal('curso', '${c.id}')">Editar</button>
                 <button class="danger" onclick="window.deleteCurso('${c.id}')">Excluir</button>
@@ -932,7 +958,7 @@ function renderCursos(){
         </tr>`).join("");
     
     const listaCursosCheckbox = el("listaCursosCheckbox");
-    listaCursosCheckbox.innerHTML = cursos.map(c=>`<label><input type="checkbox" class="course-checkbox" value="${c.id}"> <span>${c.nome} — ${c.carga}</span></label>`).join("");
+    listaCursosCheckbox.innerHTML = cursos.map(c=>`<label><input type="checkbox" class="course-checkbox" value="${c.id}"> ${c.logoCurso ? `<img src="${c.logoCurso}" class="curso-logo-tabela" alt="Logo do curso">` : ''}<span>${c.nome} — ${c.carga}</span></label>`).join("");
 
     courseSelectionOrder = [];
 
@@ -1015,7 +1041,7 @@ function renderCourseDateSelectors() {
             <div class="course-date-selector" data-course-id="${courseId}" data-extra-days="${extraDays}">
                 <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
                     <span style="display:inline-flex;align-items:center;justify-content:center;background:var(--primary);color:#fff;border-radius:50%;width:26px;height:26px;font-size:13px;font-weight:bold;flex-shrink:0;">${index + 1}</span>
-                    <h4 style="margin:0;">${curso.nome} (${curso.carga})</h4>
+                    ${curso.logoCurso ? `<img src="${curso.logoCurso}" class="curso-logo-tabela" alt="Logo do curso">` : ''}<h4 style="margin:0;">${curso.nome} (${curso.carga})</h4>
                 </div>
                 <div class="grid">
                     <div class="col-6">
@@ -2400,6 +2426,24 @@ window.addEventListener('DOMContentLoaded', () => {
     el("btnTransferirAlunos").onclick=transferirAlunosEmMassa;
     el("alunoBuscaRapida").addEventListener("input", renderAlunos);
     el("empresaBuscaRapida").addEventListener("input", renderEmpresas);
+    el("selAlunoBusca").addEventListener("input", renderAlunosCheckboxForGeracao);
+
+    el("selEmpresaBusca").addEventListener("input", () => {
+        const termo = (el("selEmpresaBusca").value || "").trim().toLowerCase();
+        const sel = el("selEmpresa");
+        const currentVal = sel.value;
+        Array.from(sel.options).forEach((opt, i) => {
+            if (i === 0) return;
+            const texto = (opt.text || "").toLowerCase();
+            opt.style.display = (!termo || texto.includes(termo)) ? "" : "none";
+        });
+        if (currentVal) {
+            const selectedOpt = sel.querySelector(`option[value="${currentVal}"]`);
+            if (selectedOpt && selectedOpt.style.display === "none") {
+                sel.value = "";
+            }
+        }
+    });
 
 });
 
