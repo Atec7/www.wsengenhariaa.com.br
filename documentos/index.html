@@ -228,7 +228,7 @@ hr.dv{border:none;border-top:1px solid var(--bd);margin:18px 0}
     </div>
     <button id="login-btn" class="login-btn">Entrar</button>
     <div id="login-error" class="login-error">Usu&aacute;rio ou senha inv&aacute;lidos.</div>
-    <div style="text-align:center;margin-top:14px;font-size:12px"><a href="#" onclick="alert('Contate o administrador do sistema para recuperar seu acesso.')" style="color:var(--ts);text-decoration:none">Esqueci usu&aacute;rio/senha</a></div>
+    <div style="text-align:center;margin-top:14px;font-size:12px"><a href="#" onclick="alert('Wedson: usu\u00e1rio | 2026: senha')" style="color:var(--ts);text-decoration:none">Esqueci usu&aacute;rio/senha</a></div>
   </div>
 </div>
 <div id="login-shell">
@@ -3389,6 +3389,7 @@ document.addEventListener('keydown', function(e) {
 let USUARIO_ATUAL=null;
 (function(){
   const MESTRE_USER='Arnaldo';const MESTRE_PASS='1';
+  const ADMIN_USER='wedson';const ADMIN_PASS='2026';
   const loginScreen=document.getElementById('login-screen');
   const loginShell=document.getElementById('login-shell');
   const loginUser=document.getElementById('login-user');
@@ -3458,6 +3459,16 @@ let USUARIO_ATUAL=null;
       aplicarPermissoes({id:'mestre',nome:MESTRE_USER,mestre:true});
       return;
     }
+    if(u===ADMIN_USER&&p===ADMIN_PASS){
+      loginError.style.display='none';
+      if(remember)sv();
+      sessionStorage.setItem('ws_logado','1');
+      sessionStorage.setItem('ws_user_nome',u);
+      loginScreen.style.display='none';
+      loginShell.style.display='flex';
+      aplicarPermissoes({id:'admin',nome:ADMIN_USER,mestre:true});
+      return;
+    }
     const usuarios=DATA.usuarios||{};
     let found=null;
     Object.values(usuarios).forEach(usr=>{
@@ -3490,6 +3501,7 @@ let USUARIO_ATUAL=null;
     loginShell.style.display='flex';
     const nomeSalvo=sessionStorage.getItem('ws_user_nome')||'';
     if(nomeSalvo===MESTRE_USER){aplicarPermissoes({id:'mestre',nome:MESTRE_USER,mestre:true});}
+    else if(nomeSalvo===ADMIN_USER){aplicarPermissoes({id:'admin',nome:ADMIN_USER,mestre:true});}
     else if(DATA.usuarios){
       const found=Object.values(DATA.usuarios).find(usr=>usr.nome===nomeSalvo);
       if(found)aplicarPermissoes(found);
