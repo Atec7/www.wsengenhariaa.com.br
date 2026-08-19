@@ -194,6 +194,22 @@ hr.dv{border:none;border-top:1px solid var(--bd);margin:18px 0}
 .login-remember label{font-size:12px;font-weight:500;color:var(--ts);text-transform:none;letter-spacing:0;margin:0;cursor:pointer}
 .login-shell{display:none}
 .pag-info{display:none}
+/* Modal Gerenciar Usuarios */
+.musu-list{max-height:280px;overflow-y:auto;border:1px solid var(--bd);border-radius:6px;background:var(--sf)}
+.musu-item{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid var(--bd);font-size:13px;transition:background .1s;cursor:pointer}
+.musu-item:last-child{border-bottom:none}
+.musu-item:hover{background:var(--hl)}
+.musu-item .mi-nome{font-weight:600;color:var(--tp)}
+.musu-item .mi-info{font-size:11px;color:var(--tm)}
+.musu-item .mi-badge{font-size:9px;padding:2px 6px;border-radius:4px;font-weight:700;text-transform:uppercase}
+.musu-perm-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.musu-perm-card{border:1px solid var(--bd);border-radius:6px;padding:8px 10px;background:var(--sf)}
+.musu-perm-card label{font-size:11px;font-weight:600;color:var(--tp);display:flex;align-items:center;gap:6px;cursor:pointer}
+.musu-perm-card select{margin-top:4px;width:100%;padding:4px 6px;font-size:11px;border:1px solid var(--bd);border-radius:4px}
+.musu-emp-list{max-height:150px;overflow-y:auto;border:1px solid var(--bd);border-radius:6px;background:var(--sf);padding:6px}
+.musu-emp-item{display:flex;align-items:center;gap:8px;padding:5px 8px;font-size:12px;border-bottom:1px solid var(--bd)}
+.musu-emp-item:last-child{border-bottom:none}
+.musu-emp-item input[type="checkbox"]{accent-color:var(--hi)}
 </style>
 </head>
 <body>
@@ -212,7 +228,7 @@ hr.dv{border:none;border-top:1px solid var(--bd);margin:18px 0}
     </div>
     <button id="login-btn" class="login-btn">Entrar</button>
     <div id="login-error" class="login-error">Usu&aacute;rio ou senha inv&aacute;lidos.</div>
-    <div style="text-align:center;margin-top:14px;font-size:12px"><a href="#" onclick="alert('Wedson: usu\u00e1rio | 2026: senha')" style="color:var(--ts);text-decoration:none">Esqueci usu&aacute;rio/senha</a></div>
+    <div style="text-align:center;margin-top:14px;font-size:12px"><a href="#" onclick="alert('Contate o administrador do sistema para recuperar seu acesso.')" style="color:var(--ts);text-decoration:none">Esqueci usu&aacute;rio/senha</a></div>
   </div>
 </div>
 <div id="login-shell">
@@ -242,7 +258,7 @@ hr.dv{border:none;border-top:1px solid var(--bd);margin:18px 0}
     <div class="nav-lbl">Certificados</div>
     <div class="mi cert-item" onclick="openCertModal()"><i class="fa-solid fa-certificate"></i> Emitir Certificados</div>
   </div>
-   <div class="nav-grp"><div class="nav-lbl">Sistema</div><div class="mi" onclick="openConfModal()"><i class="fa-solid fa-gear"></i> Configura&ccedil;&otilde;es</div><div class="mi" onclick="logoutWS()"><i class="fa-solid fa-right-from-bracket"></i> Sair</div></div>
+   <div class="nav-grp"><div class="nav-lbl">Sistema</div><div class="mi" id="nav-ger-usuarios" onclick="openUsuariosModal()" style="display:none"><i class="fa-solid fa-user-shield"></i> Gerenciar Usu&aacute;rios</div><div class="mi" onclick="openConfModal()"><i class="fa-solid fa-gear"></i> Configura&ccedil;&otilde;es</div><div class="mi" onclick="logoutWS()"><i class="fa-solid fa-right-from-bracket"></i> Sair</div></div>
 </aside>
 
 <main>
@@ -713,6 +729,49 @@ hr.dv{border:none;border-top:1px solid var(--bd);margin:18px 0}
   </div>
 </div></div>
 
+<!-- MODAL GERENCIAR USUARIOS -->
+<div class="modal" id="mdl-usuarios" onclick="cls()"><div class="mb" style="max-width:650px" onclick="event.stopPropagation()">
+  <div class="mt2"><i class="fa-solid fa-user-shield"></i> Gerenciar Usu&aacute;rios</div>
+  <div id="usuarios-aba-lista">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <span style="font-size:12px;color:var(--ts)">Usu&aacute;rios cadastrados</span>
+      <button class="btn bs" onclick="novoUsuario()"><i class="fa-solid fa-plus"></i> Novo Usu&aacute;rio</button>
+    </div>
+    <div class="usu-list" id="usuarios-lista"></div>
+  </div>
+  <div id="usuarios-aba-form" style="display:none">
+    <input type="hidden" id="i-usuario-id">
+    <div class="fg"><label class="fl">Nome</label><input id="i-usuario-nome" placeholder="Nome do usu&aacute;rio"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="fg"><label class="fl">Usu&aacute;rio (login)</label><input id="i-usuario-login" placeholder="Nome de login"></div>
+      <div class="fg"><label class="fl">Senha</label><input id="i-usuario-senha" type="password" placeholder="Senha"></div>
+    </div>
+    <div class="fg">
+      <label class="fl" style="display:flex;align-items:center;gap:6px">
+        <input type="checkbox" id="i-usuario-mestre" style="width:14px;height:14px;accent-color:var(--hi)">
+        Usu&aacute;rio Mestre (acesso total)
+      </label>
+    </div>
+    <div class="fg">
+      <label class="fl">Empresas com Acesso</label>
+      <div style="display:flex;gap:6px;margin-bottom:6px">
+        <button class="bxs bxn" onclick="selAll('usuEmpChk',true)">Todas</button>
+        <button class="bxs bxd" onclick="selAll('usuEmpChk',false)">Nenhuma</button>
+      </div>
+      <div class="usu-emp-list" id="usuarios-empresas"></div>
+    </div>
+    <div class="fg">
+      <label class="fl">Telas e Permiss&otilde;es</label>
+      <div class="usu-perm-grid" id="usuarios-telas"></div>
+    </div>
+    <div class="ma">
+      <button class="btn bg2" onclick="cancelarUsuario()">Cancelar</button>
+      <button class="btn bs" onclick="salvarUsuario()"><i class="fa-solid fa-check"></i> Salvar</button>
+    </div>
+    <div id="usuarios-msg" style="margin-top:9px;font-size:12px;display:none"></div>
+  </div>
+</div></div>
+
 <script>
 // ── FIREBASE ────────────────────────────────────────────────────
 const FIREBASE_CONFIG={apiKey:"AIzaSyBehqlRiCiDniyPi3bjHtkH7q2-Px-KoZc",authDomain:"cadastr-produtos-clevir.firebaseapp.com",databaseURL:"https://cadastr-produtos-clevir-default-rtdb.firebaseio.com",projectId:"cadastr-produtos-clevir",storageBucket:"cadastr-produtos-clevir.firebasestorage.app",messagingSenderId:"1028296092810",appId:"1:1028296092810:web:86859328b19c1fdf511173"};
@@ -724,7 +783,7 @@ const RESP={nome:"WEDSON DE JESUS SANTOS",registro:"CREA 0516926055",funcao:"Eng
 const IMGBB_KEY="95bb16ee776d7e20f26857cec98bd372";
 
 // ── STATE ───────────────────────────────────────────────────────
-let DATA={empresas:{},funcionarios:{},textos:{},materiais:{},config:{},historico:{},cargos:{},obras:{},cidades:{},filiais:{}};
+let DATA={empresas:{},funcionarios:{},textos:{},materiais:{},config:{},historico:{},cargos:{},pessoas:{},obras:{},cidades:{},filiais:{},usuarios:{}};
 let CART=[],SEL_TEXTS=[],CARGO_EPI_CART=[];
 let _replaceHistoryKey=null;
 let certCursoMap=null;
@@ -732,7 +791,7 @@ let certCache=null;
 
 // ── INIT ────────────────────────────────────────────────────────
 function initListeners(){
-  ['empresas','funcionarios','textos','materiais','config','historico','cargos','pessoas','obras','cidades','filiais'].forEach(p=>{
+  ['empresas','funcionarios','textos','materiais','config','historico','cargos','pessoas','obras','cidades','filiais','usuarios'].forEach(p=>{
     db.ref(p).on('value',snap=>{
       const raw=snap.val()||{};const norm={};
       Object.entries(raw).forEach(([k,v])=>{norm[k]=(typeof v==='object'&&v!==null)?{...v,id:v.id||k}:v;});
@@ -775,7 +834,7 @@ function initListeners(){
   const de=document.getElementById('dash-date-end');if(de&&!de.value)de.value=hoje;
   addOrcItem();
 }
-function renderAll(){updateDashboard();renderEmps();renderCargos();renderFuncs();renderPessoas();renderTexts();renderMats();renderHistory();populateSelects();renderPool();renderCart();renderCats();renderMsd();setTimeout(()=>fixOldCertHistory(),2000);}
+function renderAll(){updateDashboard();renderEmps();renderCargos();renderFuncs();renderPessoas();renderTexts();renderMats();renderHistory();populateSelects();renderPool();renderCart();renderCats();renderMsd();if(USUARIO_ATUAL&&document.getElementById('usuarios-lista'))renderUsuariosLista();if(USUARIO_ATUAL&&!USUARIO_ATUAL.mestre&&sessionStorage.getItem('ws_logado')==='1'){const usuarios=DATA.usuarios||{};const fresh=Object.values(usuarios).find(u=>u.id===USUARIO_ATUAL.id);if(fresh)aplicarPermissoes(fresh);}setTimeout(()=>fixOldCertHistory(),2000);}
 function loadCertCache(){firebase.database().ref('certificadosGerados').on('value',snap=>{certCache=snap.val()||{};const raw=certCache;const map={};Object.values(raw).forEach(c=>{if(!c.curso?.id||!c.empresa?.id)return;const key=c.empresa.id+'||'+c.curso.id;if(c.curso.nome&&!map[key])map[key]=c.curso.nome;});certCursoMap=map;updateDashboard();if(document.getElementById('dash-doc-type').value==='Certificado')populateSubTipo();});}
 function getCertCursoName(h){if(certCursoMap&&h.certificadoCursoId){const key=(h.empresaId||'')+'||'+h.certificadoCursoId;if(certCursoMap[key])return certCursoMap[key];}const sn=stripCert(h.nome).trim();return sn.match(/emitido/i)?'Certificado':sn||'Certificado';}
 function dashEmpFilters(){
@@ -3327,8 +3386,9 @@ document.addEventListener('keydown', function(e) {
 });
 
 // ── LOGIN SYSTEM ─────────────────────────────────────────────────────────
+let USUARIO_ATUAL=null;
 (function(){
-  const USER='wedson';const PASS='2026';
+  const MESTRE_USER='Arnaldo';const MESTRE_PASS='1';
   const loginScreen=document.getElementById('login-screen');
   const loginShell=document.getElementById('login-shell');
   const loginUser=document.getElementById('login-user');
@@ -3338,11 +3398,104 @@ document.addEventListener('keydown', function(e) {
   const loginError=document.getElementById('login-error');
   function sv(){if(loginLembrar.checked){localStorage.setItem('ws_user',loginUser.value);localStorage.setItem('ws_pass',loginPass.value);}else{localStorage.removeItem('ws_user');localStorage.removeItem('ws_pass');}}
   function ld(){const u=localStorage.getItem('ws_user');const p=localStorage.getItem('ws_pass');if(u)loginUser.value=u;if(p)loginPass.value=p;if(u&&p)loginLembrar.checked=true;return u&&p;}
-  function ent(remember=true){
-    if(loginUser.value.trim()===USER&&loginPass.value.trim()===PASS){loginError.style.display='none';if(remember)sv();sessionStorage.setItem('ws_logado','1');loginScreen.style.display='none';loginShell.style.display='flex';}else{loginError.style.display='block';}
+  function aplicarPermissoes(usuario){
+    USUARIO_ATUAL=usuario;
+    const navGerus=document.getElementById('nav-ger-usuarios');
+    if(navGerus)navGerus.style.display=usuario&&usuario.mestre?'':'none';
+    if(!usuario||usuario.mestre)return;
+    const telas=usuario.telas||{};
+    document.querySelectorAll('.mi').forEach(el=>{
+      const onclick=el.getAttribute('onclick')||'';
+      let telaId='';
+      const mNav=onclick.match(/nav\('([^']+)'/);
+      if(mNav)telaId=mNav[1];
+      if(onclick.indexOf('abrirCoringa')!==-1)telaId='docc';
+      if(onclick.indexOf('abrirMassa')!==-1)telaId='massa';
+      if(onclick.indexOf('openCertModal')!==-1)telaId='cert';
+      if(onclick.indexOf('openConfModal')!==-1)telaId='conf';
+      if(onclick.indexOf('logoutWS')!==-1)return;
+      if(onclick.indexOf('openConfModal')!==-1)return;
+      if(!telaId)return;
+      const perm=telas[telaId];
+      if(perm===undefined&&!usuario.mestre)el.style.display='none';
+      else if(perm&&perm.acesso===false)el.style.display='none';
+      else el.style.display='';
+    });
   }
-  function sai(){sessionStorage.removeItem('ws_logado');localStorage.removeItem('ws_user');localStorage.removeItem('ws_pass');loginUser.value='';loginPass.value='';loginLembrar.checked=false;loginShell.style.display='none';loginScreen.style.display='flex';loginUser.value='';loginPass.value='';loginError.style.display='none';}
-  if(sessionStorage.getItem('ws_logado')==='1'){loginShell.style.display='flex';return;}
+  window.aplicarPermissoes=aplicarPermissoes;
+  function usuarioPodeEditar(telaId){
+    if(!USUARIO_ATUAL||USUARIO_ATUAL.mestre)return true;
+    const telas=USUARIO_ATUAL.telas||{};
+    const perm=telas[telaId];
+    if(!perm)return false;
+    return perm.editar===true;
+  }
+  window.usuarioPodeEditar=usuarioPodeEditar;
+  function usuarioTemAcesso(telaId){
+    if(!USUARIO_ATUAL||USUARIO_ATUAL.mestre)return true;
+    const telas=USUARIO_ATUAL.telas||{};
+    const perm=telas[telaId];
+    if(!perm)return false;
+    return perm.acesso!==false;
+  }
+  window.usuarioTemAcesso=usuarioTemAcesso;
+  function empresaPermitida(empId){
+    if(!USUARIO_ATUAL||USUARIO_ATUAL.mestre)return true;
+    if(!USUARIO_ATUAL.empresas||USUARIO_ATUAL.empresas.length===0)return true;
+    return USUARIO_ATUAL.empresas.includes(String(empId));
+  }
+  window.empresaPermitida=empresaPermitida;
+  function ent(remember=true){
+    const u=loginUser.value.trim();
+    const p=loginPass.value.trim();
+    if(u===MESTRE_USER&&p===MESTRE_PASS){
+      loginError.style.display='none';
+      if(remember)sv();
+      sessionStorage.setItem('ws_logado','1');
+      sessionStorage.setItem('ws_user_nome',u);
+      loginScreen.style.display='none';
+      loginShell.style.display='flex';
+      aplicarPermissoes({id:'mestre',nome:MESTRE_USER,mestre:true});
+      return;
+    }
+    const usuarios=DATA.usuarios||{};
+    let found=null;
+    Object.values(usuarios).forEach(usr=>{
+      if(usr.login&&usr.login===u&&usr.senha===p)found=usr;
+    });
+    if(found){
+      loginError.style.display='none';
+      if(remember)sv();
+      sessionStorage.setItem('ws_logado','1');
+      sessionStorage.setItem('ws_user_nome',found.nome||u);
+      loginScreen.style.display='none';
+      loginShell.style.display='flex';
+      aplicarPermissoes(found);
+    }else{
+      loginError.style.display='block';
+    }
+  }
+  function sai(){
+    sessionStorage.removeItem('ws_logado');
+    sessionStorage.removeItem('ws_user_nome');
+    localStorage.removeItem('ws_user');
+    localStorage.removeItem('ws_pass');
+    USUARIO_ATUAL=null;
+    loginUser.value='';loginPass.value='';loginLembrar.checked=false;
+    loginShell.style.display='none';loginScreen.style.display='flex';
+    loginUser.value='';loginPass.value='';loginError.style.display='none';
+    document.querySelectorAll('.mi').forEach(el=>el.style.display='');
+  }
+  if(sessionStorage.getItem('ws_logado')==='1'){
+    loginShell.style.display='flex';
+    const nomeSalvo=sessionStorage.getItem('ws_user_nome')||'';
+    if(nomeSalvo===MESTRE_USER){aplicarPermissoes({id:'mestre',nome:MESTRE_USER,mestre:true});}
+    else if(DATA.usuarios){
+      const found=Object.values(DATA.usuarios).find(usr=>usr.nome===nomeSalvo);
+      if(found)aplicarPermissoes(found);
+    }
+    return;
+  }
   if(ld()){ent(false);}
   if(loginShell.style.display!=='flex'){loginScreen.style.display='flex';}
   loginBtn.addEventListener('click',function(){ent(true);});
@@ -3353,6 +3506,153 @@ document.addEventListener('keydown', function(e) {
   };
   window.addEventListener('beforeunload',function(){loginUser.value='';loginPass.value='';});
 })();
+
+// ── GERENCIAR USUARIOS ──────────────────────────────────────────────────
+const TELAS_USUARIO=[
+  {id:'dash',nome:'Dashboard'},
+  {id:'emps',nome:'Empresas'},
+  {id:'cargos',nome:'Cargos'},
+  {id:'funcs',nome:'Colaboradores'},
+  {id:'pessoas',nome:'Pessoas'},
+  {id:'catalogos',nome:'Obras, Cidades e Filiais'},
+  {id:'texts',nome:'Textos & NRs'},
+  {id:'gen',nome:'Emitir OS'},
+  {id:'list',nome:'Lista Presenca'},
+  {id:'adm',nome:'Ficha Admissional'},
+  {id:'epi',nome:'Ficha EPI/EPC'},
+  {id:'orc',nome:'Orcamentos'},
+  {id:'docc',nome:'Documento Coringa'},
+  {id:'massa',nome:'Geracao em Massa'},
+  {id:'cert',nome:'Emitir Certificados'},
+  {id:'conf',nome:'Configuracoes'}
+];
+function openUsuariosModal(){
+  document.getElementById('usuarios-aba-lista').style.display='';
+  document.getElementById('usuarios-aba-form').style.display='none';
+  renderUsuariosLista();
+  document.getElementById('mdl-usuarios').style.display='flex';
+}
+function renderUsuariosLista(){
+  const el=document.getElementById('usuarios-lista');
+  const usuarios=DATA.usuarios||{};
+  const lista=Object.values(usuarios);
+  if(!lista.length){
+    el.innerHTML='<div style="text-align:center;padding:20px;color:var(--tm);font-size:12px">Nenhum usuario cadastrado ainda.</div>';
+    return;
+  }
+  el.innerHTML=lista.map(u=>{
+    const badge=u.mestre?'<span class="mi-badge" style="background:#fef3c7;color:#92400e">MESTRE</span>':
+      '<span class="mi-badge" style="background:#dbeafe;color:#1e40af">USUARIO</span>';
+    const telas=u.telas?Object.keys(u.telas).filter(k=>u.telas[k].acesso!==false).length:0;
+    const emps=u.empresas&&u.empresas.length?u.empresas.length+' empresa(s)':'Todas';
+    return`<div class="musu-item" onclick="editarUsuario('${u.id}')">
+      <div><div class="mi-nome">${esc(u.nome||u.login||'?')} ${badge}</div>
+      <div class="mi-info">Login: ${esc(u.login||'')} &middot; ${telas} tela(s) &middot; ${emps}</div></div>
+      <div><button class="bxs bxd" onclick="event.stopPropagation();excluirUsuario('${u.id}')" title="Excluir"><i class="fa-solid fa-trash"></i></button></div>
+    </div>`;
+  }).join('');
+}
+function novoUsuario(){
+  document.getElementById('i-usuario-id').value='';
+  document.getElementById('i-usuario-nome').value='';
+  document.getElementById('i-usuario-login').value='';
+  document.getElementById('i-usuario-senha').value='';
+  document.getElementById('i-usuario-mestre').checked=false;
+  renderUsuarioEmpresas([]);
+  renderUsuarioTelas({});
+  document.getElementById('usuarios-aba-lista').style.display='none';
+  document.getElementById('usuarios-aba-form').style.display='';
+  document.getElementById('usuarios-msg').style.display='none';
+}
+function editarUsuario(id){
+  const u=(DATA.usuarios||{})[id];
+  if(!u)return;
+  document.getElementById('i-usuario-id').value=u.id||id;
+  document.getElementById('i-usuario-nome').value=u.nome||'';
+  document.getElementById('i-usuario-login').value=u.login||'';
+  document.getElementById('i-usuario-senha').value=u.senha||'';
+  document.getElementById('i-usuario-mestre').checked=!!u.mestre;
+  renderUsuarioEmpresas(u.empresas||[]);
+  renderUsuarioTelas(u.telas||{});
+  document.getElementById('usuarios-aba-lista').style.display='none';
+  document.getElementById('usuarios-aba-form').style.display='';
+  document.getElementById('usuarios-msg').style.display='none';
+}
+function renderUsuarioEmpresas(selEmps){
+  const el=document.getElementById('usuarios-empresas');
+  const empresas=DATA.empresas||{};
+  const lista=Object.values(empresas);
+  if(!lista.length){
+    el.innerHTML='<div style="padding:8px;color:var(--tm);font-size:11px">Nenhuma empresa cadastrada.</div>';
+    return;
+  }
+  el.innerHTML=lista.map(e=>{
+    const checked=selEmps.includes(String(e.id))?'checked':'';
+    return`<div class="musu-emp-item"><input type="checkbox" name="usuEmpChk" value="${esc(e.id)}" ${checked}><label>${esc(e.nome||e.id)}</label></div>`;
+  }).join('');
+}
+function renderUsuarioTelas(telasSel){
+  const el=document.getElementById('usuarios-telas');
+  el.innerHTML=TELAS_USUARIO.map(t=>{
+    const perm=telasSel[t.id]||{acesso:false,editar:false};
+    return`<div class="musu-perm-card">
+      <label><input type="checkbox" id="ut-acesso-${t.id}" ${perm.acesso!==false?'checked':''} onchange="toggleTelaAcesso('${t.id}')">${t.nome}</label>
+      <select id="ut-editar-${t.id}" ${perm.acesso===false?'disabled':''}>
+        <option value="visualizar" ${perm.editar?'':'selected'}>Somente Visualizar</option>
+        <option value="editar" ${perm.editar?'selected':''}>Pode Editar</option>
+      </select>
+    </div>`;
+  }).join('');
+}
+window.toggleTelaAcesso=function(id){
+  const chk=document.getElementById('ut-acesso-'+id);
+  const sel=document.getElementById('ut-editar-'+id);
+  sel.disabled=!chk.checked;
+};
+function cancelarUsuario(){
+  document.getElementById('usuarios-aba-lista').style.display='';
+  document.getElementById('usuarios-aba-form').style.display='none';
+}
+function salvarUsuario(){
+  const id=document.getElementById('i-usuario-id').value;
+  const nome=document.getElementById('i-usuario-nome').value.trim();
+  const login=document.getElementById('i-usuario-login').value.trim();
+  const senha=document.getElementById('i-usuario-senha').value.trim();
+  const mestre=document.getElementById('i-usuario-mestre').checked;
+  if(!nome||!login||!senha){
+    const msg=document.getElementById('usuarios-msg');
+    msg.style.display='block';msg.style.color='var(--dn)';
+    msg.textContent='Preencha nome, login e senha.';
+    return;
+  }
+  const empChecks=Array.from(document.getElementsByName('usuEmpChk')).filter(c=>c.checked).map(c=>c.value);
+  const telas={};
+  TELAS_USUARIO.forEach(t=>{
+    const chk=document.getElementById('ut-acesso-'+t.id);
+    const sel=document.getElementById('ut-editar-'+t.id);
+    if(chk&&chk.checked){
+      telas[t.id]={acesso:true,editar:sel.value==='editar'};
+    }
+  });
+  const dados={id:id||db.ref().push().key,nome,login,senha,mestre,empresas:mestre?[]:empChecks,telas:mestre?{}:telas};
+  const ref=db.ref('usuarios/'+dados.id);
+  ref.set(dados).then(()=>{
+    const msg=document.getElementById('usuarios-msg');
+    msg.style.display='block';msg.style.color='var(--sc)';
+    msg.textContent=id?'Usuario atualizado com sucesso!':'Usuario criado com sucesso!';
+    setTimeout(()=>{cancelarUsuario();},800);
+  }).catch(e=>{
+    const msg=document.getElementById('usuarios-msg');
+    msg.style.display='block';msg.style.color='var(--dn)';
+    msg.textContent='Erro ao salvar: '+e.message;
+  });
+}
+function excluirUsuario(id){
+  if(!confirm('Excluir este usuario permanentemente?'))return;
+  db.ref('usuarios/'+id).remove().then(()=>{
+    if(USUARIO_ATUAL&&USUARIO_ATUAL.id===id){logoutWS();}
+  });
+}
 
 async function rasterizePdfPages(pdfBytes) {
   const pdfjsLib = window.pdfjsLib;
