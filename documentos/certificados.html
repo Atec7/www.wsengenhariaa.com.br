@@ -729,7 +729,7 @@ button.danger:hover { background: #c82333; }
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
 import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-analytics.js";
-import { getDatabase, ref, push, set, update, remove, onValue } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-database.js";
+import { getDatabase, ref, push, set, update, remove, onValue, get } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-database.js";
 
 // Config Firebase
 const firebaseConfig = {
@@ -750,6 +750,21 @@ const analytics = getAnalytics(app);
 const db = getDatabase(app);
 
 let empresasData = {};
+
+let usuarioAtualCert = null;
+async function carregarUsuarioCert(){
+    try{
+        const nomeSalvo = sessionStorage.getItem('ws_user_nome')||'';
+        if(!nomeSalvo || nomeSalvo==='Arnaldo' || nomeSalvo==='wedson') return;
+        const snap = await get(ref(db,'usuarios'));
+        const usuarios = snap.val()||{};
+        usuarioAtualCert = Object.values(usuarios).find(u=>u.nome===nomeSalvo)||null;
+    }catch(e){ console.error("Erro ao carregar usuário:", e); }
+}
+function empresaPermitidaCert(id){
+    if(!usuarioAtualCert || usuarioAtualCert.mestre || !usuarioAtualCert.empresas || !usuarioAtualCert.empresas.length) return true;
+    return usuarioAtualCert.empresas.includes(String(id));
+}
 let alunosData = {};
 let cursosData = {};
 let certificadosGeradosData = {}; 
@@ -850,7 +865,7 @@ async function removeItem(node, id){
 function renderEmpresas(){
     const termo = (el("empresaBuscaRapida")?.value || "").trim().toLowerCase();
 
-    const empresas = getArrayFromData(empresasData).filter(e => {
+    const empresas = getArrayFromData(empresasData).filter(e => empresaPermitidaCert(e.id)).filter(e => {
         if (!termo) return true;
         const nome = (e.nome || "").toLowerCase();
         const cidade = (e.cidade || "").toLowerCase();
@@ -870,7 +885,7 @@ function renderEmpresas(){
             </td>
         </tr>`).join("");
 
-    const todasEmpresas = getArrayFromData(empresasData).sort((a,b)=>(a.nome||'').localeCompare(b.nome||'', 'pt-BR'));
+    const todasEmpresas = getArrayFromData(empresasData).filter(e => empresaPermitidaCert(e.id)).sort((a,b)=>(a.nome||'').localeCompare(b.nome||'', 'pt-BR'));
     const empresaOptions = todasEmpresas.map(e=>`<option value="${e.id}">${e.nome}</option>`).join("");
 
     el("selEmpresa").innerHTML='<option value="">Selecione a empresa...</option>'+ empresaOptions;
@@ -1589,7 +1604,103 @@ function calcExpiracao(dataFim, validade) {
     return d.toISOString().slice(0, 10);
 }
 
+// ── APROVACOES DE GERACAO (CERTIFICADOS) ────────────────────────────
+let CERT_BYPASS=false;
+async function liberarGeracaoCert(){
+    if(CERT_BYPASS){CERT_BYPASS=false;return true;}
+    const nome=sessionStorage.getItem('ws_user_nome')||'';
+    if(nome==='Arnaldo'||nome==='wedson')return true;
+    let usuario=null;
+    try{
+        const snap=await get(ref(db,'usuarios'));
+        const raw=snap.val()||{};
+        usuario=Object.values(raw).find(u=>(u.nome||'')===nome)||null;
+    }catch(_){usuario=null;}
+    if(usuario&&(usuario.mestre||usuario.podeGerar))return true;
+    return await solicitarAprovacaoCert(usuario);
+}
+async function solicitarAprovacaoCert(usuario){
+    const empresaId=el("selEmpresa").value;
+    if(!empresaId){alert("Selecione a empresa.");return false;}
+    const empresa=empresasData[empresaId];
+    if(!empresa){alert("Empresa inválida.");return false;}
+    const selAlunoIds=Array.from(el("listaAlunosCheckbox").querySelectorAll("input[type=checkbox]:checked")).map(i=>i.value);
+    if(selAlunoIds.length===0){alert("Selecione pelo menos um aluno vinculado à empresa.");return false;}
+    const cursosSel=courseSelectionOrder.filter(id=>cursosData[id]);
+    if(cursosSel.length===0){alert("Selecione pelo menos um curso e defina as datas.");return false;}
+    const cursosEstado=[];
+    for(const cid of cursosSel){
+        const di=(el("dataInicio_"+cid)||{}).value||"";
+        const df=(el("dataFim_"+cid)||{}).value||"";
+        if(!di||!df){alert("Defina as datas de início e fim de todos os cursos selecionados.");return false;}
+        cursosEstado.push({courseId:cid,dataInicio:di,dataFim:df});
+    }
+    const assin=JSON.stringify([empresaId,selAlunoIds,cursosEstado]);
+    let duplicada=false;
+    try{
+        const snapPend=await get(ref(db,'aprovacoes'));
+        const rawPend=snapPend.val()||{};
+        duplicada=Object.values(rawPend).some(s=>{
+            if(s.status!=='pendente'||s.tela!=='cert')return false;
+            if(usuario&&s.solicitanteId!==usuario.id)return false;
+            try{return JSON.stringify([s.estado&&s.estado.inputs&&s.estado.inputs.selEmpresa,s.estado&&s.estado.extras&&s.estado.extras.alunos,s.estado&&s.estado.extras&&s.estado.extras.cursos])===assin;}catch(_){return false;}
+        });
+    }catch(_){}
+    if(duplicada){alert("Você já possui uma solicitação idêntica aguardando aprovação.");return false;}
+    const nomesAlunos=selAlunoIds.map(id=>alunosData[id]?(alunosData[id].nome||id):id).join(', ');
+    const resumo=[
+        ["Empresa",empresa.nome||empresaId],
+        ["Alunos",nomesAlunos],
+        ["Cursos",cursosEstado.map(c=>{const cur=cursosData[c.courseId];return (cur?cur.nome:c.courseId)+" ("+fmtDateBR(c.dataInicio)+" a "+fmtDateBR(c.dataFim)+")";}).join('; ')]
+    ];
+    const novoRef=push(ref(db,'aprovacoes'));
+    await set(ref(db,'aprovacoes/'+novoRef.key),{
+        id:novoRef.key,tela:'cert',telaNome:'Emitir Certificados',
+        solicitanteId:usuario?usuario.id:'',solicitanteNome:usuario?(usuario.nome||''):(sessionStorage.getItem('ws_user_nome')||''),
+        status:'pendente',criadoEm:Date.now(),
+        estado:{inputs:{selEmpresa:empresaId},checks:{},extras:{alunos:selAlunoIds,cursos:cursosEstado}},
+        resumo
+    });
+    alert("Solicitação enviada para aprovação.\n\nAcompanhe em \"Aprovações de Geração > Minhas Solicitações\" na tela principal. Após a autorização, o botão GERAR será liberado.");
+    return false;
+}
+async function processarReplayCert(id){
+    try{
+        const snap=await get(ref(db,'aprovacoes/'+id));
+        const s=snap.val();
+        if(!s||s.status!=='aprovado'){alert('Esta solicitação não está aprovada.');return;}
+        const est=s.estado||{};
+        const empId=(est.inputs||{}).selEmpresa||'';
+        const alunos=(est.extras||{}).alunos||[];
+        const cursos=(est.extras||{}).cursos||[];
+        const t0=Date.now();
+        while(Date.now()-t0<15000){
+            if(empresasData[empId]&&cursos.every(c=>cursosData[c.courseId]))break;
+            await new Promise(r=>setTimeout(r,300));
+        }
+        el("selEmpresa").value=empId;
+        renderAlunosCheckboxForGeracao();
+        el("listaAlunosCheckbox").querySelectorAll("input[type=checkbox]").forEach(cb=>{cb.checked=alunos.includes(cb.value);});
+        courseSelectionOrder=cursos.map(c=>c.courseId);
+        el("listaCursosCheckbox").querySelectorAll(".course-checkbox").forEach(cb=>{cb.checked=courseSelectionOrder.includes(cb.value);});
+        renderCourseDateSelectors();
+        cursos.forEach(c=>{
+            const di=el("dataInicio_"+c.courseId),df=el("dataFim_"+c.courseId);
+            if(di)di.value=c.dataInicio;
+            if(df)df.value=c.dataFim;
+        });
+        CERT_BYPASS=true;
+        await gerarCertificados();
+        if(el("printArea").innerHTML.trim()!==""){
+            try{ await downloadPDF(el("printArea"), 'certificados_aprovados.pdf'); }
+            catch(e2){ console.error("Erro ao baixar certificados aprovados:", e2); }
+        }
+        try{history.replaceState(null,'',location.pathname);}catch(_){}
+    }catch(e){alert('Erro ao processar solicitação aprovada: '+e.message);}
+}
+
 async function gerarCertificados(){
+    if(!(await liberarGeracaoCert()))return;
     const empresaId = el("selEmpresa").value;
     if(!empresaId) return alert("Selecione a empresa.");
     const empresa = empresasData[empresaId]; 
@@ -2405,7 +2516,8 @@ window.buildListaPresenca = ({curso, empresa, dataInicioBR, dataFimBR, alunos}) 
     `;
 };
 
-window.addEventListener('DOMContentLoaded', () => {
+window.addEventListener('DOMContentLoaded', async () => {
+    await carregarUsuarioCert();
     setupFirebaseListener('empresas', empresasData, renderEmpresas);
     setupFirebaseListener('alunos', alunosData, renderAlunos);
     setupFirebaseListener('cursos', cursosData, renderCursos);
@@ -2450,50 +2562,34 @@ window.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    const replayId=new URLSearchParams(location.search).get('replay');
+    if(replayId)processarReplayCert(replayId);
+
 });
 
 </script>
 <script>
 (function () {
-  const USER = "wedson";
-  const PASS = "2026";
-
   const loginScreen = document.getElementById("loginScreen");
   const appShell = document.getElementById("appShell");
-  const loginUsuario = document.getElementById("loginUsuario");
-  const loginSenha = document.getElementById("loginSenha");
-  const btnEntrar = document.getElementById("btnEntrarSistema");
   const btnLogout = document.getElementById("btnLogout");
-  const loginError = document.getElementById("loginError");
 
-  function entrar() {
-    const usuario = (loginUsuario.value || "").trim();
-    const senha = (loginSenha.value || "").trim();
-
-    if (usuario === USER && senha === PASS) {
-      loginError.style.display = "none";
-      loginScreen.style.display = "none";
-      appShell.style.display = "block";
-    } else {
-      loginError.style.display = "block";
-    }
+  if (sessionStorage.getItem("ws_logado") !== "1") {
+    try { window.top.location.href = "index.html"; } catch (_) { window.location.href = "index.html"; }
+    return;
   }
-
-  function sair() {
-    appShell.style.display = "none";
-    loginScreen.style.display = "flex";
-    loginUsuario.value = "";
-    loginSenha.value = "";
-    loginError.style.display = "none";
-  }
-
-  btnEntrar.addEventListener("click", entrar);
-  loginSenha.addEventListener("keydown", function (e) {
-    if (e.key === "Enter") entrar();
-  });
+  if (loginScreen) loginScreen.style.display = "none";
+  if (appShell) appShell.style.display = "block";
 
   if (btnLogout) {
-    btnLogout.addEventListener("click", sair);
+    btnLogout.addEventListener("click", function () {
+      if (!confirm("Sair do sistema?")) return;
+      sessionStorage.removeItem("ws_logado");
+      sessionStorage.removeItem("ws_user_nome");
+      localStorage.removeItem("ws_user");
+      localStorage.removeItem("ws_pass");
+      try { window.top.location.href = "index.html"; } catch (_) { window.location.href = "index.html"; }
+    });
   }
 })();
 
