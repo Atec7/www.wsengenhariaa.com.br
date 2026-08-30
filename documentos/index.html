@@ -1108,7 +1108,7 @@ function populateSubTipo(){
 function uid(){return db.ref().push().key;}
 function v(id,val){const el=document.getElementById(id);if(!el)return'';if(val!==undefined)el.value=val;return el.value;}
 function esc(s){return String(s||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
-function fmtData(d){if(!d)return'';if(typeof d==='string'&&d.includes('-')){const p=d.split('-');return p[2]+'/'+p[1]+'/'+p[0];}return d;}
+function fmtData(d){if(!d)return'';if(typeof d==='string'&&d.includes('-')){let s=d;const ti=s.indexOf('T');if(ti>-1)s=s.slice(0,ti);const p=s.split('-');if(p.length>=3)return p[2]+'/'+p[1]+'/'+p[0];}return d;}
 function fmtDataExtenso(d){
   if(!d)return'';
   const meses=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
@@ -2410,7 +2410,7 @@ function addCargoEpi(){
   const qtd=parseInt(document.getElementById('c-epi-qtd').value)||1;
   const tipo=document.getElementById('c-epi-tipo').value;
   const ex=CARGO_EPI_CART.find(c=>c.id===mat.id);
-  if(ex){ex.qtd+=qtd;ex.tipo=tipo;}else{CARGO_EPI_CART.push({id:mat.id,nome:mat.nome,ca:mat.ca||'',unidade:mat.unidade||'',tipo, qtd});}
+  if(ex){ex.qtd+=qtd;ex.tipo=tipo;}else{CARGO_EPI_CART.push({id:mat.id,nome:mat.nome,ca:mat.ca||'',unidade:mat.unidade||'',tipo, qtd,vencimentoCa:mat.vencimentoCa||''});}
   renderCargoEpiCart();
 }
 function remCargoEpi(i){
@@ -2450,7 +2450,7 @@ function handleColabSelect(fid,name){
           const qtd=typeof item==='object'?(item.qtd||1):1;
           const savedTipo=typeof item==='object'?item.tipo:null;
           const mat=DATA.materiais[id]||toArr(DATA.materiais).find(m=>(m.nome||'').toLowerCase().includes(id.toLowerCase()));
-          return mat?{id:mat.id,nome:mat.nome,ca:mat.ca||'',unidade:mat.unidade||'',tipo:savedTipo||mat.tipo||'EPI',qtd}:null;
+          return mat?{id:mat.id,nome:mat.nome,ca:mat.ca||'',unidade:mat.unidade||'',tipo:savedTipo||mat.tipo||'EPI',qtd,vencimentoCa:mat.vencimentoCa||''}:null;
         }).filter(Boolean);
         epiItems.forEach(item=>{
           const ex=CART.find(c=>c.id===item.id);
@@ -2628,7 +2628,7 @@ function editCargo(x){
       const savedTipo=typeof item==='object'?item.tipo:null;
       const mat=DATA.materiais[id]||toArr(DATA.materiais).find(m=>(m.nome||'').toLowerCase().includes(id.toLowerCase()));
       if(mat&&!CARGO_EPI_CART.find(c=>c.id===mat.id)){
-        CARGO_EPI_CART.push({id:mat.id,nome:mat.nome,ca:mat.ca||'',unidade:mat.unidade||'',tipo:savedTipo||mat.tipo||'EPI',qtd});
+        CARGO_EPI_CART.push({id:mat.id,nome:mat.nome,ca:mat.ca||'',unidade:mat.unidade||'',tipo:savedTipo||mat.tipo||'EPI',qtd,vencimentoCa:mat.vencimentoCa||''});
       }
     });
   }
