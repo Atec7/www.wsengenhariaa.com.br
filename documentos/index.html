@@ -701,7 +701,7 @@ hr.dv{border:none;border-top:1px solid var(--bd);margin:18px 0}
   <div class="fg"><label class="fl">Nome</label><input id="i-f-nm"></div>
 <div class="g2"><div class="fg"><label class="fl">CPF</label><input id="i-f-cp" placeholder="000.000.000-00"></div><div class="fg"><label class="fl">Data de Admiss&atilde;o</label><input type="date" id="i-f-dt"></div></div>
 <div class="g2"><div class="fg"><label class="fl">Fun&ccedil;&atilde;o</label><select id="i-f-fn" onchange="autoFillCBO()"><option value="">Selecione...</option></select></div><div class="fg"><label class="fl">CBO</label><input id="i-f-cb"></div></div>
-<div class="fg"><label class="fl">Setor</label><input id="i-f-st"></div>
+<div class="g2"><div class="fg"><label class="fl">Setor</label><input id="i-f-st"></div><div class="fg"><label class="fl">N&ordm; Contrato/Matr&iacute;cula</label><input id="i-f-mat" placeholder="N&ordm; do contrato ou matr&iacute;cula"></div></div>
 <div class="g2"><div class="fg"><label class="fl">Vencimento ASO</label><input type="date" id="i-f-aso-date"></div><div class="fg"><label class="fl">Tipo ASO</label><select id="i-f-aso-tipo"><option value="">Selecione...</option><option value="ADMISSIONAL">Admissional</option><option value="DEMISSIONAL">Demissional</option><option value="PERIODICO">Periódico</option><option value="MUDANCA_FUNCAO">Mudança de Função</option><option value="RETORNO_TRABALHO">Retorno ao Trabalho</option></select></div></div>
   <div class="ma"><button class="btn bp" onclick="sv('funcionario')"><i class="fa-solid fa-save"></i> Salvar</button><button class="btn bg2" onclick="cls()">Cancelar</button></div>
 </div></div>
@@ -964,6 +964,7 @@ function initListeners(){
         cpf:v.cpf||'',
         empresaId:v.empresaVinculoId||'',
         funcao:v.matricula||'',
+        matricula:(v.matriculaNumero||v.matricula||''),
         filialId:v.filialId||'',
         obraId:v.obraId||'',
         cidadeId:v.cidadeId||''
@@ -1085,7 +1086,7 @@ function openM(id,mode){
   if(mode==='new'){
     if(id==='mdl-e'){v('eid','');v('i-e-nm','');v('i-e-cj','');v('i-e-ender','');v('i-e-lid','');document.getElementById('i-e-logo').value='';const p=document.getElementById('prev-emp-logo');if(p)p.style.display='none';selAll('eCatObraChk',false);selAll('eCatCidadeChk',false);selAll('eCatFilialChk',false);}
     if(id==='mdl-c'){v('cid','');v('i-c-nm','');v('i-c-cb','');CARGO_EPI_CART=[];renderCargoEpiCart();document.getElementById('c-epi-search').value='';filterCargoEpiMat();}
-    if(id==='mdl-f'){v('fid','');v('i-f-nm','');v('i-f-cp','');v('i-f-fn','');v('i-f-cb','');v('i-f-st','');v('i-f-dt','');v('i-f-aso-date','');document.getElementById('i-f-aso-tipo').value='';document.getElementById('i-f-ep').value='';popFuncVinculos(false);}
+    if(id==='mdl-f'){v('fid','');v('i-f-nm','');v('i-f-cp','');v('i-f-fn','');v('i-f-cb','');v('i-f-st','');v('i-f-mat','');v('i-f-dt','');v('i-f-aso-date','');document.getElementById('i-f-aso-tipo').value='';document.getElementById('i-f-ep').value='';popFuncVinculos(false);}
     if(id==='mdl-t'){v('tid','');v('i-t-ti','');v('i-t-co','');v('i-t-val','none');setTxtCategoria('');selAll('tCgChk',false);}
     if(id==='mdl-m'){v('mid','');v('i-m-nm','');v('i-m-ca','');document.getElementById('i-m-tp').value='EPI';v('i-m-un','');v('i-m-es','0');v('i-m-vc','');}
     if(id==='mdl-p'){v('pid','');v('i-p-nm','');v('i-p-cp','');v('i-p-ender','');}
@@ -2472,7 +2473,7 @@ function sv(type){
 }
 function saveFinal(type,d){spin(true);  const path={empresa:'empresas',funcionario:'funcionarios',texto:'textos',material:'materiais',cargo:'cargos',pessoa:'pessoas'}[type];const id=d.id||uid();d.id=id;db.ref(path+'/'+id).set(d).then(()=>{
     if(type==='funcionario'){
-      db.ref('alunos/'+id).set({nome:d.nome,cpf:d.cpf,matricula:d.funcao,empresaVinculoId:d.empresaId,filialId:d.filialId,obraId:d.obraId,cidadeId:d.cidadeId}).catch(()=>{});
+      db.ref('alunos/'+id).set({nome:d.nome,cpf:d.cpf,matricula:d.matricula||'',matriculaNumero:d.matricula||'',empresaVinculoId:d.empresaId,filialId:d.filialId,obraId:d.obraId,cidadeId:d.cidadeId}).catch(()=>{});
     }
     spin(false);cls();
   }).catch(e=>{spin(false);alert('Erro: '+e.message);});}
@@ -2491,7 +2492,7 @@ function getFormData(t){
     if(!empresaId){alert('É obrigatório vincular o colaborador à Empresa.');return null;}
     const asoDate=v('i-f-aso-date');
     const asoTipo=v('i-f-aso-tipo');
-    return{id:idAtual,empresaId,filialId,obraId,cidadeId,nome:v('i-f-nm'),cpf:v('i-f-cp'),funcao:v('i-f-fn'),cbo:v('i-f-cb'),setor:v('i-f-st'),dataAdm:v('i-f-dt'),asoDate,asoTipo};
+    return{id:idAtual,empresaId,filialId,obraId,cidadeId,nome:v('i-f-nm'),cpf:v('i-f-cp'),funcao:v('i-f-fn'),cbo:v('i-f-cb'),setor:v('i-f-st'),matricula:v('i-f-mat'),dataAdm:v('i-f-dt'),asoDate,asoTipo};
   }
   if(t==='texto'){const cargos=getChecked('tCgChk');return{id:v('tid'),titulo:v('i-t-ti'),conteudo:v('i-t-co'),categoria:getTxtCategoria(),cargosVinculados:cargos,validade:v('i-t-val')};}
   if(t==='material')return{id:v('mid'),nome:v('i-m-nm'),ca:v('i-m-ca'),tipo:document.getElementById('i-m-tp').value,unidade:v('i-m-un'),estoque:parseInt(v('i-m-es'))||0,vencimentoCa:v('i-m-vc')};
@@ -2571,7 +2572,7 @@ async function vincularEmMassa(){
   }
   spin(false);
 }
-function editFunc(x){v('fid',x.id);document.getElementById('i-f-ep').value=x.empresaId||'';popFuncVinculos(true);document.getElementById('i-f-fl').value=x.filialId||'';document.getElementById('i-f-ob').value=x.obraId||'';document.getElementById('i-f-cd').value=x.cidadeId||'';v('i-f-nm',x.nome||'');v('i-f-cp',x.cpf||'');v('i-f-fn',x.funcao||'');v('i-f-cb',x.cbo||'');v('i-f-st',x.setor||'');v('i-f-dt',x.dataAdm||'');v('i-f-aso-date',x.asoDate||'');document.getElementById('i-f-aso-tipo').value=x.asoTipo||'';autoFillCBO();openM('mdl-f');}
+function editFunc(x){v('fid',x.id);document.getElementById('i-f-ep').value=x.empresaId||'';popFuncVinculos(true);document.getElementById('i-f-fl').value=x.filialId||'';document.getElementById('i-f-ob').value=x.obraId||'';document.getElementById('i-f-cd').value=x.cidadeId||'';v('i-f-nm',x.nome||'');v('i-f-cp',x.cpf||'');v('i-f-fn',x.funcao||'');v('i-f-cb',x.cbo||'');v('i-f-st',x.setor||'');v('i-f-mat',x.matricula||'');v('i-f-dt',x.dataAdm||'');v('i-f-aso-date',x.asoDate||'');document.getElementById('i-f-aso-tipo').value=x.asoTipo||'';autoFillCBO();openM('mdl-f');}
 
 function autoFillCBO(){
   const sel=document.getElementById('i-f-fn');
