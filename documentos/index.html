@@ -1054,6 +1054,35 @@ function empPassFilters(e,f){
   if(catRestrita('filiais')&&!empCatPermitidaVals(e,'filiais').length)return false;
   return true;
 }
+// Verifica se o colaborador (pela própria obra/cidade/filial) atende ao filtro selecionado.
+// Retorna true se o colaborador não tem aquele vínculo (aí vale o vínculo da empresa).
+function colLocMatch(fn,f){
+  if(!f.obra&&!f.cidade&&!f.filial)return true;
+  const checks=[['obraId','obras',f.obra],['cidadeId','cidades',f.cidade],['filialId','filiais',f.filial]];
+  for(const[field,col,val]of checks){
+    if(!val)continue;
+    const id=fn[field];
+    if(!id)continue;
+    const idStr=String(id).trim();
+    if(idStr===String(val).trim())continue;
+    if(idStr===String(DATA[col]&&DATA[col][val]&&DATA[col][val].id).trim())continue;
+    const own=DATA[col]&&(DATA[col][id]||toArr(DATA[col]).find(c=>String(c.id).trim()===idStr));
+    const ownName=own&&own.nome;
+    if(ownName&&(ownName.trim()===String(val).trim()||ownName.trim()===String(DATA[col]&&DATA[col][val]&&DATA[col][val].nome).trim()))continue;
+    return false;
+  }
+  return true;
+}
+// Documento do histórico atende ao filtro de obra/cidade/filial?
+// Se o documento tem colaboradores, deve haver ao menos um naquela localidade.
+function histLocMatch(h,f){
+  if(!f.obra&&!f.cidade&&!f.filial)return true;
+  if(h.funcionarioIds&&h.funcionarioIds.length){
+    const fns=h.funcionarioIds.map(id=>DATA.funcionarios[id]).filter(Boolean);
+    if(fns.length)return fns.some(fn=>colLocMatch(fn,f));
+  }
+  return true;
+}
 function populateSubTipo(){
   const sel=document.getElementById('dash-sub-tipo');
   const docType=document.getElementById('dash-doc-type').value;
@@ -1064,6 +1093,7 @@ function populateSubTipo(){
   toArr(DATA.historico).filter(h=>{
     if(isBlindagem(h))return false;
     if(!empPassFilters(resolveEmp(h.empresaId),f))return false;
+    if(!histLocMatch(h,f))return false;
     return getDocTipo(h.nome)===docType;
   }).forEach(h=>{
     set.add(docType==='Certificado'?getCertCursoName(h):h.nome);
@@ -1153,13 +1183,13 @@ function showIndicatorDetail(type){
   const f=dashEmpFilters();
   const startTs=startVal?new Date(startVal+'T00:00:00').getTime():0;
   const endTs=endVal?new Date(endVal+'T23:59:59').getTime():Infinity;
-  let allHistory=toArr(DATA.historico).filter(h=>!isBlindagem(h)&&empPassFilters(resolveEmp(h.empresaId),f));
+  let allHistory=toArr(DATA.historico).filter(h=>!isBlindagem(h)&&empPassFilters(resolveEmp(h.empresaId),f)&&histLocMatch(h,f));
   const filtered=allHistory.filter(h=>(h.ts||0)>=startTs&&(h.ts||0)<=endTs);
   const now=new Date();
   const thirtyDays=30*24*60*60*1000;
   const ninetyDays=90*24*60*60*1000;
   const funcs=toArr(DATA.funcionarios);
-  const filteredFuncs=funcs.filter(fn=>empPassFilters(DATA.empresas[fn.empresaId],f));
+  const filteredFuncs=funcs.filter(fn=>empPassFilters(DATA.empresas[fn.empresaId],f)&&colLocMatch(fn,f));
 
   let title,items;
   if(type==='empresas'){
@@ -1377,12 +1407,12 @@ function updateDashboard(){
   document.getElementById('c-e').textContent=filteredEmps.length;
 
   const funcs=toArr(DATA.funcionarios);
-  const filteredFuncs=funcs.filter(fn=>empPassFilters(DATA.empresas[fn.empresaId],f));
+  const filteredFuncs=funcs.filter(fn=>empPassFilters(DATA.empresas[fn.empresaId],f)&&colLocMatch(fn,f));
   document.getElementById('c-f').textContent=filteredFuncs.length;
 
   document.getElementById('c-t').textContent=Object.keys(DATA.textos||{}).length;
 
-  let allHistory=toArr(DATA.historico).filter(h=>!isBlindagem(h)&&empPassFilters(resolveEmp(h.empresaId),f));
+  let allHistory=toArr(DATA.historico).filter(h=>!isBlindagem(h)&&empPassFilters(resolveEmp(h.empresaId),f)&&histLocMatch(h,f));
   if(docType){allHistory=allHistory.filter(h=>getDocTipo(h.nome)===docType);}
   if(subTipo){allHistory=allHistory.filter(h=>{const v=docType==='Certificado'?getCertCursoName(h):h.nome;return v===subTipo;});}
   const relStatus=document.getElementById('dash-rel-status').value;
@@ -1477,7 +1507,7 @@ function showSummaryDetail(key){
   const f=dashEmpFilters();
   const startTs=startVal?new Date(startVal+'T00:00:00').getTime():0;
   const endTs=endVal?new Date(endVal+'T23:59:59').getTime():Infinity;
-  let allHistory=toArr(DATA.historico).filter(h=>!isBlindagem(h)&&empPassFilters(resolveEmp(h.empresaId),f));
+  let allHistory=toArr(DATA.historico).filter(h=>!isBlindagem(h)&&empPassFilters(resolveEmp(h.empresaId),f)&&histLocMatch(h,f));
   const filtered=allHistory.filter(h=>(h.ts||0)>=startTs&&(h.ts||0)<=endTs);
   const docs=filtered.filter(h=>{
     const prefix=(h.nome||'').replace(/\s*-\s*.*$/,'');
@@ -2166,15 +2196,73 @@ async function genRelatorioPDF(docType,subTipo){
 
   // Summary page
   doc.addPage();
-  let sy=45;
+  let sy=42;
   doc.setFont('helvetica','bold');doc.setFontSize(14);doc.setTextColor(...C.h1);
-  doc.text('RESUMO GERAL',W/2,sy,{align:'center'});sy+=14;
+  doc.text('RESUMO GERAL',W/2,sy,{align:'center'});sy+=12;
   const tg=rows.length,tv=rows.filter(r=>r.status==='VENCIDO').length,tnv=rows.filter(r=>r.status==='NÃO VENCE').length;
   doc.setFont('helvetica','normal');doc.setFontSize(11);doc.setTextColor(...C.dark);
   doc.text('Total de registros: '+tg,W/2,sy+4,{align:'center'});
-  doc.text('Em dia: '+(tg-tv-tnv),W/2,sy+16,{align:'center'});
-  doc.text('Vencidos: '+tv,W/2,sy+28,{align:'center'});
-  doc.text('Não vence: '+tnv,W/2,sy+40,{align:'center'});
+  doc.text('Vencidos: '+tv,W/2,sy+15,{align:'center'});
+  doc.text('Não vence: '+tnv,W/2,sy+26,{align:'center'});
+  sy+=38;
+  // Tabela de vencidos: colaborador + qual curso/documento está vencido
+  const vencRows=rows.filter(r=>r.status==='VENCIDO').sort((a,b)=>(a.colaborador||'').localeCompare(b.colaborador||'')||(a.vencimento||'').localeCompare(b.vencimento||''));
+  if(vencRows.length){
+    let tyD=sy;
+    doc.setFillColor(...C.h2);doc.rect(m,tyD-6,uw,6.5,'F');
+    doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(...C.twh);
+    doc.text('DOCUMENTOS VENCIDOS ('+tv+')',m+4,tyD-1);
+    tyD+=7;
+    doc.autoTable({
+      startY:tyD,
+      head:[['Colaborador','Curso / Documento','Vencimento','Dias']],
+      body:vencRows.map(r=>[r.colaborador,r.documento,r.vencimento,String(r.diasRestantes)]),
+      headStyles:{fillColor:[185,28,28],textColor:[255,255,255],fontStyle:'bold',fontSize:7,halign:'center',cellPadding:2},
+      alternateRowStyles:{fillColor:C.bg},
+      styles:{fontSize:7,textColor:C.dark,cellPadding:1.8},
+      theme:'grid',lineColor:C.bdr,lineWidth:0.12,
+      tableWidth:uw,margin:{top:38,left:m,right:m,bottom:16},
+      rowPageBreak:'avoid',
+      columnStyles:{0:{cellWidth:52},1:{cellWidth:uw-108},2:{cellWidth:32,halign:'center'},3:{cellWidth:24,halign:'center'}},
+      didDrawPage:function(data){
+        if(data.pageNumber!==lastPageNum){
+          drawPageHeader(doc,W,m,wsLogo);
+          drawPageFooter(doc,W,H,m);
+          lastPageNum=data.pageNumber;
+        }
+      }
+    });
+    sy=doc.lastAutoTable.finalY+10;
+  }
+  // Tabela de "Não Vence": colaborador + qual curso/documento
+  const nvRows=rows.filter(r=>r.status==='NÃO VENCE').sort((a,b)=>(a.colaborador||'').localeCompare(b.colaborador||'')||(a.documento||'').localeCompare(b.documento||''));
+  if(nvRows.length){
+    let tyD=sy;
+    doc.setFillColor(...C.h2);doc.rect(m,tyD-6,uw,6.5,'F');
+    doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(...C.twh);
+    doc.text('DOCUMENTOS QUE NÃO VENCEM ('+tnv+')',m+4,tyD-1);
+    tyD+=7;
+    doc.autoTable({
+      startY:tyD,
+      head:[['Colaborador','Curso / Documento','Data']],
+      body:nvRows.map(r=>[r.colaborador,r.documento,r.dataHora]),
+      headStyles:{fillColor:[21,128,61],textColor:[255,255,255],fontStyle:'bold',fontSize:7,halign:'center',cellPadding:2},
+      alternateRowStyles:{fillColor:C.bg},
+      styles:{fontSize:7,textColor:C.dark,cellPadding:1.8},
+      theme:'grid',lineColor:C.bdr,lineWidth:0.12,
+      tableWidth:uw,margin:{top:38,left:m,right:m,bottom:16},
+      rowPageBreak:'avoid',
+      columnStyles:{0:{cellWidth:52},1:{cellWidth:uw-100},2:{cellWidth:48,halign:'center'}},
+      didDrawPage:function(data){
+        if(data.pageNumber!==lastPageNum){
+          drawPageHeader(doc,W,m,wsLogo);
+          drawPageFooter(doc,W,H,m);
+          lastPageNum=data.pageNumber;
+        }
+      }
+    });
+    sy=doc.lastAutoTable.finalY+10;
+  }
   const subCount={};
   items.forEach(h=>{
     const sub=(h.tipo==='certificado'||(h.nome||'').toLowerCase().startsWith('certificado'))?getCertCursoName(h):(h.nome||'—');
@@ -2183,7 +2271,11 @@ async function genRelatorioPDF(docType,subTipo){
   const subRows=Object.entries(subCount).sort((a,b)=>a[0].localeCompare(b[0],'pt-BR')).map(([k,v])=>[k,String(v)]);
   const totalDocs=subRows.reduce((s,r)=>s+parseInt(r[1]||'0',10),0);
   subRows.push(['TOTAL GERAL',String(totalDocs)]);
-  let tyStart=sy+52;
+  let tyStart=sy+8;
+  doc.setFillColor(...C.h2);doc.rect(m,tyStart-6,uw,6.5,'F');
+  doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(...C.twh);
+  doc.text('TOTAL DE DOCUMENTOS POR SUB TIPO',m+4,tyStart-1);
+  tyStart+=7;
   const subHead=[['SUB TIPO DE DOCUMENTO','TOTAL DE DOCUMENTOS GERADOS']];
   const subColStyles={0:{cellWidth:uw-60},1:{cellWidth:60,halign:'center'}};
   doc.autoTable({
