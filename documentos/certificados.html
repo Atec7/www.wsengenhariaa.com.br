@@ -628,7 +628,21 @@ button.danger:hover { background: #c82333; }
                 </div>
 
                 <h3>Alunos e Cursos</h3>
-                <p style="color:var(--muted)">*Selecione uma empresa acima para carregar a lista de alunos vinculados a ela.</p>
+                <p style="color:var(--muted)">*Selecione uma empresa acima para carregar a lista de alunos vinculados a ela. Opcional: refine por Obra, Cidade e Filial.</p>
+                <div class="grid">
+                    <div class="col-4">
+                        <label>Obra</label>
+                        <select id="selObra"><option value="">Todas</option></select>
+                    </div>
+                    <div class="col-4">
+                        <label>Cidade</label>
+                        <select id="selCidade"><option value="">Todas</option></select>
+                    </div>
+                    <div class="col-4">
+                        <label>Filial</label>
+                        <select id="selFilial"><option value="">Todas</option></select>
+                    </div>
+                </div>
                 <label>Selecione alunos</label>
                 <div style="margin-bottom:6px;">
                     <input id="selAlunoBusca" placeholder="Pesquisar aluno por nome ou matrícula" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:4px;font-size:14px;">
@@ -750,6 +764,9 @@ const analytics = getAnalytics(app);
 const db = getDatabase(app);
 
 let empresasData = {};
+let obrasData = {};
+let cidadesData = {};
+let filiaisData = {};
 
 let usuarioAtualCert = null;
 async function carregarUsuarioCert(){
@@ -936,7 +953,35 @@ function renderAlunos(){
         };
     }
 
+    popSelLocCert();
     renderAlunosCheckboxForGeracao();
+}
+
+// Popula os seletores de Obra/Cidade/Filial em cascata, conforme a empresa selecionada.
+// As opções são as obras/cidades/filiais vinculadas aos alunos da empresa selecionada.
+function esc(s){return String(s||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
+function popSelLocCert(){
+    const eid = el("selEmpresa").value;
+    const alunosEmp = eid ? getArrayFromData(alunosData).filter(a => a.empresaVinculoId === eid) : [];
+    [['selObra','obraId','obras','obra'],['selCidade','cidadeId','cidades','cidade'],['selFilial','filialId','filiais','filial']].forEach(([selId,field,col,leg]) => {
+        const sel = el(selId);
+        if (!sel) return;
+        const cur = sel.value;
+        const map = col==='obras'?obrasData:col==='cidades'?cidadesData:filiaisData;
+        const set = new Set();
+        alunosEmp.forEach(a => {
+            const v = a[field];
+            if (v === undefined || v === null || String(v).trim() === '') return;
+            const s = String(v).trim();
+            const item = map[s] || getArrayFromData(map).find(c => String(c.id).trim() === s);
+            const label = item && item.nome ? item.nome : s;
+            if (item && item.id !== undefined) set.add(item.id + '|' + label);
+            else set.add(s + '|' + label);
+        });
+        const list = [...set].map(k => { const i = k.indexOf('|'); return {id:k.slice(0,i), nome:k.slice(i+1)}; }).sort((a,b)=>a.nome.localeCompare(b.nome, 'pt-BR'));
+        sel.innerHTML = '<option value="">Todas</option>' + list.map(o => `<option value="${esc(o.id)}">${esc(o.nome)}</option>`).join('');
+        if (list.some(o => String(o.id) === String(cur))) sel.value = cur; else sel.value = '';
+    });
 }
 
 function renderAlunosCheckboxForGeracao(){
@@ -949,17 +994,25 @@ function renderAlunosCheckboxForGeracao(){
     }
 
     const termoBusca = (el("selAlunoBusca")?.value || "").trim().toLowerCase();
+    const obSel = el("selObra")?.value || "";
+    const cdSel = el("selCidade")?.value || "";
+    const flSel = el("selFilial")?.value || "";
 
     const alunosFiltrados = getArrayFromData(alunosData).filter(a => {
         if (a.empresaVinculoId !== empresaIdSelecionada) return false;
-        if (!termoBusca) return true;
-        const nome = (a.nome || "").toLowerCase();
-        const matricula = (a.matricula || "").toLowerCase();
-        return nome.includes(termoBusca) || matricula.includes(termoBusca);
+        if (obSel && String(a.obraId||'').trim() !== String(obSel).trim()) return false;
+        if (cdSel && String(a.cidadeId||'').trim() !== String(cdSel).trim()) return false;
+        if (flSel && String(a.filialId||'').trim() !== String(flSel).trim()) return false;
+        if (termoBusca) {
+            const nome = (a.nome || "").toLowerCase();
+            const matricula = (a.matricula || "").toLowerCase();
+            if (!nome.includes(termoBusca) && !matricula.includes(termoBusca)) return false;
+        }
+        return true;
     }).sort((a,b)=>(a.nome||'').localeCompare(b.nome||'', 'pt-BR'));
 
     if (alunosFiltrados.length === 0) {
-        listaAlunosCheckbox.innerHTML = 'Nenhum aluno encontrado para esta empresa.';
+        listaAlunosCheckbox.innerHTML = (obSel || cdSel || flSel) ? 'Nenhum aluno para esta empresa/obra/cidade/filial.' : 'Nenhum aluno encontrado para esta empresa.';
         return;
     }
 
@@ -2521,11 +2574,17 @@ window.addEventListener('DOMContentLoaded', async () => {
     setupFirebaseListener('empresas', empresasData, renderEmpresas);
     setupFirebaseListener('alunos', alunosData, renderAlunos);
     setupFirebaseListener('cursos', cursosData, renderCursos);
+    setupFirebaseListener('obras', obrasData, () => {});
+    setupFirebaseListener('cidades', cidadesData, () => {});
+    setupFirebaseListener('filiais', filiaisData, () => {});
     setupFirebaseListener('certificadosGerados', certificadosGeradosData, renderCertificadosGerados); 
 
     setupNavigation();
 
-    el("selEmpresa").addEventListener('change', renderAlunosCheckboxForGeracao);
+    el("selEmpresa").addEventListener('change', () => { popSelLocCert(); renderAlunosCheckboxForGeracao(); });
+    el("selObra").addEventListener('change', renderAlunosCheckboxForGeracao);
+    el("selCidade").addEventListener('change', renderAlunosCheckboxForGeracao);
+    el("selFilial").addEventListener('change', renderAlunosCheckboxForGeracao);
     el("btnSalvarEmpresa").onclick=window.saveEmpresa;
     el("btnLimparEmpresa").onclick=window.clearEmpresaForm;
     el("btnSalvarAluno").onclick=window.saveAluno;

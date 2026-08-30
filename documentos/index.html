@@ -461,6 +461,11 @@ hr.dv{border:none;border-top:1px solid var(--bd);margin:18px 0}
   <div class="card" style="max-width:840px">
     <div class="ct">1 &mdash; Empresa e Colaboradores</div>
     <div class="fg"><label class="fl">Empresa</label><select id="g-e" onchange="fltG()"><option value="">Selecione...</option></select></div>
+    <div class="g3">
+      <div class="fg"><label class="fl">Obra</label><select id="g-e-obra" onchange="fltG()"><option value="">Todas</option></select></div>
+      <div class="fg"><label class="fl">Cidade</label><select id="g-e-cidade" onchange="fltG()"><option value="">Todas</option></select></div>
+      <div class="fg"><label class="fl">Filial</label><select id="g-e-filial" onchange="fltG()"><option value="">Todas</option></select></div>
+    </div>
     <div class="fg"><label class="fl">Colaboradores</label><div class="sbar"><button class="bxs bxn" onclick="selAll('gChk',true)">Todos</button><button class="bxs bxd" onclick="selAll('gChk',false)">Nenhum</button></div><div id="g-f-list" class="cl"><div class="es">Selecione uma empresa primeiro</div></div></div>
     <hr class="dv">
     <div class="ct">2 &mdash; Conte&uacute;do da OS</div>
@@ -484,6 +489,11 @@ hr.dv{border:none;border-top:1px solid var(--bd);margin:18px 0}
       </select>
     </div>
     <div class="g2"><div class="fg"><label class="fl">Empresa</label><select id="list-empresa" onchange="fltList()"><option value="">Selecione...</option></select></div><div class="fg"><label class="fl">Nome do Treinamento</label><input id="list-treino" placeholder="Nome do treinamento"></div></div>
+    <div class="g3">
+      <div class="fg"><label class="fl">Obra</label><select id="list-empresa-obra" onchange="fltList()"><option value="">Todas</option></select></div>
+      <div class="fg"><label class="fl">Cidade</label><select id="list-empresa-cidade" onchange="fltList()"><option value="">Todas</option></select></div>
+      <div class="fg"><label class="fl">Filial</label><select id="list-empresa-filial" onchange="fltList()"><option value="">Todas</option></select></div>
+    </div>
     <div class="g2"><div class="fg"><label class="fl">Local</label><input id="list-local" placeholder="Local do treinamento"></div><div class="fg"><label class="fl">Carga Hor&aacute;ria</label><input id="list-carga" placeholder="Ex: 4h ou 8 horas"></div></div>
     <div class="fg"><label class="fl">Data</label><input type="date" id="list-data"></div>
     <div class="fg"><label class="fl">Conte&uacute;do Programático</label><textarea id="list-cont" placeholder="Descreva o conte&uacute;do abordado..."></textarea></div>
@@ -503,6 +513,11 @@ hr.dv{border:none;border-top:1px solid var(--bd);margin:18px 0}
       </select>
     </div>
     <div class="fg"><label class="fl">Empresa</label><select id="adm-empresa" onchange="fltAdm()"><option value="">Selecione...</option></select></div>
+    <div class="g3">
+      <div class="fg"><label class="fl">Obra</label><select id="adm-empresa-obra" onchange="fltAdm()"><option value="">Todas</option></select></div>
+      <div class="fg"><label class="fl">Cidade</label><select id="adm-empresa-cidade" onchange="fltAdm()"><option value="">Todas</option></select></div>
+      <div class="fg"><label class="fl">Filial</label><select id="adm-empresa-filial" onchange="fltAdm()"><option value="">Todas</option></select></div>
+    </div>
     <div class="fg"><label class="fl">Colaboradores</label><div class="sbar"><button class="bxs bxn" onclick="selAll('admChk',true)">Todos</button><button class="bxs bxd" onclick="selAll('admChk',false)">Nenhum</button></div><div id="adm-f-list" class="cl"><div class="es">Selecione uma empresa primeiro</div></div></div>
     <div class="g2"><div class="fg"><label class="fl">Data do Treinamento</label><input type="date" id="adm-data"></div><div class="fg"><label class="fl">Local</label><input id="adm-local" placeholder="Local do treinamento"></div></div>
     <div class="fg"><label class="fl">Conte&uacute;do Programático</label><textarea id="adm-cont" placeholder="Conte&uacute;do abordado no treinamento admissional..."></textarea></div>
@@ -526,6 +541,11 @@ hr.dv{border:none;border-top:1px solid var(--bd);margin:18px 0}
       <div class="ct">Dados da Entrega</div>
       <div class="g2">
         <div class="fg"><label class="fl">Empresa</label><select id="e-e" onchange="fltEpi()"><option value="">Selecione...</option></select></div>
+        <div class="g3">
+          <div class="fg"><label class="fl">Obra</label><select id="e-e-obra" onchange="fltEpi()"><option value="">Todas</option></select></div>
+          <div class="fg"><label class="fl">Cidade</label><select id="e-e-cidade" onchange="fltEpi()"><option value="">Todas</option></select></div>
+          <div class="fg"><label class="fl">Filial</label><select id="e-e-filial" onchange="fltEpi()"><option value="">Todas</option></select></div>
+        </div>
         <div class="fg"><label class="fl">Colaboradores</label><div class="sbar"><button class="bxs bxn" onclick="selAll('eChk',true)">Todos</button><button class="bxs bxd" onclick="selAll('eChk',false)">Nenhum</button></div><div id="e-f-list" class="cl"><div class="es">Selecione uma empresa</div></div></div>
       </div>
       <div class="fg"><label class="fl">Data da Entrega</label><input type="date" id="e-data"></div>
@@ -811,12 +831,17 @@ hr.dv{border:none;border-top:1px solid var(--bd);margin:18px 0}
   <div class="g2">
     <div class="fg">
       <label class="fl">Empresa</label>
-      <select id="relcolab-emp" style="padding:7px 10px;font-size:12px"><option value="">Selecione...</option></select>
+      <select id="relcolab-emp" style="padding:7px 10px;font-size:12px" onchange="popRelLoc()"><option value="">Selecione...</option></select>
     </div>
     <div class="fg">
       <label class="fl">N&uacute;mero de Contrato / Matr&iacute;cula</label>
       <input type="text" id="relcolab-mat" placeholder="Deixe vazio para listar todos">
     </div>
+  </div>
+  <div class="g3" style="margin-top:6px">
+    <div class="fg"><label class="fl">Obra</label><select id="relcolab-obra" style="padding:7px 10px;font-size:12px" onchange="gerarRelColab()"><option value="">Todas</option></select></div>
+    <div class="fg"><label class="fl">Cidade</label><select id="relcolab-cidade" style="padding:7px 10px;font-size:12px" onchange="gerarRelColab()"><option value="">Todas</option></select></div>
+    <div class="fg"><label class="fl">Filial</label><select id="relcolab-filial" style="padding:7px 10px;font-size:12px" onchange="gerarRelColab()"><option value="">Todas</option></select></div>
   </div>
   <div class="ma" style="margin-top:6px">
     <button class="btn bg2" onclick="cls()">Cancelar</button>
@@ -2003,16 +2028,22 @@ function openRelColab(){
   const emps=empresasVisiveis().sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));
   el.innerHTML='<option value="">Selecione...</option>'+emps.map(e=>`<option value="${esc(e.id)}">${esc(e.nome)}</option>`).join('');
   document.getElementById('relcolab-mat').value='';
+  popGenLoc('relcolab-emp');
   document.getElementById('relcolab-results').innerHTML='';
   document.getElementById('relcolab-pdf-btn').style.display='none';
   document.getElementById('mdl-rel-colab').style.display='flex';
 }
 function relColabCargo(f){return resolveCargo(f?.funcao)?.nome||f?.funcao||'—';}
+function popRelLoc(){popGenLoc('relcolab-emp');}
 function relColabQuery(){
   const empId=document.getElementById('relcolab-emp').value;
   const mat=String(document.getElementById('relcolab-mat').value||'').trim();
   if(!empId)return null;
+  const vOb=document.getElementById('relcolab-obra')?.value||'';
+  const vCd=document.getElementById('relcolab-cidade')?.value||'';
+  const vFl=document.getElementById('relcolab-filial')?.value||'';
   let funcs=toArr(DATA.funcionarios).filter(f=>String(f.empresaId||'').trim()===String(empId).trim());
+  funcs=funcs.filter(f=>colLocMatch(f,{obra:vOb,cidade:vCd,filial:vFl}));
   if(mat){funcs=funcs.filter(f=>String(f.matricula||'').trim()===mat||String(f.matricula||'').toLowerCase().includes(mat.toLowerCase()));}
   funcs=funcs.slice().sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));
   return{empId,mat,funcs,emp:resolveEmp(empId)};
@@ -2663,16 +2694,49 @@ function renderCargoEpiCart(){
 function addToCart(){const s=document.getElementById('e-sel-mat');const o=s.options[s.selectedIndex];if(!o||!o.value){alert('Selecione um material');return;}const qtd=parseInt(document.getElementById('e-qtd').value)||1;const mat=DATA.materiais[o.value];if(!mat)return;const ex=CART.find(c=>c.id===mat.id);if(ex){ex.qtd+=qtd;}else{CART.push({id:mat.id,nome:mat.nome,ca:mat.ca||'',unidade:mat.unidade||'',tipo:mat.tipo||'EPI',qtd,vencimentoCa:mat.vencimentoCa||''});}renderCart();if(document.getElementById('chk-lembrar-epi').checked)localStorage.setItem('epi_cart_memory',JSON.stringify(CART));}
 function filterEmissionSelect(){const q=document.getElementById('e-search-input').value.toLowerCase();const mats=toArr(DATA.materiais).filter(m=>(m.nome||'').toLowerCase().includes(q)||(m.ca||'').toLowerCase().includes(q)).sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));document.getElementById('e-sel-mat').innerHTML='<option value="">Selecione...</option>'+mats.map(m=>`<option value="${m.id}" data-un="${esc(m.unidade||'')}">${esc(m.nome)} (C.A.${m.ca||''})</option>`).join('');}
 function updateUnid(){const s=document.getElementById('e-sel-mat');const o=s.options[s.selectedIndex];document.getElementById('e-unid').value=o?(o.dataset.un||''):'';}
-function fltG(){renderFuncList('g-e','g-f-list','gChk');}
-function fltList(){renderFuncList('list-empresa','list-f-list','lChk');}
-function fltAdm(){renderFuncList('adm-empresa','adm-f-list','admChk');}
-function fltEpi(){renderFuncList('e-e','e-f-list','eChk');}
+function fltG(){popGenLoc('g-e');renderFuncList('g-e','g-f-list','gChk');}
+function fltList(){popGenLoc('list-empresa');renderFuncList('list-empresa','list-f-list','lChk');}
+function fltAdm(){popGenLoc('adm-empresa');renderFuncList('adm-empresa','adm-f-list','admChk');}
+function fltEpi(){popGenLoc('e-e');renderFuncList('e-e','e-f-list','eChk');}
+// Popula os seletores de Obra/Cidade/Filial de um gerador em cascata, conforme a empresa selecionada.
+function popGenLoc(empSelId){
+  const eid=document.getElementById(empSelId).value;
+  [['-obra','obras'],['-cidade','cidades'],['-filial','filiais']].forEach(([sfx,col])=>{
+    const sel=document.getElementById(empSelId+sfx);
+    if(!sel)return;
+    const cur=sel.value;
+    const perm=catsPermitidos(col);
+    const list=[];
+    if(eid){
+      const e=DATA.empresas[eid];
+      const raw=e&&e[col];
+      const ids=[];
+      if(Array.isArray(raw))raw.forEach(x=>ids.push(String(x).trim()));
+      else if(typeof raw==='string'&&raw.trim())ids.push(raw.trim());
+      const sing=SING_MAP[col];
+      if(typeof e[sing]==='string'&&e[sing].trim())ids.push(e[sing].trim());
+      const seen=new Set();
+      ids.forEach(s=>{
+        if(!s||seen.has(s))return;seen.add(s);
+        const cat=DATA[col]&&DATA[col][s];
+        const id=cat?String(cat.id).trim():s;
+        if(perm&&!perm.has(id))return;
+        if(!catPermitida(col,id))return;
+        list.push({id,nome:cat?cat.nome:s});
+      });
+    }
+    sel.innerHTML='<option value="">Todas</option>'+list.map(o=>`<option value="${esc(o.id)}">${esc(o.nome)}</option>`).join('');
+    if(list.some(o=>o.id===cur))sel.value=cur;else sel.value='';
+  });
+}
 function renderFuncList(selId,cId,name){
   const eid=document.getElementById(selId).value;
-  const funcs=toArr(DATA.funcionarios).filter(f=>String(f.empresaId||'').trim()===String(eid||'').trim()).sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));
   const el=document.getElementById(cId);
   if(!eid){el.innerHTML='<div class="es">Selecione uma empresa primeiro</div>';return;}
-  el.innerHTML=funcs.length?funcs.map(f=>`<div class="ci"><input type="checkbox" name="${name}" value="${f.id}" id="ck_${name}_${f.id}" onchange="handleColabSelect('${f.id}','${name}')"><label for="ck_${name}_${f.id}">${esc(f.nome)} <span>(${esc(resolveCargo(f.funcao)?.nome||f.funcao||'')})</span></label></div>`).join(''):'<div class="es">Nenhum colaborador nesta empresa</div>';
+  const gOb=document.getElementById(selId+'-obra'),gCd=document.getElementById(selId+'-cidade'),gFl=document.getElementById(selId+'-filial');
+  const f={obra:gOb?gOb.value:'',cidade:gCd?gCd.value:'',filial:gFl?gFl.value:''};
+  const funcs=toArr(DATA.funcionarios).filter(fn=>String(fn.empresaId||'').trim()===String(eid||'').trim()).filter(fn=>colLocMatch(fn,f)).sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));
+  el.innerHTML=funcs.length?funcs.map(f=>`<div class="ci"><input type="checkbox" name="${name}" value="${f.id}" id="ck_${name}_${f.id}" onchange="handleColabSelect('${f.id}','${name}')"><label for="ck_${name}_${f.id}">${esc(f.nome)} <span>(${esc(resolveCargo(f.funcao)?.nome||f.funcao||'')})</span></label></div>`).join(''):'<div class="es">Nenhum colaborador nesta empresa/obra/cidade/filial</div>';
 }
 function handleColabSelect(fid,name){
   if(name==='eChk'){
