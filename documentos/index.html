@@ -869,6 +869,40 @@ hr.dv{border:none;border-top:1px solid var(--bd);margin:18px 0}
       <small style="font-size:10px;color:var(--tm)">Opcional: mostra somente as filiais vinculadas &agrave;s empresas selecionadas acima. Se alguma filial for marcada, o usu&aacute;rio ver&aacute; apenas essas filiais.</small>
     </div>
     <div class="fg">
+      <label class="fl">Obras com Acesso</label>
+      <div class="usu-emp-dd" id="usuarios-ob-dd">
+        <button type="button" class="usu-emp-dd-btn" onclick="event.stopPropagation();toggleObDropdown()">
+          <span id="usuarios-ob-label">Nenhuma selecionada</span>
+          <i class="fa-solid fa-chevron-down"></i>
+        </button>
+        <div class="usu-emp-dd-panel" onclick="event.stopPropagation()">
+          <div style="display:flex;gap:6px;padding:6px 8px;border-bottom:1px solid var(--bd)">
+            <button type="button" class="bxs bxn" onclick="selAll('usuObChk',true);updateObLabel()">Todas</button>
+            <button type="button" class="bxs bxd" onclick="selAll('usuObChk',false);updateObLabel()">Nenhuma</button>
+          </div>
+          <div class="musu-emp-list" id="usuarios-obras" style="border:none;border-radius:0;max-height:180px"></div>
+        </div>
+      </div>
+      <small style="font-size:10px;color:var(--tm)">Opcional: mostra somente as obras vinculadas &agrave;s empresas selecionadas acima. Se alguma obra for marcada, o usu&aacute;rio ver&aacute; apenas essas obras.</small>
+    </div>
+    <div class="fg">
+      <label class="fl">Cidades com Acesso</label>
+      <div class="usu-emp-dd" id="usuarios-cd-dd">
+        <button type="button" class="usu-emp-dd-btn" onclick="event.stopPropagation();toggleCdDropdown()">
+          <span id="usuarios-cd-label">Nenhuma selecionada</span>
+          <i class="fa-solid fa-chevron-down"></i>
+        </button>
+        <div class="usu-emp-dd-panel" onclick="event.stopPropagation()">
+          <div style="display:flex;gap:6px;padding:6px 8px;border-bottom:1px solid var(--bd)">
+            <button type="button" class="bxs bxn" onclick="selAll('usuCdChk',true);updateCdLabel()">Todas</button>
+            <button type="button" class="bxs bxd" onclick="selAll('usuCdChk',false);updateCdLabel()">Nenhuma</button>
+          </div>
+          <div class="musu-emp-list" id="usuarios-cidades" style="border:none;border-radius:0;max-height:180px"></div>
+        </div>
+      </div>
+      <small style="font-size:10px;color:var(--tm)">Opcional: mostra somente as cidades vinculadas &agrave;s empresas selecionadas acima. Se alguma cidade for marcada, o usu&aacute;rio ver&aacute; apenas essas cidades.</small>
+    </div>
+    <div class="fg">
       <label class="fl">Telas e Permiss&otilde;es</label>
       <div class="usu-perm-grid" id="usuarios-telas"></div>
     </div>
@@ -904,6 +938,7 @@ const IMGBB_KEY="95bb16ee776d7e20f26857cec98bd372";
 // ── STATE ───────────────────────────────────────────────────────
 let DATA={empresas:{},funcionarios:{},textos:{},materiais:{},config:{},historico:{},cargos:{},pessoas:{},obras:{},cidades:{},filiais:{},usuarios:{},aprovacoes:{}};
 let CART=[],SEL_TEXTS=[],CARGO_EPI_CART=[];
+let PENDING_CAT_SEL=null;
 let _replaceHistoryKey=null;
 let certCursoMap=null;
 let certCache=null;
@@ -973,8 +1008,9 @@ function empCatVals(e,key){
   const leg=e[sing];
   const out=[];
   if(Array.isArray(raw))out.push(...raw);
+  else if(typeof raw==='string'&&raw.trim())out.push(raw.trim());
   if(typeof leg==='string'&&leg.trim())out.push(leg.trim());
-  return out.map(x=>{const c=DATA[key]&&DATA[key][x];return c?(c.nome||x):String(x);});
+  return [...new Set(out.map(x=>{const c=DATA[key]&&DATA[key][x];return c?(c.nome||x):String(x);}))];
 }
 function empCatMatch(e,key,val){
   if(!val)return true;
@@ -2222,14 +2258,14 @@ function renewDoc(key){
 
 // ── LISTAGENS ─────────────────────────────────────────────────────
 function renderEmps(){const q=(document.getElementById('filter-empresas').value||'').toLowerCase();const emps=toArr(DATA.empresas).filter(e=>empresaPermitida(e.id)).filter(e=>{const hay=[e.nome||'',e.cnpj||'',e.endereco||'',...empCatVals(e,'obras'),...empCatVals(e,'cidades'),...empCatVals(e,'filiais')].join(' ').toLowerCase();return hay.includes(q);}).sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));document.getElementById('lst-e').innerHTML=emps.length?emps.map(e=>{const obs=empCatVals(e,'obras'),cids=empCatVals(e,'cidades'),fils=empCatVals(e,'filiais');const parts=[];if(e.endereco)parts.push('End.: '+esc(e.endereco).substring(0,50));if(obs.length)parts.push('Obras: '+esc(obs.join(', ').substring(0,60)));if(cids.length)parts.push('Cidades: '+esc(cids.join(', ').substring(0,60)));if(fils.length)parts.push('Filiais: '+esc(fils.join(', ').substring(0,60)));return `<div class="tr2"><div><div class="rn">${esc(e.nome)}</div><div class="rs">CNPJ: ${esc(e.cnpj||'—')}${parts.length?' | '+parts.join(' | '):''}</div></div><div class="ra"><button class="btn bw" onclick='editEmp(${safeJSON(e)})'><i class="fa-solid fa-pen"></i></button><button class="btn bd2" onclick="del('empresas','${e.id}')"><i class="fa-solid fa-trash"></i></button></div></div>`;}).join(''):'<div class="es">Nenhuma empresa encontrada</div>';}
-function renderCats(){['obras','cidades','filiais'].forEach(col=>{const el=document.getElementById('cat-'+col+'-list');if(!el)return;const perm=catsPermitidos(col);const items=toArr(DATA[col]).filter(c=>(!perm||perm.has(String(c.id)))&&(col!=='filiais'||filialPermitida(c.id))).sort((a,b)=>(a.nome||'').localeCompare(b.nome||'pt-BR'));el.innerHTML=items.length?items.map(c=>`<div class="tr2"><div class="rn">${esc(c.nome)}</div><div class="ra"><button class="btn bd2" onclick="delCat('${col}','${c.id}')"><i class="fa-solid fa-trash"></i></button></div></div>`).join(''):'<div class="es">Nenhum cadastrado</div>';});}
-function renderMsd(){Object.entries(MSD_MAP).forEach(([prefix,col])=>{const ops=document.getElementById(prefix+'-ops');if(!ops)return;const prev=Array.from(document.getElementsByName(prefix+'Chk')).filter(c=>c.checked).map(c=>c.value);const items=toArr(DATA[col]).sort((a,b)=>(a.nome||'').localeCompare(b.nome||'pt-BR'));ops.innerHTML=items.length?items.map(c=>`<div class="ci"><input type="checkbox" name="${prefix}Chk" value="${esc(c.id)}" id="ck_${prefix}_${esc(c.id)}" onchange="updateMsdVal('${prefix}')"><label for="ck_${prefix}_${esc(c.id)}">${esc(c.nome)}</label></div>`).join(''):'<div class="es">Nenhum cadastrado</div>';prev.forEach(v=>{const cb=document.getElementById('ck_'+prefix+'_'+v);if(cb)cb.checked=true;});updateMsdVal(prefix);});}
+function renderCats(){['obras','cidades','filiais'].forEach(col=>{const el=document.getElementById('cat-'+col+'-list');if(!el)return;const perm=catsPermitidos(col);const items=toArr(DATA[col]).filter(c=>(!perm||perm.has(String(c.id)))&&catPermitida(col,c.id)).sort((a,b)=>(a.nome||'').localeCompare(b.nome||'pt-BR'));el.innerHTML=items.length?items.map(c=>`<div class="tr2"><div class="rn">${esc(c.nome)}</div><div class="ra"><button class="btn bd2" onclick="delCat('${col}','${c.id}')"><i class="fa-solid fa-trash"></i></button></div></div>`).join(''):'<div class="es">Nenhum cadastrado</div>';});}
+function renderMsd(){Object.entries(MSD_MAP).forEach(([prefix,col])=>{const ops=document.getElementById(prefix+'-ops');if(!ops)return;const prev=Array.from(document.getElementsByName(prefix+'Chk')).filter(c=>c.checked).map(c=>c.value);const items=toArr(DATA[col]).sort((a,b)=>(a.nome||'').localeCompare(b.nome||'pt-BR'));ops.innerHTML=items.length?items.map(c=>`<div class="ci"><input type="checkbox" name="${prefix}Chk" value="${esc(c.id)}" id="ck_${prefix}_${esc(c.id)}" onchange="updateMsdVal('${prefix}')"><label for="ck_${prefix}_${esc(c.id)}">${esc(c.nome)}</label></div>`).join(''):'<div class="es">Nenhum cadastrado</div>';prev.forEach(v=>{const cb=document.getElementById('ck_'+prefix+'_'+v);if(cb)cb.checked=true;});if(PENDING_CAT_SEL&&PENDING_CAT_SEL.col===col){const cb=document.getElementById('ck_'+prefix+'_'+PENDING_CAT_SEL.id);if(cb){cb.checked=true;PENDING_CAT_SEL=null;}}updateMsdVal(prefix);});}
 function updateMsdVal(prefix){const el=document.getElementById(prefix+'-val');if(!el)return;const vals=getChecked(prefix+'Chk');const names=vals.map(v=>{const c=DATA[MSD_MAP[prefix]]&&DATA[MSD_MAP[prefix]][v];return c?(c.nome||v):v;});el.textContent=names.length?names.join(', '):'Selecione...';}
 function toggleMsd(trig){const p=trig.nextElementSibling;const o=p.classList.toggle('open');document.querySelectorAll('.msd-panel.open').forEach(x=>{if(x!==p)x.classList.remove('open');});return o;}
 document.addEventListener('click',e=>{if(!e.target.closest('.msd'))document.querySelectorAll('.msd-panel.open').forEach(x=>x.classList.remove('open'));});
 function addCat(col,inputId){const el=document.getElementById(inputId);const nome=(el.value||'').trim();if(!nome){alert('Informe um nome');return;}const k=uid();db.ref(col+'/'+k).set({id:k,nome}).then(()=>{el.value='';}).catch(e=>alert('Erro: '+e.message));}
 function delCat(col,id){if(!confirm('Confirma a exclus\u00e3o?'))return;db.ref(col+'/'+id).remove().catch(e=>alert('Erro: '+e.message));}
-function addCatAndSel(col,inputId,prefix){const el=document.getElementById(inputId);const nome=(el.value||'').trim();if(!nome){alert('Informe um nome');return;}const k=uid();db.ref(col+'/'+k).set({id:k,nome}).then(()=>{el.value='';const cb=document.getElementById('ck_'+prefix+'_'+k);if(cb){cb.checked=true;updateMsdVal(prefix);}else renderMsd();}).catch(e=>alert('Erro: '+e.message));}
+function addCatAndSel(col,inputId,prefix){const el=document.getElementById(inputId);const nome=(el.value||'').trim();if(!nome){alert('Informe um nome');return;}const k=uid();PENDING_CAT_SEL={col:col,id:k};db.ref(col+'/'+k).set({id:k,nome}).then(()=>{el.value='';renderMsd();}).catch(e=>{PENDING_CAT_SEL=null;alert('Erro: '+e.message);});}
 function renderCargos(){const q=(document.getElementById('filter-cargos').value||'').toLowerCase();const cargos=toArr(DATA.cargos).filter(c=>(c.nome||'').toLowerCase().includes(q)||(c.cbo||'').toLowerCase().includes(q)).sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));const resolveEpiNomes=c=>{if(!c.epi)return'';const list=Array.isArray(c.epi)?c.epi:typeof c.epi==='string'?c.epi.split(',').map(s=>s.trim()).filter(s=>s).map(id=>({id})):[];return list.map(item=>{const id=typeof item==='object'?item.id:item;const qtd=typeof item==='object'?(item.qtd||1):1;const m=DATA.materiais[id]||toArr(DATA.materiais).find(mm=>(mm.nome||'').toLowerCase().includes(id.toLowerCase()));return m?m.nome+(qtd>1?' x'+qtd:''):null;}).filter(Boolean).join(', ');};document.getElementById('lst-c').innerHTML=cargos.length?cargos.map(c=>{const epiStr=resolveEpiNomes(c);return`<div class="tr2"><div><div class="rn">${esc(c.nome)}</div><div class="rs">CBO: ${esc(c.cbo||'—')}${epiStr?' | EPIs: '+esc(epiStr.substring(0,60)):''}</div></div><div class="ra"><button class="btn bw" onclick='editCargo(${safeJSON(c)})'><i class="fa-solid fa-pen"></i></button><button class="btn bd2" onclick="del('cargos','${c.id}')"><i class="fa-solid fa-trash"></i></button></div></div>`;}).join(''):'<div class="es">Nenhum cargo encontrado</div>';}
 function renderFuncs(){const q=(document.getElementById('filter-colaboradores').value||'').toLowerCase();const eSel=document.getElementById('filter-colaboradores-emp')?.value||'';const funcs=toArr(DATA.funcionarios).filter(f=>(!eSel||String(f.empresaId||'').trim()===String(eSel).trim())&&((f.nome||'').toLowerCase().includes(q)||(f.funcao||'').toLowerCase().includes(q))).sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));const em={};toArr(DATA.empresas).forEach(e=>{em[String(e.id||'').trim()]=e.nome;});const cg={};toArr(DATA.cargos).forEach(c=>{cg[String(c.id||'').trim()]=c.nome;});const nameOf=(col,id)=>{if(!id)return'';const s=String(id||'').trim();const it=DATA[col]&&DATA[col][s]?DATA[col][s]:toArr(DATA[col]).find(c=>String(c.id||'').trim()===s);return it?(it.nome||''):'';};const now=new Date();const fmtAsoTipo=t=>{return{'ADMISSIONAL':'Admissional','DEMISSIONAL':'Demissional','PERIODICO':'Periódico','MUDANCA_FUNCAO':'Mudança Função','RETORNO_TRABALHO':'Retorno Trabalho'}[t]||t;};function asoStatus(f){if(!f.asoDate)return'';const d=new Date(f.asoDate+'T23:59:59');const days=Math.ceil((d-now)/(864e5));if(days<0)return'<span class="bdg" style="background:#fee2e2;color:#b91c1c">ASO Vencido</span>';if(days<=30)return'<span class="bdg" style="background:#ffedd5;color:#c2410c">ASO '+days+'d</span>';return'<span class="bdg" style="background:#dcfce7;color:#15803d">ASO OK</span>';}function vinculoBadge(f){const ok=!!f.filialId&&!!f.obraId;if(ok)return'';return' <span class="bdg" style="background:#fee2e2;color:#b91c1c">Sem vínculo completo</span>';}document.getElementById('lst-f').innerHTML=funcs.length?funcs.map(f=>{const fl=nameOf('filiais',f.filialId),ob=nameOf('obras',f.obraId),cd=nameOf('cidades',f.cidadeId);const vinculoTxt=(fl||ob||cd)?` · ${[fl,ob,cd].filter(Boolean).join(' / ')}`:'';return`<div class="tr2"><div><div class="rn">${esc(f.nome)} ${asoStatus(f)}${vinculoBadge(f)}</div><div class="rs">${esc(em[String(f.empresaId||'').trim()]||'?')} · ${esc(cg[String(f.funcao||'').trim()]||f.funcao||'—')}${vinculoTxt}${f.asoTipo?' · ASO: '+esc(fmtAsoTipo(f.asoTipo)):''}${f.asoDate?' · Vence: '+esc(f.asoDate):''}</div></div><div class="ra"><button class="btn bw" onclick='editFunc(${safeJSON(f)})'><i class="fa-solid fa-pen"></i></button><button class="btn bd2" onclick="del('funcionarios','${f.id}')"><i class="fa-solid fa-trash"></i></button></div></div>`;}).join(''):'<div class="es">Nenhum colaborador encontrado</div>';}
 function renderPessoas(){const q=(document.getElementById('filter-pessoas').value||'').toLowerCase();const pessoas=toArr(DATA.pessoas).filter(p=>(p.nome||'').toLowerCase().includes(q)||(p.cpf||'').toLowerCase().includes(q)).sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));document.getElementById('lst-p').innerHTML=pessoas.length?pessoas.map(p=>`<div class="tr2"><div><div class="rn">${esc(p.nome)}</div><div class="rs">CPF: ${esc(p.cpf||'—')}${p.endereco?' | '+esc(p.endereco).substring(0,50):''}</div></div><div class="ra"><button class="btn bw" onclick='editPessoa(${safeJSON(p)})'><i class="fa-solid fa-pen"></i></button><button class="btn bd2" onclick="del('pessoas','${p.id}')"><i class="fa-solid fa-trash"></i></button></div></div>`).join(''):'<div class="es">Nenhuma pessoa encontrada</div>';}
@@ -2319,9 +2355,29 @@ function usuarioRestritoEmpresas(){
 function usuarioRestritoFiliais(){
   return !!(USUARIO_ATUAL&&!USUARIO_ATUAL.mestre&&USUARIO_ATUAL.filiais&&USUARIO_ATUAL.filiais.length);
 }
+function usuarioRestritoObras(){
+  return !!(USUARIO_ATUAL&&!USUARIO_ATUAL.mestre&&USUARIO_ATUAL.obras&&USUARIO_ATUAL.obras.length);
+}
+function usuarioRestritoCidades(){
+  return !!(USUARIO_ATUAL&&!USUARIO_ATUAL.mestre&&USUARIO_ATUAL.cidades&&USUARIO_ATUAL.cidades.length);
+}
 function filialPermitida(id){
   if(!usuarioRestritoFiliais())return true;
   return USUARIO_ATUAL.filiais.includes(String(id));
+}
+function obraPermitida(id){
+  if(!usuarioRestritoObras())return true;
+  return USUARIO_ATUAL.obras.includes(String(id));
+}
+function cidadePermitida(id){
+  if(!usuarioRestritoCidades())return true;
+  return USUARIO_ATUAL.cidades.includes(String(id));
+}
+function catPermitida(col,id){
+  if(col==='filiais')return filialPermitida(id);
+  if(col==='obras')return obraPermitida(id);
+  if(col==='cidades')return cidadePermitida(id);
+  return true;
 }
 function empresasVisiveis(){
   return toArr(DATA.empresas).filter(e=>empresaPermitida(e.id));
@@ -2330,7 +2386,9 @@ function catsPermitidos(col){
   if(!usuarioRestritoEmpresas())return null;
   const set=new Set();
   empresasVisiveis().forEach(e=>{
-    (e[col]||[]).forEach(v=>set.add(String(v)));
+    const raw=e[col];
+    const list=Array.isArray(raw)?raw:(typeof raw==='string'&&raw.trim())?raw.trim().split(/[,;]/).map(s=>s.trim()).filter(Boolean):[];
+    list.forEach(v=>set.add(String(v)));
     const legacy=e[SING_MAP[col]];
     if(typeof legacy==='string'&&legacy.trim())set.add(legacy.trim());
   });
@@ -2372,8 +2430,8 @@ function populateSelects(){
     if(!sel)return;
     const cur=sel.value;
     const perm=catsPermitidos(col);
-    const items=toArr(DATA[col]).filter(c=>(!perm||perm.has(String(c.id)))&&(col!=='filiais'||filialPermitida(c.id))).sort((a,b)=>(a.nome||'').localeCompare(b.nome||'pt-BR'));
-    const legacy=[...new Set(toArr(DATA.empresas).filter(e=>empresaPermitida(e.id)).map(e=>{const r=e&&e[sing];return(typeof r==='string'&&r.trim())?r.trim():'';}).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'pt-BR')).filter(v=>!perm||perm.has(v)).filter(v=>!(col==='filiais'&&usuarioRestritoFiliais()));
+    const items=toArr(DATA[col]).filter(c=>(!perm||perm.has(String(c.id)))&&catPermitida(col,c.id)).sort((a,b)=>(a.nome||'').localeCompare(b.nome||'pt-BR'));
+    const legacy=[...new Set(toArr(DATA.empresas).filter(e=>empresaPermitida(e.id)).map(e=>{const r=e&&e[sing];return(typeof r==='string'&&r.trim())?r.trim():'';}).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'pt-BR')).filter(v=>!perm||perm.has(v)).filter(v=>!((col==='filiais'&&usuarioRestritoFiliais())||(col==='obras'&&usuarioRestritoObras())||(col==='cidades'&&usuarioRestritoCidades())));
     sel.innerHTML='<option value="">Todas</option>'+items.map(c=>`<option value="${esc(c.id)}">${esc(c.nome)}</option>`).join('')+legacy.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('');
     if(cur&&(items.some(c=>c.id===cur)||legacy.includes(cur)))sel.value=cur;
   });
@@ -2441,7 +2499,7 @@ function getFormData(t){
   if(t==='pessoa'){const cpfRaw=v('i-p-cp').replace(/\D/g,'');const idAtual=v('pid');const existente=toArr(DATA.pessoas).find(p=>p.id!==idAtual&&(p.cpf||'').replace(/\D/g,'')===cpfRaw);if(existente){alert('CPF j\u00e1 cadastrado para: '+existente.nome);return null;}return{id:idAtual,nome:v('i-p-nm'),cpf:v('i-p-cp'),endereco:v('i-p-ender')};}
   return null;
 }
-function editEmp(x){v('eid',x.id);v('i-e-nm',x.nome||'');v('i-e-cj',x.cnpj||'');v('i-e-ender',x.endereco||'');v('i-e-lid',x.logoUrl||'');document.getElementById('i-e-logo').value='';[['obras','eCatObra'],['cidades','eCatCidade'],['filiais','eCatFilial']].forEach(([col,prefix])=>{const ids=(Array.isArray(x[col])?x[col]:[]).slice();const sing=SING_MAP[col];if(typeof x[sing]==='string'&&x[sing].trim()){const c=toArr(DATA[col]).find(c=>c.nome===x[sing].trim());if(c)ids.push(c.id);}ids.forEach(i=>{const cb=document.getElementById('ck_'+prefix+'_'+i);if(cb)cb.checked=true;});});openM('mdl-e');}
+function editEmp(x){v('eid',x.id);v('i-e-nm',x.nome||'');v('i-e-cj',x.cnpj||'');v('i-e-ender',x.endereco||'');v('i-e-lid',x.logoUrl||'');document.getElementById('i-e-logo').value='';const toCheck={};[['obras','eCatObra'],['cidades','eCatCidade'],['filiais','eCatFilial']].forEach(([col,prefix])=>{let ids=[];const raw=x[col];if(Array.isArray(raw))ids.push(...raw);else if(typeof raw==='string'&&raw.trim())ids.push(raw.trim());const sing=SING_MAP[col];if(typeof x[sing]==='string'&&x[sing].trim()){const c=toArr(DATA[col]).find(c=>c.nome===x[sing].trim());if(c)ids.push(c.id);}toCheck[prefix]=[...new Set(ids.map(i=>String(i).trim()).filter(Boolean))];});Object.keys(toCheck).forEach(prefix=>selAll(prefix+'Chk',false));renderMsd();Object.entries(toCheck).forEach(([prefix,ids])=>{ids.forEach(i=>{const cb=document.getElementById('ck_'+prefix+'_'+i);if(cb)cb.checked=true;});});openM('mdl-e');}
 function editCargo(x){
   v('cid',x.id);v('i-c-nm',x.nome||'');v('i-c-cb',x.cbo||'');
   CARGO_EPI_CART=[];
@@ -2466,7 +2524,7 @@ function popFuncVinculos(keep){
     const sel=document.getElementById(selId);if(!sel)return;
     const cur=keep?sel.value:'';
     const perm=catsPermitidos(col);
-    const items=toArr(DATA[col]).filter(c=>(!perm||perm.has(String(c.id)))&&(col!=='filiais'||filialPermitida(c.id))).sort((a,b)=>(a.nome||'').localeCompare(b.nome||'','pt-BR'));
+    const items=toArr(DATA[col]).filter(c=>(!perm||perm.has(String(c.id)))&&catPermitida(col,c.id)).sort((a,b)=>(a.nome||'').localeCompare(b.nome||'','pt-BR'));
     sel.innerHTML='<option value="">Selecione...</option>'+items.map(c=>`<option value="${esc(c.id)}">${esc(c.nome)}</option>`).join('');
     if(cur)sel.value=cur;
   };
@@ -2478,7 +2536,7 @@ function popBulkVinculos(){
   const make=(col,selId)=>{
     const sel=document.getElementById(selId);if(!sel)return;
     const perm=catsPermitidos(col);
-    const items=toArr(DATA[col]).filter(c=>(!perm||perm.has(String(c.id)))&&(col!=='filiais'||filialPermitida(c.id))).sort((a,b)=>(a.nome||'').localeCompare(b.nome||'','pt-BR'));
+    const items=toArr(DATA[col]).filter(c=>(!perm||perm.has(String(c.id)))&&catPermitida(col,c.id)).sort((a,b)=>(a.nome||'').localeCompare(b.nome||'','pt-BR'));
     sel.innerHTML='<option value="">Selecione...</option>'+items.map(c=>`<option value="${esc(c.id)}">${esc(c.nome)}</option>`).join('');
   };
   make('filiais','b-f-fl');
@@ -3736,6 +3794,12 @@ function novoUsuario(){
   const ddf=document.getElementById('usuarios-fl-dd');
   if(ddf)ddf.classList.remove('open');
   renderUsuarioFiliais([]);
+  const ddob=document.getElementById('usuarios-ob-dd');
+  if(ddob)ddob.classList.remove('open');
+  renderUsuarioObras([]);
+  const ddcd=document.getElementById('usuarios-cd-dd');
+  if(ddcd)ddcd.classList.remove('open');
+  renderUsuarioCidades([]);
   renderUsuarioTelas({});
   document.getElementById('usuarios-aba-lista').style.display='none';
   document.getElementById('usuarios-aba-form').style.display='';
@@ -3756,6 +3820,12 @@ function editarUsuario(id){
   const ddf=document.getElementById('usuarios-fl-dd');
   if(ddf)ddf.classList.remove('open');
   renderUsuarioFiliais(u.filiais||[]);
+  const ddob=document.getElementById('usuarios-ob-dd');
+  if(ddob)ddob.classList.remove('open');
+  renderUsuarioObras(u.obras||[]);
+  const ddcd=document.getElementById('usuarios-cd-dd');
+  if(ddcd)ddcd.classList.remove('open');
+  renderUsuarioCidades(u.cidades||[]);
   renderUsuarioTelas(u.telas||{});
   document.getElementById('usuarios-aba-lista').style.display='none';
   document.getElementById('usuarios-aba-form').style.display='';
@@ -3829,8 +3899,90 @@ window.updateFlLabel=function(){
   if(sel.length===checks.length){lbl.textContent='Todas as filiais';return;}
   lbl.textContent=sel.length+' filial(is) selecionada(s)';
 };
+function renderUsuarioObras(selObs){
+  const el=document.getElementById('usuarios-obras');
+  const empIds=Array.from(document.getElementsByName('usuEmpChk')).filter(c=>c.checked).map(c=>c.value);
+  const todas=Object.values(DATA.obras||{});
+  let lista=todas;
+  let filtrada=false;
+  if(empIds.length){
+    filtrada=true;
+    const permitidas=new Set();
+    empIds.forEach(eid=>{
+      const e=(DATA.empresas||{})[eid];
+      if(!e)return;
+      const raw=e.obras!==undefined?e.obras:e.obra;
+      (Array.isArray(raw)?raw:(typeof raw==='string'&&raw.trim())?raw.trim().split(/[,;]/).map(s=>s.trim()).filter(Boolean):[]).forEach(o=>permitidas.add(String(o)));
+    });
+    lista=todas.filter(o=>permitidas.has(String(o.id)));
+  }
+  if(!lista.length){
+    el.innerHTML='<div style="padding:8px;color:var(--tm);font-size:11px">'+(filtrada?'Nenhuma obra vinculada &agrave;s empresas selecionadas.':'Nenhuma obra cadastrada.')+'</div>';
+    updateObLabel();
+    return;
+  }
+  el.innerHTML=lista.map(o=>{
+    const checked=selObs.includes(String(o.id))?'checked':'';
+    return`<div class="musu-emp-item"><input type="checkbox" name="usuObChk" value="${esc(o.id)}" ${checked} onchange="updateObLabel()"><label>${esc(o.nome||o.id)}</label></div>`;
+  }).join('');
+  updateObLabel();
+}
+window.toggleObDropdown=function(){
+  document.getElementById('usuarios-ob-dd').classList.toggle('open');
+};
+window.updateObLabel=function(){
+  const lbl=document.getElementById('usuarios-ob-label');
+  if(!lbl)return;
+  const checks=Array.from(document.getElementsByName('usuObChk'));
+  const sel=checks.filter(c=>c.checked);
+  if(!checks.length){lbl.textContent='Nenhuma obra cadastrada';return;}
+  if(!sel.length){lbl.textContent='Todas (sem restri\u00e7\u00e3o)';return;}
+  if(sel.length===checks.length){lbl.textContent='Todas as obras';return;}
+  lbl.textContent=sel.length+' obra(s) selecionada(s)';
+};
+function renderUsuarioCidades(selCds){
+  const el=document.getElementById('usuarios-cidades');
+  const empIds=Array.from(document.getElementsByName('usuEmpChk')).filter(c=>c.checked).map(c=>c.value);
+  const todas=Object.values(DATA.cidades||{});
+  let lista=todas;
+  let filtrada=false;
+  if(empIds.length){
+    filtrada=true;
+    const permitidas=new Set();
+    empIds.forEach(eid=>{
+      const e=(DATA.empresas||{})[eid];
+      if(!e)return;
+      const raw=e.cidades!==undefined?e.cidades:e.cidade;
+      (Array.isArray(raw)?raw:(typeof raw==='string'&&raw.trim())?raw.trim().split(/[,;]/).map(s=>s.trim()).filter(Boolean):[]).forEach(ci=>permitidas.add(String(ci)));
+    });
+    lista=todas.filter(cid=>permitidas.has(String(cid.id)));
+  }
+  if(!lista.length){
+    el.innerHTML='<div style="padding:8px;color:var(--tm);font-size:11px">'+(filtrada?'Nenhuma cidade vinculada &agrave;s empresas selecionadas.':'Nenhuma cidade cadastrada.')+'</div>';
+    updateCdLabel();
+    return;
+  }
+  el.innerHTML=lista.map(cid=>{
+    const checked=selCds.includes(String(cid.id))?'checked':'';
+    return`<div class="musu-emp-item"><input type="checkbox" name="usuCdChk" value="${esc(cid.id)}" ${checked} onchange="updateCdLabel()"><label>${esc(cid.nome||cid.id)}</label></div>`;
+  }).join('');
+  updateCdLabel();
+}
+window.toggleCdDropdown=function(){
+  document.getElementById('usuarios-cd-dd').classList.toggle('open');
+};
+window.updateCdLabel=function(){
+  const lbl=document.getElementById('usuarios-cd-label');
+  if(!lbl)return;
+  const checks=Array.from(document.getElementsByName('usuCdChk'));
+  const sel=checks.filter(c=>c.checked);
+  if(!checks.length){lbl.textContent='Nenhuma cidade cadastrada';return;}
+  if(!sel.length){lbl.textContent='Todas (sem restri\u00e7\u00e3o)';return;}
+  if(sel.length===checks.length){lbl.textContent='Todas as cidades';return;}
+  lbl.textContent=sel.length+' cidade(s) selecionada(s)';
+};
 document.addEventListener('click',function(e){
-  ['usuarios-emp-dd','usuarios-fl-dd'].forEach(id=>{
+  ['usuarios-emp-dd','usuarios-fl-dd','usuarios-ob-dd','usuarios-cd-dd'].forEach(id=>{
     const dd=document.getElementById(id);
     if(dd&&dd.classList.contains('open')&&!dd.contains(e.target))dd.classList.remove('open');
   });
@@ -3872,6 +4024,8 @@ function salvarUsuario(){
   }
   const empChecks=Array.from(document.getElementsByName('usuEmpChk')).filter(c=>c.checked).map(c=>c.value);
   const flChecks=Array.from(document.getElementsByName('usuFlChk')).filter(c=>c.checked).map(c=>c.value);
+  const obChecks=Array.from(document.getElementsByName('usuObChk')).filter(c=>c.checked).map(c=>c.value);
+  const cdChecks=Array.from(document.getElementsByName('usuCdChk')).filter(c=>c.checked).map(c=>c.value);
   const telas={};
   TELAS_USUARIO.forEach(t=>{
     const chk=document.getElementById('ut-acesso-'+t.id);
@@ -3880,7 +4034,7 @@ function salvarUsuario(){
       telas[t.id]={acesso:true,editar:sel.value==='editar'};
     }
   });
-  const dados={id:id||db.ref().push().key,nome,login,senha,mestre,podeGerar:mestre?true:podeGerar,empresas:mestre?[]:empChecks,filiais:mestre?[]:flChecks,telas:mestre?{}:telas};
+  const dados={id:id||db.ref().push().key,nome,login,senha,mestre,podeGerar:mestre?true:podeGerar,empresas:mestre?[]:empChecks,filiais:mestre?[]:flChecks,obras:mestre?[]:obChecks,cidades:mestre?[]:cdChecks,telas:mestre?{}:telas};
   const ref=db.ref('usuarios/'+dados.id);
   ref.set(dados).then(()=>{
     const msg=document.getElementById('usuarios-msg');
