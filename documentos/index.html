@@ -699,10 +699,10 @@ hr.dv{border:none;border-top:1px solid var(--bd);margin:18px 0}
   <div class="fg"><label class="fl">Empresa</label><select id="i-f-ep" onchange="popFuncVinculos(true)"><option value="">Selecione...</option></select></div>
   <div class="g3" style="grid-template-columns:1fr 1fr 1fr"><div class="fg"><label class="fl">Filial <span style="color:var(--danger, #dc2626)">*</span></label><select id="i-f-fl"><option value="">Selecione...</option></select></div><div class="fg"><label class="fl">Obra <span style="color:var(--danger, #dc2626)">*</span></label><select id="i-f-ob"><option value="">Selecione...</option></select></div><div class="fg"><label class="fl">Cidade</label><select id="i-f-cd"><option value="">Selecione...</option></select></div></div>
   <div class="fg"><label class="fl">Nome</label><input id="i-f-nm"></div>
-<div class="g2"><div class="fg"><label class="fl">CPF</label><input id="i-f-cp" placeholder="000.000.000-00"></div><div class="fg"><label class="fl">Data de Admiss&atilde;o</label><input type="date" id="i-f-dt"></div></div>
+<div class="g2"><div class="fg"><label class="fl">CPF</label><input id="i-f-cp" placeholder="000.000.000-00"></div><div class="fg"><label class="fl">Data de Admiss&atilde;o</label><input type="date" id="i-f-dt" onchange="onDataAdmChange()"></div></div>
 <div class="g2"><div class="fg"><label class="fl">Fun&ccedil;&atilde;o</label><select id="i-f-fn" onchange="autoFillCBO()"><option value="">Selecione...</option></select></div><div class="fg"><label class="fl">CBO</label><input id="i-f-cb"></div></div>
 <div class="g2"><div class="fg"><label class="fl">Setor</label><input id="i-f-st"></div><div class="fg"><label class="fl">N&ordm; Contrato/Matr&iacute;cula</label><input id="i-f-mat" placeholder="N&ordm; do contrato ou matr&iacute;cula"></div></div>
-<div class="g2"><div class="fg"><label class="fl">Vencimento ASO</label><input type="date" id="i-f-aso-date"></div><div class="fg"><label class="fl">Tipo ASO</label><select id="i-f-aso-tipo"><option value="">Selecione...</option><option value="ADMISSIONAL">Admissional</option><option value="DEMISSIONAL">Demissional</option><option value="PERIODICO">Periódico</option><option value="MUDANCA_FUNCAO">Mudança de Função</option><option value="RETORNO_TRABALHO">Retorno ao Trabalho</option></select></div></div>
+<div class="g2"><div class="fg"><label class="fl">Vencimento ASO</label><input type="date" id="i-f-aso-date"></div><div class="fg"><label class="fl">Tipo ASO</label><select id="i-f-aso-tipo" onchange="onAsoTipoChange()"><option value="">Selecione...</option><option value="ADMISSIONAL">Admissional</option><option value="DEMISSIONAL">Demissional</option><option value="PERIODICO">Periódico</option><option value="MUDANCA_FUNCAO">Mudança de Função</option><option value="RETORNO_TRABALHO">Retorno ao Trabalho</option></select></div></div>
   <div class="ma"><button class="btn bp" onclick="sv('funcionario')"><i class="fa-solid fa-save"></i> Salvar</button><button class="btn bg2" onclick="cls()">Cancelar</button></div>
 </div></div>
 
@@ -1022,12 +1022,36 @@ function empCatMatch(e,key,val){
   const name=cat&&cat.nome;
   return !!name&&vals.includes(name);
 }
+function catRestrita(col){
+  if(col==='filiais')return usuarioRestritoFiliais();
+  if(col==='obras')return usuarioRestritoObras();
+  if(col==='cidades')return usuarioRestritoCidades();
+  return false;
+}
+function catPermitidaEmp(e,col){
+  if(!empCatPermitidaVals(e,col).length)return false;
+  return true;
+}
+function empCatPermitidaVals(e,col){
+  if(!catRestrita(col)||!e)return[];
+  const permitidas=new Set();
+  if(col==='filiais'&&USUARIO_ATUAL.filiais)USUARIO_ATUAL.filiais.forEach(x=>permitidas.add(String(x)));
+  if(col==='obras'&&USUARIO_ATUAL.obras)USUARIO_ATUAL.obras.forEach(x=>permitidas.add(String(x)));
+  if(col==='cidades'&&USUARIO_ATUAL.cidades)USUARIO_ATUAL.cidades.forEach(x=>permitidas.add(String(x)));
+  const namesDentro=new Set();
+  permitidas.forEach(v=>{const it=DATA[col]&&DATA[col][v];if(it&&it.nome)namesDentro.add(it.nome);});
+  return empCatVals(e,col).filter(v=>permitidas.has(v)||namesDentro.has(v));
+}
 function empPassFilters(e,f){
   if(!e)return !f.empId&&!f.obra&&!f.cidade&&!f.filial;
+  if(!empresaPermitida(e.id||''))return false;
   if(f.empId&&String(e.id||'')!==String(f.empId))return false;
   if(!empCatMatch(e,'obras',f.obra))return false;
   if(!empCatMatch(e,'cidades',f.cidade))return false;
   if(!empCatMatch(e,'filiais',f.filial))return false;
+  if(catRestrita('obras')&&!empCatPermitidaVals(e,'obras').length)return false;
+  if(catRestrita('cidades')&&!empCatPermitidaVals(e,'cidades').length)return false;
+  if(catRestrita('filiais')&&!empCatPermitidaVals(e,'filiais').length)return false;
   return true;
 }
 function populateSubTipo(){
@@ -1431,7 +1455,7 @@ function updateDashboard(){
   const certCtx=document.getElementById('dash-cert-chart');
   if(certCtx){
     const certGroups={};
-    (empId?allHistory:toArr(DATA.historico).filter(h=>!isBlindagem(h))).filter(h=>{
+    allHistory.filter(h=>{
       const n=(h.nome||'').toLowerCase();
       return h.tipo==='certificado'||n.startsWith('certificado');
     }).forEach(h=>{
@@ -2571,6 +2595,36 @@ async function vincularEmMassa(){
     alert('Erro: '+e.message);
   }
   spin(false);
+}
+function onDataAdmChange(){
+  const dataAdm=document.getElementById('i-f-dt').value;
+  if(!dataAdm)return;
+  const asoTipoEl=document.getElementById('i-f-aso-tipo');
+  if(asoTipoEl&&!asoTipoEl.value)asoTipoEl.value='ADMISSIONAL';
+  if(asoTipoEl&&asoTipoEl.value==='ADMISSIONAL'){
+    autoAsoDate();
+  }
+}
+function onAsoTipoChange(){
+  const asoTipoEl=document.getElementById('i-f-aso-tipo');
+  if(asoTipoEl&&asoTipoEl.value==='ADMISSIONAL'){
+    autoAsoDate();
+  }
+}
+function autoAsoDate(){
+  const dataAdm=document.getElementById('i-f-dt').value;
+  if(!dataAdm)return;
+  const d=new Date(dataAdm+'T00:00:00');
+  const ano=d.getFullYear()+1;
+  const mes=d.getMonth();
+  const dia=d.getDate();
+  const aro=(ano,mes)=>new Date(ano,mes+1,0).getDate();
+  const ultimo=aro(ano,mes);
+  const alvo=new Date(ano,mes,Math.min(dia,ultimo));
+  alvo.setHours(12,0,0,0);
+  const mesStr=String(alvo.getMonth()+1).padStart(2,'0');
+  const diaStr=String(alvo.getDate()).padStart(2,'0');
+  document.getElementById('i-f-aso-date').value=alvo.getFullYear()+'-'+mesStr+'-'+diaStr;
 }
 function editFunc(x){v('fid',x.id);document.getElementById('i-f-ep').value=x.empresaId||'';popFuncVinculos(true);document.getElementById('i-f-fl').value=x.filialId||'';document.getElementById('i-f-ob').value=x.obraId||'';document.getElementById('i-f-cd').value=x.cidadeId||'';v('i-f-nm',x.nome||'');v('i-f-cp',x.cpf||'');v('i-f-fn',x.funcao||'');v('i-f-cb',x.cbo||'');v('i-f-st',x.setor||'');v('i-f-mat',x.matricula||'');v('i-f-dt',x.dataAdm||'');v('i-f-aso-date',x.asoDate||'');document.getElementById('i-f-aso-tipo').value=x.asoTipo||'';autoFillCBO();openM('mdl-f');}
 
