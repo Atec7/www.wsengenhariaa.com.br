@@ -3,224 +3,286 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ws Engenharia</title>
-    <link rel="stylesheet" href="estilo.css">
-    <link class="ico" rel="icon" href="logo2.jpg">
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-        }
-        .baixar{
-          align-items:center;
-          color: green;
-          background-color: white;
-          border-radius: 10px;
-          border-style: solid;
-          border-top-color: #333;
-          transition: color 0.4s;
-        }
-        :hover .baixar{
-          transform: scale(1.05);
-          color: white;
-          background-color: #333;
-          transition-duration: 0.4s;
-          transition: color 0.1s, background-color 0.1s;
-        }
-        .cookie-banner {
-            position: fixed;
-            bottom: 0;
-            width: 100%;
-            background-color: rgba(0,0,0,0.8);
-            color: white;
-            text-align: center;
-            padding: 15px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .cookie-banner p {
-            margin: 0;
-            padding-right: 10px;
-        }
-        .cookie-banner button {
-            padding: 10px 20px;
-            background-color: #4CAF50;
-            border: none;
-            color: white;
-            cursor: pointer;
-        }
-        .cookie-banner button:hover {
-            background-color: #45a049;
-        }
-        .engrenagem{
-          border-radius: 50%;
-          width:80px;
-          text-align: center;
-          display: inline-block;
-            position: relative;
-            border: 5px;
-            border-radius: 50%;
-            padding: 2px;
-            animation: spin 3.0s linear infinite;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-    </style>
+    <title>WS Engenharia Consultoria e Treinamentos</title>
+    <meta name="description" content="WS Engenharia, Consultoria e Treinamentos — segurança do trabalho, engenharia civil, ambiental, eSocial, laudos, programas e treinamentos NRs.">
+    <link rel="icon" href="logo2.jpg">
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 </head>
 <body>
-    <header>
-        <div class="container">
-            <nav>
+
+<header class="site-header">
+    <div class="container nav">
+        <a href="inicio.html" class="brand">
+            <img src="logo2.jpg" alt="Logo WS Engenharia">
+            <span>WS ENGENHARIA<small>Consultoria &amp; Treinamentos</small></span>
+        </a>
+        <nav class="nav-links" id="navLinks">
+            <a href="inicio.html" class="active">Início</a>
+            <a href="sobre.html">Sobre</a>
+            <a href="servicos.html">Serviços</a>
+            <a href="contato.html">Contato</a>
+            <a href="indicacao.html">Indicações</a>
+            <div class="nav-cta">
+                <a href="orcamento.html" class="btn btn-gold">Solicitar Orçamento</a>
+            </div>
+        </nav>
+        <button class="nav-toggle" id="navToggle" aria-label="Abrir menu">
+            <span></span><span></span><span></span>
+        </button>
+        <div class="nav-overlay" id="navOverlay"></div>
+    </div>
+</header>
+
+<!-- ============ HERO ============ -->
+<section class="hero">
+    <div class="container">
+        <div class="hero-inner">
+            <div>
+                <span class="eyebrow" style="color:var(--gold)">Soluções em Engenharia &amp; Segurança</span>
+                <h1>Segurança, <span class="hl">qualidade</span> e inovação para o seu negócio</h1>
+                <p class="lead">A WS Engenharia, Consultoria e Treinamentos oferece soluções completas em segurança do trabalho, engenharia civil, engenharia ambiental e treinamentos NRs — sempre com ética e com a vida em primeiro lugar.</p>
+                <div class="hero-cta">
+                    <a href="orcamento.html" class="btn btn-gold">Solicitar Orçamento</a>
+                    <a href="servicos.html" class="btn btn-ghost" style="color:#fff;border-color:rgba(255,255,255,.6)">Conhecer Serviços</a>
+                </div>
+            </div>
+            <div class="hero-visual">
+                <div class="hero-badge">
+                    <img src="logo2.png" alt="WS Engenharia">
+                    <h3>WS Engenharia, Consultoria e Treinamentos</h3>
+                    <p>Sempre trabalhando para oferecer soluções inovadoras para o seu negócio.</p>
+                    <div class="trust">Excelência • Segurança • Conformidade</div>
+                </div>
+            </div>
+        </div>
+        <div class="hero-stats">
+            <div class="hero-stat"><b>+10</b><span>Anos de experiência</span></div>
+            <div class="hero-stat"><b>100%</b><span>Conformidade legal</span></div>
+            <div class="hero-stat"><b>Ampla</b><span>Gama de serviços</span></div>
+        </div>
+    </div>
+</section>
+
+<!-- ============ ÁREAS ============ -->
+<section class="section">
+    <div class="container">
+        <div class="section-head">
+            <span class="eyebrow">O que fazemos</span>
+            <h2>Áreas de atuação</h2>
+            <p>Soluções integradas e personalizadas para empresas de pequeno e grande porte.</p>
+        </div>
+        <div class="grid-4">
+            <div class="card card-img">
+                <div class="img-wrap"><img src="pcmso.jpeg" alt="Segurança do Trabalho"></div>
+                <div class="card-body">
+                    <div class="icon icon-navy"><svg viewBox="0 0 24 24" style="width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/></svg></div>
+                    <h3>Segurança do Trabalho</h3>
+                    <p>Programas e laudos técnicos para manter sua empresa em conformidade e proteger seus colaboradores.</p>
+                    <a href="servicos.html">Ver serviços →</a>
+                </div>
+            </div>
+            <div class="card card-img">
+                <div class="img-wrap"><img src="obra.jpeg" alt="Engenharia Civil"></div>
+                <div class="card-body">
+                    <div class="icon icon-gold"><svg viewBox="0 0 24 24" style="width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 22h20"/><path d="M4 22V7l8-4 8 4v15"/><path d="M8 10h.01"/><path d="M16 10h.01"/><path d="M12 10h.01"/><path d="M10 22v-4"/><path d="M14 22v-4"/></svg></div>
+                    <h3>Engenharia Civil</h3>
+                    <p>Obras, reformas, projetos estrutural, elétrico, hidráulico e elaboração de laudos técnicos.</p>
+                    <a href="servicos.html">Ver serviços →</a>
+                </div>
+            </div>
+            <div class="card card-img">
+                <div class="img-wrap"><img src="licenciamento.jpeg" alt="Engenharia Ambiental"></div>
+                <div class="card-body">
+                    <div class="icon icon-green"><svg viewBox="0 0 24 24" style="width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/></svg></div>
+                    <h3>Engenharia Ambiental</h3>
+                    <p>Licenciamento, gestão de resíduos e projetos sustentáveis integrando crescimento e preservação.</p>
+                    <a href="servicos.html">Ver serviços →</a>
+                </div>
+            </div>
+            <div class="card card-img">
+                <div class="img-wrap"><img src="esocial1.jpeg" alt="Treinamentos e eSocial"></div>
+                <div class="card-body">
+                    <div class="icon icon-navy"><svg viewBox="0 0 24 24" style="width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg></div>
+                    <h3>Treinamentos &amp; eSocial</h3>
+                    <p>Treinamentos NRs atualizados e gestão completa de obrigações trabalhistas e previdenciárias.</p>
+                    <a href="servicos.html">Ver serviços →</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============ GALERIA ============ -->
+<section class="section section-alt">
+    <div class="container">
+        <div class="section-head">
+            <span class="eyebrow">Nossos trabalhos</span>
+            <h2>Um pouco do que fazemos</h2>
+            <p>Projetos, treinamentos e soluções que unem tecnologia, segurança e qualidade.</p>
+        </div>
+        <div class="gallery">
+            <figure><img src="obra.jpeg" alt="Execução de obras"><figcaption>Execução de Obras</figcaption></figure>
+            <figure><img src="reforma.jpeg" alt="Reformas"><figcaption>Reformas</figcaption></figure>
+            <figure><img src="projeto.jpeg" alt="Projetos"><figcaption>Projetos Estrutural, Elétrico e Hidráulico</figcaption></figure>
+            <figure><img src="nr35.jpeg" alt="Trabalho em altura"><figcaption>Treinamento NR-35 · Trabalho em Altura</figcaption></figure>
+            <figure><img src="licenciamento.jpeg" alt="Licenciamento ambiental"><figcaption>Licenciamento Ambiental</figcaption></figure>
+            <figure><img src="nr10.jpeg" alt="Segurança em eletricidade"><figcaption>NR-10 · Eletricidade</figcaption></figure>
+            <figure><img src="retro.jpeg" alt="Retroescavadeira"><figcaption>Treinamento Retroescavadeira</figcaption></figure>
+            <figure><img src="gesso.jpeg" alt="Placas de gesso"><figcaption>Acabamentos em Gesso</figcaption></figure>
+        </div>
+    </div>
+</section>
+
+<!-- ============ SOBRE ============ -->
+<section class="section section-alt">
+    <div class="container">
+        <div class="split">
+            <div class="split-img">
+                <img src="obra.jpeg" alt="Execução de obras WS Engenharia">
+                <div class="float-card">
+                    <b>100%</b>
+                    <span>Empresa brasileira especializada</span>
+                </div>
+            </div>
+            <div>
+                <span class="eyebrow">Sobre nós</span>
+                <h2>Ética e vida acima de tudo</h2>
+                <p>A <strong>WS ENGENHARIA, CONSULTORIA E TREINAMENTOS</strong> atua nas áreas de segurança, saúde, meio ambiente e higiene ocupacional, sempre acreditando na ética e colocando a vida acima de tudo.</p>
+                <p>Estamos preparados para atender clientes de pequeno e grande porte, oferecendo soluções inteligentes e econômicas — reduzindo custos e prejuízos, e tornando sua empresa mais competitiva.</p>
+                <ul class="check-list">
+                    <li>Consultoria empresarial e desenvolvimento de sistemas de segurança</li>
+                    <li>Treinamentos NRs e treinamentos corporativos</li>
+                    <li>Soluções e certificações para pessoas físicas e jurídicas</li>
+                    <li>Compromisso com normas de segurança e qualidade</li>
+                </ul>
+                <div style="margin-top:26px">
+                    <a href="sobre.html" class="btn btn-navy">Saiba mais sobre nós</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============ INSTITUCIONAL ============ -->
+<section class="section">
+    <div class="container">
+        <div class="section-head">
+            <span class="eyebrow">Apresentação</span>
+            <h2>Conheça mais sobre quem somos</h2>
+            <p>Baixe nossa apresentação institucional e descubra como podemos ajudá-lo hoje.</p>
+        </div>
+        <div class="cta-band">
+            <div>
+                <h2>Apresentação Institucional</h2>
+                <p>Saiba mais sobre nossa história, valores e a forma como podemos transformar seus projetos em realidade com segurança e qualidade.</p>
+            </div>
+            <a class="btn btn-gold" href="https://drive.google.com/file/d/18YHcT9NsLhfbHPzL9d0fQA8m1fVCC5WL/view?usp=drivesdk" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" style="width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg> Baixar apresentação</a>
+        </div>
+    </div>
+</section>
+
+<!-- ============ DIFERENCIAIS ============ -->
+<section class="section section-alt">
+    <div class="container">
+        <div class="section-head">
+            <span class="eyebrow">Diferenciais</span>
+            <h2>Por que escolher a WS Engenharia?</h2>
+        </div>
+        <div class="steps">
+            <div class="step">
+                <div class="icon"><svg viewBox="0 0 24 24" style="width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 18a1 1 0 0 0 1 1h18a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1H3a1 1 0 0 0-1 1z"/><path d="M10 10V5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v5"/><path d="M4 15v-3a6 6 0 0 1 6-6"/><path d="M14 6a6 6 0 0 1 6 6v3"/></svg></div>
+                <h3>Equipe especializada</h3>
+                <p>Profissionais qualificados e com ampla experiência de mercado.</p>
+            </div>
+            <div class="step">
+                <div class="icon"><svg viewBox="0 0 24 24" style="width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15.39 4.39a1 1 0 0 0 1.68-.474 2.5 2.5 0 1 1 3.014 3.015 1 1 0 0 0-.474 1.68l1.683 1.682a2.414 2.414 0 0 1 0 3.414L19.61 15.39a1 1 0 0 1-1.68-.474 2.5 2.5 0 1 0-3.014 3.015 1 1 0 0 1 .474 1.68l-1.683 1.682a2.414 2.414 0 0 1-3.414 0L8.61 19.61a1 1 0 0 0-1.68.474 2.5 2.5 0 1 1-3.014-3.015 1 1 0 0 0 .474-1.68l-1.683-1.682a2.414 2.414 0 0 1 0-3.414L4.39 8.61a1 1 0 0 1 1.68.474 2.5 2.5 0 1 0 3.014-3.015 1 1 0 0 1-.474-1.68l1.683-1.682a2.414 2.414 0 0 1 3.414 0z"/></svg></div>
+                <h3>Soluções personalizadas</h3>
+                <p>Atendimento sob medida para as necessidades do seu projeto.</p>
+            </div>
+            <div class="step">
+                <div class="icon"><svg viewBox="0 0 24 24" style="width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 12l2 2 4-4"/><path d="M21.8 10A10 10 0 1 1 17 3.3"/></svg></div>
+                <h3>Qualidade &amp; conformidade</h3>
+                <p>Serviços de alta qualidade, em conformidade com as normas vigentes.</p>
+            </div>
+            <div class="step">
+                <div class="icon"><svg viewBox="0 0 24 24" style="width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m11 17 2 2a1 1 0 1 0 3-3"/><path d="m14 14 2.5 2.5a1 1 0 1 0 3-3l-3.88-3.88a3 3 0 0 0-4.24 0l-.88.88a1 1 0 1 1-3-3l2.81-2.81a5.79 5.79 0 0 1 7.06-.87l.47.28a2 2 0 0 0 1.42.25L21 4"/><path d="m21 3 1 11h-2"/><path d="M3 3 2 14l6.5 6.5a1 1 0 1 0 3-3"/><path d="M3 4h8"/></svg></div>
+                <h3>Atendimento humano</h3>
+                <p>Suporte próximo e dedicado, do projeto à entrega final.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============ CTA CONTATO ============ -->
+<section class="section">
+    <div class="container">
+        <div class="cta-band">
+            <div>
+                <h2>Vamos trabalhar juntos?</h2>
+                <p>Fale conosco e descubra como a WS Engenharia pode ajudar a transformar seus projetos em realidade com segurança, eficiência e sustentabilidade.</p>
+            </div>
+            <a class="btn btn-white" href="https://wa.me/5575991893667?text=Ol%C3%A1%20WSENGENHARIA!%20Vi%20seu%20site%20e%20gostaria%20de%20contratar%20alguns%20de%20seus%20servi%C3%A7os.%20pode%20me%20atender%20no%20momento%20?" target="_blank" rel="noopener">Falar no WhatsApp</a>
+        </div>
+    </div>
+</section>
+
+<footer class="site-footer">
+    <div class="container">
+        <div class="footer-top">
+            <div class="footer-brand">
+                <img src="logo2.png" alt="WS Engenharia">
+                <h4>WS ENGENHARIA, Consultoria e Treinamentos</h4>
+                <p>Soluções em engenharia civil, ambiental e segurança do trabalho para empresas de todos os portes.</p>
+            </div>
+            <div class="footer-col">
+                <h5>Navegação</h5>
                 <ul>
-                    <li><a href="index.html">Início</a></li>
+                    <li><a href="inicio.html">Início</a></li>
                     <li><a href="sobre.html">Sobre</a></li>
                     <li><a href="servicos.html">Serviços</a></li>
                     <li><a href="contato.html">Contato</a></li>
                     <li><a href="indicacao.html">Indicações</a></li>
                 </ul>
-            </nav>
+            </div>
+            <div class="footer-col">
+                <h5>Serviços</h5>
+                <ul>
+                    <li><a href="servicos.html#seguranca">Segurança do Trabalho</a></li>
+                    <li><a href="servicos.html#civil">Engenharia Civil</a></li>
+                    <li><a href="servicos.html#ambiental">Engenharia Ambiental</a></li>
+                    <li><a href="servicos.html#esocial">eSocial</a></li>
+                    <li><a href="servicos.html#consultoria">Consultoria</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h5>Contato</h5>
+                <ul class="footer-contact">
+                    <li><span class="f-ico"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg></span> (75) 9 9189-3667</li>
+                    <li><span class="f-ico"><svg viewBox="0 0 24 24" style="width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 7.35V18a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7.35"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg></span> wsengenhariaa@gmail.com</li>
+                    <li><span class="f-ico"><svg viewBox="0 0 24 24" style="width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg></span> CNPJ: 41.467.540/0001-67</li>
+                </ul>
+                <div class="social-links" style="justify-content:flex-start;margin-top:10px">
+                    <a href="https://wa.me/5575991893667?text=Ol%C3%A1%20WSENGENHARIA!%20Vi%20seu%20site%20e%20gostaria%20de%20contratar%20alguns%20de%20seus%20servi%C3%A7os.%20pode%20me%20atender%20no%20momento%20?" target="_blank" rel="noopener" aria-label="WhatsApp"><img src="whatsaapp-logo.png" alt=""></a>
+                    <a href="https://www.instagram.com/wsengenharia_/" target="_blank" rel="noopener" aria-label="Instagram"><img src="instagram-logo.png" alt=""></a>
+                    <a href="#" target="_blank" rel="noopener" aria-label="Facebook"><img src="facebook-logo.png" alt=""></a>
+                    <a href="https://www.linkedin.com/in/wedson-santos-979a33b2" target="_blank" rel="noopener" aria-label="LinkedIn"><img src="linkedin-logo.png" alt=""></a>
+                </div>
+            </div>
         </div>
-    </header>
-    <section id="hero">
-        <div class="apresentação">
-          <img class="engrenagem" src="engrenagem2.png">
-            <h1>WS Engenharia Consultoria <br>e Treinamentos</h1>
-            <img class="logo" src="logo2.jpg" alt="">
-            <p>Sempre Trabalhando para oferecer Soluções inovadoras para o seu negócio!</p>
+        <div class="footer-bottom">
+            <div>&copy; 2024 WS Engenharia, Consultoria e Treinamentos. Todos os direitos reservados.</div>
+            <div class="creds">Power Bi © <a href="https://atec7.github.io/atecseven.com.br/" target="_blank" rel="noopener" style="color:inherit">Atecseven tecnologia</a></div>
         </div>
-    </section>
-    <section id="about" class="container">
-        <h2>Apresentação Institucional</h2>
-        <div>
-          <ul>
-            <li>
-              <p>Baixe nossa apresentação institucional agora mesmo<br>
-          e saiba mais sobre quem somos e 
-          como poderemos ajudá-lo hoje.
-        </p>
-            </li>
-          </ul>
-        </div>
-        
-        <a
-        href="https://drive.google.com/file/d/18YHcT9NsLhfbHPzL9d0fQA8m1fVCC5WL/view?usp=drivesdk">
-                <button class="baixar">Baixar</button>
-            </a>
-    </section>
-    <section id="about" class="container">
-        <h2>Soluções e Certificações para Pessoas Físicas🔧</h2>
-        <div>
-              <p>
-<br>
-<br>
-<div>
-  <ul>
-    <li>
-      Na WS Engenharia, acreditamos que a segurança e a excelência não são
-exclusividades de grandes empresas.<br> Por isso, oferecemos soluções
-personalizadas e certificações também para pessoas físicas!
-    </li>
-  </ul>
-</div>
-<div>
-  <ul>
-    <li>
-      Entre em contato conosco e descubra como a WS Engenharia pode transformar
- seus<br> projetos em realidade, com a segurança e a qualidade que você merece.
-    </li>
-  </ul>
-</div>
-        </p>
-            </li>
-          </ul>
-        </div>
-        
-        <a
-        href="https://wa.me/5575991893667?text=Olá,%20tenho%20interesse%20em%20contratar%20os%20serviços%20da%20WS%20Engenharia.%20Gostaria%20de%20obter%20mais%20informações%20sobre%20as%20soluções%20e%20certificações%20oferecidas">
-                <button class="baixar">Solicitar Contato</button>
-            </a>
-    </section>
-    <section id="about" class="container">
-        <h2>Sobre Nós</h2>
-        <div>
-          <ul>
-            <li>
-              <p>Ws Engenharia, Consultoria e Treinamentos é líder em soluções
-        corporativas, oferecendo serviços de alta qualidade e projetos
-        inovadores. Possui ainda um vasto catálogo de Treinamentos sempre
-        atualizados com as legislações mais atuais, para que você e sua empresa
-        estejam sempre em conformidade.</p>
-            </li>
-          </ul>
-        </div>
-        
-    </section>
-    
-    <section id="services" class="container">
-        <h2>Serviços</h2>
-        <ul>
-            <li>Consultoria Empresarial.</li>
-            <li>Desenvolvimento de Sistemas de Segurança do Trabalho.</li>
-            <li>Treinamentos NR's (certificações).</li>
-            <li>Treinamentos Corporativos.</li>
-            <li>Consultoria Empresarial</li>
-            <li><a class="link-servicos" href="servicos.html">acesse nossos Serviços e saiba mais. </a> </li>
-        </ul>
-    </section>
-    <section id="contact" class="container">
-        <h2>Contato</h2>
-        <div>
-          <ul>
-            <li>
-              <p>Comercial: <br> <br>
-        (75) 9 9189-3667 <br> <br>
-        wsengenhariaa@gmail.com <br>
-        </p>
-            </li>
-          </ul>
-        </div>
-        <div>
-          <ul>
-            <li>
-              <p>ou se Preferir <br> <br>
-          Entre em contato conosco através das nossas redes sociais:</p>
-            </li>
-          </ul>
-        </div>
-         <id="contact" class="container">
-        <div class="social-links">
-            <a href="https://wa.me/5575991893667?text=Ol%C3%A1%20WSENGENHARIA!%20Vi%20seu%20site%20e%20gostaria%20de%20contratar%20alguns%20de%20seus%20servi%C3%A7os.%20pode%20me%20atender%20no%20momento%20?" target="_blank">
-                <img class="links" src="whatsaapp-logo.png" alt="WhatsApp">
-            </a>
-            <a href="https://www.instagram.com/wsengenharia_/profilecard/?igsh=MTZ6ZWx4MmF1cjljMw==" target="_blank">
-                <img src="instagram-logo.png" alt="Instagram">
-            </a>
-            <a href="#" target="_blank">
-                <img src="facebook-logo.png" alt="Facebook">
-            </a>
-            <a href="https://www.linkedin.com/in/wedson-santos-979a33b2?utm_source=share&utm_campaign=share_via&utm_content=profile&utm_medium=ios_app" target="_blank">
-                <img src="linkedin-logo.png" alt="LinkedIn">
-            </a>
-        </div>
-    </section>
-    <footer>
-        <div class="container">
-            <p>&copy; 2024 Ws Engenharia, consultoria e treinamentos.
-            <br> <p3>Cnpj: 41.467.540/0001-67</p3>
-            
-            <br>
-            Todos os direitos reservados.</p>
-            <a class="link-atecseven" href="https://atec7.github.io/atecseven.com.br/">Power Bi &copf; Atecseven tecnologia</a>
-        </div>
-    </footer>
-    <div class="cookie-banner">
-        <p>Utilizamos cookies para garantir a melhor experiência em nosso site. <a href="politica_de_cookies.html" style="color: #4CAF50;">Saiba mais</a></p>
-        <button onclick="this.parentElement.style.display='none';">Aceitar</button>
     </div>
-    <script src="script.js"></script>
+</footer>
+
+<div id="cookieConsent" style="display:none">
+    <p>Utilizamos cookies para garantir a melhor experiência em nosso site. <a href="politica_de_cookies.html">Saiba mais</a></p>
+    <button class="btn btn-gold" id="cookieConsentBtn" style="padding:10px 22px">Aceitar</button>
+</div>
+
+<script src="main.js"></script>
 </body>
 </html>

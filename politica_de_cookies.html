@@ -3,69 +3,127 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Política de Cookies</title>
+    <title>Política de Cookies — WS Engenharia</title>
+    <meta name="description" content="Entenda como a WS Engenharia utiliza cookies em seu site.">
+    <link rel="icon" href="logo2.jpg">
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 20px;
-            background-color: #333;
-            color: #333;
-        }
-        .container {
-            max-width: 800px;
-            margin: auto;
-            background-color: #fff;
-            padding: 20px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
-            border-radius: 10px;
-        }
-        h1 {
-            text-align: center;
-            color: #4CAF50;
-        }
-        h2 {
-            color: #4CAF50;
-        }
-        p {
-            line-height: 1.6;
-        }
-        .footer{
-          border-radius: 10px;
-          text-align: center;
-          font-size: 11px;
-          background-color: #333;
-          color:white;
-          text-transform: auto;
-          max-width: 100%;
-        }
+        .policy { max-width: 860px; margin: 0 auto; }
+        .policy-card { background: #fff; border: 1px solid var(--line); border-radius: var(--radius); padding: 40px 40px; box-shadow: var(--shadow-md); }
+        .policy-card h2 { font-size: 22px; margin-top: 30px; margin-bottom: 10px; }
+        .policy-card p, .policy-card li { color: var(--muted); font-size: 15.5px; }
+        .policy-card ul { list-style: disc; padding-left: 22px; margin-bottom: 12px; }
+        .policy-card p:first-child { margin-top: 0; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Política de Cookies - Ws Engenharia, consultoria e treinamentos</h1>
-        <p>Esta Política de Cookies explica o que são cookies e como os utilizamos. Você deve ler esta política para entender o que são cookies, como os usamos, os tipos de cookies que usamos, ou seja, as informações que coletamos usando cookies e como essas informações são usadas e como controlar as preferências de cookies. Para mais informações sobre como usamos, armazenamos e mantemos seus dados pessoais seguros, consulte nossa Política de Privacidade.</p>
-        <h2>O que são cookies?</h2>
-        <p>Cookies são pequenos arquivos de texto usados para armazenar pequenas informações. Eles são armazenados no seu dispositivo quando o site é carregado no seu navegador. Esses cookies nos ajudam a fazer o site funcionar corretamente, torná-lo mais seguro, fornecer uma melhor experiência ao usuário, entender como o site funciona e analisar o que funciona e onde precisa de melhorias.</p>
-        <h2>Como usamos cookies?</h2>
-        <p>Como a maioria dos serviços online, nosso site usa cookies próprios e de terceiros para várias finalidades. Os cookies próprios são principalmente necessários para o site funcionar da maneira correta, e não coletam nenhum dos seus dados de identificação pessoal.</p>
-        <h2>Quais tipos de cookies usamos?</h2>
-        <p><strong>Essenciais:</strong> Alguns cookies são essenciais para que você possa experimentar todas as funcionalidades do nosso site. Eles nos permitem manter sessões de usuários e prevenir quaisquer ameaças à segurança. Eles não coletam ou armazenam nenhuma informação pessoal.</p>
-        <p><strong>Estatísticos:</strong> Esses cookies armazenam informações como o número de visitantes do site, o número de visitantes únicos, quais páginas do site foram visitadas, a origem da visita, etc. Esses dados nos ajudam a entender e analisar o desempenho do site e onde ele precisa de melhorias.</p>
-        <p><strong>Funcionais:</strong> Esses são os cookies que ajudam certas funcionalidades não essenciais em nosso site. Essas funcionalidades incluem incorporar conteúdos como vídeos ou compartilhar conteúdos do site em plataformas de mídia social.</p>
-        <p><strong>Preferências:</strong> Esses cookies nos ajudam a armazenar suas configurações e preferências de navegação, como preferências de idioma, para que você tenha uma experiência melhor e mais eficiente em visitas futuras ao site.</p>
-        <h2>Como posso controlar as preferências de cookies?</h2>
-        <p>Se você decidir alterar suas preferências mais tarde durante sua sessão de navegação, você pode clicar na aba "Política de Cookies" na tela. Isso exibirá o aviso de consentimento novamente, permitindo que você altere suas preferências ou retire seu consentimento completamente.</p>
+
+<header class="site-header">
+    <div class="container nav">
+        <a href="inicio.html" class="brand">
+            <img src="logo2.jpg" alt="Logo WS Engenharia">
+            <span>WS Engenharia<small>Consultoria &amp; Treinamentos</small></span>
+        </a>
+        <nav class="nav-links" id="navLinks">
+            <a href="inicio.html">Início</a>
+            <a href="sobre.html">Sobre</a>
+            <a href="servicos.html">Serviços</a>
+            <a href="contato.html">Contato</a>
+            <a href="indicacao.html">Indicações</a>
+            <div class="nav-cta">
+                <a href="orcamento.html" class="btn btn-gold">Solicitar Orçamento</a>
+            </div>
+        </nav>
+        <button class="nav-toggle" id="navToggle" aria-label="Abrir menu"><span></span><span></span><span></span></button>
+        <div class="nav-overlay" id="navOverlay"></div>
     </div>
-</body>
- <footer>
-        <div class="footer">
-            <p>&copy; 2024 Ws Engenharia, consultoria e treinamentos.
-            <br> <p3>Cnpj: 41.467.540/0001-67</p3>
-            
-            <br>
-            Todos os direitos reservados.</p>
-            <a class="footer" href="https://atec7.github.io/atecseven.com.br/">Power Bi &copf; Atecseven tecnologia</a>
+</header>
+
+<section class="page-hero">
+    <div class="container">
+        <div class="breadcrumb"><a href="inicio.html">Início</a> / Política de Cookies</div>
+        <h1>Política de Cookies</h1>
+        <p>Transparência sobre como utilizamos cookies para melhorar sua experiência.</p>
+    </div>
+</section>
+
+<section class="section">
+    <div class="policy">
+        <div class="policy-card">
+            <p><strong><span style="color:var(--gold-dark)">WS Engenharia, Consultoria e Treinamentos:</span></strong> esta Política de Cookies explica o que são cookies e como os utilizamos. Você deve ler esta política para entender o que são cookies, como os usamos, os tipos de cookies que usamos, as informações que coletamos e como essas informações são usadas e controladas.</p>
+
+            <h2>O que são cookies?</h2>
+            <p>Cookies são pequenos arquivos de texto usados para armazenar pequenas informações. Eles são armazenados no seu dispositivo quando o site é carregado no navegador. Esses cookies nos ajudam a fazer o site funcionar corretamente, torná-lo mais seguro, fornecer uma melhor experiência ao usuário, entender como o site funciona e analisar o que funciona e onde precisa de melhorias.</p>
+
+            <h2>Como usamos cookies?</h2>
+            <p>Como a maioria dos serviços online, nosso site usa cookies próprios e de terceiros para várias finalidades. Os cookies próprios são principalmente necessários para o site funcionar da maneira correta e não coletam nenhum dos seus dados de identificação pessoal.</p>
+
+            <h2>Quais tipos de cookies usamos?</h2>
+            <ul>
+                <li><strong>Essenciais:</strong> alguns cookies são essenciais para que você possa experimentar todas as funcionalidades do nosso site. Nos permitem manter sessões de usuários e prevenir quaisquer ameaças à segurança. Não coletam ou armazenam nenhuma informação pessoal.</li>
+                <li><strong>Estatísticos:</strong> armazenam informações como o número de visitantes do site, visitantes únicos, páginas visitadas e origem da visita. Nos ajudam a entender e analisar o desempenho do site.</li>
+                <li><strong>Funcionais:</strong> ajudam certas funcionalidades não essenciais, como incorporar conteúdos (vídeos) ou compartilhar conteúdos em plataformas de mídia social.</li>
+                <li><strong>Preferências:</strong> nos ajudam a armazenar suas configurações e preferências de navegação, como preferência de idioma, para uma experiência melhor em visitas futuras.</li>
+            </ul>
+
+            <h2>Como posso controlar as preferências de cookies?</h2>
+            <p>Se você decidir alterar suas preferências mais tarde durante sua sessão de navegação, você pode clicar na aba "Política de Cookies" na tela. Isso exibirá o aviso de consentimento novamente, permitindo que você altere suas preferências ou retire seu consentimento completamente.</p>
         </div>
-    </footer>
+    </div>
+</section>
+
+<footer class="site-footer" style="margin-top:0">
+    <div class="container">
+        <div class="footer-top">
+            <div class="footer-brand">
+                <img src="logo2.jpg" alt="WS Engenharia">
+                <h4>WS Engenharia, Consultoria e Treinamentos</h4>
+                <p>Soluções em engenharia civil, ambiental e segurança do trabalho para empresas de todos os portes.</p>
+            </div>
+            <div class="footer-col">
+                <h5>Navegação</h5>
+                <ul>
+                    <li><a href="inicio.html">Início</a></li>
+                    <li><a href="sobre.html">Sobre</a></li>
+                    <li><a href="servicos.html">Serviços</a></li>
+                    <li><a href="contato.html">Contato</a></li>
+                    <li><a href="indicacao.html">Indicações</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h5>Serviços</h5>
+                <ul>
+                    <li><a href="servicos.html#seguranca">Segurança do Trabalho</a></li>
+                    <li><a href="servicos.html#civil">Engenharia Civil</a></li>
+                    <li><a href="servicos.html#ambiental">Engenharia Ambiental</a></li>
+                    <li><a href="servicos.html#esocial">eSocial</a></li>
+                    <li><a href="servicos.html#consultoria">Consultoria</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h5>Contato</h5>
+                <ul class="footer-contact">
+                    <li><span class="f-ico"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg></span> (75) 9 9189-3667</li>
+                    <li><span class="f-ico"><svg viewBox="0 0 24 24" style="width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 7.35V18a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7.35"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg></span> wsengenhariaa@gmail.com</li>
+                    <li><span class="f-ico"><svg viewBox="0 0 24 24" style="width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg></span> CNPJ: 41.467.540/0001-67</li>
+                </ul>
+                <div class="social-links" style="justify-content:flex-start;margin-top:10px">
+                    <a href="https://wa.me/5575991893667" target="_blank" rel="noopener" aria-label="WhatsApp"><img src="whatsaapp-logo.png" alt=""></a>
+                    <a href="https://www.instagram.com/wsengenharia_/" target="_blank" rel="noopener" aria-label="Instagram"><img src="instagram-logo.png" alt=""></a>
+                    <a href="#" target="_blank" rel="noopener" aria-label="Facebook"><img src="facebook-logo.png" alt=""></a>
+                    <a href="https://www.linkedin.com/in/wedson-santos-979a33b2" target="_blank" rel="noopener" aria-label="LinkedIn"><img src="linkedin-logo.png" alt=""></a>
+                </div>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <div>&copy; 2024 WS Engenharia, Consultoria e Treinamentos. Todos os direitos reservados.</div>
+            <div class="creds">Power Bi © <a href="https://atec7.github.io/atecseven.com.br/" target="_blank" rel="noopener" style="color:inherit">Atecseven tecnologia</a></div>
+        </div>
+    </div>
+</footer>
+
+<script src="main.js"></script>
+</body>
 </html>

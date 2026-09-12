@@ -3,1127 +3,610 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ws Serviços</title>
-    <link class="ico" rel="icon" href="logo2.jpg">
+    <title>Serviços — WS Engenharia</title>
+    <meta name="description" content="Conheça todos os serviços da WS Engenharia: segurança do trabalho, engenharia civil, engenharia ambiental, eSocial e consultoria.">
+    <link rel="icon" href="logo2.jpg">
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
-        body {
-          margin: 0;
-          align-items: center;
-            font-family: Arial, sans-serif;
-            color: #333;
-            margin: auto;
-            padding: auto;
-            background-color: white;
-        }
-        .container {
-            width: 80%;
-            max-width: 1200px;
-            margin: px;
+        .service-search {
+            max-width: 620px;
+            margin: -30px auto 40px;
             padding: 20px;
+            background: #fff;
+            border-radius: 16px;
+            box-shadow: var(--shadow-md);
+            border: 1px solid var(--line);
+            position: relative;
+            z-index: 10;
         }
-        header {
-          text-align: center;
-            background-color: #444;
-            color: white;
-            padding: 15px 0;
-        }
-        nav ul {
-            list-style: none;
-            padding: 0;
-            display: flex;
-            justify-content: center;
-        }
-        nav ul li {
-            margin: 0 15px;
-        }
-        nav ul li a {
-            color: white;
-            text-decoration: none;
-            font-weight: bold;
-        }
-        .search-container {
-            display: flex;
-            justify-content: center;
-            margin-top: 1em;
-        }
-        .search-container input[type="text"] {
-            padding: 0.5em;
-            width: 50%;
-            max-width: 300px;
-            border: 4px solid #444;
+        .service-search input {
+            width: 100%;
+            padding: 14px 18px;
+            font-size: 15px;
+            border: 1.5px solid var(--line);
             border-radius: 10px;
+            font-family: inherit;
+            background: var(--bg);
         }
-        .search-container button {
-            width: 100px;
-            padding: 0.5em;
-            border: 2px solid #ddd;
-            background-color: #333;
-            color: white;
-            cursor: pointer;
-            border-radius: 10px;
-        }
-        section {
-            background-color: white;
-            padding: 10px;
-        }
-        
- h2, h3 {
-          margin: 17px;
-          text-align: center;
-          color: #333;
-          font-size: 16px;
-          cursor: pointer;
-          transition: background-color 1.3s, transform 1.3s;
-        }
-  
-        h2, h3 :hover{
-     color: white;
-    background-color: #333;
-    width: justify-content;
-    border-radius: 5px;
-    font-size: 20px;
-    text-align: center;
-    border-radius: 50px;
-        }
-        h4 {
-          margin: 30px;
-        }
-        p {
-          margin: 30px;
-            line-height: 1.6;
-        }
-        .servicos {
-            margin: 10px;
-            max-width: 300px;
-            height: auto;
-            border-radius: 8px;
-        }
-        .social-links {
-            display: flex;
-            justify-content: center;
-            gap: 10px;
-        }
-        .social-links a img {
-            width: 40px;
-            height: 40px;
-        }
-        .logo {
-            width: 30% 100px;
-        }
-        footer {
-          margin: 0px;
-          align-content: center;
-          text-align: center;
-            background-color: #444;
-            color: white;
-            text-align: center;
-            padding: 10px 0;
-        }
-        
-    .link-atecseven {
-      text-align: center;
-    text-emphasis: none;
-    text-decoration: none;
-    font-size: 16px;
-    text-align: center;
-    font-family: 'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif;
-    color: aqua;
-    transition: color 0.3s, background-color 0.3s;
-}
-
-.link-atecseven:hover {
-    color: white;
-    background-color: rgb(4, 4, 85);
-    border-radius: 5px;
-    font-size: 20px;
-}
-        .button{
-          color: #333;
-          background-color: white;
-          border-radius: 5px;
-          border-style: solid white;
-          
-          transition: color 0.1s;
-        }
-        :hover .button{
-          transform: scale(1.05);
-          color: white;
-          background-color: #29e546;
-          border-style: solid white;
-          transition-duration: 0.1s;
-          transition: color 0.1s, background-color 0.1s;
-        }
-        .esocial{
-            color: black;
-            border-radius: 10px;
-            font-size-adjust: 16px;
-            width: 300px;
-            text-align: center;
-            align-items: center;
-            
-            }
-            .logo-esocial{
-              width: 200px;
-              margin: 50px;
-              text-align: center;
-            }
+        .service-search input:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 0 4px rgba(217,164,65,.15); background: #fff; }
+        .service-search .hint { font-size: 12.5px; color: var(--muted); margin-top: 10px; }
+        .cat-section { scroll-margin-top: 96px; }
+        .cat-title { display: flex; align-items: center; gap: 14px; margin-bottom: 22px; }
+        .cat-title .icon { width: 50px; height: 50px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 24px; color: #fff; flex-shrink: 0; }
+        .cat-navy { background: var(--navy-700); }
+        .cat-gold { background: var(--gold-dark); }
+        .cat-green { background: var(--green); }
+        .cat-title h2 { margin: 0; }
+        .accordion { margin-bottom: 56px; }
+        .acc-body-inner { padding: 0 26px 24px 88px; }
+        @media (max-width: 640px) { .acc-body-inner { padding-left: 20px; padding-right: 20px; } }
     </style>
 </head>
 <body>
-    <header>
-        <div class="container">
-            <nav>
+
+<header class="site-header">
+    <div class="container nav">
+        <a href="inicio.html" class="brand">
+            <img src="logo2.jpg" alt="Logo WS Engenharia">
+            <span>WS Engenharia<small>Consultoria &amp; Treinamentos</small></span>
+        </a>
+        <nav class="nav-links" id="navLinks">
+            <a href="inicio.html">Início</a>
+            <a href="sobre.html">Sobre</a>
+            <a href="servicos.html" class="active">Serviços</a>
+            <a href="contato.html">Contato</a>
+            <a href="indicacao.html">Indicações</a>
+            <div class="nav-cta">
+                <a href="orcamento.html" class="btn btn-gold">Solicitar Orçamento</a>
+            </div>
+        </nav>
+        <button class="nav-toggle" id="navToggle" aria-label="Abrir menu"><span></span><span></span><span></span></button>
+        <div class="nav-overlay" id="navOverlay"></div>
+    </div>
+</header>
+
+<section class="page-hero">
+    <div class="container">
+        <div class="breadcrumb"><a href="inicio.html">Início</a> / Serviços</div>
+        <h1>Nossos Serviços</h1>
+        <p>Soluções completas em segurança do trabalho, engenharia civil, engenharia ambiental, eSocial e consultoria.</p>
+    </div>
+</section>
+
+<div class="container">
+    <div class="service-search">
+        <input type="text" id="serviceSearch" placeholder="Busque um serviço ou palavra-chave... (ex: NR-35, PGR, alvará, reforma)">
+        <div class="hint">Digite para filtrar os serviços abaixo em tempo real.</div>
+    </div>
+</div>
+
+<!-- ============ SEGURANÇA ============ -->
+<section class="section cat-section" id="seguranca" style="padding-top:0">
+    <div class="container">
+        <div class="cat-title">
+            <div class="icon cat-navy"><svg viewBox="0 0 24 24" style="width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/></svg></div>
+            <h2>Segurança do Trabalho</h2>
+        </div>
+        <div class="accordion">
+            <div class="accordion-item" data-k="segurança segurança do trabalho PPRA PGR LTCAT PCMAT PCMSO PPR PCA PAE PEA boas práticas PAZ ergonomia laudos">
+                <button class="acc-head">
+                    <span class="acc-icon"><svg viewBox="0 0 24 24" style="width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2h8a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Z"/><path d="M12 6h4"/><path d="M12 10h4"/><path d="M12 14h4"/><path d="M8.5 6.5h.01"/><path d="M8.5 10.5h.01"/><path d="M8.5 14.5h.01"/></svg></span>
+                    <h3>Programas e Laudos Técnicos</h3>
+                    <span class="chev"><svg viewBox="0 0 24 24" style="width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></span>
+                </button>
+                <div class="acc-body">
+                    <div class="acc-body-inner">
+                        <div class="svc-grid">
+                            <div class="svc-card" data-s="PPRA">
+                                <div class="svc-img"><img src="prra.png" alt="PPRA"></div>
+                                <div class="svc-body"><h4>PPRA</h4><p>Programa de Prevenção de Riscos Ambientais: identifica, avalia e controla os riscos do ambiente de trabalho.</p><a href="orcamento.html" class="btn btn-navy svc-btn" style="padding:9px 16px;font-size:13px">Solicitar Orçamento</a></div>
+                            </div>
+                            <div class="svc-card" data-s="PGR">
+                                <div class="svc-img"><img src="pgr.jpeg" alt="PGR"></div>
+                                <div class="svc-body"><h4>PGR</h4><p>Programa de Gerenciamento de Riscos: identifica, avalia, controla e monitora os riscos para um ambiente seguro e saudável.</p><a href="orcamento.html" class="btn btn-navy svc-btn" style="padding:9px 16px;font-size:13px">Solicitar Orçamento</a></div>
+                            </div>
+                            <div class="svc-card" data-s="LTCAT">
+                                <div class="svc-img"><img src="ltcat.jpeg" alt="LTCAT"></div>
+                                <div class="svc-body"><h4>LTCAT</h4><p>Laudo Técnico das Condições Ambientais do Trabalho, obrigatório e sempre atualizado.</p><a href="orcamento.html" class="btn btn-navy svc-btn" style="padding:9px 16px;font-size:13px">Solicitar Orçamento</a></div>
+                            </div>
+                            <div class="svc-card" data-s="PCMAT">
+                                <div class="svc-img"><img src="pcmat.jpeg" alt="PCMAT"></div>
+                                <div class="svc-body"><h4>PCMAT</h4><p>Programa de Condições e Meio Ambiente de Trabalho na construção civil (NR-18).</p><a href="orcamento.html" class="btn btn-navy svc-btn" style="padding:9px 16px;font-size:13px">Solicitar Orçamento</a></div>
+                            </div>
+                            <div class="svc-card" data-s="PCMSO">
+                                <div class="svc-img"><img src="pcmso.jpeg" alt="PCMSO"></div>
+                                <div class="svc-body"><h4>PCMSO</h4><p>Programa de Controle Médico de Saúde Ocupacional (NR-07), essencial para a saúde dos trabalhadores.</p><a href="orcamento.html" class="btn btn-navy svc-btn" style="padding:9px 16px;font-size:13px">Solicitar Orçamento</a></div>
+                            </div>
+                            <div class="svc-card" data-s="Licenciamento ambiental">
+                                <div class="svc-img"><img src="licenciamento.jpeg" alt="Licenciamento Ambiental"></div>
+                                <div class="svc-body"><h4>Licenciamento Ambiental</h4><p>Controle e regulação de atividades potencialmente poluidoras (Lei 6.938/81).</p><a href="orcamento.html" class="btn btn-navy svc-btn" style="padding:9px 16px;font-size:13px">Solicitar Orçamento</a></div>
+                            </div>
+                            <div class="svc-card" data-s="PEA">
+                                <div class="svc-img"><img src="pea.jpeg" alt="PEA"></div>
+                                <div class="svc-body"><h4>PEA</h4><p>Plano de Emergência Ambiental: orientações e procedimentos para emergências ambientais.</p><a href="orcamento.html" class="btn btn-navy svc-btn" style="padding:9px 16px;font-size:13px">Solicitar Orçamento</a></div>
+                            </div>
+                            <div class="svc-card" data-s="PPR proteção respiratória">
+                                <div class="svc-img"><img src="ppr.jpeg" alt="PPR"></div>
+                                <div class="svc-body"><h4>PPR</h4><p>Programa de Proteção Respiratória: proteção contra a inalação de substâncias nocivas.</p><a href="orcamento.html" class="btn btn-navy svc-btn" style="padding:9px 16px;font-size:13px">Solicitar Orçamento</a></div>
+                            </div>
+                            <div class="svc-card" data-s="PCA auditiva">
+                                <div class="svc-img"><img src="pca.jpeg" alt="PCA"></div>
+                                <div class="svc-body"><h4>PCA</h4><p>Programa de Conservação Auditiva: proteção da audição contra níveis elevados de ruído.</p><a href="orcamento.html" class="btn btn-navy svc-btn" style="padding:9px 16px;font-size:13px">Solicitar Orçamento</a></div>
+                            </div>
+                            <div class="svc-card" data-s="PAE emergência">
+                                <div class="svc-img"><img src="pae.jpeg" alt="PAE"></div>
+                                <div class="svc-body"><h4>PAE</h4><p>Plano de Atendimento a Emergência: respostas rápidas e seguras, minimizando danos.</p><a href="orcamento.html" class="btn btn-navy svc-btn" style="padding:9px 16px;font-size:13px">Solicitar Orçamento</a></div>
+                            </div>
+                            <div class="svc-card" data-s="boas práticas">
+                                <div class="svc-img"><img src="pbp.jpeg" alt="Programa de Boas Práticas"></div>
+                                <div class="svc-body"><h4>Boas Práticas</h4><p>Padrões elevados de qualidade e segurança em saúde, alimentação e manufatura.</p><a href="orcamento.html" class="btn btn-navy svc-btn" style="padding:9px 16px;font-size:13px">Solicitar Orçamento</a></div>
+                            </div>
+                            <div class="svc-card" data-s="PAZ acidente zero">
+                                <div class="svc-img"><img src="paz.png" alt="Programa PAZ"></div>
+                                <div class="svc-body"><h4>Programa PAZ</h4><p>Acidente Zero: foco na redução de acidentes e promoção de ambiente mais seguro.</p><a href="orcamento.html" class="btn btn-navy svc-btn" style="padding:9px 16px;font-size:13px">Solicitar Orçamento</a></div>
+                            </div>
+                            <div class="svc-card" data-s="ergonomia laudo ergonômico">
+                                <div class="svc-img"><img src="ergonomia.png" alt="Programas de Ergonomia"></div>
+                                <div class="svc-body"><h4>Programas de Ergonomia</h4><p>Laudos ergonômicos para otimizar conforto, segurança e eficiência no trabalho.</p><a href="orcamento.html" class="btn btn-navy svc-btn" style="padding:9px 16px;font-size:13px">Solicitar Orçamento</a></div>
+                            </div>
+                            <div class="svc-card" data-s="laudos técnicos">
+                                <div class="svc-img"><img src="laudos.jpeg" alt="Laudos técnicos"></div>
+                                <div class="svc-body"><h4>Laudos Técnicos</h4><p>Laudos diversos elaborados sob demanda, em conformidade com normas técnicas.</p><a href="orcamento.html" class="btn btn-navy svc-btn" style="padding:9px 16px;font-size:13px">Solicitar Orçamento</a></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="accordion-item" data-k="ordem de serviço OS comunicação risco APR análise preliminar PT permissão de trabalho">
+                <button class="acc-head">
+                    <span class="acc-icon"><svg viewBox="0 0 24 24" style="width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg></span>
+                    <h3>Documentação e Análises de Risco</h3>
+                    <span class="chev"><svg viewBox="0 0 24 24" style="width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></span>
+                </button>
+                <div class="acc-body">
+                    <div class="acc-body-inner">
+                        <div class="svc-grid">
+                            <div class="svc-card" data-s="Ordem de Serviço OS NR-01">
+                                <div class="svc-img"><img src="os.png" alt="Ordem de Serviço"></div>
+                                <div class="svc-body"><h4>O.S — Ordem de Serviço</h4><p>O.S (NR-01): profissionais treinados e alertados sobre os riscos do setor e os meios de prevenção.</p><a href="orcamento.html" class="btn btn-navy svc-btn" style="padding:9px 16px;font-size:13px">Solicitar Orçamento</a></div>
+                            </div>
+                            <div class="svc-card" data-s="APR análise preliminar risco">
+                                <div class="svc-img"><img src="apr.jpeg" alt="APR"></div>
+                                <div class="svc-body"><h4>A.P.R — Análise Preliminar de Risco</h4><p>Soluções de prevenção, atenuação e neutralização dos riscos antes e durante a execução.</p><a href="orcamento.html" class="btn btn-navy svc-btn" style="padding:9px 16px;font-size:13px">Solicitar Orçamento</a></div>
+                            </div>
+                            <div class="svc-card" data-s="PT permissão de trabalho">
+                                <div class="svc-img"><img src="pt.jpeg" alt="Permissão de Trabalho"></div>
+                                <div class="svc-body"><h4>P.T — Permissão de Trabalho</h4><p>Checagem dos requisitos básicos e EPIs inerentes a atividades de risco.</p><a href="orcamento.html" class="btn btn-navy svc-btn" style="padding:9px 16px;font-size:13px">Solicitar Orçamento</a></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="accordion-item" data-k="treinamento NR NRs certificado CIPA CIPATR CIPAMIN brigada incêndio eletricidade máquinas caldeira vaso construção combustível mineração altura espaço confinado portuário retroescavadeira">
+                <button class="acc-head">
+                    <span class="acc-icon"><svg viewBox="0 0 24 24" style="width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.42 10.922a1 1 0 0 0-.019-1.838L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.832l8.57 3.908a2 2 0 0 0 1.66 0z"/><path d="M22 10v6"/><path d="M6 12.5V16a6 3 0 0 0 12 0v-3.5"/></svg></span>
+                    <h3>Treinamentos e Certificações NRs</h3>
+                    <span class="chev"><svg viewBox="0 0 24 24" style="width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></span>
+                </button>
+                <div class="acc-body">
+                    <div class="acc-body-inner">
+                        <div class="svc-grid">
+                            <div class="svc-card" data-s="NR-05 CIPA">
+                                <div class="svc-img"><img src="cipa.png" alt="CIPA"></div>
+                                <div class="svc-body"><h4>NR-05 — CIPA</h4><p>Comissão Interna de Prevenção de Acidentes: tamanho da comissão, mandatos e participação.</p><a href="orcamento.html" class="btn btn-navy svc-btn" style="padding:9px 16px;font-size:13px">Solicitar Orçamento</a></div>
+                            </div>
+                            <div class="svc-card" data-s="NR-06 EPI">
+                                <div class="svc-img"><img src="epi.jpeg" alt="EPI"></div>
+                                <div class="svc-body"><h4>NR-06 — EPI</h4><p>Equipamentos de Proteção Individual: seguro, confortável e sem riscos no dia a dia.</p><a href="orcamento.html" class="btn btn-navy svc-btn" style="padding:9px 16px;font-size:13px">Solicitar Orçamento</a></div>
+                            </div>
+                            <div class="svc-card" data-s="NR-10 eletricidade">
+                                <div class="svc-img"><img src="nr10.jpeg" alt="NR-10"></div>
+                                <div class="svc-body"><h4>NR-10</h4><p>Segurança em instalações e serviços em eletricidade, garantindo saúde dos trabalhadores.</p><a href="orcamento.html" class="btn btn-navy svc-btn" style="padding:9px 16px;font-size:13px">Solicitar Orçamento</a></div>
+                            </div>
+                            <div class="svc-card" data-s="NR-11 transporte armazenagem">
+                                <div class="svc-img"><img src="nr11.jpeg" alt="NR-11"></div>
+                                <div class="svc-body"><h4>NR-11</h4><p>Transporte, armazenagem e manuseio de materiais para reduzir acidentes.</p><a href="orcamento.html" class="btn btn-navy svc-btn" style="padding:9px 16px;font-size:13px">Solicitar Orçamento</a></div>
+                            </div>
+                            <div class="svc-card" data-s="NR-12 máquinas equipamentos">
+                                <div class="svc-img"><img src="nr12.jpeg" alt="NR-12"></div>
+                                <div class="svc-body"><h4>NR-12</h4><p>Segurança no trabalho em máquinas e equipamentos: prevenção de acidentes e doenças.</p><a href="orcamento.html" class="btn btn-navy svc-btn" style="padding:9px 16px;font-size:13px">Solicitar Orçamento</a></div>
+                            </div>
+                            <div class="svc-card" data-s="NR-13 caldeiras vasos pressão">
+                                <div class="svc-img"><img src="nr13.jpeg" alt="NR-13"></div>
+                                <div class="svc-body"><h4>NR-13</h4><p>Caldeiras e vasos de pressão: classificação, instalação, inspeção e capacitação.</p><a href="orcamento.html" class="btn btn-navy svc-btn" style="padding:9px 16px;font-size:13px">Solicitar Orçamento</a></div>
+                            </div>
+                            <div class="svc-card" data-s="NR-18 construção">
+                                <div class="svc-img"><img src="nr18.jpeg" alt="NR-18"></div>
+                                <div class="svc-body"><h4>NR-18</h4><p>Condições e meio ambiente de trabalho na indústria da construção.</p><a href="orcamento.html" class="btn btn-navy svc-btn" style="padding:9px 16px;font-size:13px">Solicitar Orçamento</a></div>
+                            </div>
+                            <div class="svc-card" data-s="NR-20 combustíveis inflamáveis">
+                                <div class="svc-img"><img src="nr20.jpeg" alt="NR-20"></div>
+                                <div class="svc-body"><h4>NR-20</h4><p>Líquidos combustíveis e inflamáveis em todo o ciclo de vida da instalação.</p><a href="orcamento.html" class="btn btn-navy svc-btn" style="padding:9px 16px;font-size:13px">Solicitar Orçamento</a></div>
+                            </div>
+                            <div class="svc-card" data-s="NR-22 mineração CIPAMIN">
+                                <div class="svc-img"><img src="nr22.jpeg" alt="NR-22"></div>
+                                <div class="svc-body"><h4>NR-22 — CIPAMIN</h4><p>Segurança e saúde ocupacional na mineração: ações preventivas e redução de riscos.</p><a href="orcamento.html" class="btn btn-navy svc-btn" style="padding:9px 16px;font-size:13px">Solicitar Orçamento</a></div>
+                            </div>
+                            <div class="svc-card" data-s="NR-23 incêndio brigadista">
+                                <div class="svc-img"><img src="nr23.jpeg" alt="NR-23"></div>
+                                <div class="svc-body"><h4>NR-23 — Brigada</h4><p>Proteção contra incêndio: formação e reciclagem de brigadistas.</p><a href="orcamento.html" class="btn btn-navy svc-btn" style="padding:9px 16px;font-size:13px">Solicitar Orçamento</a></div>
+                            </div>
+                            <div class="svc-card" data-s="NR-29 portuário">
+                                <div class="svc-img"><img src="nr29.png" alt="NR-29"></div>
+                                <div class="svc-body"><h4>NR-29</h4><p>Segurança e saúde no trabalho portuário, nas operações e instalações.</p><a href="orcamento.html" class="btn btn-navy svc-btn" style="padding:9px 16px;font-size:13px">Solicitar Orçamento</a></div>
+                            </div>
+                            <div class="svc-card" data-s="NR-31 rural CIPATR">
+                                <div class="svc-img"><img src="nr31.jpeg" alt="NR-31"></div>
+                                <div class="svc-body"><h4>NR-31 — CIPATR</h4><p>Segurança no trabalho rural: prevenção de acidentes e riscos no campo.</p><a href="orcamento.html" class="btn btn-navy svc-btn" style="padding:9px 16px;font-size:13px">Solicitar Orçamento</a></div>
+                            </div>
+                            <div class="svc-card" data-s="NR-33 espaços confinados">
+                                <div class="svc-img"><img src="nr33.jpeg" alt="NR-33"></div>
+                                <div class="svc-body"><h4>NR-33</h4><p>Segurança e saúde em espaços confinados: identificação, monitoramento e controle.</p><a href="orcamento.html" class="btn btn-navy svc-btn" style="padding:9px 16px;font-size:13px">Solicitar Orçamento</a></div>
+                            </div>
+                            <div class="svc-card" data-s="NR-34 indústria naval">
+                                <div class="svc-img"><img src="nr34.jpeg" alt="NR-34"></div>
+                                <div class="svc-body"><h4>NR-34</h4><p>Indústria naval: trabalho a quente, em altura, jateamento e atividades de pintura.</p><a href="orcamento.html" class="btn btn-navy svc-btn" style="padding:9px 16px;font-size:13px">Solicitar Orçamento</a></div>
+                            </div>
+                            <div class="svc-card" data-s="NR-35 trabalho em altura">
+                                <div class="svc-img"><img src="nr35.jpeg" alt="NR-35"></div>
+                                <div class="svc-body"><h4>NR-35 — Trabalho em Altura</h4><p>Uso adequado de EPI e EPC para prevenir quedas em locais elevados.</p><a href="orcamento.html" class="btn btn-navy svc-btn" style="padding:9px 16px;font-size:13px">Solicitar Orçamento</a></div>
+                            </div>
+                            <div class="svc-card" data-s="retroescavadeira">
+                                <div class="svc-img"><img src="retro.jpeg" alt="Retroescavadeira"></div>
+                                <div class="svc-body"><h4>Retroescavadeira</h4><p>Operadores treinados e certificados para eficiência e segurança nos canteiros.</p><a href="orcamento.html" class="btn btn-navy svc-btn" style="padding:9px 16px;font-size:13px">Solicitar Orçamento</a></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============ CIVIL ============ -->
+<section class="section section-alt cat-section" id="civil">
+    <div class="container">
+        <div class="cat-title">
+            <div class="icon cat-gold"><svg viewBox="0 0 24 24" style="width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 22h20"/><path d="M4 22V7l8-4 8 4v15"/><path d="M8 10h.01"/><path d="M16 10h.01"/><path d="M12 10h.01"/><path d="M10 22v-4"/><path d="M14 22v-4"/></svg></div>
+            <h2>Engenharia Civil</h2>
+        </div>
+        <div class="accordion">
+            <div class="accordion-item" data-k="obra reforma orçamento acompanhamento execução engenharia civil">
+                <button class="acc-head">
+                    <span class="acc-icon"><svg viewBox="0 0 24 24" style="width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/><path d="M10 18h4"/></svg></span>
+                    <h3>Obras, Reformas e Acompanhamento</h3>
+                    <span class="chev"><svg viewBox="0 0 24 24" style="width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></span>
+                </button>
+                <div class="acc-body">
+                    <div class="acc-body-inner">
+                        <div class="svc-grid">
+                            <div class="svc-card" data-s="execução de obras">
+                                <div class="svc-img"><img src="obra.jpeg" alt="Execução de Obras"></div>
+                                <div class="svc-body"><h4>Execução de Obras</h4><p>Do planejamento à entrega final, seguindo todas as especificações técnicas e legais.</p><a href="orcamento.html" class="btn btn-navy svc-btn" style="padding:9px 16px;font-size:13px">Solicitar Orçamento</a></div>
+                            </div>
+                            <div class="svc-card" data-s="reformas">
+                                <div class="svc-img"><img src="reforma.jpeg" alt="Reformas"></div>
+                                <div class="svc-body"><h4>Reformas</h4><p>De pequenas alterações a projetos complexos de infraestrutura e restauração.</p><a href="orcamento.html" class="btn btn-navy svc-btn" style="padding:9px 16px;font-size:13px">Solicitar Orçamento</a></div>
+                            </div>
+                            <div class="svc-card" data-s="orçamentos">
+                                <div class="svc-img"><img src="orcamento.jpeg" alt="Orçamentos"></div>
+                                <div class="svc-body"><h4>Orçamentos</h4><p>Para projetos, reformas e obras, com todas as despesas previstas e controladas.</p><a href="orcamento.html" class="btn btn-navy svc-btn" style="padding:9px 16px;font-size:13px">Solicitar Orçamento</a></div>
+                            </div>
+                            <div class="svc-card" data-s="acompanhamento de obras">
+                                <div class="svc-img"><img src="acompanhamento.jpeg" alt="Acompanhamento de Obras"></div>
+                                <div class="svc-body"><h4>Acompanhamento de Obras</h4><p>Execução conforme o planejado, dentro do prazo e do orçamento estipulados.</p><a href="orcamento.html" class="btn btn-navy svc-btn" style="padding:9px 16px;font-size:13px">Solicitar Orçamento</a></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="accordion-item" data-k="projeto estrutural elétrico hidráulico linha de vida mapa de riscos combate incêndio laudo técnico">
+                <button class="acc-head">
+                    <span class="acc-icon"><svg viewBox="0 0 24 24" style="width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.3 15.3a2.4 2.4 0 0 1 0 3.4l-2.6 2.6a2.4 2.4 0 0 1-3.4 0L2.7 8.7a2.41 2.41 0 0 1 0-3.4l2.6-2.6a2.41 2.41 0 0 1 3.4 0Z"/><path d="m14.5 12.5 2-2"/><path d="m11.5 9.5 2-2"/><path d="m8.5 6.5 2-2"/><path d="m17.5 15.5 2-2"/></svg></span>
+                    <h3>Projetos e Laudos Técnicos</h3>
+                    <span class="chev"><svg viewBox="0 0 24 24" style="width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></span>
+                </button>
+                <div class="acc-body">
+                    <div class="acc-body-inner">
+                        <div class="svc-grid">
+                            <div class="svc-card" data-s="projetos estruturais elétricos hidráulicos">
+                                <div class="svc-img"><img src="projeto.jpeg" alt="Projetos"></div>
+                                <div class="svc-body"><h4>Projetos Estrutural, Elétrico e Hidráulico</h4><p>Segurança, eficiência e conformidade nas suas obras.</p><a href="orcamento.html" class="btn btn-navy svc-btn" style="padding:9px 16px;font-size:13px">Solicitar Orçamento</a></div>
+                            </div>
+                            <div class="svc-card" data-s="linha de vida">
+                                <div class="svc-img"><img src="linha.jpeg" alt="Linha de Vida"></div>
+                                <div class="svc-body"><h4>Projetos de Linha de Vida</h4><p>Sistemas de ancoragem para proteção contra quedas em atividades em altura.</p><a href="orcamento.html" class="btn btn-navy svc-btn" style="padding:9px 16px;font-size:13px">Solicitar Orçamento</a></div>
+                            </div>
+                            <div class="svc-card" data-s="mapa de riscos">
+                                <div class="svc-img"><img src="mapa.jpeg" alt="Mapa de Riscos"></div>
+                                <div class="svc-body"><h4>Mapas de Riscos</h4><p>Identificação, avaliação e comunicação dos riscos do ambiente de trabalho.</p><a href="orcamento.html" class="btn btn-navy svc-btn" style="padding:9px 16px;font-size:13px">Solicitar Orçamento</a></div>
+                            </div>
+                            <div class="svc-card" data-s="combate a incêndio">
+                                <div class="svc-img"><img src="combate.jpeg" alt="Combate a Incêndio"></div>
+                                <div class="svc-body"><h4>Projetos de Combate a Incêndio</h4><p>Edificação preparada para prevenir e responder a emergências com eficácia.</p><a href="orcamento.html" class="btn btn-navy svc-btn" style="padding:9px 16px;font-size:13px">Solicitar Orçamento</a></div>
+                            </div>
+                            <div class="svc-card" data-s="laudos técnicos">
+                                <div class="svc-img"><img src="laudos.jpeg" alt="Laudos Técnicos"></div>
+                                <div class="svc-body"><h4>Laudos Técnicos</h4><p>Análises e avaliações detalhadas, em conformidade com normas e regulamentos.</p><a href="orcamento.html" class="btn btn-navy svc-btn" style="padding:9px 16px;font-size:13px">Solicitar Orçamento</a></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="accordion-item" data-k="alvará documentação imóvel estabelecimento comercial posto combustível dry wall gesso">
+                <button class="acc-head">
+                    <span class="acc-icon"><svg viewBox="0 0 24 24" style="width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><path d="M7.5 7.5m-.5 0a.5.5 0 1 0 1 0a.5.5 0 1 0-1 0"/></svg></span>
+                    <h3>Alvarás e Acabamentos</h3>
+                    <span class="chev"><svg viewBox="0 0 24 24" style="width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></span>
+                </button>
+                <div class="acc-body">
+                    <div class="acc-body-inner">
+                        <div class="svc-grid">
+                            <div class="svc-card" data-s="alvará documentação imóvel">
+                                <div class="svc-img"><img src="alvara.jpeg" alt="Alvará"></div>
+                                <div class="svc-body"><h4>Documentação para Alvará</h4><p>Imóveis, estabelecimentos comerciais e postos de combustíveis, com acompanhamento de processos.</p><a href="orcamento.html" class="btn btn-navy svc-btn" style="padding:9px 16px;font-size:13px">Solicitar Orçamento</a></div>
+                            </div>
+                            <div class="svc-card" data-s="dry wall">
+                                <div class="svc-img"><img src="dry.jpeg" alt="Dry Wall"></div>
+                                <div class="svc-body"><h4>Dry Wall</h4><p>Divisórias, revestimentos e forros modernos e eficientes.</p><a href="orcamento.html" class="btn btn-navy svc-btn" style="padding:9px 16px;font-size:13px">Solicitar Orçamento</a></div>
+                            </div>
+                            <div class="svc-card" data-s="placas de gesso">
+                                <div class="svc-img"><img src="gesso.jpeg" alt="Placas de Gesso"></div>
+                                <div class="svc-body"><h4>Placas de Gesso</h4><p>Soluções versáteis e elegantes com excelente acabamento.</p><a href="orcamento.html" class="btn btn-navy svc-btn" style="padding:9px 16px;font-size:13px">Solicitar Orçamento</a></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============ AMBIENTAL ============ -->
+<section class="section cat-section" id="ambiental">
+    <div class="container">
+        <div class="cat-title">
+            <div class="icon cat-green"><svg viewBox="0 0 24 24" style="width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/></svg></div>
+            <h2>Engenharia Ambiental</h2>
+        </div>
+        <div class="accordion">
+            <div class="accordion-item" data-k="ambiental licenciamento resíduos consultoria cursos treinamento sustentável PGRS laudos">
+                <button class="acc-head">
+                    <span class="acc-icon"><svg viewBox="0 0 24 24" style="width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 12m-10 0a10 10 0 1 0 20 0a10 10 0 1 0-20 0"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg></span>
+                    <h3>Soluções Ambientais</h3>
+                    <span class="chev"><svg viewBox="0 0 24 24" style="width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></span>
+                </button>
+                <div class="acc-body">
+                    <div class="acc-body-inner">
+                        <div class="svc-grid">
+                            <div class="svc-card" data-s="licenciamento ambiental">
+                                <div class="svc-img"><img src="licenciamento.jpeg" alt="Licenciamento Ambiental"></div>
+                                <div class="svc-body"><h4>Licenciamento Ambiental</h4><p>Obtenção de licenças ágil e conforme as regulamentações vigentes.</p><a href="orcamento.html" class="btn btn-navy svc-btn" style="padding:9px 16px;font-size:13px">Solicitar Orçamento</a></div>
+                            </div>
+                            <div class="svc-card" data-s="gestão de resíduos">
+                                <div class="svc-img"><img src="residuos.jpeg" alt="Gestão de Resíduos"></div>
+                                <div class="svc-body"><h4>Gestão de Resíduos</h4><p>Redução, reutilização e reciclagem com menor impacto ambiental.</p><a href="orcamento.html" class="btn btn-navy svc-btn" style="padding:9px 16px;font-size:13px">Solicitar Orçamento</a></div>
+                            </div>
+                            <div class="svc-card" data-s="consultoria ambiental">
+                                <div class="svc-img"><img src="consulta.jpeg" alt="Consultoria Ambiental"></div>
+                                <div class="svc-body"><h4>Consultoria Ambiental</h4><p>Orientação para cumprir exigências ambientais e adotar práticas sustentáveis.</p><a href="orcamento.html" class="btn btn-navy svc-btn" style="padding:9px 16px;font-size:13px">Solicitar Orçamento</a></div>
+                            </div>
+                            <div class="svc-card" data-s="cursos treinamentos ambiental">
+                                <div class="svc-img"><img src="cursos.jpeg" alt="Cursos e Treinamentos"></div>
+                                <div class="svc-body"><h4>Cursos e Treinamentos</h4><p>Capacitação em sustentabilidade, gestão ambiental e normas vigentes.</p><a href="orcamento.html" class="btn btn-navy svc-btn" style="padding:9px 16px;font-size:13px">Solicitar Orçamento</a></div>
+                            </div>
+                            <div class="svc-card" data-s="projetos sustentáveis">
+                                <div class="svc-img"><img src="esocial1.jpeg" alt="Projetos Sustentáveis"></div>
+                                <div class="svc-body"><h4>Projetos Sustentáveis</h4><p>Equilíbrio entre desenvolvimento econômico e preservação ambiental.</p><a href="orcamento.html" class="btn btn-navy svc-btn" style="padding:9px 16px;font-size:13px">Solicitar Orçamento</a></div>
+                            </div>
+                            <div class="svc-card" data-s="PGRS resíduos sólidos">
+                                <div class="svc-img"><img src="esocial1.jpeg" alt="PGRS"></div>
+                                <div class="svc-body"><h4>PGRS</h4><p>Programa de Gerenciamento de Resíduos Sólidos, atendendo às exigências legais.</p><a href="orcamento.html" class="btn btn-navy svc-btn" style="padding:9px 16px;font-size:13px">Solicitar Orçamento</a></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============ ESOCIAL ============ -->
+<section class="section section-alt cat-section" id="esocial">
+    <div class="container">
+        <div class="cat-title">
+            <div class="icon cat-navy"><svg viewBox="0 0 24 24" style="width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg></div>
+            <h2>Serviços para eSocial</h2>
+        </div>
+        <div class="accordion">
+            <div class="accordion-item" data-k="esocial eventos S-2210 S-2220 S-2240 CAT comunicação acidente PPP perfil consultoria visitas avaliação ambiente trabalho">
+                <button class="acc-head">
+                    <span class="acc-icon"><svg viewBox="0 0 24 24" style="width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 20V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/><path d="M2 6h20v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2z"/></svg></span>
+                    <h3>Gestão eSocial e Documentos</h3>
+                    <span class="chev"><svg viewBox="0 0 24 24" style="width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></span>
+                </button>
+                <div class="acc-body">
+                    <div class="acc-body-inner">
+                        <div class="svc-grid">
+                            <div class="svc-card" data-s="esocial gestão">
+                                <div class="svc-img"><img src="esocial1.jpeg" alt="Gestão eSocial"></div>
+                                <div class="svc-body"><h4>Gestão eSocial</h4><p>Conformidade com todas as obrigações legais, com precisão e eficiência.</p><a href="orcamento.html" class="btn btn-navy svc-btn" style="padding:9px 16px;font-size:13px">Solicitar Orçamento</a></div>
+                            </div>
+                            <div class="svc-card" data-s="eventos S-2210 S-2220 S-2240">
+                                <div class="svc-img"><img src="esocial1.jpeg" alt="Envio de Eventos"></div>
+                                <div class="svc-body"><h4>Envio de Eventos (S-2210, S-2220, S-2240)</h4><p>Condições de trabalho, monitoramento de saúde e exposição a agentes nocivos.</p><a href="orcamento.html" class="btn btn-navy svc-btn" style="padding:9px 16px;font-size:13px">Solicitar Orçamento</a></div>
+                            </div>
+                            <div class="svc-card" data-s="CAT comunicação acidente">
+                                <div class="svc-img"><img src="acompanhamento.jpeg" alt="Envio de CAT"></div>
+                                <div class="svc-body"><h4>Envio de CAT</h4><p>Comunicação de Acidente de Trabalho com registro correto e atendendo às exigências legais.</p><a href="orcamento.html" class="btn btn-navy svc-btn" style="padding:9px 16px;font-size:13px">Solicitar Orçamento</a></div>
+                            </div>
+                            <div class="svc-card" data-s="PPP perfil profissiográfico">
+                                <div class="svc-img"><img src="laudos.jpeg" alt="Elaboração de PPP"></div>
+                                <div class="svc-body"><h4>Elaboração de PPP</h4><p>Perfil Profissiográfico Previdenciário completo, facilitando aposentadoria especial.</p><a href="orcamento.html" class="btn btn-navy svc-btn" style="padding:9px 16px;font-size:13px">Solicitar Orçamento</a></div>
+                            </div>
+                            <div class="svc-card" data-s="consultoria eSocial">
+                                <div class="svc-img"><img src="mapa.jpeg" alt="Consultoria"></div>
+                                <div class="svc-body"><h4>Consultoria</h4><p>Orientação técnica em segurança, gestão ambiental e saúde ocupacional.</p><a href="orcamento.html" class="btn btn-navy svc-btn" style="padding:9px 16px;font-size:13px">Solicitar Orçamento</a></div>
+                            </div>
+                            <div class="svc-card" data-s="visitas técnicas avaliação ambiente">
+                                <div class="svc-img"><img src="reforma.jpeg" alt="Visitas Técnicas"></div>
+                                <div class="svc-body"><h4>Visitas Técnicas</h4><p>Avaliação do ambiente de trabalho e identificação de riscos com soluções práticas.</p><a href="orcamento.html" class="btn btn-navy svc-btn" style="padding:9px 16px;font-size:13px">Solicitar Orçamento</a></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============ CONSULTORIA ============ -->
+<section class="section cat-section" id="consultoria">
+    <div class="container">
+        <div class="cat-title">
+            <div class="icon cat-gold"><svg viewBox="0 0 24 24" style="width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88z"/><path d="M12 12m-10 0a10 10 0 1 0 20 0a10 10 0 1 0-20 0"/></svg></div>
+            <h2>Consultoria</h2>
+        </div>
+        <div class="accordion">
+            <div class="accordion-item" data-k="consultoria engenharia civil segurança trabalho ambiental alvará licença sustentabilidade certificação edificação verde energia">
+                <button class="acc-head">
+                    <span class="acc-icon"><svg viewBox="0 0 24 24" style="width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m11 17 2 2a1 1 0 1 0 3-3"/><path d="m14 14 2.5 2.5a1 1 0 1 0 3-3l-3.88-3.88a3 3 0 0 0-4.24 0l-.88.88a1 1 0 1 1-3-3l2.81-2.81a5.79 5.79 0 0 1 7.06-.87l.47.28a2 2 0 0 0 1.42.25L21 4"/><path d="m21 3 1 11h-2"/><path d="M3 3 2 14l6.5 6.5a1 1 0 1 0 3-3"/><path d="M3 4h8"/></svg></span>
+                    <h3>Consultorias Especializadas</h3>
+                    <span class="chev"><svg viewBox="0 0 24 24" style="width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></span>
+                </button>
+                <div class="acc-body">
+                    <div class="acc-body-inner">
+                        <div class="svc-grid">
+                            <div class="svc-card" data-s="consultoria engenharia civil">
+                                <div class="svc-img"><img src="obra.jpeg" alt="Consultoria Civil"></div>
+                                <div class="svc-body"><h4>Engenharia Civil</h4><p>Planejamento, gerenciamento de projetos, análises estruturais e inspeções técnicas.</p><a href="orcamento.html" class="btn btn-navy svc-btn" style="padding:9px 16px;font-size:13px">Solicitar Orçamento</a></div>
+                            </div>
+                            <div class="svc-card" data-s="consultoria segurança do trabalho">
+                                <div class="svc-img"><img src="seguranca.png" alt="Consultoria Segurança do Trabalho"></div>
+                                <div class="svc-body"><h4>Segurança do Trabalho</h4><p>PPRA, PPR, avaliações ergonômicas e elaboração de laudos.</p><a href="orcamento.html" class="btn btn-navy svc-btn" style="padding:9px 16px;font-size:13px">Solicitar Orçamento</a></div>
+                            </div>
+                            <div class="svc-card" data-s="consultoria ambiental">
+                                <div class="svc-img"><img src="ambiental.jpeg" alt="Consultoria Ambiental"></div>
+                                <div class="svc-body"><h4>Ambiental</h4><p>Estudos de impacto, gestão de resíduos e licenciamento ambiental.</p><a href="orcamento.html" class="btn btn-navy svc-btn" style="padding:9px 16px;font-size:13px">Solicitar Orçamento</a></div>
+                            </div>
+                            <div class="svc-card" data-s="alvará licenças">
+                                <div class="svc-img"><img src="alvara.jpeg" alt="Alvarás e Licenças"></div>
+                                <div class="svc-body"><h4>Alvarás e Licenças</h4><p>Assessoria completa para alvarás de construção e funcionamento.</p><a href="orcamento.html" class="btn btn-navy svc-btn" style="padding:9px 16px;font-size:13px">Solicitar Orçamento</a></div>
+                            </div>
+                            <div class="svc-card" data-s="sustentabilidade edificação verde energia">
+                                <div class="svc-img"><img src="licenciamento.jpeg" alt="Sustentabilidade"></div>
+                                <div class="svc-body"><h4>Sustentabilidade</h4><p>Práticas sustentáveis, certificação de edificações verdes e eficiência energética.</p><a href="orcamento.html" class="btn btn-navy svc-btn" style="padding:9px 16px;font-size:13px">Solicitar Orçamento</a></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============ CTA ============ -->
+<section class="section section-alt" style="padding-top:40px">
+    <div class="container">
+        <div class="cta-band">
+            <div>
+                <h2>Não encontrou o que procura?</h2>
+                <p>Entre outros serviços sob demanda estão sempre disponíveis. Fale conosco e encontre a solução ideal para o seu projeto.</p>
+            </div>
+            <a class="btn btn-gold" href="orcamento.html">Solicitar Orçamento</a>
+        </div>
+    </div>
+</section>
+
+<footer class="site-footer">
+    <div class="container">
+        <div class="footer-top">
+            <div class="footer-brand">
+                <img src="logo2.jpg" alt="WS Engenharia">
+                <h4>WS Engenharia, Consultoria e Treinamentos</h4>
+                <p>Soluções em engenharia civil, ambiental e segurança do trabalho para empresas de todos os portes.</p>
+            </div>
+            <div class="footer-col">
+                <h5>Navegação</h5>
                 <ul>
-                    <li><a href="index.html">Início</a></li>
+                    <li><a href="inicio.html">Início</a></li>
+                    <li><a href="sobre.html">Sobre</a></li>
+                    <li><a href="servicos.html">Serviços</a></li>
+                    <li><a href="contato.html">Contato</a></li>
+                    <li><a href="indicacao.html">Indicações</a></li>
                 </ul>
-            </nav>
+            </div>
+            <div class="footer-col">
+                <h5>Serviços</h5>
+                <ul>
+                    <li><a href="servicos.html#seguranca">Segurança do Trabalho</a></li>
+                    <li><a href="servicos.html#civil">Engenharia Civil</a></li>
+                    <li><a href="servicos.html#ambiental">Engenharia Ambiental</a></li>
+                    <li><a href="servicos.html#esocial">eSocial</a></li>
+                    <li><a href="servicos.html#consultoria">Consultoria</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h5>Contato</h5>
+                <ul class="footer-contact">
+                    <li><span class="f-ico"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg></span> (75) 9 9189-3667</li>
+                    <li><span class="f-ico"><svg viewBox="0 0 24 24" style="width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 7.35V18a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7.35"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg></span> wsengenhariaa@gmail.com</li>
+                    <li><span class="f-ico"><svg viewBox="0 0 24 24" style="width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg></span> CNPJ: 41.467.540/0001-67</li>
+                </ul>
+                <div class="social-links" style="justify-content:flex-start;margin-top:10px">
+                    <a href="https://wa.me/5575991893667?text=Ol%C3%A1%20WSENGENHARIA!%20Vi%20seu%20site%20e%20gostaria%20de%20contratar%20alguns%20de%20seus%20servi%C3%A7os.%20pode%20me%20atender%20no%20momento%20?" target="_blank" rel="noopener" aria-label="WhatsApp"><img src="whatsaapp-logo.png" alt=""></a>
+                    <a href="https://www.instagram.com/wsengenharia_/" target="_blank" rel="noopener" aria-label="Instagram"><img src="instagram-logo.png" alt=""></a>
+                    <a href="#" target="_blank" rel="noopener" aria-label="Facebook"><img src="facebook-logo.png" alt=""></a>
+                    <a href="https://www.linkedin.com/in/wedson-santos-979a33b2" target="_blank" rel="noopener" aria-label="LinkedIn"><img src="linkedin-logo.png" alt=""></a>
+                </div>
+            </div>
         </div>
-        <div class="search-container">
-            <input type="text" id="search" placeholder="Buscar por palavra chave...">
-            <button onclick="performSearch()">Buscar</button>
+        <div class="footer-bottom">
+            <div>&copy; 2024 WS Engenharia, Consultoria e Treinamentos. Todos os direitos reservados.</div>
+            <div class="creds">Power Bi © <a href="https://atec7.github.io/atecseven.com.br/" target="_blank" rel="noopener" style="color:inherit">Atecseven tecnologia</a></div>
         </div>
-    </header>
-    
-    <section id="contact" class="">
-        <h2 onclick="expandCard(this)">+ Serviços de <br> Segurança do Trabalho</h2>
+    </div>
+</footer>
 
-<section id="contact" class="container" style="display: none;">
-    <!--  -->
-    <h4>▶PPRA </h4>
-        <img class="servicos" src="prra.png" alt="Logo">
-        <p>▶PPRA - Programa de Prevenção de Riscos Ambientais (PPRA), é um
-        conjunto de diretrizes e ações que visam identificar,avaliar e controlar
-        os riscos presentes no ambiente de trabalho.
-        <br>
-     ✓ Objetivos:
-       <br>
-        • Identificar riscos ambientais. <br> • Avaliar e controlar riscos. <br>
-        •Promover a saúde e segurança.
-        <br>
-            <a href="orcamento.html">
-                <button class="button">Solicitar Orçamento</button>
-            </a>
-        </p>
-        <h4>▶PGR</h4>
-        <img class="servicos" src="pgr.jpeg" alt="Logo">
-        <p>▶PGR -  O Programa de Gerenciamento de Riscos (PGR), é um conjunto de ações e procedimentos adotados pelas organizações para identificar, avaliar, controlar e monitorar os riscos presentes no ambiente de trabalho.
-        <br>
-        ✓Objetivos: <br>
-        • O objetivo principal do PGR é garantir condições de trabalho seguras e
-        saudáveis para todos os colaboradores.
-        <br>
-            <a href="orcamento.html">
-                <button class="button">Solicitar Orçamento</button>
-            </a>
-        </p>
-        <h4>▶LTCAT </h4>
-        <img class="servicos" src="ltcat.jpeg" alt="Logo">
-        <p>▶LTCAT- (Laudo Técnico das Condições Ambientais do Trabalho) é um
-        documento técnico elaborado por um profissional habilitado, como um
-        engenheiro de segurança do trabalho ou médico do trabalho.
-        O LTCAT é obrigatório para todas as empresas e deve ser atualizado
-        sempre que houver mudanças significativas nos processos de trabalho.
-        <br>
-            <a href="orcamento.html">
-                <button class="button">Solicitar Orçamento</button>
-            </a>
-        </p>
-    
-        <h4>▶PCMAT</h4>
-        <img class="servicos" src="pcmat.jpeg" alt="Logo">
-        <p>▶PCMAT - O PCMAT(Programa de Condições e Meio Ambiente de Trabalho) é
-        um documento essencial no setor da construção civil, regulamentado pela
-        Norma Regulamentadora 18 (NR 18).
-        <Br>
-        O PCMAT é obrigatório para empresas que empregam 20 ou mais
-        trabalhadores no setor da construção civil e deve ser atualizado
-        periodicamente para garantir sua eficácia.
-        <br>
-            <a href="orcamento.html">
-                <button class="button">Solicitar Orçamento</button>
-            </a>
-        </p>
-  
-        <h4>▶PCMSO </h4>
-        <img class="servicos" src="pcmso.jpeg" alt="Logo">
-        <p>▶PCMSO - O PCMSO (Programa de Controle Médico de Saúde Ocupacional) é
-        um programa essencial para a preservação da saúde dos trabalhadores em
-        relação aos riscos ocupacionais.<br> Ele é regulamentado pela Norma
-        Regulamentadora 7 (NR 7) e tem como objetivo principal prevenir e
-        rastrear agravos à saúde relacionados ao trabalho
-        <br>
-            <a href="orcamento.html">
-                <button class="button">Solicitar Orçamento</button>
-            </a>
-        </p>
-  
-        <h4>▶LICENCIAMENTO AMBIENTAL </h4>
-        <img class="servicos" src="licenciamento.jpeg" alt="Logo">
-        <p>▶LICENCIAMENTO AMBIENTAL  - O Licenciamento Ambiental é um procedimento administrativo fundamental que visa controlar e regular as atividades potencialmente poluidoras ou causadoras de degradação ambiental. Instituído pela Lei nº 6.938/81, que criou a Política Nacional do Meio Ambiente no Brasil, esse procedimento é executado pelos órgãos ambientais competentes, em âmbito federal, estadual e municipal.
-        <br>
-            <a href="orcamento.html">
-                <button class="button">Solicitar Orçamento</button>
-            </a>
-        </p>
-  
-        <h4>▶PEA</h4>
-        <img class="servicos" src="pea.jpeg" alt="Logo">
-        <p>▶PEA - O Plano de Emergência Ambiental (PEA) é um documento que
-        descreve as orientações e procedimentos a serem seguidos em caso de
-        emergências ambientai.<br>
-        O PEA é um componente crucial para garantir que as empresas estejam
-        preparadas para lidar com emergências ambientais de forma eficaz e
-        responsável.
-        <br>
-            <a href="orcamento.html">
-                <button class="button">Solicitar Orçamento</button>
-            </a>
-        </p>
-        
-        <h4>▶ O.S</h4>
-        <img class="servicos" src="os.png" alt="Logo">
-        <p>▶O.S Ordem de Serviço: <br> (N.R 01) - No ato da contratação antes de iniciar as atividades através da OS ordem de serviço os profissionais são treinados, capacitados e alertados sobre todos os riscos dentro do setor de trabalho e meios de prevenção e
-medidas de controles existentes para a proteção.
-.
-        <br>
-            <a href="orcamento.html">
-                <button class="button">Solicitar Orçamento</button>
-            </a>
-        </p>
+<div id="cookieConsent" style="display:none">
+    <p>Utilizamos cookies para garantir a melhor experiência em nosso site. <a href="politica_de_cookies.html">Saiba mais</a></p>
+    <button class="btn btn-gold" id="cookieConsentBtn" style="padding:10px 22px">Aceitar</button>
+</div>
 
-        <h4>▶A.P.R- ANÁLISE PRELIMINAR DE RISCO </h4>
-        <img class="servicos" src="apr.jpeg" alt="Logo">
-        <p>▶A.P.R- ANÁLISE PRELIMINAR DE RISCO - O objetivo é atribuir soluções de prevenção, atenuação ou neutralização dos riscos antes e/ou durante a execução da atividade pelo trabalhador. A APR é uma ferramenta indispensável para verificação prévia dos riscos que envolvem as atividades.
-        <br>
-            <a href="orcamento.html">
-                <button class="button">Solicitar Orçamento</button>
-            </a>
-        </p>
-
-        <h4>▶P.T- PERMISSÃO DE TRABALHO </h4>
-        <img class="servicos" src="pt.jpeg" alt="Logo">
-        <p>▶P.T- PERMISSÃO DE TRABALHO -  A permissão de trabalho garantirá uma checagem dos requisitos básicos e dos Equipamentos de Proteção Individual – EPI inerentes a uma atividade de risco.
-        <br>
-            <a href="orcamento.html">
-                <button class="button">Solicitar Orçamento</button>
-            </a>
-        </p>
-  
-        <h4>▶N.R 31- COMISSÃO INTERNA DE PREVENÇÃO DE ACIDENTE RURAL – CIPATR </h4>
-        <img class="servicos" src="nr31.jpeg" alt="Logo">
-        <p>▶N.R 31 -  Define o que pode ser considerado como grave e iminente RISCO NUMA OBRA, e como deve ser feito o embargo ou interdição.
-        <br>
-            <a href="orcamento.html">
-                <button class="button">Solicitar Orçamento</button>
-            </a>
-        </p>
-
-        <h4>▶N.R 05- COMISSÃO INTERNA DE PREVENÇÃO DE ACIDENTES – CIPA </h4>
-        <img class="servicos" src="cipa.png" alt="Logo">
-        <p>N.R 05- COMISSÃO INTERNA DE PREVENÇÃO DE ACIDENTES – CIPA -  É ela quem diz qual deve ser o tamanho da comissão, qual é a duração dos mandatos, quem pode
-participar.
-
-        <br>
-            <a href="orcamento.html">
-                <button class="button">Solicitar Orçamento</button>
-            </a>
-        </p>
-  
-        <h4>▶N.R 06 - EQUIPAMENTOS DE PROTEÇÃO INDIVIDUAL – EPI </h4>
-        <img class="servicos" src="epi.jpeg" alt="Logo">
-        <p>▶N.R 06 - EQUIPAMENTOS DE PROTEÇÃO INDIVIDUAL – EPI <br> Estabelece o uso de Equipamento de Proteção Individual (EPI), de modo que o trabalhador esteja
-com equipamento seguro e confortável para realizar	as  atividades	do dia sem
-correr	riscos.
-        <br>
-            <a href="orcamento.html">
-                <button class="button">Solicitar Orçamento</button>
-            </a>
-        </p>
-    
-        <h4>▶N.R 10 - SEGURANÇA EM INSTALAÇÕES E SERVIÇOS EM ELETRICIDADE </h4>
-        <img class="servicos" src="nr10.jpeg" alt="Logo">
-        <p>▶N.R 10 - SEGURANÇA EM INSTALAÇÕES E SERVIÇOS EM ELETRICIDADE -
-        Garante a segurança e a saúde dos trabalhadores que atuam nas
-        instalações e serviços com eletricidade.
-        <br>
-            <a href="orcamento.html">
-                <button class="button">Solicitar Orçamento</button>
-            </a>
-        </p>
-    
-        <h4>▶N.R 11 </h4>
-        <img class="servicos" src="nr11.jpeg" alt="Logo">
-        <p>▶N.R 11- TRANSPORTE, ARMAZENAGEM E MANUSEIO DE MATERIAIS -
-        Estabelece medidas de segurança para o trabalho dos funcionários em
-        transporte, armazenamento e manuseio de materiais e cargas com o
-        objetivo de reduzir o número de acidentes no ambiente de
-        trabalho.(treinamento).
-        <br>
-            <a href="orcamento.html">
-                <button class="button">Solicitar Orçamento</button>
-            </a>
-        </p>
-  
-        <h4>▶N.R 12 - SEGURANÇA NO TRABALHO EM MÁQUINAS E EQUIPAMENTOS </h4>
-        <img class="servicos" src="nr12.jpeg" alt="Logo">
-        <p>▶N.R 12 - SEGURANÇA NO TRABALHO EM MÁQUINAS E EQUIPAMENTOS - Previne acidentes e doenças ocupacionais durante o uso de máquinas e equipamentos. Ela
-determina como deve ocorrer a fabricação, a comercialização, a limpeza e o transporte desses equipamentos utilizados pelo trabalhador.
-.(treinamento).
-        <br>
-            <a href="orcamento.html">
-                <button class="button">Solicitar Orçamento</button>
-            </a>
-        </p>
-  
-        <h4>▶NR 13 - CALDEIRAS E VASO S DE PRESSÃO </h4>
-        <img class="servicos" src="nr13.jpeg" alt="Logo">
-        <p>▶NR 13 - CALDEIRAS E VASO S DE PRESSÃO - Segurança em Caldeiras, Vasos de pressão, tubulação e tanques no que diz respeito a classificação, instalação, inspeção e capacitação dos trabalhadores para operar uma caldeira e sistemas pressurizados. Explica como classificar, quais são as categorias tanto para caldeiras como para	vasos	de pressão, quais	critérios para	instalação,	para	inspeção	e
-capacitação de trabalhadores. (treinamento).
-
-        <br>
-            <a href="orcamento.html">
-                <button class="button">Solicitar Orçamento</button>
-            </a>
-        </p>
-  
-        <h4>▶N.R 18 - CONDIÇÕES E MEIO AMBIENTE DE TRABALHO NA INDÚSTRIA DA CONSTRUÇÃO </h4>
-        <img class="servicos" src="nr18.jpeg" alt="Logo">
-        <p>N.R 18 - CONDIÇÕES E MEIO AMBIENTE DE TRABALHO NA INDÚSTRIA DA
-        CONSTRUÇÃO - <br>
-        Além de passar as informações e normas da empresa ela
-        regulamenta as condições e meio ambiente de trabalho na indústria da
-        construção. Tem como objetivo principal a normatização da boa prática do
-        trabalho com segurança, no respeito ao trabalhador da indústria da
-        construção, na preservação da vida saudável no trabalho. (treinamento).
-        <br>
-            <a href="orcamento.html">
-                <button class="button">Solicitar Orçamento</button>
-            </a>
-        </p>
-  
-        <h4>▶N.R 20 - LÍQUIDOS COMBUSTÍVEIS E INFLAMÁVEIS </h4>
-        <img class="servicos" src="nr20.jpeg" alt="Logo">
-        <p>▶N.R 20 - LÍQUIDOS COMBUSTÍVEIS E INFLAMÁVEIS -  O objetivo principal
-        da norma está na segurança e saúde das pessoas envolvidas com
-        inflamáveis (gases e líquidos) e combustíveis (líquidos) em todo ciclo
-        de vida da instalação, iniciando pelo projeto, construção, manutenção
-        operação, até a desativação, abrangendo a  extração,  produção,
-        armazenamento, transferência, manuseio e manipulação. (treinamento).
-        <br>
-            <a href="orcamento.html">
-                <button class="button">Solicitar Orçamento</button>
-            </a>
-        </p>
-  
-        <h4>▶N.R 22 - SEGURANÇA E SAÚDE OCUPACIONAL NA MINERAÇÃO – CIPAMIN </h4>
-        <img class="servicos" src="nr22.jpeg" alt="Logo">
-        <p>▶N.R 22 - SEGURANÇA E SAÚDE OCUPACIONAL NA MINERAÇÃO – CIPAMIN - Promove ações preventivas e reduzir os riscos de acidentes lesões e mortes no setor da mineração,
-como qualquer outra NR conta com diversos itens a serem averiguados dentro dos
-ambientes de trabalho para que os riscos possam ser evitados ou amenizados.
-(treinamento).
-
-        <br>
-            <a href="orcamento.html">
-                <button class="button">Solicitar Orçamento</button>
-            </a>
-        </p>
-  
-        <h4>▶N.R 23 - PROTEÇÃO CONTRA INCÊNDIO (TREINAMENTO PARA FORMAÇÃO OU RECICLAGEM DE BRIGADISTAS) </h4>
-        <img class="servicos" src="nr23.jpeg" alt="Logo">
-        <p>▶N.R 23 - PROTEÇÃO CONTRA INCÊNDIO (TREINAMENTO PARA FORMAÇÃO OU
-        RECICLAGEM DE BRIGADISTAS) -  Norma regulamentadora que visa determinar
-        quais são as medidas de proteção e combate a incêndios a serem adotadas
-        pelas empresas em todos os casos. Ela traz uma série de disposições que
-        orienta o que deve ser feito para proteger os colaboradores e o
-        patrimônio emcaso de incêndio. (treinamento).
-        <br>
-            <a href="orcamento.html">
-                <button class="button">Solicitar Orçamento</button>
-            </a>
-        </p>
-  
-        <h4>▶N.R 29 - SEGURANÇA E SAÚDE NO TRABALHO PORTUÁRIO </h4>
-        <img class="servicos" src="nr29.png" alt="Logo">
-        <p>▶N.R 29 - SEGURANÇA E SAÚDE NO TRABALHO PORTUÁRIO - Aplicam aos trabalhadores portuários em	operações, como	aos demais que exerçam
-atividades	nos portos assim trabalhadores organizados	e instalações portuárias de uso privativo e retro portuárias, situadas dentro
-ou fora do porto organizado.  (treinamento).
-
-        <br>
-            <a href="orcamento.html">
-                <button class="button">Solicitar Orçamento</button>
-            </a>
-        </p>
-  
-        <h3>▶RETROESCAVADEIRA:</h3>
-        <img class="servicos" src="retro.jpeg" alt="Logo">
-        <p>▶Treinamento para retroescavadeira - 
-🔧Capacite sua Equipe: Eleve o nível do seu time com operadores de retroescavadeira treinados e certificados. Nossa formação garante eficiência e segurança nos canteiros de obras.  (treinamento).
-        <br>
-            <a href="orcamento.html">
-                <button class="button">Solicitar Orçamento</button>
-            </a>
-        </p>
-    
-        <h4>▶N.R 34 - CONDIÇÕES E MEIO AMBIENTE DE TRABALHO NA INDÚSTRIA NAVAL  </h4>
-        <img class="servicos" src="nr34.jpeg" alt="Logo">
-        <p>▶N.R 34 - CONDIÇÕES E MEIO AMBIENTE DE TRABALHO NA INDÚSTRIA NAVAL  - Estabelece medidas de segurança e saúde para trabalho a quente, trabalho em atura, trabalho com exposição a radiações ionizantes trabalhos de jateamento e	hidrojateamento , atividades de
-pintura, movimentação	de cargas, montagem e	desmontagem	de	andaimes
-equipamentos portáteis, instalações elétricas.  (treinamento).
-
-
-        <br>
-            <a href="orcamento.html">
-                <button class="button">Solicitar Orçamento</button>
-            </a>
-        </p>
-  
-        <h4>▶N.R 35 - TRABALHO EM ALTURA  </h4>
-        <img class="servicos" src="nr35.jpeg" alt="Logo">
-        <p>▶N.R 35 - TRABALHO EM ALTURA  - Aborda sobre o trabalho em altura.
-        Ensina o uso adequado de EPI e EPC. Trabalhar em locais altos, sem
-        equipamentos de segurança que mantenham o trabalhador preso em caso de
-        queda ou sem um treinamento que evidencie a conduta adequada, viola os
-        princípios de segurança no trabalho. (treinamento).
-
-        <br>
-            <a href="orcamento.html">
-                <button class="button">Solicitar Orçamento</button>
-            </a>
-        </p>
-  
-        <h4>▶N.R 33- SEGURANÇA E SAÚDE NO TRABALHO EM ESPAÇOS CONFINADOS </h4>
-        <img class="servicos" src="nr33.jpeg" alt="Logo">
-        <p>▶N.R 33- SEGURANÇA E SAÚDE NO TRABALHO EM ESPAÇOS CONFINADOS -
-        Estabelecer	os	requisitos mínimos para	identificação de espaços
-        confinados e o reconhecimento, avaliação, monitoramento e controle dos
-        riscos existentes, de forma a garantir permanentemente a segurança e
-        saúde dos trabalhadores que interagem direta ou indiretamente nestes
-        espaços”. (treinamento).
-
-        <br>
-            <a href="orcamento.html">
-                <button class="button">Solicitar Orçamento</button>
-            </a>
-        </p>
-        
-        <h4>▶PPR</h4>
-        <img class="servicos" src="ppr.jpeg" alt="Logo">
-        <p>▶ PPR – Programa de Proteção Respiratória
-        <br>
-        <p> O Programa de Proteção Respiratória (PPR) é um conjunto de
-        medidas e procedimentos destinados a proteger os trabalhadores contra a
-        inalação de substâncias nocivas no ambiente de trabalho</p>
-            <a href="orcamento.html">
-                <button class="button">Solicitar Orçamento</button>
-            </a>
-        </p>
-        
-        <h4>▶PAE - Plano de Atendimento a Emergência</h4>
-        <img class="servicos" src="pae.jpeg" alt="Logo">
-        <br>
-        <p>▶ (PAE) é um documento essencial que detalha os procedimentos a serem
-        seguidos em caso de emergência.<br>
-        projetado para garantir respostas rápidas e seguras, minimizando danos a
-        pessoas, propriedades e ao meio ambiente.
-        <br>
-        
-            <a href="orcamento.html">
-                <button class="button">Solicitar Orçamento</button>
-            </a>
-        </p>
-        
-        <h4>▶PCA - Programa de Conservação Auditiva</h4>
-        <img class="servicos" src="pca.jpeg" alt="Logo">
-        <p>▶ O Programa de Conservação Auditiva (PCA) é um conjunto de
-        medidas e ações destinadas a proteger a audição dos trabalhadores
-        expostos a níveis elevados de ruído no ambiente de trabalho. <br>
-        O PCA faz parte do Programa de Controle Médico de Saúde Ocupacional
-        (PCMSO) e visa prevenir a Perda Auditiva Induzida por Níveis de Pressão
-        Sonora Elevados.
-        <br>
-            <a href="orcamento.html">
-                <button class="button">Solicitar Orçamento</button>
-            </a>
-        </p>
-        
-        <h4>▶Programa de Boas Práticas</h4>
-        <img class="servicos" src="pbp.jpeg" alt="Logo">
-        <p>▶ O Programa de Boas Práticas é uma iniciativa que visa promover
-        padrões elevados de qualidade e segurança em diversos setores, como
-        saúde, alimentação e manufatura. Esses programas são desenvolvidos para
-        garantir que as organizações sigam práticas recomendadas e
-        regulamentações para proteger a saúde e a segurança dos consumidores e
-        trabalhadores.
-        <br>
-            <a href="orcamento.html">
-                <button class="button">Solicitar Orçamento</button>
-            </a>
-        </p>
-        
-        <h4>▶Programa PAZ- Acidente Zero</h4>
-        <img class="servicos" src="paz.png" alt="Logo">
-        <p>▶ O Programa Acidente Zero (PAZ) é uma iniciativa focada em reduzir acidentes de trabalho e melhorar a segurança no ambiente de trabalho. Ele envolve uma série de práticas e procedimentos para prevenir acidentes e promover um ambiente de trabalho mais seguro.
-        <br>
-            <a href="orcamento.html">
-                <button class="button">Solicitar Orçamento</button>
-            </a>
-        </p>
-        
-        <h4>▶Programas de Ergonomias <br>( Laudos ergonômicos)</h4>
-        <img class="servicos" src="ergonomia.png" alt="Logo">
-        <p>▶ Programas de Ergonomia são iniciativas que visam otimizar o
-        ambiente de trabalho para melhorar o conforto, a segurança e a
-        eficiência dos trabalhadores. Eles são fundamentados na ciência da
-        ergonomia, que estuda a interação entre os trabalhadores e seu ambiente,
-        buscando adaptar o ambiente às características psicofisiológicas dos
-        indivíduos.
-        <br>
-            <a href="orcamento.html">
-                <button class="button">Solicitar Orçamento</button>
-            </a>
-        </p>
-        
-        <h4>▶Entre outros Serviços que forem solicitados.</h4>
-        <img class="servicos" src="logo.jpg" alt="Logo">
-        <p>▶ Sempre Trabalhando para oferecer Soluções inovadoras para o seu
-        negócio!<br>
-        
-        <br>
-            <a href="orcamento.html">
-                <button class="button">Solicitar Orçamento</button>
-            </a>
-        </p>
-    </section>
-  </section>
-  <section id="contact" class="">
-        <h2 onclick="expandCard(this)"> +Serviços de <br> Engenharia Civil</h2>
-
-<section id="contact" class="container" style="display: none;">
-    <!-- conteúdo do card -->
-    <h4>▶ Execução de Obras </h4>
-        <img class="servicos" src="obra.jpeg" alt="Logo">
-        <p>▶ A execução de obras é o processo de transformar um projeto
-        arquitetônico em realidade, seguindo todas as especificações técnicas,
-        normativas e legais. Envolve uma série de etapas que vão desde o
-        planejamento até a entrega final da obra.
-        <br>
-        
-        <br>
-            <a href="orcamento.html">
-                <button class="button">Solicitar Orçamento</button>
-            </a>
-        </p>
-        
-        <h4>▶ Reformas</h4>
-        <img class="servicos" src="reforma.jpeg" alt="Logo">
-        <p>▶ Reformas são intervenções realizadas em edificações com o objetivo de modificar, melhorar ou restaurar estruturas e instalações existentes. Elas podem variar desde pequenas alterações até projetos mais complexos que envolvem mudanças significativas na infraestrutura do imóvel.
-
-        <br>
-        
-        <br>
-            <a href="orcamento.html">
-                <button class="button">Solicitar Orçamento</button>
-            </a>
-        </p>
-        
-        <h4>▶ Orçamentos</h4>
-        <img class="servicos" src="orcamento.jpeg" alt="Logo">
-        <p>▶ orçamentos, seja para projetos, reformas, obras ou qualquer outro tipo de trabalho. Um orçamento bem-feito é essencial para garantir que todas as despesas sejam previstas e controladas.
-        <br>
-        
-        <br>
-            <a href="orcamento.html">
-                <button class="button">Solicitar Orçamento</button>
-            </a>
-        </p>
-        
-        <h4>▶ Documentação para Alvara <br> (imóvel, estabelecimentos comerciais, Postos de Combustíveis entre outros)</h4>
-        <img class="servicos" src="alvara.jpeg" alt="Logo">
-        <p>🏢 Serviço de Documentação para Alvará pela WS Engenharia.<br>
-
-A WS Engenharia está aqui para facilitar todo o processo de obtenção de alvarás
-para diversos tipos de empreendimentos. Oferecemos um serviço completo de
-documentação para:<br>
-<br>
-1. Imóveis: Cuide de todas as formalidades legais para iniciar sua construção com segurança e conformidade.
-<br>
-2. Estabelecimentos Comerciais: Garanta que seu negócio funcione dentro da lei, com toda a documentação necessária para seu alvará de funcionamento.
-<br>
-3. Postos de Combustíveis: Especialistas em cumprir todos os requisitos técnicos e ambientais, proporcionando tranquilidade para o seu posto.
-<br>
-O que oferecemos:<br>
-- Consultoria Completa: Assessoria em todas as etapas do processo, desde a análise inicial até a obtenção do alvará.
-<br>
-- Documentação Técnica:<br> Preparação e entrega de todos os documentos necessários.
-<br>
-- Acompanhamento de Processos:<br> Monitoramento contínuo junto aos órgãos competentes para garantir que tudo seja aprovado o mais rápido possível.
-<br>
-Benefícios:<br>
-- Agilidade e Eficiência: Reduzimos a burocracia e garantimos rapidez na
-obtenção do seu alvará.
-<br>
-- Conformidade Legal: Você pode confiar que tudo estará dentro das normas e
-leis vigentes.
-<br>
-- Tranquilidade: Com a WS Engenharia, você pode focar no que realmente importa enquanto cuidamos do resto.
-<br>
-📞 Entre em contato conosco e garanta já o seu alvará!<br> A WS Engenharia está pronta para atender você com excelência e profissionalismo.
-        <br>
-        <br>
-            <a href="orcamento.html">
-                <button class="button">Solicitar Orçamento</button>
-            </a>
-        </p>
-        
-        <h4>▶ Elaboração de Projetos Mapas de Riscos</h4>
-        <img class="servicos" src="mapa.jpeg" alt="Logo">
-        <p>▶ A WS Engenharia oferece serviços especializados na elaboração de
-        projetos de mapas de riscos. Os mapas de riscos são ferramentas
-        essenciais para identificar, avaliar e comunicar os riscos presentes no
-        ambiente de trabalho, ajudando na prevenção de acidentes e na promoção
-        da segurança dos trabalhadores.
-        <br>
-        
-        <br>
-            <a href="orcamento.html">
-                <button class="button">Solicitar Orçamento</button>
-            </a>
-        </p>
-        
-        <h4>▶ Elaboração de Projetos Linha de Vida</h4>
-        <img class="servicos" src="linha.jpeg" alt="Logo">
-        <p>▶ A WS Engenharia oferece serviços especializados na elaboração de projetos de Linhas de Vida, garantindo segurança e conformidade para atividades em altura. Uma Linha de Vida é um sistema de ancoragem projetado para proteger trabalhadores que realizam tarefas em locais elevados, proporcionando segurança contra quedas.
-        <br>
-        <br>
-            <a href="orcamento.html">
-                <button class="button">Solicitar Orçamento</button>
-            </a>
-        </p>
-        
-        <h4>▶ Elaboração de projetos (Estrutural, Elétrico e Hidráulico)</h4>
-        <img class="servicos" src="projeto.jpeg" alt="Logo">
-        <p>▶ Na WS Engenharia, oferecemos serviços especializados na elaboração de projetos Estrutural, Elétrico e Hidráulico para garantir a segurança, eficiência e conformidade das suas obras.
-        <br>
-        <br>
-            <a href="orcamento.html">
-                <button class="button">Solicitar Orçamento</button>
-            </a>
-        </p>
-        
-        <h4>▶ Elaboração de Projetos de Combate  a Incêndio</h4>
-        <img class="servicos" src="combate.jpeg" alt="Logo">
-        <p>▶ A WS Engenharia oferece serviços especializados na elaboração de projetos de combate a incêndio, garantindo que sua edificação esteja preparada para prevenir e responder a emergências com eficácia e segurança.
-        <br>
-        
-        <br>
-            <a href="orcamento.html">
-                <button class="button">Solicitar Orçamento</button>
-            </a>
-        </p>
-        
-        <h4>▶ Acompanhamento de obras </h4>
-        <img class="servicos" src="acompanhamento.jpeg" alt="Logo">
-        <p>▶ A WS Engenharia oferece um serviço completo de acompanhamento de obras para garantir que seu projeto seja executado conforme planejado, dentro do prazo e do orçamento estipulados. Nosso acompanhamento de obras inclui várias etapas importantes para assegurar a qualidade e a segurança da sua construção.
-        <br>
-        
-        <br>
-            <a href="orcamento.html">
-                <button class="button">Solicitar Orçamento</button>
-            </a>
-        </p>
-        
-        <h4>▶ Elaboração de laudos técnicos</h4>
-        <img class="servicos" src="laudos.jpeg" alt="Logo">
-        <p>▶ A WS Engenharia oferece serviços especializados na elaboração de laudos técnicos, atendendo a diversas necessidades e setores. Os laudos técnicos são documentos detalhados que fornecem análises e avaliações de condições específicas, garantindo conformidade com normas e regulamentos técnicos.
-        <br>
-        
-        <br>
-            <a href="orcamento.html">
-                <button class="button">Solicitar Orçamento</button>
-            </a>
-        </p>
-        <h4>▶ Serviço com placas em Dry Wall </h4>
-        <img class="servicos" src="dry.jpeg" alt="Logo">
-        <p>▶ A WS Engenharia oferece serviços especializados em instalação de Dry Wall, uma solução moderna e eficiente para divisórias, revestimentos e forros. O Dry Wall é um sistema de construção a seco, utilizando placas de gesso acartonado fixadas em uma estrutura de perfis metálicos, proporcionando várias vantagens em termos de praticidade e desempenho.
-        <br>
-        <br>
-            <a href="orcamento.html">
-                <button class="button">Solicitar Orçamento</button>
-            </a>
-        </p>
-        <h4>▶ Serviço com placas de Gesso</h4>
-        <img class="servicos" src="gesso.jpeg" alt="Logo">
-        <p>▶ A WS Engenharia oferece serviços especializados em instalação de placas de gesso, proporcionando soluções versáteis e elegantes para o seu projeto. As placas de gesso são amplamente utilizadas em construções e reformas devido à sua facilidade de uso e excelente acabamento.
-        <br>
-        
-        <br>
-            <a href="orcamento.html">
-                <button class="button">Solicitar Orçamento</button>
-            </a>
-        </p>
-        <h4>▶Entre outros Serviços que forem solicitados.</h4>
-        <img class="servicos" src="logo.jpg" alt="Logo">
-        <p>▶ Sempre Trabalhando para oferecer Soluções inovadoras para o seu
-        negócio!<br>
-        <br>
-            <a href="orcamento.html">
-                <button class="button">Solicitar Orçamento</button>
-            </a>
-        </p>
-    </section>
-    </section>
-
-    <section id="contact" class="">
-        <h2 onclick="expandCard(this)">+Serviços de <br> Engenharia Ambiental</h2>
-
-<section id="contact" class="container" style="display: none;">
-    <!-- conteúdo do card -->
-    <h3>
-        🌿Engenharia Ambiental🌿
-    </h3>
-<br>
-<p>
-  Na WS Engenharia, estamos comprometidos em proporcionar soluções ambientais
-  eficientes e sustentáveis. Nossa equipe de especialistas oferece uma ampla
-  gama de serviços na área de Engenharia Ambiental, sempre integrando o
-  desenvolvimento econômico com a preservação ambiental.
-
-<br>
-<p>
-  <h4>
-    Licenciamento Ambiental
-  </h4><br>
-Garantimos a obtenção de licenças ambientais de maneira ágil e conforme as
-regulamentações vigentes, permitindo que seu projeto avance sem complicações
-legais.
-<br>
-<img class="servicos" src="licenciamento.jpeg">
- <br>
- <a href="orcamento.html">
-                <button class="button">Solicitar Orçamento</button>
-            </a>
-            </p>
-<br>
-</p>
-<p>
-  <h4>
-    Gestão de Resíduos
-  </h4>
-  <br>
-Implementamos programas de gestão de resíduos que visam a redução, reutilização
-e reciclagem, promovendo práticas que minimizam o impacto ambiental e maximizam
-a eficiência operacional.
-<br>
-<img class="servicos" src="residuos.jpeg">
- <br>
- <a href="orcamento.html">
-                <button class="button">Solicitar Orçamento</button>
-            </a>
-            </p>
-<br>
-</p>
-<p>
-  <br>
-  <h4>Consultoria Ambiental</h4>
-<br>
-Oferecemos consultoria especializada para ajudar empresas a cumprir as exigências ambientais e adotar práticas sustentáveis. Nossa equipe está pronta para orientar em todas as etapas do seu projeto.
-<br>
-<img class="servicos" src="consulta.jpeg">
- <br>
- <a href="orcamento.html">
-                <button class="button">Solicitar Orçamento</button>
-            </a>
-            </p>
-<br>
-</p>
-<p>
-  <h4>
-    Cursos e Treinamentos
-  </h4>
-  <br>
-Realizamos cursos e treinamentos personalizados para capacitar sua equipe em temas relacionados à sustentabilidade, gestão ambiental e cumprimento das normas vigentes.
-<br>
-<img class="servicos" src="cursos.jpeg">
- <br>
- <a href="orcamento.html">
-                <button class="button">Solicitar Orçamento</button>
-            </a>
-            </p>
-</p>
-<p>
-<h4>Elaboração de Projetos Sustentáveis</h4>
-Desenvolvemos projetos que equilibram o desenvolvimento econômico com a preservação ambiental, proporcionando soluções inovadoras e sustentáveis para seu negócio.
-<br>
-<img class="servicos" src="esocial1.jpeg">
- <br>
- <a href="orcamento.html">
-                <button class="button">Solicitar Orçamento</button>
-            </a>
-            </p>
-</p>
-<p>
-  <br><h4>PGRS - Programa de Gerenciamento de Resíduos Sólidos</h4>
-<br>
-Desenvolvemos e implementamos o PGRS, atendendo às exigências legais e
-promovendo a gestão responsável dos resíduos sólidos gerados pela sua empresa.
-<br>
-<img class="servicos" src="esocial1.jpeg">
- <br>
- <a href="orcamento.html">
-                <button class="button">Solicitar Orçamento</button>
-            </a>
-            </p>
-</p>
-<br>
-<p>
-  <br>
-<h4>Outros Programas e Laudos</h4><br>
-Atendemos diversas necessidades, elaborando programas e laudos técnicos
-específicos que sejam solicitados, garantindo conformidade e eficiência em suas
-operações.
-</p>
-
-    </section>
-    </section>
-    
-    
-    <section id="contact" class="">
-        <h2 onclick="expandCard(this)">+Serviços para <br> eSocial</h2>
-
-<section id="contact" class="container" style="display: none;">
-    <!-- conteúdo do card -->
-    
-<h4>
-  Gestão eSocial
-  </h4>
-  <p>
-    A WS Engenharia oferece serviços completos de gestão eSocial, assegurando
-    que sua empresa esteja em conformidade com todas as obrigações legais.
-    Nossos especialistas cuidam de todo o processo, garantindo a precisão e a
-    eficiência no envio das informações trabalhistas e previdenciárias.
-  </p>
-<br>
-<h4>
-  Envio dos Eventos (S-2210, S-2220, S-2240)
-  <br>
-  <img class="servicos" src="esocial1.jpeg">
-  </h4>
-  <p>
-    Realizamos o envio dos eventos S-2210, S-2220 e S-2240, relacionados a
-    condições de trabalho, monitoramento da saúde dos trabalhadores e exposição
-    a agentes nocivos, de maneira precisa e dentro dos prazos legais.
-    <br>
-            <a href="orcamento.html">
-                <button class="button">Solicitar Orçamento</button>
-            </a>
-  </p>
-  
-<br>
-<h4>
-  Envio de CAT (Comunicação de Acidente de Trabalho)
-  <br>
-  <img class="servicos" src="acompanhamento.jpeg">
-  </h4>
-  <p>
-    Oferecemos suporte completo no envio da Comunicação de Acidente de Trabalho
-    (CAT), garantindo que todas as informações sejam registradas corretamente,
-    atendendo às exigências legais e proporcionando segurança aos trabalhadores.
-    <br>
-            <a href="orcamento.html">
-                <button class="button">Solicitar Orçamento</button>
-            </a>
-  </p>
-  <br>
-  <br>
-<h4>
-  Elaboração de PPP (Perfil Profissiográfico Previdenciário)
-  <br>
-  <img class="servicos" src="laudos.jpeg">
-  </h4>
-  <p>
-    Preparamos o Perfil Profissiográfico Previdenciário (PPP) com todos os
-    detalhes necessários para documentar a história laboral dos seus
-    trabalhadores, facilitando o processo de aposentadoria especial e garantindo
-    conformidade com as normas previdenciárias.
-    <br>
-            <a href="orcamento.html">
-                <button class="button">Solicitar Orçamento</button>
-            </a>
-  </p>
-  <br>
-<h4>
-  Consultoria:
-  <br>
-  <img class="servicos" src="mapa.jpeg">
-  </h4>
-<p>
-  Nossos serviços de consultoria são personalizados para atender às necessidades
-específicas da sua empresa. Oferecemos orientação técnica em áreas como
-segurança do trabalho, gestão ambiental e saúde ocupacional, ajudando a promover
-um ambiente de trabalho seguro e eficiente.
-<br>
-            <a href="orcamento.html">
-                <button class="button">Solicitar Orçamento</button>
-            </a>
-</p>
-<br>
-<br>
-<h4>
-  Acompanhamento e Visitas Técnicas para Avaliação do Ambiente de
-  Trabalho
-  <br>
-  <img class="logo" src="reforma.jpeg">
-  </h4>
-<p>
-  Realizamos acompanhamentos e visitas técnicas regulares para avaliar o ambiente
-de trabalho. Identificamos possíveis riscos e propomos soluções práticas e
-eficazes para melhorar as condições de trabalho, garantindo a saúde e a
-segurança dos seus colaboradores.
-<br>
-            <a href="orcamento.html">
-                <button class="button">Solicitar Orçamento</button>
-            </a>
-</p>
-
-    </section>
-    </section>
-        
-    <section id="contact" class="">
-        <h2 onclick="expandCard(this)">+Serviços de <br> Consultoria</h2>
-
-<section id="contact" class="container" style="display: none;">
-    <!-- conteúdo do card -->
-    <p>
-      <h3>
-        A WS Engenharia oferece consultorias especializadas <br> para atender às
-        necessidades de diversos setores. Confira nossos serviços de
-        consultoria:
-      </h3>
-      
-<br>
- <h2> Nossos Serviços de Consultoria</h2>
-<br>
-1. Consultoria em Engenharia Civil:<br>
-   - Planejamento e gerenciamento de projetos de construção.<br>
-   - Análises estruturais e inspeções técnicas.<br>
-   - Suporte em normas e regulamentações de construção.<br>
-<br>
-2. Consultoria em Segurança do Trabalho:<br>
-   - Elaboração de Programas de Prevenção de Riscos Ambientais (PPRA).<br>
-   - Implementação de Programas de Proteção Respiratória (PPR).<br>
-   - Avaliações ergonômicas e elaboração de laudos.
-<br>
-<br>
-3. Consultoria Ambiental:<br>
-   - Estudos de impacto ambiental.<br>
-   - Gestão de resíduos e controle de poluição.<br>
-   - Licenciamento ambiental.<br>
-<br>
-4. Consultoria para Obtenção de Alvarás e Licenças:<br>
-   - Assessoria completa para obtenção de alvarás de construção e
-   funcionamento.<br>
-   - Regularização de imóveis e estabelecimentos comerciais.<br>
-   - Licenciamento para postos de combustíveis e outras atividades
-   específicas.<br>
-<br>
-5. Consultoria em Sustentabilidade:<br>
-   - Implementação de práticas sustentáveis em construções e reformas.<br>
-   - Certificação de edificações verdes.<br>
-   - Eficiência energética e uso de tecnologias limpas.<br>
-<br>
-<br>
-<h2> Por que Escolher a WS Engenharia?</h2>
- 
-<br>
-- Equipe Especializada: Profissionais qualificados com ampla experiência no mercado.
-<br>
-<br>
-- Soluções Personalizadas: Atendimento sob medida para as necessidades do seu projeto.
-<br>
-- Qualidade e Conformidade: Garantia de serviços de alta qualidade e em conformidade com as normas vigentes.
-<br>
-<br>
-📞 Entre em contato conosco e descubra como a WS Engenharia pode ajudar a
-transformar seus projetos em realidade com segurança, eficiência e
-sustentabilidade.
-
-            <br>
-<br>
- <br>
- <img class="logo-esocial" src="logo2.jpg">
- <br>
- <br>
-       <a href="orcamento.html">
-                <button class="esocial"><h5>📞 Entre em contato conosco</h5> </button>
-            </a>
-<br>
-<br>
-    </section>
-    </section>
-    
-    <section id="contact" class="container">
-        <div class="social-links">
-            <a href="https://wa.me/5575991893667?text=Ol%C3%A1%20WSENGENHARIA!%20Vi%20seu%20site%20e%20gostaria%20de%20contratar%20alguns%20de%20seus%20servi%C3%A7os.%20pode%20me%20atender%20no%20momento%20?" target="_blank">
-                <img class="links" src="whatsaapp-logo.png" alt="WhatsApp">
-            </a>
-            <a href="https://www.instagram.com/wsengenharia_/profilecard/?igsh=MTZ6ZWx4MmF1cjljMw==" target="_blank">
-                <img src="instagram-logo.png" alt="Instagram">
-            </a>
-            <a href="#" target="_blank">
-                <img src="facebook-logo.png" alt="Facebook">
-            </a>
-            <a href="https://www.linkedin.com/in/wedson-santos-979a33b2?utm_source=share&utm_campaign=share_via&utm_content=profile&utm_medium=ios_app" target="_blank">
-                <img src="linkedin-logo.png" alt="LinkedIn">
-            </a>
-        </div>
-    </section>
-     <footer>
-        <div class="footer">
-            <p>&copy; 2024 Ws Engenharia, consultoria e treinamentos.
-            <br> <p3>Cnpj: 41.467.540/0001-67</p3>
-            
-            <br>
-            Todos os direitos reservados.</p>
-            <a class="link-atecseven" href="https://atec7.github.io/atecseven.com.br/">Power Bi &copf; Atecseven tecnologia</a>
-        </div>
-    </footer>
-    <script src="js/script.js"></script>
-    <script>
-        function performSearch() {
-            const query = document.getElementById('search').value.toLowerCase();
-            const elements = document.body.getElementsByTagName("p");
-            const resultsContainer = document.createElement("section");
-            resultsContainer.className = "container";
-            resultsContainer.innerHTML = "<h2>Resultados da Pesquisa</h2>";
-            let hasResults = false;
-
-            for (let element of elements) {
-                element.style.backgroundColor = "";
-            }
-            if (query) {
-                for (let element of elements) {
-                    if (element.innerText.toLowerCase().includes(query)) {
-                        element.style.backgroundColor = "yellow";
-                        const clone = element.cloneNode(true);
-                        resultsContainer.appendChild(clone);
-                        hasResults = true;
-                    }
+<script src="main.js"></script>
+<script>
+    function renderServiceFilter() {
+        var q = document.getElementById('serviceSearch').value.trim().toLowerCase();
+        var cats = document.querySelectorAll('.cat-section');
+        cats.forEach(function(cat) {
+            var catHas = false;
+            cat.querySelectorAll('.accordion-item').forEach(function(item) {
+                if (!q) {
+                    item.style.display = '';
+                    catHas = true;
+                    return;
                 }
-            }
-
-            if (hasResults) {
-                document.body.insertBefore(resultsContainer, document.body.firstChild);
-                window.scrollTo(0, 0);
-            }
-        }
-        function expandCard(element) {
-    const card = element.nextElementSibling;
-    if (card.style.display === "block") {
-        card.style.display = "none";
-    } else {
-        card.style.display = "block";
+                var k = (item.getAttribute('data-k') || '') + ' ' + item.textContent.toLowerCase();
+                if (k.indexOf(q) !== -1) {
+                    item.style.display = '';
+                    catHas = true;
+                    item.classList.add('open');
+                    var b = item.querySelector('.acc-body');
+                    if (b) b.style.maxHeight = b.scrollHeight + 'px';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+            cat.style.display = catHas ? '' : 'none';
+        });
     }
-}
-    </script>
+    document.getElementById('serviceSearch').addEventListener('input', renderServiceFilter);
+</script>
 </body>
 </html>

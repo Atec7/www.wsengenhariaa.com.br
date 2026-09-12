@@ -3,43 +3,146 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ws Orçamento</title>
-    <link rel="stylesheet" href="orcamento.css">
-    <link class="ico" rel="icon" href="img/logo2.jpg">
+    <title>Solicitar Orçamento — WS Engenharia</title>
+    <meta name="description" content="Solicite um orçamento personalizado com a WS Engenharia. Preencha o formulário e receba atendimento rápido.">
+    <link rel="icon" href="logo2.jpg">
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 </head>
 <body>
-    <header>
-    </header>
-    <section class="form-section">
-        <h1>WS Engenharia</h1>
-        <p>Solicitação de Orçamento</p>
-        <form id="indicacaoForm">
-            <label for="yourName">Seu Nome:</label>
-            <input type="text" id="yourName" name="yourName" required>
 
-            <label for="yourContact">Seu Contato:</label>
-            <input type="text" id="yourContact" name="yourContact" required>
+<header class="site-header">
+    <div class="container nav">
+        <a href="inicio.html" class="brand">
+            <img src="logo2.jpg" alt="Logo WS Engenharia">
+            <span>WS Engenharia<small>Consultoria &amp; Treinamentos</small></span>
+        </a>
+        <nav class="nav-links" id="navLinks">
+            <a href="inicio.html">Início</a>
+            <a href="sobre.html">Sobre</a>
+            <a href="servicos.html">Serviços</a>
+            <a href="contato.html">Contato</a>
+            <a href="indicacao.html">Indicações</a>
+            <div class="nav-cta">
+                <a href="orcamento.html" class="btn btn-gold">Solicitar Orçamento</a>
+            </div>
+        </nav>
+        <button class="nav-toggle" id="navToggle" aria-label="Abrir menu"><span></span><span></span><span></span></button>
+        <div class="nav-overlay" id="navOverlay"></div>
+    </div>
+</header>
 
-            <label for="clientContact">Empresa:</label>
-            <input type="text" id="clientContact" name="clientContact" required>
+<section class="page-hero">
+    <div class="container">
+        <div class="breadcrumb"><a href="inicio.html">Início</a> / Orçamento</div>
+        <h1>Solicitação de Orçamento</h1>
+        <p>Preencha o formulário abaixo e nossa equipe entrará em contato com um orçamento personalizado.</p>
+    </div>
+</section>
 
-            <label for="service">Serviços:</label>
-            <input type="text" id="service" name="service" required>
-
-            <button type="submit">Enviar Solicitação</button>
-        </form>
-    </section>
-
-     <footer>
-        <div class="container">
-            <p>&copy; 2024 Ws Engenharia, consultoria e treinamentos.
-            <br> <p3>Cnpj: 41.467.540/0001-67</p3>
-            
-            <br>
-            Todos os direitos reservados.</p>
-            <a class="link-atecseven" href="https://atec7.github.io/atecseven.com.br/">Power Bi &copf; Atecseven tecnologia</a>
+<section class="section">
+    <div class="form-shell compact">
+        <div style="text-align:center;margin-bottom:24px">
+            <img src="logo2.jpg" alt="WS Engenharia" style="width:90px;height:90px;object-fit:cover;border-radius:50%;margin:0 auto 16px;border:3px solid rgba(217,164,65,.3)">
+            <h2 style="font-size:26px">Solicite seu orçamento</h2>
+            <p style="color:var(--muted);font-size:14.5px">Em poucos minutos recebemos sua solicitação pelo WhatsApp e retornamos com as melhores condições.</p>
         </div>
-    </footer>
-    <script src="orcamento.js"></script>
+        <form id="orcamentoForm">
+            <div class="field">
+                <label for="yourName">Seu Nome</label>
+                <input type="text" id="yourName" name="yourName" placeholder="Digite seu nome" required>
+            </div>
+            <div class="field">
+                <label for="yourContact">Seu Contato</label>
+                <input type="text" id="yourContact" name="yourContact" placeholder="(00) 00000-0000" required>
+            </div>
+            <div class="field">
+                <label for="clientContact">Empresa</label>
+                <input type="text" id="clientContact" name="clientContact" placeholder="Nome da sua empresa" required>
+            </div>
+            <div class="field">
+                <label for="service">Serviço Desejado</label>
+                <textarea id="service" name="service" rows="4" placeholder="Descreva o serviço que precisa (ex: elaboração de PGR, treinamento NR-35, reforma, licenciamento...)" required></textarea>
+            </div>
+            <button type="submit" class="btn btn-gold">Enviar Solicitação</button>
+            <p class="form-note">Ao enviar, você será direcionado ao nosso WhatsApp com sua solicitação pronta.</p>
+        </form>
+    </div>
+</section>
+
+<footer class="site-footer">
+    <div class="container">
+        <div class="footer-top">
+            <div class="footer-brand">
+                <img src="logo2.jpg" alt="WS Engenharia">
+                <h4>WS Engenharia, Consultoria e Treinamentos</h4>
+                <p>Soluções em engenharia civil, ambiental e segurança do trabalho para empresas de todos os portes.</p>
+            </div>
+            <div class="footer-col">
+                <h5>Navegação</h5>
+                <ul>
+                    <li><a href="inicio.html">Início</a></li>
+                    <li><a href="sobre.html">Sobre</a></li>
+                    <li><a href="servicos.html">Serviços</a></li>
+                    <li><a href="contato.html">Contato</a></li>
+                    <li><a href="indicacao.html">Indicações</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h5>Serviços</h5>
+                <ul>
+                    <li><a href="servicos.html#seguranca">Segurança do Trabalho</a></li>
+                    <li><a href="servicos.html#civil">Engenharia Civil</a></li>
+                    <li><a href="servicos.html#ambiental">Engenharia Ambiental</a></li>
+                    <li><a href="servicos.html#esocial">eSocial</a></li>
+                    <li><a href="servicos.html#consultoria">Consultoria</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h5>Contato</h5>
+                <ul class="footer-contact">
+                    <li><span class="f-ico"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg></span> (75) 9 9189-3667</li>
+                    <li><span class="f-ico"><svg viewBox="0 0 24 24" style="width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 7.35V18a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7.35"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg></span> wsengenhariaa@gmail.com</li>
+                    <li><span class="f-ico"><svg viewBox="0 0 24 24" style="width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg></span> CNPJ: 41.467.540/0001-67</li>
+                </ul>
+                <div class="social-links" style="justify-content:flex-start;margin-top:10px">
+                    <a href="https://wa.me/5575991893667" target="_blank" rel="noopener" aria-label="WhatsApp"><img src="whatsaapp-logo.png" alt=""></a>
+                    <a href="https://www.instagram.com/wsengenharia_/" target="_blank" rel="noopener" aria-label="Instagram"><img src="instagram-logo.png" alt=""></a>
+                    <a href="#" target="_blank" rel="noopener" aria-label="Facebook"><img src="facebook-logo.png" alt=""></a>
+                    <a href="https://www.linkedin.com/in/wedson-santos-979a33b2" target="_blank" rel="noopener" aria-label="LinkedIn"><img src="linkedin-logo.png" alt=""></a>
+                </div>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <div>&copy; 2024 WS Engenharia, Consultoria e Treinamentos. Todos os direitos reservados.</div>
+            <div class="creds">Power Bi © <a href="https://atec7.github.io/atecseven.com.br/" target="_blank" rel="noopener" style="color:inherit">Atecseven tecnologia</a></div>
+        </div>
+    </div>
+</footer>
+
+<div id="cookieConsent" style="display:none">
+    <p>Utilizamos cookies para garantir a melhor experiência em nosso site. <a href="politica_de_cookies.html">Saiba mais</a></p>
+    <button class="btn btn-gold" id="cookieConsentBtn" style="padding:10px 22px">Aceitar</button>
+</div>
+
+<script src="main.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var form = document.getElementById('orcamentoForm');
+    form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        var yourName = document.getElementById('yourName').value;
+        var yourContact = document.getElementById('yourContact').value;
+        var clientContact = document.getElementById('clientContact').value;
+        var service = document.getElementById('service').value;
+        var message = '*SOLICITAÇÃO ORÇAMENTO/COTAÇÃO:*\n_(via site)_\n\n' +
+            '*Nome:* ' + yourName + '\n*Contato:* ' + yourContact + '\n*Empresa:* ' + clientContact + '\n*Serviços:* ' + service +
+            '\n\n www.wsengenhariaa.com.br \n copyright©2024';
+        var whatsappUrl = 'https://wa.me/5564992952748?text=' + encodeURIComponent(message);
+        window.open(whatsappUrl, '_blank');
+    });
+});
+</script>
 </body>
 </html>

@@ -3,115 +3,85 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Seja Bem-Vindo</title>
-    <link rel="stylesheet" href="estilo.css">
-    <link class="ico" rel="icon" href="logo2.jpg">
+    <title>Seja Bem-Vindo à WS Engenharia</title>
+    <link rel="icon" href="logo2.png" type="image/png">
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
-        body, html {
+        html, body { height: 100%; }
+        .splash {
+            min-height: 100vh;
             display: flex;
             flex-direction: column;
-            justify-content: center;
             align-items: center;
-            height: 100vh;
-            margin: 0;
-            background-color: white;
-            color: #333;
-        }
-        .logo-container {
-            
-            display: inline-block;
+            justify-content: center;
+            text-align: center;
+            padding: 30px 20px;
+            background:
+                radial-gradient(900px 420px at 85% 0%, rgba(217,164,65,.25), transparent 55%),
+                radial-gradient(800px 420px at 10% 100%, rgba(33,163,92,.18), transparent 55%),
+                linear-gradient(135deg, var(--navy-900) 0%, var(--navy-700) 60%, var(--navy-800) 100%);
             position: relative;
-            border: 5px;
-            border-radius: 50%;
-            padding: 2px;
-            animation: spin 3.0s linear infinite;
+            overflow: hidden;
         }
-        .logo {
-          padding: 20px;
-            width: 100px;
-            height: 100px;
-            display: block;
+        .splash-inner { position: relative; z-index: 2; max-width: 460px; width: 100%; }
+        .splash-logo {
+            width: 130px; height: 130px;
+            object-fit: cover;
+            border-radius: 50%;
+            border: 4px solid rgba(217,164,65,.6);
+            box-shadow: 0 20px 50px rgba(0,0,0,.4);
+            margin: 0 auto 26px;
+            animation: splashPulse 2.2s ease-in-out infinite;
+            background: #fff;
+            padding: 4px;
+        }
+        @keyframes splashPulse {
+            0%,100% { transform: scale(1); }
+            50% { transform: scale(1.04); }
+        }
+        .splash h1 { color: #fff; font-size: 30px; margin-bottom: 10px; }
+        .splash h1 .hl { color: var(--gold); }
+        .splash p.tag { color: rgba(255,255,255,.8); font-size: 16px; margin-bottom: 28px; }
+        .loader-bar {
+            width: 220px; height: 5px;
+            background: rgba(255,255,255,.15);
+            border-radius: 999px;
+            margin: 0 auto 26px;
+            overflow: hidden;
             position: relative;
-            z-index: 2;
         }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+        .loader-bar::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            width: 40%;
+            background: linear-gradient(90deg, var(--gold), var(--gold-dark));
+            border-radius: 999px;
+            animation: load 1.1s ease-in-out infinite;
         }
-        .title {
-            text-decoration: none;
-            text-align: center;
-            color: white;
-        }
-        .ico {
-            border-radius: 50%;
-            border-style: solid;
-            border-color: green;
-        }
-        header, footer {
-          width: 100%;;
-            background-color: white;
-            color: #333;
-            text-align: center;
-        }
-        .link-atecseven {
-            text-emphasis: none;
-            text-decoration: none;
-            font-size: 16px;
-            text-align: center;
-            font-family: 'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif;
-            color: aqua;
-            transition: color 0.3s, background-color 0.3s;
-        }
-        .link-atecseven:hover {
-            color: white;
-            background-color: rgb(4, 4, 85);
-            border-radius: 5px;
-            font-size: 20px;
-        }
-        
-        .logo2{
-          text-align: center;
-        }
+        @keyframes load { 0% { left: -40%; } 100% { left: 100%; } }
+        .splash .enter { color: rgba(255,255,255,.65); font-size: 13px; margin-bottom: 22px; }
+        .btn-enter { display: inline-block; }
     </style>
-    <script>
-    
-        setTimeout(() => {
-            window.location.href = 'inicio.html';
-        }, 3000);
-    </script>
 </head>
 <body>
-        <div class="logo2">
-            <img class="logo2" src="logo2.jpg" alt="Logo" width="150px">
-            <h2>Seja Bem Vindo</h2>
+    <section class="splash">
+        <div class="splash-inner">
+            <img class="splash-logo" src="logo2.png" alt="Logo WS Engenharia">
+            <h1>Seja Bem-Vindo</h1>
+            <p class="tag">WS ENGENHARIA, <span class="hl">Consultoria</span> &amp; Treinamentos</p>
+            <div class="loader-bar"></div>
+            <div class="enter">Redirecionando para o nosso site...</div>
+            <a href="inicio.html" class="btn btn-gold btn-enter">Entrar no site →</a>
         </div>
     </section>
-    <section id="contact" class="container">
-        <div class="social-links">
-            <a href="https://wa.me/5575991893667?text=Ol%C3%A1%20WSENGENHARIA!%20Vi%20seu%20site%20e%20gostaria%20de%20contratar%20alguns%20de%20seus%20servi%C3%A7os.%20pode%20me%20atender%20no%20momento%20?" target="_blank">
-                <img class="links" src="whatsaapp-logo.png" alt="WhatsApp">
-            </a>
-            <a href="https://www.instagram.com/wsengenharia_/profilecard/?igsh=MTZ6ZWx4MmF1cjljMw==" target="_blank">
-                <img src="instagram-logo.png" alt="Instagram">
-            </a>
-            <a href="https://www.facebook.com/seu-usuario" target="_blank">
-                <img src="facebook-logo.png" alt="Facebook">
-            </a>
-            <a href="https://www.linkedin.com/in/wedson-santos-979a33b2?utm_source=share&utm_campaign=share_via&utm_content=profile&utm_medium=ios_app" target="_blank">
-                <img src="linkedin-logo.png" alt="LinkedIn">
-            </a>
-        </div>
-    </section>
-     <footer>
-        <div class="container">
-            <p>&copy; 2024 Ws Engenharia, consultoria e treinamentos.
-            <br> <p3>Cnpj: 41.467.540/0001-67</p3>
-            
-            <br>
-            Todos os direitos reservados.</p>
-            <a class="link-atecseven" href="https://atec7.github.io/atecseven.com.br/">Power Bi &copf; Atecseven tecnologia</a>
-        </div>
-    </footer>
+
+    <script>
+        setTimeout(function () {
+            window.location.href = 'inicio.html';
+        }, 3500);
+    </script>
 </body>
 </html>

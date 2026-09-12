@@ -3,120 +3,168 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ws Contato</title>
-    <link rel="stylesheet" href="estilo.css">
-    <link class="ico" rel="icon" href="logo2.jpg">
-    
-      <style>
-      .footer {
-    background-color: #333;
-    color: white;
-    text-align: center;
-    padding: 20px 0;
-}
-
-.link-atecseven {
-    text-emphasis: none;
-    text-decoration: none;
-    font-size: 16px;
-    text-align: center;
-    font-family: 'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif;
-    color: aqua;
-    transition: color 0.3s, background-color 0.3s;
-}
-
-.link-atecseven:hover {
-    color: white;
-    background-color: rgb(4, 4, 85);
-    border-radius: 5px;
-    font-size: 20px;
-}
-        .funcionamento {
-            Max-width: 600px;
-            Margin: auto;
-            Background-color: #fff;
-            Padding: 20px;
-            Box-shadow: 0 0 10px rgba(0,0,0,0.1);
-            Border-radius: 10px;
-        }
-        H3 {
-            Color: #333;
-            Border-bottom: 1px solid #ddd;
-            Padding-bottom: 10px;
-        }
-        P {
-
-        .day {
-            Margin-bottom: 10px;
-        }
-        .time {
-            Color: #777;
-            Margin-top: -10px;
-        }
-    </style>
+    <title>Contato — WS Engenharia</title>
+    <meta name="description" content="Fale com a WS Engenharia: WhatsApp, e-mail e horários de funcionamento. Solicite seu orçamento personalizado.">
+    <link rel="icon" href="logo2.jpg">
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 </head>
 <body>
-    <header>
-        <div class="container">
-            <nav>
+
+<header class="site-header">
+    <div class="container nav">
+        <a href="inicio.html" class="brand">
+            <img src="logo2.jpg" alt="Logo WS Engenharia">
+            <span>WS Engenharia<small>Consultoria &amp; Treinamentos</small></span>
+        </a>
+        <nav class="nav-links" id="navLinks">
+            <a href="inicio.html">Início</a>
+            <a href="sobre.html">Sobre</a>
+            <a href="servicos.html">Serviços</a>
+            <a href="contato.html" class="active">Contato</a>
+            <a href="indicacao.html">Indicações</a>
+            <div class="nav-cta">
+                <a href="orcamento.html" class="btn btn-gold">Solicitar Orçamento</a>
+            </div>
+        </nav>
+        <button class="nav-toggle" id="navToggle" aria-label="Abrir menu"><span></span><span></span><span></span></button>
+        <div class="nav-overlay" id="navOverlay"></div>
+    </div>
+</header>
+
+<section class="page-hero">
+    <div class="container">
+        <div class="breadcrumb"><a href="inicio.html">Início</a> / Contato</div>
+        <h1>Fale Conosco</h1>
+        <p>Estamos prontos para atender você com excelência e profissionalismo. Entre em contato pelo canal que preferir.</p>
+    </div>
+</section>
+
+<section class="section">
+    <div class="container">
+        <div class="banner-img">
+            <img src="atendimento2.jpg" alt="Atendimento WS Engenharia">
+            <div class="banner-caption">
+                <h3>Atendimento dedicado</h3>
+                <p>Nossa equipe está pronta para tirar suas dúvidas e entender as necessidades do seu projeto.</p>
+            </div>
+        </div>
+        <div class="contact-cards">
+            <div class="card contact-card">
+                <div class="icon"><svg viewBox="0 0 24 24" style="width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg></div>
+                <h3>Telefone / WhatsApp</h3>
+                <p><a href="https://wa.me/5575991893667" target="_blank" rel="noopener">(75) 9 9189-3667</a></p>
+            </div>
+            <div class="card contact-card">
+                <div class="icon"><svg viewBox="0 0 24 24" style="width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 7.35V18a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7.35"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg></div>
+                <h3>E-mail Comercial</h3>
+                <p><a href="mailto:wsengenhariaa@gmail.com">wsengenhariaa@gmail.com</a></p>
+            </div>
+            <div class="card contact-card">
+                <div class="icon"><svg viewBox="0 0 24 24" style="width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg></div>
+                <h3>CNPJ</h3>
+                <p>41.467.540/0001-67</p>
+            </div>
+        </div>
+
+        <div class="grid-2">
+            <div class="form-shell" style="max-width:none">
+                <h2 style="font-size:24px">Horários de Funcionamento</h2>
+                <div class="days">
+                    <div class="day highlight"><b>Segunda a Sexta</b><span>08:00 - 18:00</span></div>
+                    <div class="day"><b>Sábado</b><span>08:00 - 18:00</span></div>
+                    <div class="day"><b>Domingo — Plantão</b><span>08:00 - 12:00</span></div>
+                </div>
+                <div style="margin-top:26px;text-align:center">
+                    <a class="btn btn-gold" href="orcamento.html">Solicitar Orçamento</a>
+                </div>
+            </div>
+
+            <div class="form-shell" style="max-width:none">
+                <h2 style="font-size:24px">Nossas Redes Sociais</h2>
+                <p style="color:var(--muted);margin-bottom:20px">Ou se preferir, fale conosco através das nossas redes sociais:</p>
+                <div class="social-links" style="justify-content:flex-start;flex-wrap:wrap">
+                    <a href="https://wa.me/5575991893667?text=Ol%C3%A1%20WSENGENHARIA!%20Vi%20seu%20site%20e%20gostaria%20de%20contratar%20alguns%20de%20seus%20servi%C3%A7os.%20pode%20me%20atender%20no%20momento%20?" target="_blank" rel="noopener" style="background:#fff;border-color:#e5e5e5" aria-label="WhatsApp"><img src="whatsaapp-logo.png" alt=""></a>
+                    <a href="https://www.instagram.com/wsengenharia_/" target="_blank" rel="noopener" style="background:#fff;border-color:#e5e5e5" aria-label="Instagram"><img src="instagram-logo.png" alt=""></a>
+                    <a href="#" target="_blank" rel="noopener" style="background:#fff;border-color:#e5e5e5" aria-label="Facebook"><img src="facebook-logo.png" alt=""></a>
+                    <a href="https://www.linkedin.com/in/wedson-santos-979a33b2" target="_blank" rel="noopener" style="background:#fff;border-color:#e5e5e5" aria-label="LinkedIn"><img src="linkedin-logo.png" alt=""></a>
+                </div>
+                <div style="margin-top:28px;padding:18px;border-radius:12px;background:var(--bg);border:1px solid var(--line)">
+                    <p style="margin:0;font-size:14px;color:var(--muted)"><strong style="color:var(--navy-800)">Atendimento comercial rápido:</strong> clique diretamente no WhatsApp e fale agora com nosso time.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="section section-alt" style="padding-top:30px">
+    <div class="container">
+        <div class="cta-band">
+            <div>
+                <h2>Pronto para começar seu projeto?</h2>
+                <p>Solicite um orçamento personalizado e receba atendimento com agilidade e transparência.</p>
+            </div>
+            <a class="btn btn-gold" href="orcamento.html">Solicitar Orçamento</a>
+        </div>
+    </div>
+</section>
+
+<footer class="site-footer">
+    <div class="container">
+        <div class="footer-top">
+            <div class="footer-brand">
+                <img src="logo2.jpg" alt="WS Engenharia">
+                <h4>WS Engenharia, Consultoria e Treinamentos</h4>
+                <p>Soluções em engenharia civil, ambiental e segurança do trabalho para empresas de todos os portes.</p>
+            </div>
+            <div class="footer-col">
+                <h5>Navegação</h5>
                 <ul>
-                    <li><a href="index.html">Início</a></li>
+                    <li><a href="inicio.html">Início</a></li>
                     <li><a href="sobre.html">Sobre</a></li>
                     <li><a href="servicos.html">Serviços</a></li>
                     <li><a href="contato.html">Contato</a></li>
                     <li><a href="indicacao.html">Indicações</a></li>
                 </ul>
-            </nav>
+            </div>
+            <div class="footer-col">
+                <h5>Serviços</h5>
+                <ul>
+                    <li><a href="servicos.html#seguranca">Segurança do Trabalho</a></li>
+                    <li><a href="servicos.html#civil">Engenharia Civil</a></li>
+                    <li><a href="servicos.html#ambiental">Engenharia Ambiental</a></li>
+                    <li><a href="servicos.html#esocial">eSocial</a></li>
+                    <li><a href="servicos.html#consultoria">Consultoria</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h5>Contato</h5>
+                <ul class="footer-contact">
+                    <li><span class="f-ico"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg></span> (75) 9 9189-3667</li>
+                    <li><span class="f-ico"><svg viewBox="0 0 24 24" style="width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 7.35V18a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7.35"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg></span> wsengenhariaa@gmail.com</li>
+                    <li><span class="f-ico"><svg viewBox="0 0 24 24" style="width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg></span> CNPJ: 41.467.540/0001-67</li>
+                </ul>
+                <div class="social-links" style="justify-content:flex-start;margin-top:10px">
+                    <a href="https://wa.me/5575991893667?text=Ol%C3%A1%20WSENGENHARIA!%20Vi%20seu%20site%20e%20gostaria%20de%20contratar%20alguns%20de%20seus%20servi%C3%A7os.%20pode%20me%20atender%20no%20momento%20?" target="_blank" rel="noopener" aria-label="WhatsApp"><img src="whatsaapp-logo.png" alt=""></a>
+                    <a href="https://www.instagram.com/wsengenharia_/" target="_blank" rel="noopener" aria-label="Instagram"><img src="instagram-logo.png" alt=""></a>
+                    <a href="#" target="_blank" rel="noopener" aria-label="Facebook"><img src="facebook-logo.png" alt=""></a>
+                    <a href="https://www.linkedin.com/in/wedson-santos-979a33b2" target="_blank" rel="noopener" aria-label="LinkedIn"><img src="linkedin-logo.png" alt=""></a>
+                </div>
+            </div>
         </div>
-    </header>
-    <section id="contact" class="container">
-        <h2>Nossos Horários</h2>
-      <div class=”funcionamento”>
-        <h3>de Funcionamento:</h3>
-        <div class=”day”>
-            <h3>Segunda a Sexta:</h3>
-            <p class=”time”>08:00am – 18:00pm</p>
-        </div>
-        <div class=”day”>
-            <h3>Sábado:</h3>
-            <p class=”time”>08:00am – 18:00pm</p>
-        </div>
-        <div class=”day”>
-            <h3>Domingo — Plantão:</h3>
-            <p class=”time”>08:00am – 12:00pm</p>
+        <div class="footer-bottom">
+            <div>&copy; 2024 WS Engenharia, Consultoria e Treinamentos. Todos os direitos reservados.</div>
+            <div class="creds">Power Bi © <a href="https://atec7.github.io/atecseven.com.br/" target="_blank" rel="noopener" style="color:inherit">Atecseven tecnologia</a></div>
         </div>
     </div>
-        <h3>Contato Comercial:</h3>
-        <p> (75) 9 9189-3667 — wsengenhariaa@gmail.com</p>
-          Ou se preferir, fale conosco através das nossas redes sociais.
-            </section>
-<a href="orcamento.html">        <button> Solicitar Orçamento</button> </a>
-            <section id="contact" class="container">
-        <div class="social-links">
-            <a href="https://wa.me/5575991893667?text=Ol%C3%A1%20WSENGENHARIA!%20Vi%20seu%20site%20e%20gostaria%20de%20contratar%20alguns%20de%20seus%20servi%C3%A7os.%20pode%20me%20atender%20no%20momento%20?" target="_blank">
-                <img class="links" src="whatsaapp-logo.png" alt="WhatsApp">
-            </a>
-            <a href="https://www.instagram.com/wsengenharia_/profilecard/?igsh=MTZ6ZWx4MmF1cjljMw==" target="_blank">
-                <img src="instagram-logo.png" alt="Instagram">
-            </a>
-            <a href="#" target="_blank">
-                <img src="facebook-logo.png" alt="Facebook">
-            </a>
-            <a href="https://www.linkedin.com/in/wedson-santos-979a33b2?utm_source=share&utm_campaign=share_via&utm_content=profile&utm_medium=ios_app" target="_blank">
-                <img src="linkedin-logo.png" alt="LinkedIn">
-            </a>
-        </div>
-    </section>
-     <footer>
-        <div class="container">
-            <p>&copy; 2024 Ws Engenharia, consultoria e treinamentos.
-            <br> <p3>Cnpj: 41.467.540/0001-67</p3>
-            
-            <br>
-            Todos os direitos reservados.</p>
-            <a class="link-atecseven" href="https://atec7.github.io/atecseven.com.br/">Power Bi &copf; Atecseven tecnologia</a>
-        </div>
-    </footer>
-    <script src="script.js"></script>
+</footer>
+
+<div id="cookieConsent" style="display:none">
+    <p>Utilizamos cookies para garantir a melhor experiência em nosso site. <a href="politica_de_cookies.html">Saiba mais</a></p>
+    <button class="btn btn-gold" id="cookieConsentBtn" style="padding:10px 22px">Aceitar</button>
+</div>
+
+<script src="main.js"></script>
 </body>
 </html>
