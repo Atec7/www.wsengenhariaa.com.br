@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
          \n *Nome:* ${yourName} \n *Contato:* ${yourContact}\n *Empresa:* ${clientContact} \n *Serviços:* ${service}
         \n\n www.wsengenhariaa.com.br \n        coprygth©2024
         `;
-        const whatsappUrl = `https://wa.me/5564992952748?text=${encodeURIComponent(message)}`;
+        const whatsappUrl = `https://wa.me/5575991893667?text=${encodeURIComponent(message)}`;
 
         window.open(whatsappUrl, '_blank');
     });
