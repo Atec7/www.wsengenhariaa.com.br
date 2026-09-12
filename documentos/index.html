@@ -835,13 +835,13 @@ hr.dv{border:none;border-top:1px solid var(--bd);margin:18px 0}
     </div>
     <div class="fg">
       <label class="fl">N&uacute;mero de Contrato / Matr&iacute;cula</label>
-      <input type="text" id="relcolab-mat" placeholder="Informe o n&uacute;mero do contrato ou matricula">
+      <input type="text" id="relcolab-mat" placeholder="Deixe vazio para listar todos">
     </div>
   </div>
   <div class="g3" style="margin-top:6px">
-    <div class="fg"><label class="fl">Obra</label><select id="relcolab-obra" style="padding:7px 10px;font-size:12px" onchange="gerarRelColab()"><option value="">Todas</option></select></div>
-    <div class="fg"><label class="fl">Cidade</label><select id="relcolab-cidade" style="padding:7px 10px;font-size:12px" onchange="gerarRelColab()"><option value="">Todas</option></select></div>
-    <div class="fg"><label class="fl">Filial</label><select id="relcolab-filial" style="padding:7px 10px;font-size:12px" onchange="gerarRelColab()"><option value="">Todas</option></select></div>
+    <div class="fg"><label class="fl">Obra</label><select id="relcolab-emp-obra" style="padding:7px 10px;font-size:12px" onchange="gerarRelColab()"><option value="">Todas</option></select></div>
+    <div class="fg"><label class="fl">Cidade</label><select id="relcolab-emp-cidade" style="padding:7px 10px;font-size:12px" onchange="gerarRelColab()"><option value="">Todas</option></select></div>
+    <div class="fg"><label class="fl">Filial</label><select id="relcolab-emp-filial" style="padding:7px 10px;font-size:12px" onchange="gerarRelColab()"><option value="">Todas</option></select></div>
   </div>
   <div class="ma" style="margin-top:6px">
     <button class="btn bg2" onclick="cls()">Cancelar</button>
@@ -2039,10 +2039,9 @@ function relColabQuery(){
   const empId=document.getElementById('relcolab-emp').value;
   const mat=String(document.getElementById('relcolab-mat').value||'').trim();
   if(!empId)return null;
-  if(!mat)return{matOnly:true};
-  const vOb=document.getElementById('relcolab-obra')?.value||'';
-  const vCd=document.getElementById('relcolab-cidade')?.value||'';
-  const vFl=document.getElementById('relcolab-filial')?.value||'';
+  const vOb=document.getElementById('relcolab-emp-obra')?.value||'';
+  const vCd=document.getElementById('relcolab-emp-cidade')?.value||'';
+  const vFl=document.getElementById('relcolab-emp-filial')?.value||'';
   let funcs=toArr(DATA.funcionarios).filter(f=>String(f.empresaId||'').trim()===String(empId).trim());
   funcs=funcs.filter(f=>colLocMatch(f,{obra:vOb,cidade:vCd,filial:vFl}));
   if(mat){funcs=funcs.filter(f=>String(f.matricula||'').trim()===mat||String(f.matricula||'').toLowerCase().includes(mat.toLowerCase()));}
@@ -2056,7 +2055,6 @@ function gerarRelColab(){
   try{
   const q=relColabQuery();
   if(!q){res.innerHTML='<div class="es">Selecione uma empresa.</div>';return;}
-  if(q.matOnly){res.innerHTML='<div class="es">Digite um n&uacute;mero de contrato / matr&iacute;cula.</div>';return;}
   const{funcs,emp}=q;
   if(!funcs.length){res.innerHTML='<div class="es">Nenhum colaborador encontrado para os crit&eacute;rios informados.</div>';return;}
   const empNome=esc(emp?.nome||q.empId);
@@ -2710,13 +2708,20 @@ function popGenLoc(empSelId){
     const perm=catsPermitidos(col);
     const list=[];
     const seen=new Set();
+    const resolveCat=s=>{
+      const direct=DATA[col]&&DATA[col][s];
+      if(direct)return direct;
+      const byName=toArr(DATA[col]).find(c=>String(c.nome||'').trim()===String(s).trim());
+      return byName||null;
+    };
     const addId=s=>{
-      if(!s||seen.has(s))return;seen.add(s);
-      const cat=DATA[col]&&DATA[col][s];
-      const id=cat?String(cat.id).trim():s;
-      if(perm&&!perm.has(id))return;
+      if(!s)return;
+      const cat=resolveCat(s);
+      const id=cat?String(cat.id).trim():String(s).trim();
+      if(seen.has(id))return;seen.add(id);
+      if(perm&&!(perm.has(id)||(cat&&perm.has(String(cat.nome)))))return;
       if(!catPermitida(col,id))return;
-      list.push({id,nome:cat?cat.nome:s});
+      list.push({id,nome:cat?cat.nome:String(s)});
     };
     if(eid){
       const e=DATA.empresas[eid];
@@ -2724,7 +2729,7 @@ function popGenLoc(empSelId){
       if(Array.isArray(raw))raw.forEach(x=>addId(String(x).trim()));
       else if(raw&&typeof raw==='string'&&raw.trim())addId(raw.trim());
       const sing=SING_MAP[col];
-      if(e&&typeof e[sing]==='string'&&e[sing].trim())addId(e[sing].trim());
+      if(e&&e[sing]&&String(e[sing]).trim())addId(String(e[sing]).trim());
       toArr(DATA.funcionarios).forEach(fn=>{
         if(String(fn.empresaId||'').trim()===String(eid).trim()){
           const v=fn[field];
@@ -2732,10 +2737,6 @@ function popGenLoc(empSelId){
         }
       });
     }
-    toArr(DATA[col]).forEach(c=>{
-      if(perm&&!perm.has(String(c.id)))return;
-      addId(String(c.id));
-    });
     sel.innerHTML='<option value="">Todas</option>'+list.map(o=>`<option value="${esc(o.id)}">${esc(o.nome)}</option>`).join('');
     if(list.some(o=>o.id===cur))sel.value=cur;else sel.value='';
   });
