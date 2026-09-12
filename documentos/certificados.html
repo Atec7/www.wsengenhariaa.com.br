@@ -650,6 +650,9 @@ button.danger:hover { background: #c82333; }
                 <div id="listaAlunosCheckbox" class="checklist">Nenhum aluno carregado. Selecione a empresa acima.</div>
 
                 <label>Selecione cursos</label>
+                <div style="margin-bottom:6px;">
+                    <input id="selCursoBusca" placeholder="Pesquisar curso por nome ou carga" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:4px;font-size:14px;">
+                </div>
                 <div id="listaCursosCheckbox" class="checklist"></div>
 
                 <h3>Datas do Evento por Curso</h3>
@@ -779,7 +782,8 @@ async function carregarUsuarioCert(){
     }catch(e){ console.error("Erro ao carregar usuário:", e); }
 }
 function empresaPermitidaCert(id){
-    if(!usuarioAtualCert || usuarioAtualCert.mestre || !usuarioAtualCert.empresas || !usuarioAtualCert.empresas.length) return true;
+    if(!usuarioAtualCert || usuarioAtualCert.mestre) return true;
+    if(!usuarioAtualCert.empresas || !usuarioAtualCert.empresas.length) return false;
     return usuarioAtualCert.empresas.includes(String(id));
 }
 let alunosData = {};
@@ -1031,12 +1035,34 @@ function renderCursos(){
             </td>
         </tr>`).join("");
     
-    const listaCursosCheckbox = el("listaCursosCheckbox");
-    listaCursosCheckbox.innerHTML = cursos.map(c=>`<label><input type="checkbox" class="course-checkbox" value="${c.id}"> ${c.logoCurso ? `<img src="${c.logoCurso}" class="curso-logo-tabela" alt="Logo do curso">` : ''}<span>${c.nome} — ${c.carga}</span></label>`).join("");
-
     courseSelectionOrder = [];
 
+    el("selCursoBusca").value = "";
+
+    renderCursosCheckbox();
+    renderCourseDateSelectors();
+}
+
+function renderCursosCheckbox(){
+    const listaCursosCheckbox = el("listaCursosCheckbox");
+    if(!listaCursosCheckbox)return;
+
+    const termoBusca = (el("selCursoBusca")?.value || "").trim().toLowerCase();
+    const cursos = getArrayFromData(cursosData).filter(c => {
+        if(!termoBusca)return true;
+        const nome = (c.nome || "").toLowerCase();
+        const carga = (c.carga || "").toLowerCase();
+        return nome.includes(termoBusca) || carga.includes(termoBusca);
+    }).sort((a,b)=>(a.nome||'').localeCompare(b.nome||'', 'pt-BR'));
+
+    listaCursosCheckbox.innerHTML = cursos.length
+        ? cursos.map(c=>`<label><input type="checkbox" class="course-checkbox" value="${c.id}"> ${c.logoCurso ? `<img src="${c.logoCurso}" class="curso-logo-tabela" alt="Logo do curso">` : ''}<span>${c.nome} — ${c.carga}</span></label>`).join("")
+        : '<p style="color:var(--muted)">Nenhum curso encontrado.</p>';
+
     listaCursosCheckbox.querySelectorAll('.course-checkbox').forEach(input => {
+        if (courseSelectionOrder.includes(input.value)) {
+            input.checked = true;
+        }
         input.addEventListener('change', (e) => {
             const val = e.target.value;
             if (e.target.checked) {
@@ -1049,8 +1075,6 @@ function renderCursos(){
             renderCourseDateSelectors();
         });
     });
-
-    renderCourseDateSelectors();
 }
 
 function getCourseHours(courseId) {
@@ -2603,6 +2627,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     el("alunoBuscaRapida").addEventListener("input", renderAlunos);
     el("empresaBuscaRapida").addEventListener("input", renderEmpresas);
     el("selAlunoBusca").addEventListener("input", renderAlunosCheckboxForGeracao);
+    el("selCursoBusca").addEventListener("input", renderCursosCheckbox);
 
     el("selEmpresaBusca").addEventListener("input", () => {
         const termo = (el("selEmpresaBusca").value || "").trim().toLowerCase();

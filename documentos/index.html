@@ -835,7 +835,7 @@ hr.dv{border:none;border-top:1px solid var(--bd);margin:18px 0}
     </div>
     <div class="fg">
       <label class="fl">N&uacute;mero de Contrato / Matr&iacute;cula</label>
-      <input type="text" id="relcolab-mat" placeholder="Deixe vazio para listar todos">
+      <input type="text" id="relcolab-mat" placeholder="Informe o n&uacute;mero do contrato ou matricula">
     </div>
   </div>
   <div class="g3" style="margin-top:6px">
@@ -896,7 +896,7 @@ hr.dv{border:none;border-top:1px solid var(--bd);margin:18px 0}
           <div class="musu-emp-list" id="usuarios-empresas" style="border:none;border-radius:0;max-height:180px"></div>
         </div>
       </div>
-      <small style="font-size:10px;color:var(--tm)">Se nenhuma for selecionada, o usu&aacute;rio v&ecirc; todas as empresas. Se escolher alguma, ver&aacute; somente as selecionadas em todo o sistema.</small>
+      <small style="font-size:10px;color:var(--tm)">O usu&aacute;rio ver&aacute; somente as empresas marcadas. Se nenhuma for selecionada, n&atilde;o ter&aacute; acesso a nenhuma empresa.</small>
     </div>
     <div class="fg">
       <label class="fl">Filiais com Acesso</label>
@@ -2039,6 +2039,7 @@ function relColabQuery(){
   const empId=document.getElementById('relcolab-emp').value;
   const mat=String(document.getElementById('relcolab-mat').value||'').trim();
   if(!empId)return null;
+  if(!mat)return{matOnly:true};
   const vOb=document.getElementById('relcolab-obra')?.value||'';
   const vCd=document.getElementById('relcolab-cidade')?.value||'';
   const vFl=document.getElementById('relcolab-filial')?.value||'';
@@ -2055,6 +2056,7 @@ function gerarRelColab(){
   try{
   const q=relColabQuery();
   if(!q){res.innerHTML='<div class="es">Selecione uma empresa.</div>';return;}
+  if(q.matOnly){res.innerHTML='<div class="es">Digite um n&uacute;mero de contrato / matr&iacute;cula.</div>';return;}
   const{funcs,emp}=q;
   if(!funcs.length){res.innerHTML='<div class="es">Nenhum colaborador encontrado para os crit&eacute;rios informados.</div>';return;}
   const empNome=esc(emp?.nome||q.empId);
@@ -2701,30 +2703,39 @@ function fltEpi(){popGenLoc('e-e');renderFuncList('e-e','e-f-list','eChk');}
 // Popula os seletores de Obra/Cidade/Filial de um gerador em cascata, conforme a empresa selecionada.
 function popGenLoc(empSelId){
   const eid=document.getElementById(empSelId).value;
-  [['-obra','obras'],['-cidade','cidades'],['-filial','filiais']].forEach(([sfx,col])=>{
+  [['-obra','obras','obraId'],['-cidade','cidades','cidadeId'],['-filial','filiais','filialId']].forEach(([sfx,col,field])=>{
     const sel=document.getElementById(empSelId+sfx);
     if(!sel)return;
     const cur=sel.value;
     const perm=catsPermitidos(col);
     const list=[];
+    const seen=new Set();
+    const addId=s=>{
+      if(!s||seen.has(s))return;seen.add(s);
+      const cat=DATA[col]&&DATA[col][s];
+      const id=cat?String(cat.id).trim():s;
+      if(perm&&!perm.has(id))return;
+      if(!catPermitida(col,id))return;
+      list.push({id,nome:cat?cat.nome:s});
+    };
     if(eid){
       const e=DATA.empresas[eid];
       const raw=e&&e[col];
-      const ids=[];
-      if(Array.isArray(raw))raw.forEach(x=>ids.push(String(x).trim()));
-      else if(typeof raw==='string'&&raw.trim())ids.push(raw.trim());
+      if(Array.isArray(raw))raw.forEach(x=>addId(String(x).trim()));
+      else if(raw&&typeof raw==='string'&&raw.trim())addId(raw.trim());
       const sing=SING_MAP[col];
-      if(typeof e[sing]==='string'&&e[sing].trim())ids.push(e[sing].trim());
-      const seen=new Set();
-      ids.forEach(s=>{
-        if(!s||seen.has(s))return;seen.add(s);
-        const cat=DATA[col]&&DATA[col][s];
-        const id=cat?String(cat.id).trim():s;
-        if(perm&&!perm.has(id))return;
-        if(!catPermitida(col,id))return;
-        list.push({id,nome:cat?cat.nome:s});
+      if(e&&typeof e[sing]==='string'&&e[sing].trim())addId(e[sing].trim());
+      toArr(DATA.funcionarios).forEach(fn=>{
+        if(String(fn.empresaId||'').trim()===String(eid).trim()){
+          const v=fn[field];
+          if(v)addId(String(v).trim());
+        }
       });
     }
+    toArr(DATA[col]).forEach(c=>{
+      if(perm&&!perm.has(String(c.id)))return;
+      addId(String(c.id));
+    });
     sel.innerHTML='<option value="">Todas</option>'+list.map(o=>`<option value="${esc(o.id)}">${esc(o.nome)}</option>`).join('');
     if(list.some(o=>o.id===cur))sel.value=cur;else sel.value='';
   });
@@ -2770,7 +2781,7 @@ function calcTotal(){let t=0;document.querySelectorAll('#orc-body tr').forEach(t
 
 // ── SELECTS ─────────────────────────────────────────────────────
 function usuarioRestritoEmpresas(){
-  return !!(USUARIO_ATUAL&&!USUARIO_ATUAL.mestre&&USUARIO_ATUAL.empresas&&USUARIO_ATUAL.empresas.length);
+  return !!(USUARIO_ATUAL&&!USUARIO_ATUAL.mestre);
 }
 function usuarioRestritoFiliais(){
   return !!(USUARIO_ATUAL&&!USUARIO_ATUAL.mestre&&USUARIO_ATUAL.filiais&&USUARIO_ATUAL.filiais.length);
@@ -2804,6 +2815,7 @@ function empresasVisiveis(){
 }
 function catsPermitidos(col){
   if(!usuarioRestritoEmpresas())return null;
+  const field={obras:'obraId',cidades:'cidadeId',filiais:'filialId'}[col];
   const set=new Set();
   empresasVisiveis().forEach(e=>{
     const raw=e[col];
@@ -2811,6 +2823,9 @@ function catsPermitidos(col){
     list.forEach(v=>set.add(String(v)));
     const legacy=e[SING_MAP[col]];
     if(typeof legacy==='string'&&legacy.trim())set.add(legacy.trim());
+    toArr(DATA.funcionarios).forEach(fn=>{
+      if(String(fn.empresaId||'').trim()===String(e.id||'').trim()&&fn[field])set.add(String(fn[field]).trim());
+    });
   });
   return set;
 }
@@ -4109,7 +4124,7 @@ let USUARIO_ATUAL=null;
   window.usuarioTemAcesso=usuarioTemAcesso;
   function empresaPermitida(empId){
     if(!USUARIO_ATUAL||USUARIO_ATUAL.mestre)return true;
-    if(!USUARIO_ATUAL.empresas||USUARIO_ATUAL.empresas.length===0)return true;
+    if(!USUARIO_ATUAL.empresas||USUARIO_ATUAL.empresas.length===0)return false;
     return USUARIO_ATUAL.empresas.includes(String(empId));
   }
   window.empresaPermitida=empresaPermitida;
@@ -4230,7 +4245,7 @@ function renderUsuariosLista(){
       u.podeGerar?'<span class="mi-badge" style="background:#dcfce7;color:#15803d">GERA DIRETO</span>':
       '<span class="mi-badge" style="background:#dbeafe;color:#1e40af">USUARIO</span>';
     const telas=u.telas?Object.keys(u.telas).filter(k=>u.telas[k].acesso!==false).length:0;
-    const emps=u.empresas&&u.empresas.length?u.empresas.length+' empresa(s)':'Todas';
+    const emps=u.empresas&&u.empresas.length?u.empresas.length+' empresa(s)':'Nenhuma';
     const fils=u.filiais&&u.filiais.length?u.filiais.length+' filial(is)':'Todas';
     return`<div class="musu-item" onclick="editarUsuario('${u.id}')">
       <div><div class="mi-nome">${esc(u.nome||u.login||'?')} ${badge}</div>
@@ -4313,7 +4328,7 @@ window.updateEmpLabel=function(){
   const checks=Array.from(document.getElementsByName('usuEmpChk'));
   const sel=checks.filter(c=>c.checked);
   if(!checks.length){lbl.textContent='Nenhuma empresa cadastrada';return;}
-  if(!sel.length){lbl.textContent='Todas (sem restri\u00e7\u00e3o)';return;}
+  if(!sel.length){lbl.textContent='Nenhuma (sem acesso)';return;}
   if(sel.length===checks.length){lbl.textContent='Todas as empresas';return;}
   lbl.textContent=sel.length+' empresa(s) selecionada(s)';
 };
