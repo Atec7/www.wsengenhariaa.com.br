@@ -622,16 +622,13 @@ function _setTxt(id,txt){const el=document.getElementById(id);if(el)el.textConte
 ═══════════════════════════════════════════════════════════════ */
 let _debouncePopulate=null;
 function initListeners(){
-  let pend=0;
-  ['empresas','config','coringaTextos','pessoas'].forEach(p=>{
-    db.ref(p).on('value',snap=>{
+  Promise.all(['empresas','config','coringaTextos','pessoas'].map(p=>
+    db.ref(p).once('value').then(snap=>{
       const raw=snap.val()||{};const norm={};
       Object.entries(raw).forEach(([k,v])=>{norm[k]=(typeof v==='object'&&v!==null)?{...v,id:v.id||k}:v;});
-      DATA[p]=norm;pend++;
-      if(_debouncePopulate)clearTimeout(_debouncePopulate);
-      _debouncePopulate=setTimeout(()=>{populateSelects();pend=0;dcUpdatePagePreview();},pend<4?80:0);
-    });
-  });
+      DATA[p]=norm;
+    }).catch(()=>{DATA[p]=DATA[p]||{};})
+  )).then(()=>{ populateSelects(); dcUpdatePagePreview(); });
   const hoje=new Date().toISOString().slice(0,10);
   const dcData=document.getElementById('dc-data');
   if(dcData&&!dcData.value){
@@ -1405,6 +1402,7 @@ function dcSalvarTexto(){
   spin(true,'Salvando...');
   db.ref('coringaTextos/'+key).set({id:key,titulo,conteudo}).then(()=>{
     document.getElementById('dc-txt-id').value=key;
+    DATA.coringaTextos=DATA.coringaTextos||{};DATA.coringaTextos[key]={id:key,titulo,conteudo};
     spin(false);showResult('dc-results','Texto salvo com sucesso!');
   }).catch(e=>{spin(false);alert('Erro ao salvar: '+e.message);});
 }
@@ -1431,7 +1429,7 @@ function dcExcluirTexto(){
   if(!id){alert('Nenhum texto carregado para excluir');return;}
   if(!confirm('Excluir este texto permanentemente?'))return;
   spin(true,'Excluindo...');
-  db.ref('coringaTextos/'+id).remove().then(()=>{dcNovoTexto();spin(false);showResult('dc-results','Texto excluído!');}).catch(e=>{spin(false);alert('Erro: '+e.message);});
+  db.ref('coringaTextos/'+id).remove().then(()=>{delete DATA.coringaTextos[id];dcNovoTexto();spin(false);showResult('dc-results','Texto excluído!');}).catch(e=>{spin(false);alert('Erro: '+e.message);});
 }
 
 /* ═══════════════════════════════════════════════════════════════

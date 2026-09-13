@@ -303,19 +303,17 @@ function voltar(){
 
 // ── INIT ────────────────────────────────────────────────────────
 function initListeners(){
-  console.log("Iniciando listeners do Firebase...");
-  ['empresas','funcionarios','textos','materiais','config','historico','cargos'].forEach(p=>{
-    db.ref(p).on('value',snap=>{
-      console.log(`Dados recebidos de '${p}':`, snap.val());
+  console.log("Iniciando carregamento do Firebase...");
+  Promise.all(['empresas','funcionarios','textos','materiais','config','historico','cargos'].map(p=>
+    db.ref(p).once('value').then(snap=>{
       const raw=snap.val()||{};const norm={};
       Object.entries(raw).forEach(([k,v])=>{norm[k]=(typeof v==='object'&&v!==null)?{...v,id:v.id||k}:v;});
       DATA[p]=norm;
-      renderAll();
     }, (err) => {
       console.error(`Erro ao ler '${p}':`, err);
       alert(`Erro de conexão com o banco de dados: ${err.message}`);
-    });
-  });
+    }).catch(()=>{DATA[p]=DATA[p]||{};})
+  )).then(()=>{ if(window.renderAll)renderAll(); });
   const hoje=new Date().toISOString().slice(0,10);
   ['m-data','m-lista-data','m-epi-data'].forEach(id=>{const el=document.getElementById(id);if(el&&!el.value)el.value=hoje;});
 }
