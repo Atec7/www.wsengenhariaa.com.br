@@ -1683,6 +1683,21 @@ function calcExpiracao(dataFim, validade) {
 
 // ── APROVACOES DE GERACAO (CERTIFICADOS) ────────────────────────────
 let CERT_BYPASS=false;
+let REPLAY_MODE=false;
+function reportProgress(pct,label){
+  if(!REPLAY_MODE)return;
+  try{
+    const p=window.parent;
+    if(p&&typeof p.wsProgresso==='function')p.wsProgresso(pct,label);
+  }catch(_){}
+}
+function fecharReplayProgresso(){
+  if(!REPLAY_MODE)return;
+  try{
+    const p=window.parent;
+    if(p&&typeof p.fecharProgresso==='function')p.fecharProgresso();
+  }catch(_){}
+}
 async function liberarGeracaoCert(){
     if(CERT_BYPASS){CERT_BYPASS=false;return true;}
     const nome=sessionStorage.getItem('ws_user_nome')||'';
@@ -1741,11 +1756,27 @@ async function solicitarAprovacaoCert(usuario){
     alert("Solicitação enviada para aprovação.\n\nAcompanhe em \"Aprovações de Geração > Minhas Solicitações\" na tela principal. Após a autorização, o botão GERAR será liberado.");
     return false;
 }
-async function processarReplayCert(id){
+async function marcarCertEmitido(id){
     try{
+        const por=sessionStorage.getItem('ws_user_nome')||'';
+        await update(ref(db,'aprovacoes/'+id),{emitidoEm:Date.now(),emitidoPor:por});
+        try{
+            const p=window.parent;
+            if(p&&p.DATA&&p.DATA.aprovacoes){
+                const rec=p.DATA.aprovacoes[id];
+                if(rec){rec.emitidoEm=Date.now();rec.emitidoPor=por;}
+                if(typeof p.renderAprovacoes==='function')p.renderAprovacoes();
+            }
+        }catch(_){}
+    }catch(e){console.error('Erro ao registrar emissão do certificado:',e);}
+}
+async function processarReplayCert(id){
+    REPLAY_MODE=true;
+    try{
+        reportProgress(4,'Carregando solicitação aprovada...');
         const snap=await get(ref(db,'aprovacoes/'+id));
         const s=snap.val();
-        if(!s||s.status!=='aprovado'){alert('Esta solicitação não está aprovada.');return;}
+        if(!s||s.status!=='aprovado'){alert('Esta solicitação não está aprovada.');fecharReplayProgresso();return;}
         const est=s.estado||{};
         const empId=(est.inputs||{}).selEmpresa||'';
         const alunos=(est.extras||{}).alunos||[];
@@ -1755,6 +1786,7 @@ async function processarReplayCert(id){
             if(empresasData[empId]&&cursos.every(c=>cursosData[c.courseId]))break;
             await new Promise(r=>setTimeout(r,300));
         }
+        reportProgress(10,'Solicitação carregada. Restaurando dados...');
         el("selEmpresa").value=empId;
         renderAlunosCheckboxForGeracao();
         el("listaAlunosCheckbox").querySelectorAll("input[type=checkbox]").forEach(cb=>{cb.checked=alunos.includes(cb.value);});
@@ -1767,13 +1799,20 @@ async function processarReplayCert(id){
             if(df)df.value=c.dataFim;
         });
         CERT_BYPASS=true;
+        reportProgress(14,'Emitindo certificados...');
         await gerarCertificados();
         if(el("printArea").innerHTML.trim()!==""){
-            try{ await downloadPDF(el("printArea"), 'certificados_aprovados.pdf'); }
-            catch(e2){ console.error("Erro ao baixar certificados aprovados:", e2); }
+            try{
+                await downloadPDF(el("printArea"), 'certificados_aprovados.pdf');
+                await marcarCertEmitido(id);
+                reportProgress(100,'Certificados emitidos com sucesso!');
+            }
+            catch(e2){ console.error("Erro ao baixar certificados aprovados:", e2); fecharReplayProgresso(); }
+        }else{
+            fecharReplayProgresso();
         }
         try{history.replaceState(null,'',location.pathname);}catch(_){}
-    }catch(e){alert('Erro ao processar solicitação aprovada: '+e.message);}
+    }catch(e){alert('Erro ao processar solicitação aprovada: '+e.message); fecharReplayProgresso();}
 }
 
 async function gerarCertificados(){
@@ -1807,6 +1846,8 @@ async function gerarCertificados(){
         };
     });
 
+    reportProgress(18,'Verificando alunos e cursos...');
+
     try {
         if (selectedCoursesWithDates.some(item => !item.dataInicio || !item.dataFim)) {
             return alert("Todas as datas para os cursos selecionados são obrigatórias.");
@@ -1815,7 +1856,7 @@ async function gerarCertificados(){
         return alert(e.message);
     }
 
-    const conflictsBeforeGenerate = detectConflicts();
+    const conflictsBeforeGenerate = REPLAY_MODE ? [] : detectConflicts();
     if (conflictsBeforeGenerate.length > 0) {
         highlightConflicts(conflictsBeforeGenerate);
         const proceed = await new Promise(resolve => {
@@ -1864,6 +1905,8 @@ async function gerarCertificados(){
         });
     });
 
+    reportProgress(40,'Certificados montados. Gerando listas de presença...');
+
     selectedCoursesWithDates.forEach(item => {
         printAreaPresencas.innerHTML += window.buildListaPresenca({
             curso: item.curso,
@@ -1890,6 +1933,8 @@ async function gerarCertificados(){
         await saveSecurely(blobPresenca, 'listas_presenca.pdf', { empresaId: empresa.id });
     }
 
+    reportProgress(55,'Listas de presença geradas. Registrando certificados...');
+
     try {
         await update(ref(db), updates);
 
@@ -1912,7 +1957,7 @@ async function gerarCertificados(){
             });
         });
 
-        alert(`clique em "OK" Para liberar a visualização de ${certCount} certificado(s). Clique em "Baixar PDF".`);
+        if(!REPLAY_MODE) alert(`clique em "OK" Para liberar a visualização de ${certCount} certificado(s). Clique em "Baixar PDF".`);
         printArea.style.display="flex";
     } catch (e) {
         console.error("Erro ao salvar certificados gerados:", e);
@@ -1938,9 +1983,10 @@ function corruptPdfBytes(buffer) {
   return out.buffer;
 }
 
-async function saveSecurely(pdfBlob, filename, metadata = {}) {
+async function saveSecurely(pdfBlob, filename, metadata = {}, onProgress) {
     const arrayBuffer = await pdfBlob.arrayBuffer();
     const pdfDoc = await PDFLib.PDFDocument.load(arrayBuffer);
+    if(typeof onProgress==='function')onProgress(82,'Carregando PDF...');
     const pages = pdfDoc.getPages();
     const baseDir = window.location.href.substring(0, window.location.href.lastIndexOf('/') + 1);
     const docId = push(ref(db, 'doc_auth')).key;
@@ -1956,6 +2002,7 @@ async function saveSecurely(pdfBlob, filename, metadata = {}) {
         const lastPage = pages[pages.length - 1];
         lastPage.drawImage(qrImg, { x: 12, y: 24, width: 20, height: 20 });
     } catch (e) { console.error('QR Code error:', e); }
+    if(typeof onProgress==='function')onProgress(85,'Adicionando identificação e QR Code...');
 
     for(let i = 0; i < pages.length; i++){
         const pg = pages[i];
@@ -1981,6 +2028,7 @@ async function saveSecurely(pdfBlob, filename, metadata = {}) {
     pdfDoc.setTitle(filename);
     const firstBytes = await pdfDoc.save();
     const firstBlob = new Blob([firstBytes], { type: 'application/pdf' });
+    if(typeof onProgress==='function')onProgress(88,'Calculando impressão digital do documento...');
 
     try {
         const fbArray = await firstBlob.arrayBuffer();
@@ -1995,6 +2043,7 @@ async function saveSecurely(pdfBlob, filename, metadata = {}) {
             });
         }
         let finalBytes = await pdfDoc.save();
+        if(typeof onProgress==='function')onProgress(92,'Blindando PDF (rastreamento e proteção)...');
         finalBytes = await rasterizePdfPages(finalBytes);
         finalBytes = corruptPdfBytes(finalBytes);
         finalBytes = await addVerificationOverlay(finalBytes, docId, validationUrl);
@@ -2017,11 +2066,13 @@ async function saveSecurely(pdfBlob, filename, metadata = {}) {
         const hashArray2 = Array.from(new Uint8Array(hashBuffer2));
         const hashHex2 = hashArray2.map(b => b.toString(16).padStart(2,'0')).join('');
         await update(ref(db, 'doc_auth/' + docId), { hash: hashHex2, encrypted: true });
+        if(typeof onProgress==='function')onProgress(96,'Finalizando autenticação...');
         const finalBlob = new Blob([finalBytes], { type: 'application/pdf' });
         const url = URL.createObjectURL(finalBlob);
         const link = document.createElement('a'); link.href = url; link.download = filename;
         document.body.appendChild(link); link.click();
         setTimeout(() => { document.body.removeChild(link); URL.revokeObjectURL(url); }, 1000);
+        if(typeof onProgress==='function')onProgress(100,'Download iniciado!');
     } catch (e) {
         console.error('Hash error:', e);
         await set(ref(db, 'doc_auth/' + docId), { filename, ts: Date.now(), ...metadata });
@@ -2036,6 +2087,8 @@ async function downloadPDF(targetElement, filename = 'certificados_gerados.pdf')
     if (targetElement.innerHTML.trim() === "") {
         return alert("Nenhum conteúdo carregado para baixar.");
     }
+
+    reportProgress(72,'Convertendo certificados para PDF...');
 
     const tempContainer = document.createElement('div');
     tempContainer.innerHTML = targetElement.innerHTML;
@@ -2064,7 +2117,8 @@ async function downloadPDF(targetElement, filename = 'certificados_gerados.pdf')
     };
 
     const blob = await html2pdf().from(tempContainer).set(options).output('blob');
-    await saveSecurely(blob, filename);
+    reportProgress(78,'PDF gerado. Autenticando e blindando...');
+    await saveSecurely(blob, filename, {}, (p,l)=>reportProgress(p,l));
 }
 function handleBulkDownload() {
     downloadPDF(el("printArea"), 'certificados_gerados_em_massa.pdf');

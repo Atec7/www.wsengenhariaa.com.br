@@ -100,6 +100,20 @@ input[disabled]{background:var(--hl);color:var(--ts)}
 .spinner{width:34px;height:34px;border:3px solid var(--bd);border-top-color:var(--hi);border-radius:50%;animation:sp .8s linear infinite}
 @keyframes sp{to{transform:rotate(360deg)}}
 .stxt{margin-top:11px;font-size:12px;color:var(--tm);font-weight:500}
+
+/* ── OVERLAY PROGRESSO DE EMISSÃO ── */
+#ws-prog-overlay{position:fixed;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;background:rgba(8,10,15,.72);backdrop-filter:blur(7px);z-index:2147483000;font-family:'DM Sans',sans-serif}
+#ws-prog-card{width:min(430px,92vw);background:#14161c;border:1px solid #2a2d35;border-radius:16px;padding:30px 28px;box-shadow:0 24px 60px rgba(0,0,0,.5);text-align:center}
+#ws-prog-ico{width:60px;height:60px;margin:0 auto 16px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#1f2b12,#10190a);border:1px solid #406110;color:#bef264;font-size:24px;animation:progPulse 1.5s ease-in-out infinite}
+@keyframes progPulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.12);opacity:.82}}
+#ws-prog-titulo{font-size:15px;font-weight:700;color:#f4f4f5;letter-spacing:.2px}
+#ws-prog-label{font-size:12px;color:#a1a1aa;margin-top:16px;min-height:16px}
+#ws-prog-track{height:10px;background:#22252c;border-radius:99px;margin-top:14px;overflow:hidden;border:1px solid #2e323b}
+#ws-prog-bar{height:100%;width:0;border-radius:99px;background:linear-gradient(90deg,#22c55e,#84cc16,#a3e635);transition:width .4s ease;position:relative;overflow:hidden}
+#ws-prog-bar::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.4),transparent);animation:progShine 1.7s linear infinite}
+@keyframes progShine{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+#ws-prog-top{display:flex;align-items:center;justify-content:space-between;margin-top:10px;font-size:12px;color:#9ca3af;font-family:'DM Mono',monospace}
+#ws-prog-pct{font-weight:700;color:#d1fae5}
 .sw{position:relative;margin-bottom:11px}
 .sw i{position:absolute;right:10px;top:50%;transform:translateY(-50%);color:var(--tm);font-size:11px}
 .sw input{padding-right:30px;margin:0}
@@ -651,6 +665,15 @@ hr.dv{border:none;border-top:1px solid var(--bd);margin:18px 0}
 
 <div class="loader" id="loader"><div class="spinner"></div><div class="stxt">Gerando documento...</div></div>
 
+<div id="ws-prog-overlay">
+  <div id="ws-prog-card">
+    <div id="ws-prog-ico"><i class="fa-solid fa-certificate"></i></div>
+    <div id="ws-prog-titulo">Emitindo certificados...</div>
+    <div id="ws-prog-track"><div id="ws-prog-bar"></div></div>
+    <div id="ws-prog-top"><span id="ws-prog-label">Preparando...</span><span id="ws-prog-pct">0%</span></div>
+  </div>
+</div>
+
 <!-- MODAIS CRUD -->
 <div class="modal" id="mdl-e"><div class="mb">
   <div class="mt2">Empresa</div>
@@ -1193,6 +1216,37 @@ function getExpirationDate(textId){const t=DATA.textos[textId];if(!t||!t.validad
 function toArr(obj){if(!obj)return[];return Object.entries(obj).map(([k,v])=>(typeof v==='object'&&v!==null)?{...v,id:v.id||k}:v);}
 function isBlindagem(h){const n=(h.nome||'').toLowerCase();return n.includes('blindad')||n.startsWith('pdfs_blindados');}
 function spin(on){document.getElementById('loader').style.display=on?'flex':'none';}
+let _wsProgTimer=null;
+function setProgresso(pct,label){
+  const bar=document.getElementById('ws-prog-bar');
+  const lbl=document.getElementById('ws-prog-label');
+  const pctEl=document.getElementById('ws-prog-pct');
+  const v=Math.max(0,Math.min(100,Math.round(pct)));
+  if(bar)bar.style.width=v+'%';
+  if(pctEl)pctEl.textContent=v+'%';
+  if(lbl&&label)lbl.textContent=label;
+}
+function abrirProgresso(titulo){
+  const ov=document.getElementById('ws-prog-overlay');
+  if(!ov)return;
+  const t=document.getElementById('ws-prog-titulo');
+  if(t&&titulo)t.textContent=titulo;
+  clearTimeout(_wsProgTimer);
+  setProgresso(0,'Preparando...');
+  ov.style.display='flex';
+}
+function wsProgresso(pct,label){
+  setProgresso(pct,label);
+  if(pct>=100){
+    clearTimeout(_wsProgTimer);
+    _wsProgTimer=setTimeout(fecharProgresso,750);
+  }
+}
+function fecharProgresso(){
+  clearTimeout(_wsProgTimer);
+  const ov=document.getElementById('ws-prog-overlay');
+  if(ov)ov.style.display='none';
+}
 function fmtCnpj(c){if(!c)return'—';return c;}
 function addNewPageIfNeeded(doc,y,minSpace){return y;}
 function abrirMassa(){window.location.href='massa.html';}
@@ -3702,6 +3756,7 @@ async function genOrc(){
     expiracao = d.toISOString().slice(0, 10);
   }
   logHistory('Proposta - '+(empCliente?.nome||'?'), {empresaId:empCliente?.id,expiracao});
+  return true;
 }
 
 // ── LISTAS ─────────────────────────────────────────────────────
@@ -3740,6 +3795,7 @@ async function gen(){
   const expiracao = getExpirationDate(firstTextId);
   logHistory('OS Lote - '+fIds.length+' collaborator(es)', {empresaId:empId,funcionarioIds:fIds,expiracao});
   showResult('gen-results','PDF gerado e baixado com sucesso!');
+  return true;
 }
 async function drawOS(doc,func,emp){
   const{y:sy,assData}=await P_header(doc,emp,'Ordem de Servico',false);
@@ -3852,6 +3908,7 @@ async function genList(){
   await saveSecurely(doc, filename, { treino: treino, empresaId: eid });
   logHistory('Lista Presenca - '+treino, {empresaId:emp?.id,treino:treino,data:dataFmt,expiracao});
   showResult('list-results','Lista gerada e baixada com sucesso!');
+  return true;
 }
 
 // ── FICHA ADMISSIONAL ─────────────────────────────────────────────
@@ -3887,6 +3944,7 @@ async function genAdm(){
   const expiracao = getExpirationDate(textId);
   logHistory('Ficha Admissional - '+fIds.length+' colaborador(es)', {empresaId:eid,funcionarioIds:fIds,data:dataVal,expiracao});
   showResult('adm-results','Fichas geradas e baixadas com sucesso!');
+  return true;
 }
 async function drawAdm(doc,func,emp,dataFmt,local,conteudo){
   const{y:sy,assData}=await P_header(doc,emp,'Treinamento Admissional',false);
@@ -3960,6 +4018,7 @@ async function genEPI(){
   await saveSecurely(doc,filename,{empresaId:eid,funcionarioIds:fIds});
   logHistory('Ficha EPI '+(blankMode?'(em branco - '+blankRows+' linhas) ':'')+'- '+(funcs[0]?fIds.length+' colaborador(es)':'formulario'),{empresaId:eid,funcionarioIds:fIds,data:dataVal});
   showResult('epi-results','Fichas geradas e baixadas com sucesso!');
+  return true;
 }
 async function drawEPI(doc,func,emp,dataFmt,items,showVencCa=true,blankRows=0){
   const W=PAG.LW,H=PAG.LH,m=PAG.LM,uw=PAG.LUW;
@@ -4707,12 +4766,24 @@ function replaySolicitacao(s){
     calcTotal();
   }
 }
-window.baixarAprovado=function(id){
+function marcarEmitido(s,por){
+  if(!s)return;
+  const now=Date.now();
+  db.ref('aprovacoes/'+s.id).update({emitidoEm:now,emitidoPor:por})
+    .then(()=>{
+      s.emitidoEm=now;s.emitidoPor=por;
+      if(window.renderAll)renderAll();
+    }).catch(e=>alert('Erro ao registrar emissão: '+e.message));
+}
+window.baixarAprovado=async function(id){
   const s=(DATA.aprovacoes||{})[id];
   if(!s||s.status!=='aprovado'){alert('Esta solicitação não está aprovada.');return;}
   if(s.tela==='cert'){
     cls();
     openCertModal();
+    const modalEl=document.getElementById('cert-modal');
+    if(!modalEl||!modalEl.classList.contains('open')){fecharProgresso();return;}
+    abrirProgresso('Emitindo certificados aprovados...');
     const iframe=document.getElementById('cert-iframe');
     if(iframe)iframe.src='certificados.html?replay='+encodeURIComponent(s.id);
     return;
@@ -4722,7 +4793,10 @@ window.baixarAprovado=function(id){
   cls();
   replaySolicitacao(s);
   WS_BYPASS_GERACAO=true;
-  window[cfg.fn]();
+  try{
+    const ok=await window[cfg.fn]();
+    if(ok)marcarEmitido(s,USUARIO_ATUAL?USUARIO_ATUAL.nome:'');
+  }catch(e){console.error('Falha ao gerar documento aprovado: '+e.message);}
 };
 function fmtDT(ts){if(!ts)return'—';const d=new Date(ts);return d.toLocaleDateString('pt-BR')+' às '+d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});}
 function statusInfo(s){
@@ -4730,15 +4804,23 @@ function statusInfo(s){
   if(s.status==='reprovado')return{cls:'apv-no',ico:'fa-circle-xmark',txt:'Reprovado por '+esc(s.reprovadoPor||'—')+' em '+fmtDT(s.reprovadoEm)+(s.motivo?' · Motivo: '+esc(s.motivo):'')};
   return{cls:'apv-pend',ico:'fa-hourglass-half',txt:'Aguardando aprovação'};
 }
+function emitidoInfo(s){
+  if(!s||s.status!=='aprovado')return null;
+  if(s.emitidoEm)return{ico:'fa-circle-check',cls:'apv-ok',txt:'Emitido em '+fmtDT(s.emitidoEm)+(s.emitidoPor?' por '+esc(s.emitidoPor):'')};
+  return{ico:'fa-hourglass-half',cls:'apv-pend',txt:'Aprovado · ainda não emitido pelo solicitante'};
+}
 function aprovItemHtml(s,mostrarSolicitante){
   const st=statusInfo(s);
+  const emi=emitidoInfo(s);
   const minha=USUARIO_ATUAL&&s.solicitanteId===USUARIO_ATUAL.id;
   const btn=s.status==='aprovado'&&minha?'<button class="btn bs" style="flex-shrink:0" onclick="event.stopPropagation();baixarAprovado(\''+s.id+'\')"><i class="fa-solid fa-download"></i> Gerar</button>':'';
   const sub=(mostrarSolicitante?'Solicitado por '+esc(s.solicitanteNome||'?')+' · ':'')+fmtDT(s.criadoEm);
   return'<div class="aprov-item '+st.cls+'" onclick="openAprovModal(\''+s.id+'\')">'+
     '<div style="flex:1;min-width:0"><div class="ai-titulo">'+esc(s.telaNome||s.tela)+'</div>'+
     '<div class="ai-sub">'+sub+'</div>'+
-    '<div class="ai-status"><i class="fa-solid '+st.ico+'"></i> '+st.txt+'</div></div>'+btn+'</div>';
+    '<div class="ai-status"><i class="fa-solid '+st.ico+'"></i> '+st.txt+'</div>'+
+    (emi?'<div class="ai-status"><i class="fa-solid '+emi.ico+'"></i> '+emi.txt+'</div>':'')+
+    '</div></div>'+btn+'</div>';
 }
 window.aprovTab=function(t){
   APROV_TAB=t;
@@ -4817,6 +4899,7 @@ function renderAprovacoes(){
   lp.innerHTML=htmlP;
   const fm=aprovFiltroAtual('m');
   const minhasTodas=todas.filter(s=>USUARIO_ATUAL&&s.solicitanteId===USUARIO_ATUAL.id);
+  const totalMinhas=minhasTodas.length;
   setChip('aprov-chip-pend-m','Pendentes: '+minhasTodas.filter(s=>s.status==='pendente').length,fm.status==='pendente');
   setChip('aprov-chip-ok-m','Aprovados: '+minhasTodas.filter(s=>s.status==='aprovado').length,fm.status==='aprovado');
   setChip('aprov-chip-no-m','Cancelados: '+minhasTodas.filter(s=>s.status==='reprovado').length,fm.status==='reprovado');
@@ -4830,9 +4913,14 @@ window.openAprovModal=function(id){
   const s=(DATA.aprovacoes||{})[id];
   if(!s)return;
   const st=statusInfo(s);
+  const emi=emitidoInfo(s);
   const cores={apv:['#fef9c3','#854d0e'],ok:['#dcfce7','#15803d'],no:['#fee2e2','#b91c1c']};
   const cor=st.cls==='apv-ok'?cores.ok:st.cls==='apv-no'?cores.no:cores.apv;
   let html='<div style="margin-bottom:12px"><span class="aprov-st-linha" style="background:'+cor[0]+';color:'+cor[1]+'"><i class="fa-solid '+st.ico+'"></i> '+st.txt+'</span></div>';
+  if(emi){
+    const ec=emi.cls==='apv-ok'?cores.ok:cores.apv;
+    html+='<div style="margin-bottom:12px"><span class="aprov-st-linha" style="background:'+ec[0]+';color:'+ec[1]+'"><i class="fa-solid '+emi.ico+'"></i> '+emi.txt+'</span></div>';
+  }
   const linhas=[['Solicitante',s.solicitanteNome||'—'],['Tela',s.telaNome||s.tela||'—'],['Data da solicitação',fmtDT(s.criadoEm)]];
   linhas.forEach(r=>{html+='<div class="aprov-detalhe"><b>'+esc(r[0])+'</b><span>'+esc(r[1])+'</span></div>';});
   (s.resumo||[]).forEach(r=>{html+='<div class="aprov-detalhe"><b>'+esc(r[0])+'</b><span style="white-space:pre-wrap">'+esc(r[1])+'</span></div>';});
