@@ -767,7 +767,8 @@ hr.dv{border:none;border-top:1px solid var(--bd);margin:18px 0}
 <div class="g2"><div class="fg"><label class="fl">CPF</label><input id="i-f-cp" placeholder="000.000.000-00"></div><div class="fg"><label class="fl">Data de Admiss&atilde;o</label><input type="date" id="i-f-dt" onchange="onDataAdmChange()"></div></div>
 <div class="g2"><div class="fg"><label class="fl">Fun&ccedil;&atilde;o</label><select id="i-f-fn" onchange="autoFillCBO()"><option value="">Selecione...</option></select></div><div class="fg"><label class="fl">CBO</label><input id="i-f-cb"></div></div>
 <div class="g2"><div class="fg"><label class="fl">Setor</label><input id="i-f-st"></div><div class="fg"><label class="fl">N&ordm; Contrato/Matr&iacute;cula</label><input id="i-f-mat" placeholder="N&ordm; do contrato ou matr&iacute;cula"></div></div>
-<div class="g2"><div class="fg"><label class="fl">Vencimento ASO</label><input type="date" id="i-f-aso-date"></div><div class="fg"><label class="fl">Tipo ASO</label><select id="i-f-aso-tipo" onchange="onAsoTipoChange()"><option value="">Selecione...</option><option value="ADMISSIONAL">Admissional</option><option value="DEMISSIONAL">Demissional</option><option value="PERIODICO">Periódico</option><option value="MUDANCA_FUNCAO">Mudança de Função</option><option value="RETORNO_TRABALHO">Retorno ao Trabalho</option></select></div></div>
+<div class="g2"><div class="fg"><label class="fl">Data de Emiss&atilde;o ASO</label><input type="date" id="i-f-aso-emissao"></div><div class="fg"><label class="fl">Vencimento ASO</label><input type="date" id="i-f-aso-date"></div></div>
+<div class="fg"><label class="fl">Tipo ASO</label><select id="i-f-aso-tipo" onchange="onAsoTipoChange()"><option value="">Selecione...</option><option value="ADMISSIONAL">Admissional</option><option value="DEMISSIONAL">Demissional</option><option value="PERIODICO">Periódico</option><option value="MUDANCA_FUNCAO">Mudança de Função</option><option value="RETORNO_TRABALHO">Retorno ao Trabalho</option></select></div>
   <div class="ma"><button class="btn bp" onclick="sv('funcionario')"><i class="fa-solid fa-save"></i> Salvar</button><button class="btn bg2" onclick="cls()">Cancelar</button></div>
 </div></div>
 
@@ -1673,10 +1674,13 @@ function renderDashColabDocs(filtered){
   tbody.innerHTML=cols.map(fid=>{
     const n=byColab[fid].nome;
     const total=COL_DOCS_MAP[fid].length;
+    const f=DATA.funcionarios[fid];
+    const contaAso=f&&(f.asoDate||f.asoEmissao||f.asoTipo)?1:0;
+    const totalComAso=total+contaAso;
     return `<tr>
       <td><i class="fa-solid fa-user" style="color:var(--tm);margin-right:6px"></i>${esc(n)}</td>
       <td style="text-align:center">
-        <button class="btn bg2" style="padding:4px 10px;font-size:11px" onclick="showColabDocs(this,'${esc(fid)}')" title="Ver documentos"><i class="fa-solid fa-paperclip"></i> ${total}</button>
+        <button class="btn bg2" style="padding:4px 10px;font-size:11px" onclick="showColabDocs(this,'${esc(fid)}')" title="Ver documentos"><i class="fa-solid fa-paperclip"></i> ${totalComAso}</button>
       </td>
     </tr>`;
   }).join('');
@@ -1690,10 +1694,12 @@ function colabDocCurso(h){
 function showColabDocs(btn,fid){
   const tr=btn.closest('tr');
   const nomeColab=tr?tr.querySelector('td').textContent.replace(/^👤\s*/,'').trim():(DATA.funcionarios[fid]&&DATA.funcionarios[fid].nome)||fid;
+  const func=DATA.funcionarios[fid]||null;
   const ids=COL_DOCS_MAP[fid]||[];
   const docs=ids.map(id=>DATA.historico[id]).filter(Boolean);
+  const temAso=func&&(func.asoDate||func.asoEmissao||func.asoTipo);
   document.getElementById('dd-title').textContent='Documentos: '+esc(nomeColab);
-  if(!docs.length){
+  if(!docs.length&&!temAso){
     document.getElementById('dd-body').innerHTML='<div class="es">Nenhum documento para este colaborador no período.</div>';
   }else{
     let html=`<table style="width:100%;border-collapse:collapse;font-size:12px">
@@ -1711,6 +1717,19 @@ function showColabDocs(btn,fid){
         <td style="padding:6px 8px"><span class="bdg">${esc(tipo)}</span></td>
       </tr>`;
     });
+    if(temAso){
+      const now=new Date();
+      const curso='ASO - '+(fmtAsoTipo(func.asoTipo)||'');
+      const gen=func.asoEmissao?fmtData(func.asoEmissao):'—';
+      const exp=func.asoDate?fmtData(func.asoDate):'—';
+      const expColor=func.asoDate?(new Date(func.asoDate+'T23:59:59')<now?'var(--dn)':'var(--sc)'):'var(--tm)';
+      html+=`<tr style="border-bottom:1px solid var(--bd)">
+        <td style="padding:6px 8px">${esc(curso)}</td>
+        <td style="padding:6px 8px">${esc(gen)}</td>
+        <td style="padding:6px 8px;color:${expColor};font-weight:600">${exp}</td>
+        <td style="padding:6px 8px"><span class="bdg">ASO</span></td>
+      </tr>`;
+    }
     html+=`</table>
       <div style="margin-top:12px;font-size:10px;color:var(--tm)">Clique em uma linha para ver os detalhes do documento.</div>`;
     document.getElementById('dd-body').innerHTML=html;
@@ -3103,9 +3122,10 @@ function getFormData(t){
     const obraId=v('i-f-ob');
     const cidadeId=v('i-f-cd');
     if(!empresaId){alert('É obrigatório vincular o colaborador à Empresa.');return null;}
+    const asoEmissao=v('i-f-aso-emissao');
     const asoDate=v('i-f-aso-date');
     const asoTipo=v('i-f-aso-tipo');
-    return{id:idAtual,empresaId,filialId,obraId,cidadeId,nome:v('i-f-nm'),cpf:v('i-f-cp'),funcao:v('i-f-fn'),cbo:v('i-f-cb'),setor:v('i-f-st'),matricula:v('i-f-mat'),dataAdm:v('i-f-dt'),asoDate,asoTipo};
+    return{id:idAtual,empresaId,filialId,obraId,cidadeId,nome:v('i-f-nm'),cpf:v('i-f-cp'),funcao:v('i-f-fn'),cbo:v('i-f-cb'),setor:v('i-f-st'),matricula:v('i-f-mat'),dataAdm:v('i-f-dt'),asoEmissao,asoDate,asoTipo};
   }
   if(t==='texto'){const cargos=getChecked('tCgChk');return{id:v('tid'),titulo:v('i-t-ti'),conteudo:v('i-t-co'),categoria:getTxtCategoria(),cargosVinculados:cargos,validade:v('i-t-val')};}
   if(t==='material')return{id:v('mid'),nome:v('i-m-nm'),ca:v('i-m-ca'),tipo:document.getElementById('i-m-tp').value,unidade:v('i-m-un'),estoque:parseInt(v('i-m-es'))||0,vencimentoCa:v('i-m-vc')};
@@ -3215,7 +3235,7 @@ function autoAsoDate(){
   const diaStr=String(alvo.getDate()).padStart(2,'0');
   document.getElementById('i-f-aso-date').value=alvo.getFullYear()+'-'+mesStr+'-'+diaStr;
 }
-function editFunc(x){v('fid',x.id);document.getElementById('i-f-ep').value=x.empresaId||'';popFuncVinculos(true);document.getElementById('i-f-fl').value=x.filialId||'';document.getElementById('i-f-ob').value=x.obraId||'';document.getElementById('i-f-cd').value=x.cidadeId||'';v('i-f-nm',x.nome||'');v('i-f-cp',x.cpf||'');v('i-f-fn',x.funcao||'');v('i-f-cb',x.cbo||'');v('i-f-st',x.setor||'');v('i-f-mat',x.matricula||'');v('i-f-dt',x.dataAdm||'');v('i-f-aso-date',x.asoDate||'');document.getElementById('i-f-aso-tipo').value=x.asoTipo||'';autoFillCBO();openM('mdl-f');}
+function editFunc(x){v('fid',x.id);document.getElementById('i-f-ep').value=x.empresaId||'';popFuncVinculos(true);document.getElementById('i-f-fl').value=x.filialId||'';document.getElementById('i-f-ob').value=x.obraId||'';document.getElementById('i-f-cd').value=x.cidadeId||'';v('i-f-nm',x.nome||'');v('i-f-cp',x.cpf||'');v('i-f-fn',x.funcao||'');v('i-f-cb',x.cbo||'');v('i-f-st',x.setor||'');v('i-f-mat',x.matricula||'');v('i-f-dt',x.dataAdm||'');v('i-f-aso-emissao',x.asoEmissao||'');v('i-f-aso-date',x.asoDate||'');document.getElementById('i-f-aso-tipo').value=x.asoTipo||'';autoFillCBO();openM('mdl-f');}
 
 function autoFillCBO(){
   const sel=document.getElementById('i-f-fn');
