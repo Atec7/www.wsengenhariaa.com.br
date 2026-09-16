@@ -255,6 +255,11 @@ hr.dv{border:none;border-top:1px solid var(--bd);margin:18px 0}
 .aprov-chip.active{border-color:currentColor}
 .aprov-inp{padding:6px 8px;font-size:12px;border:1px solid var(--bd);border-radius:6px;background:var(--sf);color:var(--tp);font-family:'DM Sans',sans-serif}
 [id^="aprov-filtro-busca"]{flex:1;min-width:140px}
+.aprov-refresh{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+.aprov-atualizado{font-size:11px;color:var(--tm);font-weight:600;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.aprov-atualizado i{color:var(--hi)}
+.aprov-gerar{flex:0 0 auto;align-self:center}
+.aprov-gerar .btn{white-space:nowrap}
 
 </style>
 </head>
@@ -356,6 +361,22 @@ hr.dv{border:none;border-top:1px solid var(--bd);margin:18px 0}
       <div id="dash-exp-ranking" style="min-height:150px;max-height:220px;overflow-y:auto">
         <div class="es">Nenhum vencimento próximo detectado.</div>
       </div>
+    </div>
+  </div>
+  <div class="card" style="margin-bottom:16px">
+    <div class="ct">Documentos por Colaborador</div>
+    <div style="max-height:320px;overflow-y:auto">
+      <table id="dash-colab-docs" class="ot" style="margin-bottom:0;min-width:420px">
+        <thead>
+          <tr>
+            <th style="width:70%">Nome Colaborador</th>
+            <th style="width:30%">Documentos</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td colspan="2"><div class="es">Nenhum dado no período.</div></td></tr>
+        </tbody>
+      </table>
     </div>
   </div>
   <div class="card" style="margin-bottom:16px">
@@ -617,7 +638,7 @@ hr.dv{border:none;border-top:1px solid var(--bd);margin:18px 0}
 </div>
 
 <div id="aprov" class="view">
-  <div class="ph"><div><div class="pt">Aprova&ccedil;&otilde;es de Gera&ccedil;&atilde;o</div><div class="pd">Solicita&ccedil;&otilde;es de gera&ccedil;&atilde;o de documentos</div></div></div>
+  <div class="ph"><div><div class="pt">Aprova&ccedil;&otilde;es de Gera&ccedil;&atilde;o</div><div class="pd">Solicita&ccedil;&otilde;es de gera&ccedil;&atilde;o de documentos</div></div><div class="aprov-refresh"><span class="aprov-atualizado" id="aprov-atualizado"></span><button class="btn bd2" id="btn-refresh-aprov" onclick="refreshAprovacoes()"><i class="fa-solid fa-rotate"></i> Atualizar</button></div></div>
   <div class="tb" id="aprov-tabs">
     <div class="tab active" id="tab-aprov-pend" onclick="aprovTab('pend')">Para Aprovar</div>
     <div class="tab" id="tab-aprov-minhas" onclick="aprovTab('minhas')">Minhas Solicita&ccedil;&otilde;es</div>
@@ -1012,6 +1033,7 @@ let PENDING_CAT_SEL=null;
 let _replaceHistoryKey=null;
 let certCursoMap=null;
 let certCache=null;
+let COL_DOCS_MAP={};
 
 // ── INIT ────────────────────────────────────────────────────────
 function refreshNode(p){
@@ -1599,6 +1621,8 @@ function updateDashboard(){
     const empC=document.getElementById('dash-emp-chart');if(empC)empC.innerHTML='<div class="es">Nenhum dado no período.</div>';
   }
 
+  renderDashColabDocs(filtered);
+
   // Certificados por Curso (aplicar filtro)
   const certCtx=document.getElementById('dash-cert-chart');
   if(certCtx){
@@ -1618,6 +1642,80 @@ function updateDashboard(){
 
   // Resumo ASO
   renderAsoSummary(filteredFuncs);
+}
+function renderDashColabDocs(filtered){
+  const tbody=document.querySelector('#dash-colab-docs tbody');
+  if(!tbody)return;
+  COL_DOCS_MAP={};
+  if(!filtered || !filtered.length){
+    tbody.innerHTML='<tr><td colspan="2"><div class="es">Nenhum dado no período.</div></td></tr>';
+    return;
+  }
+  const byColab={};
+  filtered.forEach(h=>{
+    const ids=h.funcionarioIds||[];
+    if(!ids.length)return;
+    ids.forEach(fid=>{
+      const f=DATA.funcionarios[fid];
+      const nome=f&&f.nome?f.nome:('ID: '+fid);
+      if(!byColab[fid])byColab[fid]={nome:''};
+      byColab[fid].nome=nome;
+      COL_DOCS_MAP[fid]=(COL_DOCS_MAP[fid]||[]);
+      COL_DOCS_MAP[fid].push(h.id||('__noid__'+filtered.indexOf(h)));
+    });
+  });
+  const cols=Object.keys(byColab);
+  if(!cols.length){
+    tbody.innerHTML='<tr><td colspan="2"><div class="es">Nenhum colaborador com documentos no período.</div></td></tr>';
+    return;
+  }
+  cols.sort((a,b)=>byColab[a].nome.localeCompare(byColab[b].nome,'pt-BR'));
+  tbody.innerHTML=cols.map(fid=>{
+    const n=byColab[fid].nome;
+    const total=COL_DOCS_MAP[fid].length;
+    return `<tr>
+      <td><i class="fa-solid fa-user" style="color:var(--tm);margin-right:6px"></i>${esc(n)}</td>
+      <td style="text-align:center">
+        <button class="btn bg2" style="padding:4px 10px;font-size:11px" onclick="showColabDocs(this,'${esc(fid)}')" title="Ver documentos"><i class="fa-solid fa-paperclip"></i> ${total}</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+function colabDocCurso(h){
+  const n=(h.nome||'').toLowerCase();
+  if(h.tipo==='certificado'||n.startsWith('certificado'))return getCertCursoName(h);
+  if(h.treino)return h.treino;
+  return h.nome||'—';
+}
+function showColabDocs(btn,fid){
+  const tr=btn.closest('tr');
+  const nomeColab=tr?tr.querySelector('td').textContent.replace(/^👤\s*/,'').trim():(DATA.funcionarios[fid]&&DATA.funcionarios[fid].nome)||fid;
+  const ids=COL_DOCS_MAP[fid]||[];
+  const docs=ids.map(id=>DATA.historico[id]).filter(Boolean);
+  document.getElementById('dd-title').textContent='Documentos: '+esc(nomeColab);
+  if(!docs.length){
+    document.getElementById('dd-body').innerHTML='<div class="es">Nenhum documento para este colaborador no período.</div>';
+  }else{
+    let html=`<table style="width:100%;border-collapse:collapse;font-size:12px">
+      <tr style="background:var(--hl)"><th style="padding:6px 8px;text-align:left">Nome do Curso</th><th style="padding:6px 8px;text-align:left">Data Geração</th><th style="padding:6px 8px;text-align:left">Data Vencimento</th><th style="padding:6px 8px;text-align:left">Tipo</th></tr>`;
+    docs.slice().sort((a,b)=>(b.ts||0)-(a.ts||0)).forEach(h=>{
+      const curso=colabDocCurso(h);
+      const tipo=getDocTipo(h.nome);
+      const exp=h.expiracao?fmtData(h.expiracao):'—';
+      const now=new Date();
+      const expColor=exp!=='—'?(new Date(h.expiracao+'T23:59:59')<now?'var(--dn)':'var(--sc)'):'var(--tm)';
+      html+=`<tr style="border-bottom:1px solid var(--bd);cursor:pointer" onclick="showDashDetail('${h.id||''}')">
+        <td style="padding:6px 8px">${esc(curso)}</td>
+        <td style="padding:6px 8px">${esc(fmtData(h.data)||h.data||'—')}</td>
+        <td style="padding:6px 8px;color:${expColor};font-weight:600">${exp}</td>
+        <td style="padding:6px 8px"><span class="bdg">${esc(tipo)}</span></td>
+      </tr>`;
+    });
+    html+=`</table>
+      <div style="margin-top:12px;font-size:10px;color:var(--tm)">Clique em uma linha para ver os detalhes do documento.</div>`;
+    document.getElementById('dd-body').innerHTML=html;
+  }
+  document.getElementById('mdl-dash-detail').style.display='flex';
 }
 function showSummaryDetail(key){
   const startVal=document.getElementById('dash-date-start').value;
@@ -4813,14 +4911,15 @@ function aprovItemHtml(s,mostrarSolicitante){
   const st=statusInfo(s);
   const emi=emitidoInfo(s);
   const minha=USUARIO_ATUAL&&s.solicitanteId===USUARIO_ATUAL.id;
-  const btn=s.status==='aprovado'&&minha?'<button class="btn bs" style="flex-shrink:0" onclick="event.stopPropagation();baixarAprovado(\''+s.id+'\')"><i class="fa-solid fa-download"></i> Gerar</button>':'';
+  const btn=s.status==='aprovado'&&minha?'<button class="btn bs" onclick="event.stopPropagation();baixarAprovado(\''+s.id+'\')"><i class="fa-solid fa-download"></i> Gerar</button>':'';
   const sub=(mostrarSolicitante?'Solicitado por '+esc(s.solicitanteNome||'?')+' · ':'')+fmtDT(s.criadoEm);
   return'<div class="aprov-item '+st.cls+'" onclick="openAprovModal(\''+s.id+'\')">'+
+    (btn?'<div class="aprov-gerar">'+btn+'</div>':'')+
     '<div style="flex:1;min-width:0"><div class="ai-titulo">'+esc(s.telaNome||s.tela)+'</div>'+
     '<div class="ai-sub">'+sub+'</div>'+
     '<div class="ai-status"><i class="fa-solid '+st.ico+'"></i> '+st.txt+'</div>'+
     (emi?'<div class="ai-status"><i class="fa-solid '+emi.ico+'"></i> '+emi.txt+'</div>':'')+
-    '</div></div>'+btn+'</div>';
+    '</div></div>';
 }
 window.aprovTab=function(t){
   APROV_TAB=t;
@@ -4908,7 +5007,21 @@ function renderAprovacoes(){
   minhas=minhas.filter(s=>casaBuscaAprov(s,fm.busca)).sort((a,b)=>(b.criadoEm||0)-(a.criadoEm||0));
   const lm=document.getElementById('aprov-lista-minhas');
   lm.innerHTML=minhas.length?minhas.map(s=>aprovItemHtml(s,false)).join(''):(totalMinhas?'<div class="es" style="padding:18px">Nenhuma solicita&ccedil;&atilde;o encontrada com os filtros atuais.</div>':'<div class="es" style="padding:18px">Voc&ecirc; n&atilde;o enviou solicita&ccedil;&otilde;es.</div>');
+  setAprovAtualizado();
 }
+function setAprovAtualizado(){
+  const el=document.getElementById('aprov-atualizado');
+  if(!el)return;
+  el.innerHTML='<i class="fa-solid fa-clock"></i> Atualizado '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+}
+window.refreshAprovacoes=function(){
+  const btn=document.getElementById('btn-refresh-aprov');
+  if(btn)btn.disabled=true;
+  refreshNode('aprovacoes').then(()=>{
+    if(window.renderAprovacoes)renderAprovacoes();
+    setAprovAtualizado();
+  }).catch(e=>alert('Erro ao atualizar: '+e.message)).finally(()=>{if(btn)btn.disabled=false;});
+};
 window.openAprovModal=function(id){
   const s=(DATA.aprovacoes||{})[id];
   if(!s)return;
