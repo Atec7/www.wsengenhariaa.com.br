@@ -1318,6 +1318,34 @@ function dashFuncNames(funcionarioIds){
     return f?f.nome:'ID: '+fid;
   });
 }
+function nameOfGlobal(col,id){
+  if(!id)return '';
+  const s=String(id).trim();
+  const it=DATA[col]&&DATA[col][s]?DATA[col][s]:toArr(DATA[col]).find(c=>String(c.id||'').trim()===s);
+  return it?(it.nome||''):'';
+}
+function colabInfoRows(f){
+  const cargo=resolveCargo(f&&f.funcao);
+  const emp=resolveEmp(f&&f.empresaId);
+  return [
+    ['Matrícula',f?f.matricula:''],
+    ['CPF',f?f.cpf:''],
+    ['Cargo',cargo?cargo.nome:(f&&f.funcao)||''],
+    ['CBO',f?f.cbo:''],
+    ['Setor',f?f.setor:''],
+    ['Empresa',emp?emp.nome:nameOfGlobal('empresas',f&&f.empresaId)],
+    ['Filial',nameOfGlobal('filiais',f&&f.filialId)],
+    ['Obra',nameOfGlobal('obras',f&&f.obraId)],
+    ['Cidade',nameOfGlobal('cidades',f&&f.cidadeId)],
+    ['Admissão',f&&f.dataAdm?fmtData(f.dataAdm):'']
+  ];
+}
+function colabInfoHTML(f){
+  const rows=colabInfoRows(f);
+  return `<div style="display:flex;flex-wrap:wrap;gap:6px 16px;background:var(--hl);border:1px solid var(--bd);border-radius:6px;padding:8px 12px;margin-bottom:10px;font-size:11px">
+    ${rows.map(([k,v])=>{const val=v==null||String(v).trim()===''?'—':String(v).trim();return`<span style="white-space:nowrap"><strong style="color:var(--ts)">${k}:</strong> ${esc(val)}</span>`;}).join('')}
+  </div>`;
+}
 function showIndicatorDetail(type){
   const startVal=document.getElementById('dash-date-start').value;
   const endVal=document.getElementById('dash-date-end').value;
@@ -1678,7 +1706,7 @@ function renderDashColabDocs(filtered){
     const contaAso=f&&(f.asoDate||f.asoEmissao||f.asoTipo)?1:0;
     const totalComAso=total+contaAso;
     return `<tr>
-      <td><i class="fa-solid fa-user" style="color:var(--tm);margin-right:6px"></i>${esc(n)}</td>
+      <td style="font-size:12.5px"><i class="fa-solid fa-user" style="color:var(--tm);margin-right:6px"></i>${esc(n)}</td>
       <td style="text-align:center">
         <button class="btn bg2" style="padding:4px 10px;font-size:11px" onclick="showColabDocs(this,'${esc(fid)}')" title="Ver documentos"><i class="fa-solid fa-paperclip"></i> ${totalComAso}</button>
       </td>
@@ -1692,17 +1720,17 @@ function colabDocCurso(h){
   return h.nome||'—';
 }
 function showColabDocs(btn,fid){
-  const tr=btn.closest('tr');
-  const nomeColab=tr?tr.querySelector('td').textContent.replace(/^👤\s*/,'').trim():(DATA.funcionarios[fid]&&DATA.funcionarios[fid].nome)||fid;
+  const nomeColab=(DATA.funcionarios[fid]&&DATA.funcionarios[fid].nome)||fid;
   const func=DATA.funcionarios[fid]||null;
   const ids=COL_DOCS_MAP[fid]||[];
   const docs=ids.map(id=>DATA.historico[id]).filter(Boolean);
   const temAso=func&&(func.asoDate||func.asoEmissao||func.asoTipo);
-  document.getElementById('dd-title').textContent='Documentos: '+esc(nomeColab);
+  document.getElementById('dd-title').textContent='Documentos: '+nomeColab;
+  const headInfo=colabInfoHTML(func);
   if(!docs.length&&!temAso){
-    document.getElementById('dd-body').innerHTML='<div class="es">Nenhum documento para este colaborador no período.</div>';
+    document.getElementById('dd-body').innerHTML=headInfo+'<div class="es">Nenhum documento para este colaborador no período.</div>';
   }else{
-    let html=`<table style="width:100%;border-collapse:collapse;font-size:12px">
+    let html=headInfo+`<table style="width:100%;border-collapse:collapse;font-size:12px">
       <tr style="background:var(--hl)"><th style="padding:6px 8px;text-align:left">Nome do Curso</th><th style="padding:6px 8px;text-align:left">Data Geração</th><th style="padding:6px 8px;text-align:left">Data Vencimento</th><th style="padding:6px 8px;text-align:left">Tipo</th></tr>`;
     docs.slice().sort((a,b)=>(b.ts||0)-(a.ts||0)).forEach(h=>{
       const curso=colabDocCurso(h);
