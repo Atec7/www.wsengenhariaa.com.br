@@ -741,12 +741,13 @@ button.danger:hover { background: #c82333; }
     </div>
 </div>
 
+<script src="ws-data.js"></script>
 <script type="module">
   // Importações do Firebase
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
 import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-analytics.js";
-import { getDatabase, ref, push, set, update, remove, onValue, get } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-database.js";
+import { getDatabase, ref, push, set, update, remove, onValue, get, query, orderByChild, startAt, limitToLast, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-database.js";
 
 // Config Firebase
 const firebaseConfig = {
@@ -765,6 +766,20 @@ const IMGBB_KEY = "95bb16ee776d7e20f26857cec98bd372";
 const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
 const db = getDatabase(app);
+
+const wsAdapter = {
+    once: (p) => get(ref(db, p)),
+    set: (p, v) => set(ref(db, p), v),
+    update: (p, v) => update(ref(db, p), v),
+    remove: (p) => remove(ref(db, p)),
+    push: (p, v) => { const r = push(ref(db, p), v); return { key: r.key }; },
+    orderBy: (p, child, start, limit) => {
+        let q = query(ref(db, p), orderByChild(child), startAt(start));
+        if (limit) q = query(q, limitToLast(limit));
+        return get(q);
+    }
+};
+WS_DATA.useAdapter(wsAdapter, { timestamp: serverTimestamp() });
 
 let empresasData = {};
 let obrasData = {};
@@ -842,22 +857,13 @@ async function uploadImageToImgBB(base64Payload){
 }
 
 function setupFirebaseListener(node, dataObject, renderFunc){
-    onValue(ref(db, node), (snapshot) => {
-        Object.keys(dataObject).forEach(key => delete dataObject[key]);
-        if (snapshot.exists()) {
-            const data = snapshot.val();
-            Object.keys(data).forEach(key => {
-                data[key].id = key; 
-            });
-            Object.assign(dataObject, data);
-        }
+    WS_DATA.refreshNode(node).then(()=>{
         renderFunc();
         if (node === 'empresas') {
             renderAlunosCheckboxForGeracao();
         }
-    }, (error) => {
+    }).catch((error) => {
         console.error(`Erro ao buscar dados do nó ${node}:`, error);
-        alert(`Não foi possível conectar ao banco de dados para o nó '${node}'.`);
     });
 }
 function getArrayFromData(dataObject) {
@@ -865,7 +871,7 @@ function getArrayFromData(dataObject) {
 }
 async function updateItem(node, id, patch){
     try {
-        await update(ref(db, `${node}/${id}`), patch);
+        await WS_DATA.update(node, id, patch);
         alert("Atualizado com sucesso! (A tabela será recarregada)");
     } catch(e) {
         console.error("Erro ao atualizar item:", e);
@@ -875,7 +881,7 @@ async function updateItem(node, id, patch){
 async function removeItem(node, id){
     if (!confirm(`Tem certeza que deseja excluir este item?`)) return;
     try {
-        await remove(ref(db, `${node}/${id}`));
+        await WS_DATA.remove(node, id);
         alert("Excluído com sucesso!");
     } catch(e) {
         console.error("Erro ao excluir item:", e);
@@ -896,7 +902,7 @@ function renderEmpresas(){
 
     el("tabelaEmpresas").innerHTML =
         `<tr><th>Empresa</th><th>Cidade</th><th>Certificador</th><th>Ações</th></tr>`+
-        empresas.map(e=>`<tr>
+        WS_DATA.pag.slice(empresas,'cemps',120).map(e=>`<tr>
             <td>${e.nome}</td>
             <td>${e.cidade||"-"}</td>
             <td>${e.certificadorNome||"-"}</td>
@@ -904,7 +910,8 @@ function renderEmpresas(){
                 <button class="secondary" onclick="window.openEditModal('empresa', '${e.id}')">Editar</button>
                 <button class="danger" onclick="window.deleteEmpresa('${e.id}')">Excluir</button>
             </td>
-        </tr>`).join("");
+        </tr>`).join("")+
+        (empresas.length>WS_DATA.pag.count(empresas,'cemps',120)?'<tr><td colspan="4" style="text-align:center;padding:10px">'+WS_DATA.pagBtn(empresas.length,WS_DATA.pag.count(empresas,'cemps',120),'cemps',120,'renderEmpresas()')+'</td></tr>':'');
 
     const todasEmpresas = getArrayFromData(empresasData).filter(e => empresaPermitidaCert(e.id)).sort((a,b)=>(a.nome||'').localeCompare(b.nome||'', 'pt-BR'));
     const empresaOptions = todasEmpresas.map(e=>`<option value="${e.id}">${e.nome}</option>`).join("");
@@ -935,7 +942,7 @@ function renderAlunos(){
             <th style="width:40px;"><input type="checkbox" id="chkAlunosMaster"></th>
             <th>Nome</th><th>CPF</th><th>Matrícula</th><th>Empresa Vínculo</th><th>Ações</th>
         </tr>`+
-        alunos.map(a=>{
+        WS_DATA.pag.slice(alunos,'calunos',120).map(a=>{
             const empresaNome = a.empresaVinculoId ? (empresasData[a.empresaVinculoId]?.nome || 'Empresa removida') : 'N/A';
             return `<tr>
                 <td style="text-align:center;">
@@ -947,7 +954,8 @@ function renderAlunos(){
                     <button class="danger" onclick="window.deleteAluno('${a.id}')">Excluir</button>
                 </td>
             </tr>`;
-        }).join("");
+        }).join("")+
+        (alunos.length>WS_DATA.pag.count(alunos,'calunos',120)?'<tr><td colspan="6" style="text-align:center;padding:10px">'+WS_DATA.pagBtn(alunos.length,WS_DATA.pag.count(alunos,'calunos',120),'calunos',120,'renderAlunos()')+'</td></tr>':'');
 
     const master = el("chkAlunosMaster");
     if (master) {
@@ -1027,13 +1035,14 @@ function renderCursos(){
     const cursos = getArrayFromData(cursosData).sort((a,b)=>(a.nome||'').localeCompare(b.nome||'', 'pt-BR'));
     el("tabelaCursos").innerHTML =
         `<tr><th>Curso</th><th>Carga</th><th>Ações</th></tr>`+
-        cursos.map(c=>`<tr>
+        WS_DATA.pag.slice(cursos,'ccursos',120).map(c=>`<tr>
             <td>${c.logoCurso ? `<img src="${c.logoCurso}" class="curso-logo-tabela" alt="Logo do curso">` : ''}${c.nome}</td><td>${c.carga}</td>
             <td class="actions">
                 <button class="secondary" onclick="window.openEditModal('curso', '${c.id}')">Editar</button>
                 <button class="danger" onclick="window.deleteCurso('${c.id}')">Excluir</button>
             </td>
-        </tr>`).join("");
+        </tr>`).join("")+
+        (cursos.length>WS_DATA.pag.count(cursos,'ccursos',120)?'<tr><td colspan="3" style="text-align:center;padding:10px">'+WS_DATA.pagBtn(cursos.length,WS_DATA.pag.count(cursos,'ccursos',120),'ccursos',120,'renderCursos()')+'</td></tr>':'');
     
     courseSelectionOrder = [];
 
@@ -1372,7 +1381,7 @@ function renderCertificadosGerados(){
     const certs = getArrayFromData(certificadosGeradosData).sort((a,b) => new Date(b.dataGeracao) - new Date(a.dataGeracao));
     el("tabelaCertificadosGerados").innerHTML =
         `<tr><th>ID Aluno</th><th>Curso</th><th>Data Evento</th><th>Data Geração</th><th>Vencimento</th><th>Ações</th></tr>`+
-        certs.map(c=>{
+        WS_DATA.pag.slice(certs,'ccerts',120).map(c=>{
             const exp = c.expiracao ? fmtDateBR(c.expiracao) : 'N/A';
             const hoje = new Date();
             const vence = c.expiracao ? new Date(c.expiracao + "T23:59:59") : null;
@@ -1388,7 +1397,8 @@ function renderCertificadosGerados(){
                 <button class="danger" onclick="window.deleteCertificado('${c.id}')">Excluir</button>
             </td>
         </tr>`;
-        }).join("");
+        }).join("")+
+        (certs.length>WS_DATA.pag.count(certs,'ccerts',120)?'<tr><td colspan="6" style="text-align:center;padding:10px">'+WS_DATA.pagBtn(certs.length,WS_DATA.pag.count(certs,'ccerts',120),'ccerts',120,'renderCertificadosGerados()')+'</td></tr>':'');
 }
 
 function openModal(title, bodyHTML, saveHandler) {
@@ -1893,6 +1903,7 @@ async function gerarCertificados(){
                 dataInicio: dataInicio, dataFim: dataFim,
                 dataInicioBR: dataInicioBR, dataFimBR: dataFimBR,
                 dataGeracao: new Date().toISOString().slice(0, 10),
+                ts: Date.now(),
                 expiracao: calcExpiracao(dataFim, curso.validade)
             };
 
@@ -1938,6 +1949,14 @@ async function gerarCertificados(){
     try {
         await update(ref(db), updates);
 
+        Object.keys(updates).forEach(up => {
+            if (up.indexOf('certificadosGerados/') === 0) {
+                const ck = up.split('/')[1];
+                certificadosGeradosData[ck] = Object.assign({ id: ck }, updates[up]);
+            }
+        });
+        await WS_DATA.advanceLocalMeta('certificadosGerados');
+
         const historyData = new Date().toLocaleDateString('pt-BR', { hour: '2-digit', minute: '2-digit' });
         const historyTs = Date.now();
         const funcIds = selecionadosAlunos.map(a => a.id);
@@ -1956,6 +1975,8 @@ async function gerarCertificados(){
                 qtd: selecionadosAlunos.length
             });
         });
+
+        await WS_DATA.advanceLocalMeta('historico');
 
         if(!REPLAY_MODE) alert(`clique em "OK" Para liberar a visualização de ${certCount} certificado(s). Clique em "Baixar PDF".`);
         printArea.style.display="flex";
@@ -2175,7 +2196,7 @@ window.deleteCertificado = (id) => {
 window.clearAllCertificados = async () => {
     if (!confirm("Tem certeza que deseja apagar TODOS os certificados gerados?")) return;
     try { 
-        await remove(ref(db, 'certificadosGerados')); 
+        await WS_DATA.removeAll('certificadosGerados'); 
         alert("Todos os certificados gerados foram removidos.");
         el("printAreaGerados").style.display = "none";
         el("printAreaGerados").innerHTML = "";
@@ -2196,10 +2217,13 @@ window.importJSON = async (file) => {
     r.onload=async()=>{ 
         try{
             const data=JSON.parse(r.result);
-            if(data.empresas) await set(ref(db, 'empresas'), data.empresas);
-            if(data.alunos) await set(ref(db, 'alunos'), data.alunos);
-            if(data.cursos) await set(ref(db, 'cursos'), data.cursos);
-            if(data.certificadosGerados) await set(ref(db, 'certificadosGerados'), data.certificadosGerados); 
+            const nodes = ['empresas','alunos','cursos','certificadosGerados'];
+            for(const n of nodes){
+                if(data[n]){
+                    await set(ref(db, n), data[n]);
+                    await WS_DATA.advanceLocalMeta(n);
+                }
+            }
             alert("Importação concluída. Dados carregados do Firebase.");
         }catch(e){ 
             console.error("Erro na importação:", e);
@@ -2212,6 +2236,8 @@ window.clearAllData = async () => {
     if (!confirm("AVISO CRÍTICO: Esta ação irá APAGAR TODOS os dados (Empresas, Alunos, Cursos e Certificados Gerados) do Firebase. Tem certeza?")) return;
     try { 
         await remove(ref(db)); 
+        const paths = ['empresas','alunos','cursos','obras','cidades','filiais','certificadosGerados'];
+        for(const n of paths) await WS_DATA.advanceLocalMeta(n);
         alert("Todos os dados foram apagados do Firebase."); 
         el("printArea").style.display="none";
         el("printArea").innerHTML="";
@@ -2254,7 +2280,7 @@ window.saveEmpresa = async () => {
         };
 
         Object.keys(novaEmpresa).forEach(key => (novaEmpresa[key] === null) && delete novaEmpresa[key]);
-        await push(ref(db, 'empresas'), novaEmpresa); 
+        await WS_DATA.push('empresas', novaEmpresa); 
         alert("Empresa salva com sucesso!" + (usouBase64 ? "\n\nObs.: Algumas imagens foram salvas em formato base64 (o serviço de hospedagem de imagens não respondeu). Elas continuarão funcionando normalmente." : ""));
         window.clearEmpresaForm(); 
     } catch(e) {
@@ -2286,7 +2312,7 @@ window.saveAluno = async () => {
     }
 
     try { 
-        await push(ref(db, 'alunos'), { nome, cpf, matricula, empresaVinculoId }); 
+        await WS_DATA.push('alunos', { nome, cpf, matricula, empresaVinculoId }); 
         alert("Aluno salvo!"); 
         window.clearAlunoForm(); 
     } catch(e) { 
@@ -2300,7 +2326,7 @@ window.clearAlunoForm = () => {
 }
 window.clearAllAlunos = async () => {
     if (!confirm("Tem certeza que deseja apagar TODOS os alunos?")) return;
-    try { await remove(ref(db, 'alunos')); alert("Todos os alunos foram removidos."); } catch(e) { console.error("Erro:", e); alert("Erro ao apagar alunos."); }
+    try { await WS_DATA.removeAll('alunos'); alert("Todos os alunos foram removidos."); } catch(e) { console.error("Erro:", e); alert("Erro ao apagar alunos."); }
 }
 
 window.saveCurso = async () => {
@@ -2320,7 +2346,7 @@ window.saveCurso = async () => {
     const validade = el('cursoValidade').value;
 
     try { 
-        await push(ref(db, 'cursos'), { nome, carga, validade, mensagem, conteudo, logoCurso: logoCursoUrl }); 
+        await WS_DATA.push('cursos', { nome, carga, validade, mensagem, conteudo, logoCurso: logoCursoUrl }); 
         alert("Curso salvo!"); 
         window.clearCursoForm(); 
     } catch(e) { 
@@ -2335,7 +2361,7 @@ window.clearCursoForm = () => {
 }
 window.clearAllCursos = async () => {
     if (!confirm("Tem certeza que deseja apagar TODOS os cursos?")) return;
-    try { await remove(ref(db, 'cursos')); alert("Todos os cursos foram removidos."); } catch(e) { console.error("Erro:", e); alert("Erro ao apagar cursos."); }
+    try { await WS_DATA.removeAll('cursos'); alert("Todos os cursos foram removidos."); } catch(e) { console.error("Erro:", e); alert("Erro ao apagar cursos."); }
 }
 
 async function transferirAlunosEmMassa(){
@@ -2367,6 +2393,12 @@ async function transferirAlunosEmMassa(){
 
     try {
         await update(ref(db), updates);
+        Object.keys(updates).forEach(up => {
+            const parts = up.split('/');
+            const aid = parts[1];
+            if (alunosData[aid]) alunosData[aid].empresaVinculoId = destinoId;
+        });
+        await WS_DATA.advanceLocalMeta('alunos');
         alert("Alunos transferidos com sucesso.");
     } catch(e) {
         console.error("Erro na transferência em massa:", e);
@@ -2649,13 +2681,26 @@ window.buildListaPresenca = ({curso, empresa, dataInicioBR, dataFimBR, alunos}) 
 
 window.addEventListener('DOMContentLoaded', async () => {
     await carregarUsuarioCert();
-    setupFirebaseListener('empresas', empresasData, renderEmpresas);
-    setupFirebaseListener('alunos', alunosData, renderAlunos);
-    setupFirebaseListener('cursos', cursosData, renderCursos);
-    setupFirebaseListener('obras', obrasData, () => {});
-    setupFirebaseListener('cidades', cidadesData, () => {});
-    setupFirebaseListener('filiais', filiaisData, () => {});
-    setupFirebaseListener('certificadosGerados', certificadosGeradosData, renderCertificadosGerados); 
+    WS_DATA.init({
+        entries: [
+            { path: 'empresas', target: empresasData, key: null },
+            { path: 'alunos', target: alunosData, key: null },
+            { path: 'cursos', target: cursosData, key: null },
+            { path: 'obras', target: obrasData, key: null },
+            { path: 'cidades', target: cidadesData, key: null },
+            { path: 'filiais', target: filiaisData, key: null },
+            { path: 'certificadosGerados', target: certificadosGeradosData, key: null, tsKey: 'ts' }
+        ],
+        onUpdated: function () {
+            renderEmpresas(); renderAlunos(); renderCursos(); renderCertificadosGerados();
+            renderAlunosCheckboxForGeracao();
+        }
+    });
+    WS_DATA.injectRefreshButton({ label: 'Atualizar dados' });
+    window.renderEmpresas = renderEmpresas;
+    window.renderAlunos = renderAlunos;
+    window.renderCursos = renderCursos;
+    window.renderCertificadosGerados = renderCertificadosGerados; 
 
     setupNavigation();
 

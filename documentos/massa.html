@@ -278,6 +278,7 @@ hr.dv{border:none;border-top:1px solid var(--bd);margin:18px 0}
   </div>
 </div>
 
+<script src="ws-data.js"></script>
 <script>
 // ── FIREBASE ────────────────────────────────────────────────────
 const FIREBASE_CONFIG={apiKey:"AIzaSyBehqlRiCiDniyPi3bjHtkH7q2-Px-KoZc",authDomain:"cadastr-produtos-clevir.firebaseapp.com",databaseURL:"https://cadastr-produtos-clevir-default-rtdb.firebaseio.com",projectId:"cadastr-produtos-clevir",storageBucket:"cadastr-produtos-clevir.firebasestorage.app",messagingSenderId:"1028296092810",appId:"1:1028296092810:web:86859328b19c1fdf511173"};
@@ -304,16 +305,19 @@ function voltar(){
 // ── INIT ────────────────────────────────────────────────────────
 function initListeners(){
   console.log("Iniciando carregamento do Firebase...");
-  Promise.all(['empresas','funcionarios','textos','materiais','config','historico','cargos'].map(p=>
-    db.ref(p).once('value').then(snap=>{
-      const raw=snap.val()||{};const norm={};
-      Object.entries(raw).forEach(([k,v])=>{norm[k]=(typeof v==='object'&&v!==null)?{...v,id:v.id||k}:v;});
-      DATA[p]=norm;
-    }, (err) => {
-      console.error(`Erro ao ler '${p}':`, err);
-      alert(`Erro de conexão com o banco de dados: ${err.message}`);
-    }).catch(()=>{DATA[p]=DATA[p]||{};})
-  )).then(()=>{ if(window.renderAll)renderAll(); });
+  WS_DATA.useDb(db,{timestamp:firebase.database.ServerValue.TIMESTAMP});
+  WS_DATA.init({
+    entries:[
+      {path:'empresas',target:DATA,key:'empresas'},
+      {path:'funcionarios',target:DATA,key:'funcionarios'},
+      {path:'textos',target:DATA,key:'textos'},
+      {path:'materiais',target:DATA,key:'materiais'},
+      {path:'config',target:DATA,key:'config'},
+      {path:'historico',target:DATA,key:'historico',tsKey:'ts'},
+      {path:'cargos',target:DATA,key:'cargos'}
+    ],
+    onUpdated:function(){ if(window.renderAll)renderAll(); }
+  });
   const hoje=new Date().toISOString().slice(0,10);
   ['m-data','m-lista-data','m-epi-data'].forEach(id=>{const el=document.getElementById(id);if(el&&!el.value)el.value=hoje;});
 }
@@ -1421,7 +1425,7 @@ async function addVerificationOverlay(pdfBytes, docId, validationUrl) {
 }
  
 // ── START ─────────────────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded',()=>{initListeners();});
+document.addEventListener('DOMContentLoaded',()=>{initListeners();WS_DATA.injectRefreshButton({label:'Atualizar dados'});});
 </script>
 </body>
 </html>

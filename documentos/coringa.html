@@ -547,6 +547,7 @@ input[type="number"]{width:100%;padding:8px 11px;border:1px solid var(--bd);bord
   <div class="ma"><button class="btn bp" onclick="dcConfTabela()"><i class="fa-solid fa-check"></i> Inserir</button><button class="btn bg2" onclick="cls()">Cancelar</button></div>
 </div></div>
 
+<script src="ws-data.js"></script>
 <script>
 /* ═══════════════════════════════════════════════════════════════
    FIREBASE
@@ -622,13 +623,16 @@ function _setTxt(id,txt){const el=document.getElementById(id);if(el)el.textConte
 ═══════════════════════════════════════════════════════════════ */
 let _debouncePopulate=null;
 function initListeners(){
-  Promise.all(['empresas','config','coringaTextos','pessoas'].map(p=>
-    db.ref(p).once('value').then(snap=>{
-      const raw=snap.val()||{};const norm={};
-      Object.entries(raw).forEach(([k,v])=>{norm[k]=(typeof v==='object'&&v!==null)?{...v,id:v.id||k}:v;});
-      DATA[p]=norm;
-    }).catch(()=>{DATA[p]=DATA[p]||{};})
-  )).then(()=>{ populateSelects(); dcUpdatePagePreview(); });
+  WS_DATA.useDb(db,{timestamp:firebase.database.ServerValue.TIMESTAMP});
+  WS_DATA.init({
+    entries:[
+      {path:'empresas',target:DATA,key:'empresas'},
+      {path:'config',target:DATA,key:'config'},
+      {path:'coringaTextos',target:DATA,key:'coringaTextos'},
+      {path:'pessoas',target:DATA,key:'pessoas'}
+    ],
+    onUpdated:function(){ populateSelects(); dcUpdatePagePreview(); }
+  });
   const hoje=new Date().toISOString().slice(0,10);
   const dcData=document.getElementById('dc-data');
   if(dcData&&!dcData.value){
@@ -1400,7 +1404,7 @@ function dcSalvarTexto(){
   const id=document.getElementById('dc-txt-id').value;
   const key=id||uid();
   spin(true,'Salvando...');
-  db.ref('coringaTextos/'+key).set({id:key,titulo,conteudo}).then(()=>{
+  WS_DATA.write('coringaTextos',key,{id:key,titulo,conteudo}).then(()=>{
     document.getElementById('dc-txt-id').value=key;
     DATA.coringaTextos=DATA.coringaTextos||{};DATA.coringaTextos[key]={id:key,titulo,conteudo};
     spin(false);showResult('dc-results','Texto salvo com sucesso!');
@@ -1429,7 +1433,7 @@ function dcExcluirTexto(){
   if(!id){alert('Nenhum texto carregado para excluir');return;}
   if(!confirm('Excluir este texto permanentemente?'))return;
   spin(true,'Excluindo...');
-  db.ref('coringaTextos/'+id).remove().then(()=>{delete DATA.coringaTextos[id];dcNovoTexto();spin(false);showResult('dc-results','Texto excluído!');}).catch(e=>{spin(false);alert('Erro: '+e.message);});
+  WS_DATA.remove('coringaTextos',id).then(()=>{dcNovoTexto();spin(false);showResult('dc-results','Texto excluído!');}).catch(e=>{spin(false);alert('Erro: '+e.message);});
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -2214,7 +2218,7 @@ function dcRenderTabelaPDF(doc,tb,startY,m,uw){
 /* ═══════════════════════════════════════════════════════════════
    START
 ═══════════════════════════════════════════════════════════════ */
-document.addEventListener('DOMContentLoaded',()=>initListeners());
+document.addEventListener('DOMContentLoaded',()=>{initListeners();WS_DATA.injectRefreshButton({label:'Atualizar dados'});});
 </script>
 </body>
 </html>
