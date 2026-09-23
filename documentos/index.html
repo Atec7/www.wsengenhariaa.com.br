@@ -1111,7 +1111,7 @@ function initListeners(){
   const de=document.getElementById('dash-date-end');if(de&&!de.value)de.value=hoje;
   addOrcItem();
 }
-function renderAll(){WS_DATA.pag.reset();updateDashboard();renderEmps();renderCargos();renderFuncs();renderPessoas();renderTexts();renderMats();renderHistory();populateSelects();renderPool();renderCart();renderCats();renderMsd();if(USUARIO_ATUAL&&document.getElementById('usuarios-lista'))renderUsuariosLista();if(document.getElementById('aprov-lista-pend'))renderAprovacoes();if(USUARIO_ATUAL&&!USUARIO_ATUAL.mestre&&sessionStorage.getItem('ws_logado')==='1'){const usuarios=DATA.usuarios||{};const fresh=Object.values(usuarios).find(u=>u.id===USUARIO_ATUAL.id);if(fresh)aplicarPermissoes(fresh);}setTimeout(()=>fixOldCertHistory(),2000);}
+function renderAll(){WS_DATA.pag.reset();updateDashboard();renderEmps();renderCargos();renderFuncs();renderPessoas();renderTexts();renderMats();renderHistory();populateSelects();renderPool();renderCart();renderCats();renderMsd();if(USUARIO_ATUAL&&document.getElementById('usuarios-lista'))renderUsuariosLista();if(document.getElementById('aprov-lista-pend'))renderAprovacoes();if(sessionStorage.getItem('ws_logado')==='1'&&(!USUARIO_ATUAL||!USUARIO_ATUAL.mestre)){const usuarios=DATA.usuarios||{};const nomeSalvo=sessionStorage.getItem('ws_user_nome')||'';const fresh=Object.values(usuarios).find(u=>u.nome===nomeSalvo);if(fresh)aplicarPermissoes(fresh);}setTimeout(()=>fixOldCertHistory(),2000);}
 function loadCertCache(force){
   if(!force&&certCache!==null)return Promise.resolve();
   return WS_DATA.refreshNode('certificadosGerados').then(()=>{
