@@ -663,6 +663,12 @@ button.danger:hover { background: #c82333; }
                     <button id="btnGerar">1. Gerar e salvar certificados</button>
                     <button class="secondary" id="btnImprimir">2. Baixar Certificado em PDF</button>
                 </div>
+                <div class="actions">
+                    <button class="secondary" id="btnCertManual"
+                        title="Lança um certificado no sistema com os mesmos dados da geração normal, sem gerar PDF">
+                        📝 Cadastrar Certificado Manualmente
+                    </button>
+                </div>
             </div>
 
             <h3>Preview dos Certificados (A4 Paisagem)</h3>
@@ -741,59 +747,28 @@ button.danger:hover { background: #c82333; }
     </div>
 </div>
 
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 <script src="ws-data.js"></script>
-<script type="module">
-  // Importações do Firebase
-
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
-import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-analytics.js";
-import { getDatabase, ref, push, set, update, remove, onValue, get, query, orderByChild, startAt, limitToLast, serverTimestamp, enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-database.js";
-
-let _wsPersistState = () => Promise.resolve('indisponivel');
-
-// Config Firebase
-const firebaseConfig = {
-    apiKey: "AIzaSyBehqlRiCiDniyPi3bjHtkH7q2-Px-KoZc",
-    authDomain: "cadastr-produtos-clevir.firebaseapp.com",
-    databaseURL: "https://cadastr-produtos-clevir-default-rtdb.firebaseio.com",
-    projectId: "cadastr-produtos-clevir",
-    storageBucket: "cadastr-produtos-clevir.firebasestorage.app",
-    messagingSenderId: "1028296092810",
-    appId: "1:1028296092810:web:86859328b19c1fdf511173",
-    measurementId: "G-JGE4Q09NX8"
-};
+<script>
+// ── FIREBASE ────────────────────────────────────────────────────
+// Mesma pilha do index.html (SDK compat 10.12.0). Este arquivo roda num
+// iframe, ou seja no mesmo origin e no mesmo banco que a pagina pai: com o
+// SDK modular 10.7.0 eram carregadas duas copias do RTDB de versoes
+// diferentes, disputando o mesmo cache em disco. O cliente mais antigo
+// parava de sincronizar (database version mismatch) e esta tela ficava sem
+// leitura do banco. Nao usar aqui uma versao diferente da do index.html.
+const FIREBASE_CONFIG={apiKey:"AIzaSyBehqlRiCiDniyPi3bjHtkH7q2-Px-KoZc",authDomain:"cadastr-produtos-clevir.firebaseapp.com",databaseURL:"https://cadastr-produtos-clevir-default-rtdb.firebaseio.com",projectId:"cadastr-produtos-clevir",storageBucket:"cadastr-produtos-clevir.firebasestorage.app",messagingSenderId:"1028296092810",appId:"1:1028296092810:web:86859328b19c1fdf511173"};
+firebase.initializeApp(FIREBASE_CONFIG);
+const db=firebase.database();
 
 const IMGBB_KEY = "95bb16ee776d7e20f26857cec98bd372"; 
 
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
-const db = getDatabase(app);
-
 // Cache em disco: sem isto, cada abertura deste iframe baixa o node
-// 'certificadosGerados' inteiro. No SDK modular a persistencia ja vem ligada,
-// mas garantimos explicitamente e toleramos falha (outra aba com o cache maior).
-const _persist = (async () => {
-    try { await enableIndexedDbPersistence(db); return 'ativo'; }
-    catch (e) {
-        const c = e && e.code ? e.code : String(e);
-        return String(c).indexOf('failed-precondition') === 0 ? 'reduzido' : 'falhou:' + c;
-    }
-})();
-_wsPersistState = () => _persist;
-
-const wsAdapter = {
-    once: (p) => get(ref(db, p)),
-    set: (p, v) => set(ref(db, p), v),
-    update: (p, v) => update(ref(db, p), v),
-    remove: (p) => remove(ref(db, p)),
-    push: (p, v) => { const r = push(ref(db, p), v); return { key: r.key }; },
-    orderBy: (p, child, start, limit) => {
-        let q = query(ref(db, p), orderByChild(child), startAt(start));
-        if (limit) q = query(q, limitToLast(limit));
-        return get(q);
-    }
-};
-WS_DATA.useAdapter(wsAdapter, { timestamp: serverTimestamp() });
+// 'certificadosGerados' inteiro. useDb() ja chama
+// enablePersistence(['indexedDB','localstorage']) e tolera a falha esperada
+// quando a pagina pai ja esta com o cache maior (estado 'reduzido').
+WS_DATA.useDb(db,{timestamp:firebase.database.ServerValue.TIMESTAMP});
 
 let empresasData = {};
 let obrasData = {};
@@ -809,12 +784,12 @@ async function carregarUsuarioCert(){
         // depender do nome e uma leitura extra do nó 'usuarios'.
         const idSalvo = sessionStorage.getItem('ws_user_id')||'';
         if(idSalvo){
-            const snap = await get(ref(db,'usuarios/'+idSalvo));
+            const snap = await db.ref('usuarios/'+idSalvo).once('value');
             const u = snap.val();
             if(u) usuarioAtualCert = Object.assign({id:idSalvo}, u);
             return;
         }
-        const snap = await get(ref(db,'usuarios'));
+        const snap = await db.ref('usuarios').once('value');
         const usuarios = snap.val()||{};
         const achado = Object.values(usuarios).find(u=>u.nome===nomeSalvo)||null;
         if(achado) usuarioAtualCert = Object.assign({id:Object.keys(usuarios).find(k=>usuarios[k]===achado)||''}, achado);
@@ -1167,6 +1142,7 @@ function renderCourseDateSelectors() {
     courseDates.forEach((item, index) => {
         if (!item) return;
         const { courseId, curso, extraDays, start, end } = item;
+        const vencInicial = calcExpiracao(end, curso.validade);
 
         const html = `
             <div class="course-date-selector" data-course-id="${courseId}" data-extra-days="${extraDays}">
@@ -1189,10 +1165,29 @@ function renderCourseDateSelectors() {
                 <div class="info-balloon">
                     📄 Certificado: <strong>${curso.nome}</strong> — data fim prevista: <strong class="data-fim-preview-${courseId}">${fmtDateBR(end)}</strong>.
                     A data fim é calculada com base na carga horária de <strong>${curso.carga}</strong>.
+                    ${vencInicial ? `<div class="venc-preview-linha-${courseId}" style="margin-top:6px;">
+                        ⏳ Vencimento: <strong class="venc-preview-${courseId}">${fmtDateBR(vencInicial)}</strong>
+                    </div>` : ''}
                 </div>
             </div>
         `;
         container.innerHTML += html;
+    });
+
+    selectedCourseIds.forEach(courseId => {
+        const startInput = document.getElementById(`dataInicio_${courseId}`);
+        if (startInput) {
+            startInput.addEventListener('focus', (e) => {
+                previousStartDates[courseId] = e.target.value;
+            });
+            startInput.addEventListener('input', () => handleDateChange(courseId));
+        }
+        // a data de fim pode ser digitada na mao: so a previa de vencimento
+        // acompanha, sem mexer no encadeamento dos cursos
+        const endInput = document.getElementById(`dataFim_${courseId}`);
+        if (endInput) {
+            endInput.addEventListener('input', () => atualizarVencimentoPreview(courseId));
+        }
     });
 
     selectedCourseIds.forEach(courseId => {
@@ -1357,6 +1352,23 @@ function atualizarDataFim(courseId) {
             }
         }
     }
+
+    atualizarVencimentoPreview(courseId);
+}
+
+// Reflete no bloco do curso o vencimento = data de fim + validade cadastrada.
+// Usado na geracao em lote (o modal manual tem o proprio, com o mesmo calculo).
+function atualizarVencimentoPreview(courseId) {
+    const endInput = document.getElementById(`dataFim_${courseId}`);
+    const alvo = document.querySelector(`.venc-preview-${courseId}`);
+    if (!endInput || !alvo) return;
+
+    const curso = cursosData[courseId] || {};
+    const exp = endInput.value ? calcExpiracao(endInput.value, curso.validade) : null;
+    alvo.textContent = exp ? fmtDateBR(exp) : 'sem prazo de validade';
+
+    const linha = document.querySelector(`.venc-preview-linha-${courseId}`);
+    if (linha) linha.style.display = exp ? '' : 'none';
 }
 
 function recalcChainFrom(courseId) {
@@ -1927,7 +1939,7 @@ async function recalcularValidadeCurso(cursoId, opts = {}) {
 
     // 2) historico: recupera o dataFim de cada execucao e refaz o vencimento
     try {
-        const snap = await get(ref(db, 'historico'));
+        const snap = await db.ref('historico').once('value');
         const hist = snap.val() || {};
         let cert = 0;
         Object.keys(hist)
@@ -1969,7 +1981,7 @@ async function gravarLote(base, updates) {
     for (let i = 0; i < chaves.length; i += LOTE) {
         const pedaco = {};
         chaves.slice(i, i + LOTE).forEach(k => { pedaco[k] = updates[k]; });
-        await update(ref(db, base), pedaco);
+        await db.ref(base).update(pedaco);
     }
 }
 
@@ -2011,7 +2023,7 @@ async function repararValidadesPendentes() {
         if (!id || !cursosData[id] || c.curso.validade) return;
         // Curso ja tentado e sem inferencia possivel nao entra de novo: sem isso
         // ele voltava para a lista em toda emissao e forçava uma leitura
-        // completa do historico (get(ref(db,'historico'))) sem nunca resolver.
+        // completa do historico (db.ref('historico').once('value')) sem nunca resolver.
         if (_tentadosValidade.has(id)) return;
         if (inferirValidade(c.dataFim, c.expiracao) !== null) alvos.add(id);
     });
@@ -2196,7 +2208,7 @@ async function gerarCertificados(){
             printArea.innerHTML += window.buildPage1(certParaImprimir);
             printArea.innerHTML += window.buildPage2(certParaImprimir);
             
-            const newKey = push(ref(db, 'certificadosGerados')).key;
+            const newKey = db.ref('certificadosGerados').push().key;
             updates[`certificadosGerados/${newKey}`] = certData;
             certCount++;
         });
@@ -2233,7 +2245,7 @@ async function gerarCertificados(){
     reportProgress(55,'Listas de presença geradas. Registrando certificados...');
 
     try {
-        await update(ref(db), updates);
+        await db.ref().update(updates);
 
         Object.keys(updates).forEach(up => {
             if (up.indexOf('certificadosGerados/') === 0) {
@@ -2250,7 +2262,7 @@ async function gerarCertificados(){
         selectedCoursesWithDates.forEach(courseDateItem => {
             const validadeAplicada = cursoValidadeNoFim(courseDateItem.curso.id, courseDateItem.curso.validade);
             const exp = calcExpiracao(courseDateItem.dataFim, validadeAplicada);
-            push(ref(db, 'historico'), {
+            db.ref('historico').push({
                 nome: `Certificado - ${courseDateItem.curso.nome}`,
                 data: historyData,
                 ts: historyTs,
@@ -2277,6 +2289,476 @@ async function gerarCertificados(){
     }
 }
 
+// ── CADASTRO MANUAL DE CERTIFICADO (sem PDF) ────────────────────────────
+// Lança um treinamento já ocorrido com os mesmos dados da geração normal:
+// vários alunos e vários cursos de uma vez, gravando um certificado para cada
+// combinação aluno x curso, no mesmo node e com uma linha de 'historico' por
+// curso. A única diferença é não montar PDF. O PDF continua disponível
+// depois em '✅ Certificados Gerados > Ver/Editar > Baixar PDF'.
+const CERT_MANUAL_NOVO = '__novo__';
+let certManualAlunoIds = [];       // ids marcados (ou o sentinel 'digitar')
+let certManualCursoIds = [];
+let certManualDatas = {};          // curso -> {inicio, fim} já digitadas
+
+function certManualAlunosDaEmpresa(empresaId) {
+    return getArrayFromData(alunosData)
+        .filter(a => a.empresaVinculoId === empresaId)
+        .sort((a, b) => (a.nome || '').localeCompare(b.nome || '', 'pt-BR'));
+}
+function certManualListaCursos() {
+    return getArrayFromData(cursosData).sort((a, b) => (a.nome || '').localeCompare(b.nome || '', 'pt-BR'));
+}
+
+// Alunos e cursos já marcados, normalizados para o formato do certificado.
+function certManualAlunosSelecionados() {
+    const lista = [];
+    certManualAlunoIds.forEach(chave => {
+        if (chave === CERT_MANUAL_NOVO) {
+            const nome = (el('mc_alunoNome') && el('mc_alunoNome').value.trim()) || '';
+            if (!nome) return;
+            lista.push({
+                id: '', nome: nome,
+                matricula: (el('mc_alunoMatricula') && el('mc_alunoMatricula').value.trim()) || '',
+                cpf: ((el('mc_alunoCpf') && el('mc_alunoCpf').value) || '').replace(/\D/g, '')
+            });
+            return;
+        }
+        const a = alunosData[chave];
+        if (a) lista.push({ id: a.id || chave, nome: a.nome || '', matricula: a.matricula || '', cpf: a.cpf || '' });
+    });
+    return lista.sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
+}
+function certManualCursosSelecionados() {
+    const lista = [];
+    certManualCursoIds.forEach(chave => {
+        if (chave === CERT_MANUAL_NOVO) {
+            lista.push({
+                chave: chave, id: '',
+                nome: (el('mc_cursoNome') && el('mc_cursoNome').value.trim()) || 'Curso digitado no cadastro',
+                carga: (el('mc_cursoCarga') && el('mc_cursoCarga').value.trim()) || ''
+            });
+            return;
+        }
+        const c = cursosData[chave];
+        if (c) lista.push({ chave: chave, id: c.id || chave, nome: c.nome || '', carga: c.carga || '' });
+    });
+    return lista;
+}
+function certManualValidade(chave) {
+    if (chave === CERT_MANUAL_NOVO) return (el('mc_cursoValidade') && el('mc_cursoValidade').value) || 'none';
+    const c = cursosData[chave];
+    return (c && c.validade) || 'none';
+}
+
+// Datas: reaproveita as datas já escolhidas para aquele curso na tela de
+// geração; senão hoje, com o fim estendido pela carga horária (mesma regra
+// dos seletores de data da geração).
+function certManualDatasPadrao(chave) {
+    const salvo = certManualDatas[chave];
+    if (salvo) return salvo;
+    if (chave !== CERT_MANUAL_NOVO) {
+        const di = el('dataInicio_' + chave), df = el('dataFim_' + chave);
+        if (di && di.value && df && df.value) return { inicio: di.value, fim: df.value };
+    }
+    const hoje = new Date().toISOString().slice(0, 10);
+    let fim = hoje;
+    const horas = chave === CERT_MANUAL_NOVO ? 0 : getCourseHours(chave);
+    const extra = horas > 0 ? Math.ceil(horas / 8) - 1 : 0;
+    if (extra > 0) {
+        const d = new Date(hoje + 'T00:00:00');
+        d.setDate(d.getDate() + extra);
+        fim = d.toISOString().slice(0, 10);
+    }
+    return { inicio: hoje, fim: fim };
+}
+
+// Antes de redesenhar as datas, guarda o que já foi digitado: sem isso,
+// marcar mais um curso apagaria as datas dos anteriores.
+function certManualColetarDatas() {
+    const box = el('mc_datas');
+    if (!box) return;
+    box.querySelectorAll('[data-curso]').forEach(linha => {
+        const di = linha.querySelector('.mc_di'), df = linha.querySelector('.mc_df');
+        if (di && df) certManualDatas[linha.dataset.curso] = { inicio: di.value, fim: df.value };
+    });
+}
+
+function certManualRenderAlunos() {
+    const box = el('mc_listaAlunos');
+    if (!box) return;
+    const termo = (el('mc_buscaAluno').value || '').trim().toLowerCase();
+    const todos = certManualAlunosDaEmpresa(el('mc_empresa').value);
+    const filtrados = todos.filter(a => !termo ||
+        (a.nome || '').toLowerCase().includes(termo) ||
+        (a.matricula || '').toLowerCase().includes(termo));
+    const on = (v) => certManualAlunoIds.includes(v) ? ' checked' : '';
+    box.innerHTML =
+        `<label><input type="checkbox" data-chave="${CERT_MANUAL_NOVO}"${on(CERT_MANUAL_NOVO)}>` +
+        `<span>✏️ Registrar aluno que não está na lista (digitar)</span></label>` +
+        (filtrados.length
+            ? filtrados.map(a =>
+                `<label><input type="checkbox" data-chave="${esc(a.id)}"${on(a.id)}>` +
+                `<span>${esc(a.nome)}${a.matricula ? ' — ' + esc(a.matricula) : ''}</span></label>`).join('')
+            : `<p style="color:var(--muted);margin:0">${todos.length
+                ? 'Nenhum aluno encontrado na busca.'
+                : 'Nenhum aluno vinculado a esta empresa. Use a opção acima para digitar o nome.'}</p>`);
+    box.querySelectorAll('input[type=checkbox]').forEach(inp => {
+        inp.addEventListener('change', () => {
+            const chave = inp.dataset.chave;
+            certManualAlunoIds = inp.checked
+                ? certManualAlunoIds.concat([chave])
+                : certManualAlunoIds.filter(x => x !== chave);
+            certManualAlternarCampos();
+        });
+    });
+}
+
+function certManualRenderCursos() {
+    const box = el('mc_listaCursos');
+    if (!box) return;
+    const termo = (el('mc_buscaCurso').value || '').trim().toLowerCase();
+    const todos = certManualListaCursos();
+    const filtrados = todos.filter(c => !termo ||
+        (c.nome || '').toLowerCase().includes(termo) ||
+        (c.carga || '').toLowerCase().includes(termo));
+    const on = (v) => certManualCursoIds.includes(v) ? ' checked' : '';
+    box.innerHTML =
+        `<label><input type="checkbox" data-chave="${CERT_MANUAL_NOVO}"${on(CERT_MANUAL_NOVO)}>` +
+        `<span>✏️ Registrar curso que não está na lista (digitar)</span></label>` +
+        (filtrados.length
+            ? filtrados.map(c =>
+                `<label><input type="checkbox" data-chave="${esc(c.id)}"${on(c.id)}>` +
+                `<span>${esc(c.nome)}${c.carga ? ' — ' + esc(c.carga) : ''}</span></label>`).join('')
+            : `<p style="color:var(--muted);margin:0">${todos.length
+                ? 'Nenhum curso encontrado na busca.'
+                : 'Nenhum curso cadastrado. Use a opção acima para digitar o nome.'}</p>`);
+    box.querySelectorAll('input[type=checkbox]').forEach(inp => {
+        inp.addEventListener('change', () => {
+            const chave = inp.dataset.chave;
+            certManualCursoIds = inp.checked
+                ? certManualCursoIds.concat([chave])
+                : certManualCursoIds.filter(x => x !== chave);
+            // alternarCampos recolhe as datas digitadas antes de redesenhar.
+            certManualAlternarCampos();
+        });
+    });
+}
+
+function certManualRenderDatas() {
+    const box = el('mc_datas');
+    if (!box) return;
+    const cursos = certManualCursosSelecionados();
+    if (!cursos.length) {
+        box.innerHTML = '<p style="color:var(--muted)">Selecione um ou mais cursos para definir as datas.</p>';
+        certManualResumo();
+        return;
+    }
+    box.innerHTML =
+        '<div class="actions" style="margin-top:0;justify-content:space-between;align-items:center;">' +
+        '<b style="font-size:14px">Datas por curso</b>' +
+        (cursos.length > 1
+            ? '<button type="button" class="secondary" id="mcCopiarDatas" style="margin-top:0">' +
+              'Copiar as datas do 1º curso para todos</button>'
+            : '') +
+        '</div>' +
+        cursos.map((c, i) => {
+            const d = certManualDatasPadrao(c.chave);
+            return `<div data-curso="${esc(c.chave)}" style="border:1px solid var(--border);border-radius:6px;padding:10px 12px;margin-bottom:10px;">` +
+                `<div style="font-weight:600;font-size:14px">${esc(c.nome)}` +
+                (c.carga ? ` <span style="font-weight:400;color:var(--muted)">— ${esc(c.carga)}</span>` : '') +
+                `</div>` +
+                '<div class="grid">' +
+                `<div class="col-6"><label>Data de início</label><input type="date" class="mc_di" value="${d.inicio}"></div>` +
+                `<div class="col-6"><label>Data de fim</label><input type="date" class="mc_df" value="${d.fim}"></div>` +
+                '</div>' +
+                `<div class="mc_venc" style="margin-top:8px;font-size:12px;color:var(--muted)"></div>` +
+                `</div>`;
+        }).join('');
+
+    const btnCopiar = el('mcCopiarDatas');
+    if (btnCopiar) {
+        btnCopiar.onclick = () => {
+            certManualColetarDatas();
+            const primeira = certManualDatas[document.querySelector('#mc_datas [data-curso]').dataset.curso];
+            if (!primeira) return;
+            certManualCursosSelecionados().forEach(c => { certManualDatas[c.chave] = { inicio: primeira.inicio, fim: primeira.fim }; });
+            certManualRenderDatas();
+        };
+    }
+    box.querySelectorAll('.mc_di, .mc_df').forEach(inp => {
+        inp.addEventListener('change', () => { certManualColetarDatas(); certManualAtualizarVencimentos(); });
+    });
+    certManualAtualizarVencimentos();
+}
+
+// Vencimento de cada linha de data, recalculado sem redesenhar o formulário
+// (o redesenho apagaria o que está sendo digitado).
+function certManualAtualizarVencimentos() {
+    const box = el('mc_datas');
+    if (box) {
+        box.querySelectorAll('[data-curso]').forEach(linha => {
+            const alvo = linha.querySelector('.mc_venc');
+            if (!alvo) return;
+            const df = linha.querySelector('.mc_df');
+            const validade = certManualValidade(linha.dataset.curso);
+            const exp = df && df.value ? calcExpiracao(df.value, validade) : null;
+            alvo.innerHTML = 'Vencimento: <b>' + (exp ? fmtDateBR(exp) : '—') + '</b>' +
+                (validade === 'none' ? ' <span style="font-weight:400">(o curso não vence)</span>' : '');
+        });
+    }
+    certManualResumo();
+}
+
+function certManualResumo() {
+    const box = el('mc_resumo');
+    if (!box) return;
+    const nAlunos = certManualAlunoIds.length;
+    const cursos = certManualCursosSelecionados();
+    if (!cursos.length || !nAlunos) {
+        box.innerHTML = '<span style="color:var(--muted)">Selecione alunos e cursos para ver o total.</span>';
+        return;
+    }
+    box.innerHTML = '<b>' + (nAlunos * cursos.length) + ' certificado(s)</b> serão cadastrados — ' +
+        nAlunos + ' aluno(s) × ' + cursos.length + ' curso(s).';
+}
+
+// Os blocos de aluno/curso avulsos só aparecem quando a opção "digitar" está
+// marcada na lista acima deles. Sempre passa por aqui depois de mudar uma
+// seleção: recolhe o que já foi digitado e redesenha as datas.
+function certManualAlternarCampos() {
+    certManualColetarDatas();
+    el('mc_alunoNovo').style.display = certManualAlunoIds.includes(CERT_MANUAL_NOVO) ? 'block' : 'none';
+    el('mc_cursoNovo').style.display = certManualCursoIds.includes(CERT_MANUAL_NOVO) ? 'block' : 'none';
+    certManualRenderDatas();
+}
+
+window.openCertManualModal = () => {
+    const empresas = getArrayFromData(empresasData)
+        .filter(e => empresaPermitidaCert(e.id))
+        .sort((a, b) => (a.nome || '').localeCompare(b.nome || '', 'pt-BR'));
+    if (!empresas.length) {
+        return alert('Nenhuma empresa disponível para você. Cadastre a empresa antes de lançar o certificado.');
+    }
+
+    // Pré-seleciona o que já estiver marcado na tela de geração.
+    let empresaId = el('selEmpresa').value || '';
+    if (!empresaId || !empresaPermitidaCert(empresaId) || !empresasData[empresaId]) empresaId = empresas[0].id;
+    certManualAlunoIds = marcadosDaTela('listaAlunosCheckbox', 'input[type=checkbox]', certManualAlunosDaEmpresa(empresaId).map(a => a.id));
+    certManualCursoIds = marcadosDaTela('listaCursosCheckbox', '.course-checkbox', Object.keys(cursosData));
+    certManualDatas = {};
+
+    const empresaOptions = empresas.map(e =>
+        `<option value="${esc(e.id)}" ${e.id === empresaId ? 'selected' : ''}>${esc(e.nome)}</option>`).join('');
+    const validadeOptions = OPCOES_VALIDADE.map(v =>
+        `<option value="${v}" ${v === 'none' ? 'selected' : ''}>${rotuloValidade(v)}</option>`).join('');
+
+    const bodyHTML = `
+        <p style="color:var(--muted)">Grava os certificados no sistema com os mesmos dados da geração normal, um para cada aluno × curso. Nenhum PDF é gerado aqui.</p>
+        <label>Empresa (certificadora):</label>
+        <select id="mc_empresa">${empresaOptions}</select>
+
+        <label>Selecione alunos</label>
+        <input id="mc_buscaAluno" placeholder="Pesquisar aluno por nome ou matrícula">
+        <div id="mc_listaAlunos" class="checklist"></div>
+        <div id="mc_alunoNovo" style="display:none;border-left:3px solid var(--border);padding-left:12px;margin-top:8px;">
+            <label>Nome do aluno:</label>
+            <input id="mc_alunoNome" placeholder="Nome completo">
+            <label>CPF (apenas números):</label>
+            <input id="mc_alunoCpf" placeholder="00000000000">
+            <label>Matrícula:</label>
+            <input id="mc_alunoMatricula">
+        </div>
+
+        <label>Selecione cursos</label>
+        <input id="mc_buscaCurso" placeholder="Pesquisar curso por nome ou carga">
+        <div id="mc_listaCursos" class="checklist"></div>
+        <div id="mc_cursoNovo" style="display:none;border-left:3px solid var(--border);padding-left:12px;margin-top:8px;">
+            <label>Nome do curso:</label>
+            <input id="mc_cursoNome">
+            <label>Carga horária:</label>
+            <input id="mc_cursoCarga">
+            <label>Validade:</label>
+            <select id="mc_cursoValidade">${validadeOptions}</select>
+        </div>
+
+        <h3 style="margin-top:18px">Datas do Evento por Curso</h3>
+        <div id="mc_datas"></div>
+        <div id="mc_resumo" style="margin-top:14px;padding:8px 10px;background:#f8f9fa;border:1px solid var(--border);border-radius:4px;font-size:13px;"></div>
+    `;
+
+    openModal('Cadastrar Certificado Manualmente', bodyHTML, () => window.salvarCertManual());
+
+    el('mc_empresa').addEventListener('change', () => {
+        // Só mantém marcados os alunos que continuam visíveis na nova empresa.
+        const validos = certManualAlunosDaEmpresa(el('mc_empresa').value).map(a => a.id);
+        certManualAlunoIds = certManualAlunoIds.filter(id => id === CERT_MANUAL_NOVO || validos.includes(id));
+        el('mc_buscaAluno').value = '';
+        certManualRenderAlunos();
+        certManualAlternarCampos();
+    });
+    el('mc_buscaAluno').addEventListener('input', certManualRenderAlunos);
+    el('mc_buscaCurso').addEventListener('input', certManualRenderCursos);
+    ['mc_alunoNome', 'mc_alunoCpf', 'mc_alunoMatricula', 'mc_cursoNome', 'mc_cursoCarga']
+        .forEach(id => el(id).addEventListener('input', certManualResumo));
+    el('mc_cursoValidade').addEventListener('change', () => {
+        certManualColetarDatas();
+        certManualRenderDatas();
+    });
+
+    certManualRenderAlunos();
+    certManualRenderCursos();
+    certManualColetarDatas();
+    certManualRenderDatas();
+    certManualAlternarCampos();
+};
+
+// ids marcados na tela de geração que também existem na lista permitida.
+function marcadosDaTela(listaId, seletor, validos) {
+    const lista = el(listaId);
+    if (!lista) return [];
+    return Array.from(lista.querySelectorAll(seletor + ':checked'))
+        .map(i => i.value)
+        .filter(v => validos.indexOf(v) !== -1);
+}
+
+window.salvarCertManual = async () => {
+    const btn = el('modalSaveButton');
+    const rotuloOriginal = btn ? btn.textContent : '';
+    if (btn) { btn.textContent = 'Salvando...'; btn.disabled = true; }
+
+    try {
+        const empresaId = el('mc_empresa').value;
+        const empresa = empresasData[empresaId];
+        if (!empresa) return alert('Selecione a empresa.');
+
+        const alunos = certManualAlunosSelecionados();
+        if (!alunos.length) return alert('Selecione pelo menos um aluno (ou marque a opção de digitar o nome).');
+
+        const cursos = certManualCursosSelecionados();
+        if (!cursos.length) return alert('Selecione pelo menos um curso (ou marque a opção de digitar o nome).');
+        if (cursos.some(c => c.nome.indexOf('Curso digitado') === 0)) {
+            return alert('Preencha o nome do curso que será digitado manualmente.');
+        }
+
+        // Uma linha de data por curso marcado.
+        certManualColetarDatas();
+        const datasPorCurso = {};
+        for (const c of cursos) {
+            const d = certManualDatas[c.chave] || certManualDatasPadrao(c.chave);
+            if (!d.inicio || !d.fim) return alert('Informe a data de início e a data de fim de "' + c.nome + '".');
+            if (d.fim < d.inicio) return alert('Em "' + c.nome + '", a data de fim não pode ser anterior à data de início.');
+            datasPorCurso[c.chave] = d;
+        }
+
+        // Mesmo cruzamento da geração normal: um certificado por aluno x curso.
+        const pares = [];
+        cursos.forEach(curso => {
+            const d = datasPorCurso[curso.chave];
+            const validade = certManualValidade(curso.chave);
+            const base = (curso.chave === CERT_MANUAL_NOVO) ? curso : (cursosData[curso.chave] || curso);
+            alunos.forEach(aluno => {
+                pares.push({
+                    aluno: aluno,
+                    curso: {
+                        id: curso.id,
+                        nome: curso.nome,
+                        carga: curso.carga,
+                        validade: validade,
+                        mensagem: base.mensagem || '',
+                        conteudo: base.conteudo || ''
+                    },
+                    dataInicio: d.inicio,
+                    dataFim: d.fim,
+                    expiracao: calcExpiracao(d.fim, validade)
+                });
+            });
+        });
+
+        // Mesma chave do certificado (aluno + curso + datas). Só avisa: pode
+        // existir um registro legitimo repetido em turmas diferentes.
+        const chave = (s) => (s || '').trim().toLowerCase();
+        const existentes = getArrayFromData(certificadosGeradosData);
+        const repetidos = pares.filter(p => existentes.some(c =>
+            c && c.aluno && c.curso &&
+            chave(c.aluno.nome) === chave(p.aluno.nome) &&
+            chave(c.curso.nome) === chave(p.curso.nome) &&
+            c.dataInicio === p.dataInicio && c.dataFim === p.dataFim));
+        if (repetidos.length && !confirm(repetidos.length + ' dos certificados informados já existe' +
+            ' com o mesmo aluno, curso e datas.\n\nCadastrar mesmo assim?')) return;
+
+        const agora = Date.now();
+        const dataGeracao = new Date().toISOString().slice(0, 10);
+        const horaGeracao = new Date().toLocaleDateString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+        const idsAluno = alunos.filter(a => a.id).map(a => a.id);
+        const updates = {};
+        const novos = [];
+
+        // Mesmo formato do registro da geração normal (o que vai para o banco
+        // é o leve: empresaId + retrato de texto, sem as logos).
+        pares.forEach(p => {
+            const certData = {
+                aluno: { id: p.aluno.id, nome: p.aluno.nome, matricula: p.aluno.matricula, cpf: p.aluno.cpf },
+                curso: p.curso,
+                empresaId: empresaId,
+                empresa: {
+                    id: empresa.id || empresaId,
+                    nome: empresa.nome || '',
+                    cidade: empresa.cidade || '',
+                    cnpj: empresa.cnpj || ''
+                },
+                dataInicio: p.dataInicio,
+                dataFim: p.dataFim,
+                dataInicioBR: fmtDateBR(p.dataInicio),
+                dataFimBR: fmtDateBR(p.dataFim),
+                dataGeracao: dataGeracao,
+                ts: agora,
+                expiracao: p.expiracao,
+                origemManual: true
+            };
+            const certKey = db.ref('certificadosGerados').push().key;
+            updates['certificadosGerados/' + certKey] = certData;
+            novos.push({ id: certKey, data: certData });
+        });
+
+        // Uma linha de histórico por curso, como na geração em lote.
+        cursos.forEach(curso => {
+            const d = datasPorCurso[curso.chave];
+            const validade = certManualValidade(curso.chave);
+            const histKey = db.ref('historico').push().key;
+            updates['historico/' + histKey] = {
+                nome: 'Certificado - ' + curso.nome,
+                data: horaGeracao,
+                ts: agora,
+                empresaId: empresaId,
+                funcionarioIds: idsAluno,
+                expiracao: calcExpiracao(d.fim, validade),
+                validade: validade,
+                tipo: 'certificado',
+                certificadoCursoId: curso.id,
+                qtd: alunos.length,
+                ...dadosGeradorCert()
+            };
+        });
+
+        // Certificados e histórico no mesmo lote: ou tudo entra, ou nada.
+        await db.ref().update(updates);
+
+        novos.forEach(n => { certificadosGeradosData[n.id] = Object.assign({ id: n.id }, n.data); });
+        await WS_DATA.advanceLocalMeta('certificadosGerados');
+        await WS_DATA.advanceLocalMeta('historico');
+        renderCertificadosGerados();
+
+        window.closeModal();
+        alert(novos.length + ' certificado(s) cadastrado(s) para ' + alunos.length + ' aluno(s).\n\n' +
+            'O PDF não foi gerado. Para gerar depois, abra em "✅ Certificados Gerados" > Ver/Editar > Baixar PDF.');
+    } catch (e) {
+        console.error('Erro ao cadastrar certificados manualmente:', e);
+        alert('Erro ao cadastrar os certificados. Nada foi gravado.');
+    } finally {
+        if (btn) { btn.textContent = rotuloOriginal; btn.disabled = false; }
+    }
+};
+
 function corruptPdfBytes(buffer) {
   const bytes = new Uint8Array(buffer);
   if (bytes.length < 100) return buffer;
@@ -2301,7 +2783,7 @@ async function saveSecurely(pdfBlob, filename, metadata = {}, onProgress) {
     if(typeof onProgress==='function')onProgress(82,'Carregando PDF...');
     const pages = pdfDoc.getPages();
     const baseDir = window.location.href.substring(0, window.location.href.lastIndexOf('/') + 1);
-    const docId = push(ref(db, 'doc_auth')).key;
+    const docId = db.ref('doc_auth').push().key;
     const validationUrl = baseDir + 'verificar.html?id=' + docId;
     const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(validationUrl)}`;
     let hashHex = null;
@@ -2347,7 +2829,7 @@ async function saveSecurely(pdfBlob, filename, metadata = {}, onProgress) {
         const hashBuffer = await crypto.subtle.digest('SHA-256', fbArray);
         const hashArray = Array.from(new Uint8Array(hashBuffer));
         hashHex = hashArray.map(b => b.toString(16).padStart(2,'0')).join('');
-        await set(ref(db, 'doc_auth/' + docId), { filename, ts: Date.now(), hash: hashHex, ...metadata });
+        await db.ref('doc_auth/' + docId).set({ filename, ts: Date.now(), hash: hashHex, ...metadata });
         for(let i = 0; i < pages.length; i++){
             pages[i].drawText('SHA256: ' + hashHex.slice(0,10) + '..', {
                 x: pages[i].getWidth()-27, y: 7, size: 3.5, font: pdfLibFont,
@@ -2377,7 +2859,7 @@ async function saveSecurely(pdfBlob, filename, metadata = {}, onProgress) {
         const hashBuffer2 = await crypto.subtle.digest('SHA-256', finalBytes);
         const hashArray2 = Array.from(new Uint8Array(hashBuffer2));
         const hashHex2 = hashArray2.map(b => b.toString(16).padStart(2,'0')).join('');
-        await update(ref(db, 'doc_auth/' + docId), { hash: hashHex2, encrypted: true });
+        await db.ref('doc_auth/' + docId).update({ hash: hashHex2, encrypted: true });
         if(typeof onProgress==='function')onProgress(96,'Finalizando autenticação...');
         const finalBlob = new Blob([finalBytes], { type: 'application/pdf' });
         const url = URL.createObjectURL(finalBlob);
@@ -2387,7 +2869,7 @@ async function saveSecurely(pdfBlob, filename, metadata = {}, onProgress) {
         if(typeof onProgress==='function')onProgress(100,'Download iniciado!');
     } catch (e) {
         console.error('Hash error:', e);
-        await set(ref(db, 'doc_auth/' + docId), { filename, ts: Date.now(), ...metadata });
+        await db.ref('doc_auth/' + docId).set({ filename, ts: Date.now(), ...metadata });
         const url = URL.createObjectURL(firstBlob);
         const link = document.createElement('a'); link.href = url; link.download = filename;
         document.body.appendChild(link); link.click();
@@ -2511,7 +2993,7 @@ window.importJSON = async (file) => {
             const nodes = ['empresas','alunos','cursos','certificadosGerados'];
             for(const n of nodes){
                 if(data[n]){
-                    await set(ref(db, n), data[n]);
+                    await db.ref(n).set(data[n]);
                     await WS_DATA.advanceLocalMeta(n);
                 }
             }
@@ -2526,7 +3008,7 @@ window.importJSON = async (file) => {
 window.clearAllData = async () => {
     if (!confirm("AVISO CRÍTICO: Esta ação irá APAGAR TODOS os dados (Empresas, Alunos, Cursos e Certificados Gerados) do Firebase. Tem certeza?")) return;
     try { 
-        await remove(ref(db)); 
+        await db.ref().remove();
         const paths = ['empresas','alunos','cursos','obras','cidades','filiais','certificadosGerados'];
         for(const n of paths) await WS_DATA.advanceLocalMeta(n);
         alert("Todos os dados foram apagados do Firebase."); 
@@ -2683,7 +3165,7 @@ async function transferirAlunosEmMassa(){
     if (!confirm(`Transferir ${Object.keys(updates).length} aluno(s) para a empresa selecionada?`)) return;
 
     try {
-        await update(ref(db), updates);
+        await db.ref().update(updates);
         Object.keys(updates).forEach(up => {
             const parts = up.split('/');
             const aid = parts[1];
@@ -2729,8 +3211,12 @@ function setupNavigation() {
     showSection('secaoEmpresa');
 }
 
-window.buildPage1 = ({aluno, curso, empresa, dataInicioBR, dataFimBR}) => {
+window.buildPage1 = ({aluno, curso, empresa, dataInicioBR, dataFimBR, dataFim, expiracao}) => {
     const mensagem = buildMensagemCurso(curso, aluno, dataInicioBR, dataFimBR, empresa);
+    // O vencimento e' lido do proprio certificado; se o registro antigo nao
+    // tiver o campo, recalcula pela data de fim + validade do curso.
+    const vencISO = expiracao || (dataFim ? calcExpiracao(dataFim, curso.validade) : null);
+    const vencBR = vencISO ? fmtDateBR(vencISO) : null;
     
     const signatures = [
         { nome: empresa.certificadorNome || 'Certificador', img: empresa.assinaturaCert },
@@ -2794,6 +3280,10 @@ window.buildPage1 = ({aluno, curso, empresa, dataInicioBR, dataFimBR}) => {
           <div style="font-size:14pt; line-height:1.7; text-align:justify; text-align-last:center;">
             ${mensagem.replaceAll('**', '<strong>').replaceAll('\n\n', '<br><br>')}
           </div>
+          ${vencBR ? `
+          <div style="font-size:12pt; margin-top:9mm; text-align:center;">
+            Vencimento: <strong>${vencBR}</strong>
+          </div>` : ''}
         </main>
 
         <footer style="width:100%; margin-top:5mm;">
@@ -3008,6 +3498,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     el("btnLimparCurso").onclick=window.clearCursoForm;
     el("btnApagarTudoCursos").onclick=window.clearAllCursos;
     el("btnGerar").onclick=gerarCertificados;
+    el("btnCertManual").onclick=window.openCertManualModal;
     el("btnImprimir").onclick=handleBulkDownload;
     el("btnExport").onclick=window.exportJSON;
     el("importFile").onchange=e=>{const f=e.target.files[0]; if(f) window.importJSON(f);};
