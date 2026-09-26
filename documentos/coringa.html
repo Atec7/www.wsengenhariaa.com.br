@@ -618,6 +618,16 @@ function cls(){document.querySelectorAll('.modal').forEach(e=>e.style.display='n
 function showResult(id,msg){const el=document.getElementById(id);if(!el)return;el.style.display='block';el.innerHTML='<div class="res"><i class="fa-solid fa-check-circle"></i> '+msg+'</div>';}
 function _setTxt(id,txt){const el=document.getElementById(id);if(el)el.textContent=txt;}
 
+// ── HISTORICO DE GERACAO ───────────────────────────────────────────────
+function coringaLogHistory(nome,dadosExtras={}){
+  try{
+    let id='';
+    try{id=sessionStorage.getItem('ws_user_id')||'';}catch(_){}
+    const data=new Date().toLocaleDateString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+    WS_DATA.push('historico',{nome,data,ts:Date.now(),...dadosExtras,usuarioId:id});
+  }catch(e){console.warn('coringaLogHistory:',e);}
+}
+
 /* ═══════════════════════════════════════════════════════════════
    INIT
 ═══════════════════════════════════════════════════════════════ */
@@ -2047,6 +2057,7 @@ async function genDocCoringa(){
     const filename='DOCUMENTO_'+nomeDoc+'_'+(dataVal?dataVal.replace(/-/g,''):new Date().toISOString().slice(0,10))+'.pdf';
     const metaContratante=tipoContratante==='cpf'?{pessoaId:cpid}:{contratanteId:cid};
     await saveSecurely(doc,filename,{...metaContratante,prestadoraId:pid});
+    coringaLogHistory('Documento Coringa - '+(texto.titulo||'documento'),{textoId:texto.id||''});
     showResult('dc-results','Documento gerado com sucesso!');
 
   }catch(e){

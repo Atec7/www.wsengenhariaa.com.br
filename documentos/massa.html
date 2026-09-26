@@ -302,6 +302,27 @@ function voltar(){
   window.location.href='index.html';
 }
 
+// ── HISTORICO DE GERACAO (1 registro agregado por execucao) ─────────────
+function massGerador(){
+  try{return{usuarioId:sessionStorage.getItem('ws_user_id')||''};}catch(_){return{usuarioId:''};}
+}
+function massLogHistory(resumo,qtd,empresaId,treino,dataFmt){
+  try{
+    const data=new Date().toLocaleDateString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+    WS_DATA.push('historico',{
+      nome:'Geração em Massa - '+resumo,
+      data:data,
+      ts:Date.now(),
+      tipo:'massa',
+      qtd:qtd||0,
+      empresaId:empresaId||'',
+      treino:treino||'',
+      dataDoc:dataFmt||'',
+      ...massGerador()
+    });
+  }catch(e){console.warn('massLogHistory:',e);}
+}
+
 // ── INIT ────────────────────────────────────────────────────────
 function initListeners(){
   console.log("Iniciando carregamento do Firebase...");
@@ -1336,6 +1357,20 @@ async function massGen(){
         if(r)results.push(r);
         stepCb();
       }
+    }
+    // 1 unico registro de historico por execucao (economia de banco):
+    // guarda a contagem em `qtd` em vez de uma linha por PDF gerado.
+    if(results.length){
+      const tipos=[];
+      if(docOS)tipos.push('OS');
+      if(docAdm)tipos.push('Admissional');
+      if(docEPI)tipos.push('EPI');
+      if(docLista)tipos.push('Lista de Presença');
+      const empresas=Object.keys(grouped).filter(k=>k!=='unknown');
+      const resumo=tipos.join(' + ')+' · '+selected.length+' colaborador(es)';
+      massLogHistory(resumo,results.length,
+        empresas.length===1?empresas[0]:'',
+        treino||'',dataFmt);
     }
     if(results.length){
       const zip=new JSZip();

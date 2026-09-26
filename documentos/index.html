@@ -260,6 +260,29 @@ hr.dv{border:none;border-top:1px solid var(--bd);margin:18px 0}
 .aprov-atualizado i{color:var(--hi)}
 .aprov-gerar{flex:0 0 auto;align-self:center}
 .aprov-gerar .btn{white-space:nowrap}
+/* ── GERACAO POR USUARIO ── */
+.gu-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(196px,1fr));gap:10px;padding:12px}
+.gu-card{border:1px solid var(--bd);border-radius:var(--r);padding:12px;background:var(--sf);cursor:pointer;transition:border-color .12s,box-shadow .12s}
+.gu-card:hover{border-color:var(--hi);box-shadow:var(--sh)}
+.gu-card.sel{border-color:var(--hi);background:var(--hl)}
+.gu-cd-top{display:flex;align-items:center;gap:9px}
+.gu-av{width:30px;height:30px;border-radius:50%;background:var(--hi);color:#fafafa;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;flex:0 0 auto}
+.gu-cd-nome{font-weight:700;font-size:13px;color:var(--tp);word-break:break-word;line-height:1.2}
+.gu-cd-num{font-size:24px;font-weight:800;color:var(--tp);font-family:'DM Mono',monospace;margin-top:10px;line-height:1}
+.gu-cd-lbl{font-size:9px;font-weight:700;color:var(--tm);text-transform:uppercase;letter-spacing:.7px;margin-top:3px}
+.gu-cd-sub{display:flex;gap:12px;flex-wrap:wrap;margin-top:9px;padding-top:8px;border-top:1px dashed var(--bd);font-size:11px;color:var(--ts)}
+.gu-cd-sub b{color:var(--tp);font-weight:700}
+.gu-cd-bar{height:4px;border-radius:99px;background:var(--hl);margin-top:9px;overflow:hidden}
+.gu-cd-bar i{display:block;height:100%;background:var(--hi);border-radius:99px}
+.gu-hitem{display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid var(--bd);border-left:4px solid var(--bd);cursor:pointer;font-size:13px;transition:background .1s}
+.gu-hitem:last-child{border-bottom:none}
+.gu-hitem:hover{background:var(--hl)}
+.gu-hitem.sel{background:var(--hl);border-left-color:var(--hi)}
+.gu-h-ic{width:30px;height:30px;border-radius:8px;background:var(--hl);color:var(--ts);display:flex;align-items:center;justify-content:center;font-size:13px;flex:0 0 auto}
+.gu-h-tit{font-weight:700;color:var(--tp);word-break:break-word}
+.gu-h-sub{font-size:11px;color:var(--tm);margin-top:2px;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.gu-h-sub .gu-tag{display:inline-flex;align-items:center;gap:5px;background:var(--hl);border:1px solid var(--bd);border-radius:999px;padding:1px 8px;font-size:10px;font-weight:600;color:var(--ts)}
+.gu-empty{padding:26px;text-align:center;color:var(--tm);font-size:12px}
 
 </style>
 </head>
@@ -309,7 +332,7 @@ hr.dv{border:none;border-top:1px solid var(--bd);margin:18px 0}
     <div class="nav-lbl">Certificados</div>
     <div class="mi cert-item" onclick="openCertModal()"><i class="fa-solid fa-certificate"></i> Emitir Certificados</div>
   </div>
-   <div class="nav-grp"><div class="nav-lbl">Sistema</div><div class="mi" id="nav-aprov" onclick="nav('aprov',this);renderAprovacoes()"><i class="fa-solid fa-clipboard-check"></i> Aprova&ccedil;&otilde;es de Gera&ccedil;&atilde;o<span class="mi-badge" id="aprov-badge" style="display:none;background:#fee2e2;color:#b91c1c;margin-left:6px">0</span></div><div class="mi" id="nav-ger-usuarios" onclick="openUsuariosModal()" style="display:none"><i class="fa-solid fa-user-shield"></i> Gerenciar Usu&aacute;rios</div><div class="mi" onclick="openConfModal()"><i class="fa-solid fa-gear"></i> Configura&ccedil;&otilde;es</div><div class="mi" onclick="logoutWS()"><i class="fa-solid fa-right-from-bracket"></i> Sair</div></div>
+   <div class="nav-grp"><div class="nav-lbl">Sistema</div><div class="mi" id="nav-aprov" onclick="nav('aprov',this);renderGeracoes()"><i class="fa-solid fa-chart-simple"></i> Gera&ccedil;&atilde;o por Usu&aacute;rio</div><div class="mi" id="nav-ger-usuarios" onclick="openUsuariosModal()" style="display:none"><i class="fa-solid fa-user-shield"></i> Gerenciar Usu&aacute;rios</div><div class="mi" onclick="openConfModal()"><i class="fa-solid fa-gear"></i> Configura&ccedil;&otilde;es</div><div class="mi" onclick="logoutWS()"><i class="fa-solid fa-right-from-bracket"></i> Sair</div></div>
 </aside>
 
 <main>
@@ -638,45 +661,27 @@ hr.dv{border:none;border-top:1px solid var(--bd);margin:18px 0}
 </div>
 
 <div id="aprov" class="view">
-  <div class="ph"><div><div class="pt">Aprova&ccedil;&otilde;es de Gera&ccedil;&atilde;o</div><div class="pd">Solicita&ccedil;&otilde;es de gera&ccedil;&atilde;o de documentos</div></div><div class="aprov-refresh"><span class="aprov-atualizado" id="aprov-atualizado"></span><button class="btn bd2" id="btn-refresh-aprov" onclick="refreshAprovacoes()"><i class="fa-solid fa-rotate"></i> Atualizar</button></div></div>
-  <div class="tb" id="aprov-tabs">
-    <div class="tab active" id="tab-aprov-pend" onclick="aprovTab('pend')">Para Aprovar</div>
-    <div class="tab" id="tab-aprov-minhas" onclick="aprovTab('minhas')">Minhas Solicita&ccedil;&otilde;es</div>
-  </div>
-  <div id="aprov-pend-wrap" class="tc active">
-    <div class="card" style="padding:0;overflow:hidden">
-      <div class="aprov-toolbar">
-        <span class="aprov-chip ch-pend" id="aprov-chip-pend-p" onclick="aprovChipFiltro('pendente')">Pendentes: 0</span>
-        <span class="aprov-chip ch-ok" id="aprov-chip-ok-p" onclick="aprovChipFiltro('aprovado')">Aprovados: 0</span>
-        <span class="aprov-chip ch-no" id="aprov-chip-no-p" onclick="aprovChipFiltro('reprovado')">Cancelados: 0</span>
-        <select id="aprov-filtro-status-p" class="aprov-inp" onchange="renderAprovacoes()">
-          <option value="todas">Todos os status</option>
-          <option value="pendente">Somente pendentes</option>
-          <option value="aprovado">Somente aprovados</option>
-          <option value="reprovado">Somente cancelados</option>
-        </select>
-        <input id="aprov-filtro-busca-p" class="aprov-inp" placeholder="Buscar solicitante ou tela..." oninput="renderAprovacoes()">
-        <button class="btn bd2" id="btn-limpar-logs" style="margin-left:auto;display:none" onclick="limparLogsAprov()"><i class="fa-solid fa-broom"></i> Limpar Logs</button>
-      </div>
-      <div id="aprov-lista-pend"></div>
+  <div class="ph"><div><div class="pt">Gera&ccedil;&atilde;o por Usu&aacute;rio</div><div class="pd">Totais de documentos gerados e hist&oacute;rico das gera&ccedil;&otilde;es</div></div><div class="aprov-refresh"><span class="aprov-atualizado" id="aprov-atualizado"></span><button class="btn bd2" id="btn-refresh-aprov" onclick="refreshGeracoes()"><i class="fa-solid fa-rotate"></i> Atualizar</button></div></div>
+  <div class="card" style="padding:0;overflow:hidden">
+    <div class="aprov-toolbar">
+      <span class="aprov-chip ch-ok" id="gu-chip-total">Total: 0</span>
+      <span class="aprov-chip ch-pend" id="gu-chip-30">30 dias: 0</span>
+      <span class="aprov-chip ch-no" id="gu-chip-users">Usuários: 0</span>
+      <select id="gu-filtro-periodo" class="aprov-inp" onchange="renderGeracoes()">
+        <option value="30">Histórico: últimos 30 dias</option>
+        <option value="7">Histórico: últimos 7 dias</option>
+        <option value="90">Histórico: últimos 90 dias</option>
+        <option value="0">Histórico: todo o período</option>
+      </select>
+      <input id="gu-filtro-busca" class="aprov-inp" placeholder="Buscar documento ou usuário..." oninput="renderGeracoes()">
+      <button class="btn bg2" id="btn-gu-limpar-filtro" style="margin-left:auto;display:none" onclick="limparFiltroGeracoes()"><i class="fa-solid fa-xmark"></i> Limpar filtro</button>
     </div>
+    <div class="aprov-sec-titulo">Totais por usuário</div>
+    <div id="gu-cards" class="gu-cards"></div>
   </div>
-  <div id="aprov-minhas-wrap" class="tc">
-    <div class="card" style="padding:0;overflow:hidden">
-      <div class="aprov-toolbar">
-        <span class="aprov-chip ch-pend" id="aprov-chip-pend-m" onclick="aprovChipFiltro('pendente')">Pendentes: 0</span>
-        <span class="aprov-chip ch-ok" id="aprov-chip-ok-m" onclick="aprovChipFiltro('aprovado')">Aprovados: 0</span>
-        <span class="aprov-chip ch-no" id="aprov-chip-no-m" onclick="aprovChipFiltro('reprovado')">Cancelados: 0</span>
-        <select id="aprov-filtro-status-m" class="aprov-inp" onchange="renderAprovacoes()">
-          <option value="todas">Todos os status</option>
-          <option value="pendente">Somente pendentes</option>
-          <option value="aprovado">Somente aprovados</option>
-          <option value="reprovado">Somente cancelados</option>
-        </select>
-        <input id="aprov-filtro-busca-m" class="aprov-inp" placeholder="Buscar tela..." oninput="renderAprovacoes()">
-      </div>
-      <div id="aprov-lista-minhas"></div>
-    </div>
+  <div class="card" style="padding:0;overflow:hidden">
+    <div class="aprov-sec-titulo" id="gu-hist-titulo">Histórico de gerações</div>
+    <div id="gu-hist"></div>
   </div>
 </div>
 
@@ -920,11 +925,8 @@ hr.dv{border:none;border-top:1px solid var(--bd);margin:18px 0}
       </label>
     </div>
     <div class="fg">
-      <label class="fl" style="display:flex;align-items:center;gap:6px">
-        <input type="checkbox" id="i-usuario-gerar" style="width:14px;height:14px;accent-color:var(--hi)">
-        Pode gerar documentos diretamente
-      </label>
-      <small style="font-size:10px;color:var(--tm)">Se desmarcado, as gera&ccedil;&otilde;es deste usu&aacute;rio v&atilde;o para a fila de aprova&ccedil;&atilde;o antes de baixar o arquivo.</small>
+      <label class="fl">Gera&ccedil;&atilde;o de documentos</label>
+      <small style="font-size:11px;color:var(--ts);display:block">Todos os usu&aacute;rios com acesso &agrave;s telas de emiss&atilde;o geram documentos diretamente, sem necessidade de autoriza&ccedil;&atilde;o. Toda gera&ccedil;&atilde;o &eacute; registrada em <b>Gera&ccedil;&atilde;o por Usu&aacute;rio</b>.</small>
     </div>
     <div class="fg">
       <label class="fl">Empresas com Acesso</label>
@@ -1006,14 +1008,10 @@ hr.dv{border:none;border-top:1px solid var(--bd);margin:18px 0}
   </div>
 </div></div>
 
-<!-- MODAL DETALHES APROVACAO -->
+<!-- MODAL DETALHES DA GERACAO -->
 <div class="modal" id="mdl-aprov" onclick="cls()"><div class="mb" style="max-width:560px" onclick="event.stopPropagation()">
-  <div class="mt2"><i class="fa-solid fa-clipboard-check" style="color:var(--hi);margin-right:6px"></i> Detalhes da Solicita&ccedil;&atilde;o</div>
+  <div class="mt2"><i class="fa-solid fa-file-circle-check" style="color:var(--hi);margin-right:6px"></i> Detalhes da Gera&ccedil;&atilde;o</div>
   <div id="aprov-modal-body"></div>
-  <div id="aprov-motivo-wrap" style="display:none;margin-top:10px">
-    <label class="fl">Motivo da reprova&ccedil;&atilde;o</label>
-    <textarea id="aprov-motivo" placeholder="Descreva o motivo da reprova&ccedil;&atilde;o..."></textarea>
-  </div>
   <div id="aprov-modal-actions" style="display:flex;gap:8px;margin-top:14px;justify-content:flex-end;flex-wrap:wrap"></div>
 </div></div>
 
@@ -1075,7 +1073,9 @@ function initListeners(){
       {path:'cidades',target:DATA,key:'cidades'},
       {path:'filiais',target:DATA,key:'filiais'},
       {path:'usuarios',target:DATA,key:'usuarios'},
-      {path:'aprovacoes',target:DATA,key:'aprovacoes'},
+      // 'aprovacoes' saiu do sync: a fila de autorizacao foi desativada e nada
+      // le mais esse node. Os dados antigos continuam no banco, apenas param de
+      // ser baixados por todos os clients a cada sincronizacao.
       {path:'certificadosGerados',target:certCacheNode,key:null,tsKey:'dataGeracao'}
     ],
     onUpdated:function(){ if(window.renderAll)renderAll(); }
@@ -1111,7 +1111,8 @@ function initListeners(){
   const de=document.getElementById('dash-date-end');if(de&&!de.value)de.value=hoje;
   addOrcItem();
 }
-function renderAll(){WS_DATA.pag.reset();updateDashboard();renderEmps();renderCargos();renderFuncs();renderPessoas();renderTexts();renderMats();renderHistory();populateSelects();renderPool();renderCart();renderCats();renderMsd();if(USUARIO_ATUAL&&document.getElementById('usuarios-lista'))renderUsuariosLista();if(document.getElementById('aprov-lista-pend'))renderAprovacoes();if(sessionStorage.getItem('ws_logado')==='1'&&(!USUARIO_ATUAL||!USUARIO_ATUAL.mestre)){const usuarios=DATA.usuarios||{};const nomeSalvo=sessionStorage.getItem('ws_user_nome')||'';const fresh=Object.values(usuarios).find(u=>u.nome===nomeSalvo);if(fresh)aplicarPermissoes(fresh);}setTimeout(()=>fixOldCertHistory(),2000);}
+function telaAtiva(id){const v=document.getElementById(id);return!!v&&v.classList.contains('active');}
+function renderAll(){WS_DATA.pag.reset();updateDashboard();renderEmps();renderCargos();renderFuncs();renderPessoas();renderTexts();renderMats();renderHistory();populateSelects();renderPool();renderCart();renderCats();renderMsd();if(USUARIO_ATUAL&&document.getElementById('usuarios-lista'))renderUsuariosLista();if(telaAtiva('aprov'))renderGeracoes();if(sessionStorage.getItem('ws_logado')==='1'&&(!USUARIO_ATUAL||!USUARIO_ATUAL.mestre)){const usuarios=DATA.usuarios||{};const nomeSalvo=sessionStorage.getItem('ws_user_nome')||'';const fresh=Object.values(usuarios).find(u=>u.nome===nomeSalvo);if(fresh)aplicarPermissoes(fresh);}setTimeout(()=>fixOldCertHistory(),2000);}
 function loadCertCache(force){
   if(!force&&certCache!==null)return Promise.resolve();
   return WS_DATA.refreshNode('certificadosGerados').then(()=>{
@@ -2224,9 +2225,15 @@ function renderHistory(){
 }
 function logHistory(nome, dadosExtras={}){
   const data=new Date().toLocaleDateString('pt-BR',{hour:'2-digit',minute:'2-digit'});
-  const rec={nome,data,ts:Date.now(),...dadosExtras};
+  const rec={nome,data,ts:Date.now(),...dadosExtras,...dadosGerador()};
   WS_DATA.push('historico',rec);
   if(_replaceHistoryKey){WS_DATA.remove('historico',_replaceHistoryKey);_replaceHistoryKey=null;}
+}
+// Grava apenas o id do gerador: o nome e resolvido na renderizacao pelo no
+// 'usuarios', que ja e sincronizado. Isso evita duplicar o nome em cada
+// registro de historico (economia de storage e de banda para todo client).
+function dadosGerador(){
+  return{usuarioId:(USUARIO_ATUAL&&USUARIO_ATUAL.id)||''};
 }
 function deleteHistoryItem(key){
   if(!podeExcluirHist()){alert('Voc\u00ea n\u00e3o tem permiss\u00e3o para excluir.');return;}
@@ -4344,6 +4351,9 @@ let USUARIO_ATUAL=null;
   function ld(){const u=localStorage.getItem('ws_user');const p=localStorage.getItem('ws_pass');if(u)loginUser.value=u;if(p)loginPass.value=p;if(u&&p)loginLembrar.checked=true;return u&&p;}
   function aplicarPermissoes(usuario){
     USUARIO_ATUAL=usuario;
+    try{
+      if(usuario&&usuario.nome){sessionStorage.setItem('ws_user_nome',usuario.nome);sessionStorage.setItem('ws_user_id',usuario.id||'');}
+    }catch(_){}
     const navGerus=document.getElementById('nav-ger-usuarios');
     if(navGerus)navGerus.style.display=usuario&&usuario.mestre&&usuario.nome==='Arnaldo'?'':'none';
     if(!usuario||usuario.mestre)return;
@@ -4438,6 +4448,7 @@ let USUARIO_ATUAL=null;
   function sai(){
     sessionStorage.removeItem('ws_logado');
     sessionStorage.removeItem('ws_user_nome');
+    sessionStorage.removeItem('ws_user_id');
     localStorage.removeItem('ws_user');
     localStorage.removeItem('ws_pass');
     USUARIO_ATUAL=null;
@@ -4506,7 +4517,6 @@ function renderUsuariosLista(){
   }
   el.innerHTML=lista.map(u=>{
     const badge=u.mestre?'<span class="mi-badge" style="background:#fef3c7;color:#92400e">MESTRE</span>':
-      u.podeGerar?'<span class="mi-badge" style="background:#dcfce7;color:#15803d">GERA DIRETO</span>':
       '<span class="mi-badge" style="background:#dbeafe;color:#1e40af">USUARIO</span>';
     const telas=u.telas?Object.keys(u.telas).filter(k=>u.telas[k].acesso!==false).length:0;
     const emps=u.empresas&&u.empresas.length?u.empresas.length+' empresa(s)':'Nenhuma';
@@ -4524,7 +4534,6 @@ function novoUsuario(){
   document.getElementById('i-usuario-login').value='';
   document.getElementById('i-usuario-senha').value='';
   document.getElementById('i-usuario-mestre').checked=false;
-  document.getElementById('i-usuario-gerar').checked=false;
   const dd=document.getElementById('usuarios-emp-dd');
   if(dd)dd.classList.remove('open');
   renderUsuarioEmpresas([]);
@@ -4550,7 +4559,6 @@ function editarUsuario(id){
   document.getElementById('i-usuario-login').value=u.login||'';
   document.getElementById('i-usuario-senha').value=u.senha||'';
   document.getElementById('i-usuario-mestre').checked=!!u.mestre;
-  document.getElementById('i-usuario-gerar').checked=!!u.podeGerar;
   const dd=document.getElementById('usuarios-emp-dd');
   if(dd)dd.classList.remove('open');
   renderUsuarioEmpresas(u.empresas||[]);
@@ -4752,7 +4760,6 @@ function salvarUsuario(){
   const login=document.getElementById('i-usuario-login').value.trim();
   const senha=document.getElementById('i-usuario-senha').value.trim();
   const mestre=document.getElementById('i-usuario-mestre').checked;
-  const podeGerar=document.getElementById('i-usuario-gerar').checked;
   if(!nome||!login||!senha){
     const msg=document.getElementById('usuarios-msg');
     msg.style.display='block';msg.style.color='var(--dn)';
@@ -4771,7 +4778,7 @@ function salvarUsuario(){
       telas[t.id]={acesso:true,editar:sel.value==='editar'};
     }
   });
-  const dados={id:id||db.ref().push().key,nome,login,senha,mestre,podeGerar:mestre?true:podeGerar,empresas:mestre?[]:empChecks,filiais:mestre?[]:flChecks,obras:mestre?[]:obChecks,cidades:mestre?[]:cdChecks,telas:mestre?{}:telas};
+  const dados={id:id||db.ref().push().key,nome,login,senha,mestre,podeGerar:true,empresas:mestre?[]:empChecks,filiais:mestre?[]:flChecks,obras:mestre?[]:obChecks,cidades:mestre?[]:cdChecks,telas:mestre?{}:telas};
   WS_DATA.write('usuarios',dados.id,dados).then(()=>{
     const msg=document.getElementById('usuarios-msg');
     msg.style.display='block';msg.style.color='var(--sc)';
@@ -4792,381 +4799,204 @@ function excluirUsuario(id){
   });
 }
 
-// ── APROVACOES DE GERACAO ───────────────────────────────────────────────
-let WS_BYPASS_GERACAO=false;
-let APROV_TAB='pend';
-function podeAprovarGeracao(){return !!USUARIO_ATUAL&&(USUARIO_ATUAL.nome==='wedson'||USUARIO_ATUAL.id==='admin'||USUARIO_ATUAL.login==='wedson');}
-function liberarGeracao(tela){
-  if(WS_BYPASS_GERACAO){WS_BYPASS_GERACAO=false;return true;}
-  if(!USUARIO_ATUAL)return true;
-  if(podeAprovarGeracao())return true;
-  solicitarAprovacao(tela);
-  return false;
-}
+// ── GERACAO DIRETA (sem fila de autorizacao) ────────────────────────────
+function liberarGeracao(){return true;}
 function nomesFuncs(fIds){return (fIds||[]).map(id=>{const f=DATA.funcionarios[id];return f?(f.nome||id):id;}).join(', ')||'—';}
 function nomesTextos(ids){return (ids||[]).map(id=>{const t=DATA.textos[id];return t?(t.titulo||id):id;}).join(', ')||'—';}
 function truncTxt(s,n){s=String(s||'').trim();return s.length>n?s.substring(0,n)+'...':(s||'—');}
-const TELAS_GERACAO={
-  gen:{nome:'Emitir OS',fn:'gen',results:'gen-results',
-    capturar(){
-      const empId=document.getElementById('g-e').value;
-      const fIds=getChecked('gChk');
-      if(!empId){alert('Selecione uma empresa primeiro');return null;}
-      if(!SEL_TEXTS.length){alert('Selecione pelo menos um texto');return null;}
-      if(!fIds.length){alert('Selecione pelo menos um colaborador');return null;}
-      return{
-        inputs:{'g-e':empId},checks:{gChk:fIds},extras:{selTexts:SEL_TEXTS.slice()},
-        resumo:[['Empresa',(resolveEmp(empId)||{}).nome||empId],['Colaboradores',nomesFuncs(fIds)],['Textos / NRs',nomesTextos(SEL_TEXTS)]]
-      };
-    }},
-  list:{nome:'Lista de Presenca',fn:'genList',results:'list-results',
-    capturar(){
-      const eid=document.getElementById('list-empresa').value;
-      const fIds=getChecked('lChk');
-      const dataVal=document.getElementById('list-data').value;
-      if(!eid){alert('Selecione uma empresa');return null;}
-      if(!fIds.length){alert('Selecione pelo menos um participante');return null;}
-      if(!dataVal){alert('Informe a data');return null;}
-      return{
-        inputs:{'list-sel-texto':document.getElementById('list-sel-texto').value,'list-empresa':eid,'list-treino':document.getElementById('list-treino').value,'list-local':document.getElementById('list-local').value,'list-carga':document.getElementById('list-carga').value,'list-data':dataVal,'list-cont':document.getElementById('list-cont').value},
-        checks:{lChk:fIds},extras:{},
-        resumo:[['Empresa',(resolveEmp(eid)||{}).nome||eid],['Treinamento',document.getElementById('list-treino').value||'—'],['Local',document.getElementById('list-local').value||'—'],['Carga Horária',document.getElementById('list-carga').value||'—'],['Data',fmtData(dataVal)],['Participantes',nomesFuncs(fIds)],['Conteúdo',truncTxt(document.getElementById('list-cont').value,300)]]
-      };
-    }},
-  adm:{nome:'Ficha Admissional',fn:'genAdm',results:'adm-results',
-    capturar(){
-      const eid=document.getElementById('adm-empresa').value;
-      const fIds=getChecked('admChk');
-      const dataVal=document.getElementById('adm-data').value;
-      if(!eid){alert('Selecione uma empresa');return null;}
-      if(!fIds.length){alert('Selecione pelo menos um colaborador');return null;}
-      if(!dataVal){alert('Informe a data');return null;}
-      return{
-        inputs:{'adm-sel-texto':document.getElementById('adm-sel-texto').value,'adm-empresa':eid,'adm-data':dataVal,'adm-local':document.getElementById('adm-local').value,'adm-cont':document.getElementById('adm-cont').value},
-        checks:{admChk:fIds},extras:{},
-        resumo:[['Empresa',(resolveEmp(eid)||{}).nome||eid],['Data do Treinamento',fmtData(dataVal)],['Local',document.getElementById('adm-local').value||'—'],['Colaboradores',nomesFuncs(fIds)],['Conteúdo',truncTxt(document.getElementById('adm-cont').value,300)]]
-      };
-    }},
-  epi:{nome:'Ficha EPI/EPC',fn:'genEPI',results:'epi-results',
-    capturar(){
-      const blankMode=document.getElementById('epi-blank').checked;
-      const eid=document.getElementById('e-e').value;
-      const fIds=getChecked('eChk');
-      const dataVal=document.getElementById('e-data').value;
-      if(!blankMode){
-        if(!eid){alert('Selecione uma empresa');return null;}
-        if(!fIds.length){alert('Selecione pelo menos um colaborador');return null;}
-        if(!dataVal){alert('Informe a data de entrega');return null;}
-        if(!CART.length){alert('Adicione pelo menos um item ao carrinho');return null;}
-      }
-      const itens=CART.map(c=>(c.nome||'')+' x'+(c.qtd||1)).join(', ');
-      return{
-        inputs:{'e-e':eid,'e-data':dataVal,'epi-show-venc':document.getElementById('epi-show-venc').checked,'epi-blank':blankMode},
-        checks:{eChk:fIds},extras:{cart:CART.map(c=>({...c}))},
-        resumo:[['Empresa',(resolveEmp(eid)||{}).nome||eid||'—'],['Data de Entrega',dataVal?fmtData(dataVal):'—'],['Modo',blankMode?'Ficha em branco':'Normal'],['Colaboradores',fIds.length?nomesFuncs(fIds):'—'],['Itens',blankMode?'—':(itens||'—')]]
-      };
-    }},
-  orc:{nome:'Orcamentos',fn:'genOrc',results:null,
-    capturar(){
-      const eid=document.getElementById('o-e').value;
-      if(!eid){alert('Selecione um cliente');return null;}
-      const desc=[],qtd=[],val=[];
-      document.querySelectorAll('#orc-body tr').forEach(tr=>{
-        const d=(tr.querySelector('.o-desc')?.value||'').trim();
-        if(d){desc.push(d);qtd.push(parseFloat(tr.querySelector('.o-qtd')?.value)||1);val.push(parseFloat(tr.querySelector('.o-val')?.value)||0);}
-      });
-      if(!desc.length){alert('Adicione pelo menos um item');return null;}
-      let total=0;desc.forEach((d,i)=>{total+=qtd[i]*val[i];});
-      const itens=desc.map((d,i)=>d+' — '+qtd[i]+' x R$ '+val[i].toFixed(2)).join('\n');
-      return{
-        inputs:{'o-e':eid,'o-data':document.getElementById('o-data').value,'o-val':document.getElementById('o-val').value,'o-intro':document.getElementById('o-intro').value,'o-obs':document.getElementById('o-obs').value,'checkSalvarPadrao':false},
-        checks:{},extras:{rows:{desc,qtd,val}},
-        resumo:[['Cliente',(resolveEmp(eid)||{}).nome||eid],['Data',fmtData(document.getElementById('o-data').value)||'—'],['Validade',(document.getElementById('o-val').value||'15')+' dias'],['Itens',itens],['Total','R$ '+total.toFixed(2)]]
-      };
-    }}
-};
-function solicitarAprovacao(tela){
-  const cfg=TELAS_GERACAO[tela];
-  if(!cfg)return;
-  const cap=cfg.capturar();
-  if(!cap)return;
-  const assin=JSON.stringify([cap.inputs,cap.checks,cap.extras]);
-  const duplicada=Object.values(DATA.aprovacoes||{}).some(s=>{
-    if(s.status!=='pendente'||s.tela!==tela)return false;
-    if(USUARIO_ATUAL&&s.solicitanteId!==USUARIO_ATUAL.id)return false;
-    try{return JSON.stringify([s.estado&&s.estado.inputs,s.estado&&s.estado.checks,s.estado&&s.estado.extras])===assin;}catch(_){return false;}
-  });
-  if(duplicada){alert('Você já possui uma solicitação idêntica aguardando aprovação.');return;}
-  const ref=db.ref('aprovacoes').push();
-  const solicitanteId=USUARIO_ATUAL?USUARIO_ATUAL.id:'';const solicitanteNome=USUARIO_ATUAL?USUARIO_ATUAL.nome:'';
-  const registro={id:ref.key,tela:tela,telaNome:cfg.nome,solicitanteId:solicitanteId,solicitanteNome:solicitanteNome,status:'pendente',criadoEm:Date.now(),estado:{inputs:cap.inputs,checks:cap.checks,extras:cap.extras},resumo:cap.resumo};
-  ref.set(registro).then(()=>{
-    DATA.aprovacoes=DATA.aprovacoes||{};DATA.aprovacoes[ref.key]=registro;
-    return WS_DATA.advanceLocalMeta('aprovacoes');
-  }).then(()=>{
-    if(window.renderAll)renderAll();
-    alert('Solicitação enviada para aprovação.\n\nAcompanhe o status em "Aprovações de Geração > Minhas Solicitações". Após a autorização, o botão GERAR será liberado.');
-  }).catch(e=>{alert('Erro ao registrar solicitação: '+e.message);});
-}
-function repInputs(vals){
-  Object.entries(vals||{}).forEach(([id,v])=>{
-    const el=document.getElementById(id);if(!el)return;
-    if(el.type==='checkbox')el.checked=!!v;else el.value=v;
-  });
-}
-function setCheckedVals(name,vals){
-  const inc=vals||[];
-  Array.from(document.getElementsByName(name)).forEach(c=>{c.checked=inc.includes(c.value);});
-}
-function irParaTela(tela){
-  const mi=document.querySelector('.mi[onclick*="nav(\''+tela+'\'"]');
-  if(mi){mi.click();return;}
-  nav(tela,null);
-}
-function replaySolicitacao(s){
-  const est=s.estado||{};
-  const ex=est.extras||{};
-  if(s.tela==='gen'){
-    irParaTela('gen');repInputs(est.inputs);fltG();setCheckedVals('gChk',(est.checks||{}).gChk);
-    SEL_TEXTS=(ex.selTexts||[]).slice();renderPool();
-  }else if(s.tela==='list'){
-    irParaTela('list');repInputs(est.inputs);fltList();setCheckedVals('lChk',(est.checks||{}).lChk);
-  }else if(s.tela==='adm'){
-    irParaTela('adm');repInputs(est.inputs);fltAdm();setCheckedVals('admChk',(est.checks||{}).admChk);
-  }else if(s.tela==='epi'){
-    irParaTela('epi');
-    const tb=Array.from(document.querySelectorAll('#epi .tab')).find(t=>(t.getAttribute('onclick')||'').indexOf('tab-epi-2')!==-1);
-    if(tb)tb.click();
-    repInputs(est.inputs);fltEpi();setCheckedVals('eChk',(est.checks||{}).eChk);
-    CART=(ex.cart||[]).map(c=>({...c}));renderCart();
-  }else if(s.tela==='orc'){
-    irParaTela('orc');repInputs(est.inputs);
-    const body=document.getElementById('orc-body');body.innerHTML='';
-    const rows=ex.rows||{desc:[],qtd:[],val:[]};
-    rows.desc.forEach(()=>addOrcItem());
-    const ds=body.querySelectorAll('.o-desc'),qs=body.querySelectorAll('.o-qtd'),vs=body.querySelectorAll('.o-val');
-    ds.forEach((el,i)=>{el.value=rows.desc[i]||'';});
-    qs.forEach((el,i)=>{el.value=(rows.qtd[i]!==undefined?rows.qtd[i]:1);});
-    vs.forEach((el,i)=>{el.value=(rows.val[i]!==undefined?rows.val[i]:0);});
-    calcTotal();
-  }
-}
-function marcarEmitido(s,por){
-  if(!s)return;
-  const now=Date.now();
-  db.ref('aprovacoes/'+s.id).update({emitidoEm:now,emitidoPor:por})
-    .then(()=>WS_DATA.advanceLocalMeta('aprovacoes'))
-    .then(()=>{
-      s.emitidoEm=now;s.emitidoPor=por;
-      if(window.renderAll)renderAll();
-    }).catch(e=>alert('Erro ao registrar emissão: '+e.message));
-}
-window.baixarAprovado=async function(id){
-  const s=(DATA.aprovacoes||{})[id];
-  if(!s||s.status!=='aprovado'){alert('Esta solicitação não está aprovada.');return;}
-  if(s.tela==='cert'){
-    cls();
-    openCertModal();
-    const modalEl=document.getElementById('cert-modal');
-    if(!modalEl||!modalEl.classList.contains('open')){fecharProgresso();return;}
-    abrirProgresso('Emitindo certificados aprovados...');
-    const iframe=document.getElementById('cert-iframe');
-    if(iframe)iframe.src='certificados.html?replay='+encodeURIComponent(s.id);
-    return;
-  }
-  const cfg=TELAS_GERACAO[s.tela];
-  if(!cfg){alert('Tela de geração indisponível.');return;}
-  cls();
-  replaySolicitacao(s);
-  WS_BYPASS_GERACAO=true;
-  try{
-    const ok=await window[cfg.fn]();
-    if(ok)marcarEmitido(s,USUARIO_ATUAL?USUARIO_ATUAL.nome:'');
-  }catch(e){console.error('Falha ao gerar documento aprovado: '+e.message);}
-};
 function fmtDT(ts){if(!ts)return'—';const d=new Date(ts);return d.toLocaleDateString('pt-BR')+' às '+d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});}
-function statusInfo(s){
-  if(s.status==='aprovado')return{cls:'apv-ok',ico:'fa-circle-check',txt:'Aprovado por '+esc(s.aprovadoPor||'—')+' em '+fmtDT(s.aprovadoEm)};
-  if(s.status==='reprovado')return{cls:'apv-no',ico:'fa-circle-xmark',txt:'Reprovado por '+esc(s.reprovadoPor||'—')+' em '+fmtDT(s.reprovadoEm)+(s.motivo?' · Motivo: '+esc(s.motivo):'')};
-  return{cls:'apv-pend',ico:'fa-hourglass-half',txt:'Aguardando aprovação'};
+
+// ── RELATORIO: TOTAIS POR USUARIO + HISTORICO ───────────────────────────
+let GU_USUARIO_SEL='';
+function guGeracoes(){
+  return toArr(DATA.historico).filter(h=>!isBlindagem(h)&&h.source!=='blindagem_externa');
 }
-function emitidoInfo(s){
-  if(!s||s.status!=='aprovado')return null;
-  if(s.emitidoEm)return{ico:'fa-circle-check',cls:'apv-ok',txt:'Emitido em '+fmtDT(s.emitidoEm)+(s.emitidoPor?' por '+esc(s.emitidoPor):'')};
-  return{ico:'fa-hourglass-half',cls:'apv-pend',txt:'Aprovado · ainda não emitido pelo solicitante'};
+function guChaveUsuario(h){
+  return guNomeUsuario(h&&h.usuarioId)||(h&&h.usuarioNome)||'Não informado';
 }
-function aprovItemHtml(s,mostrarSolicitante){
-  const st=statusInfo(s);
-  const emi=emitidoInfo(s);
-  const minha=USUARIO_ATUAL&&s.solicitanteId===USUARIO_ATUAL.id;
-  const btn=s.status==='aprovado'&&minha?'<button class="btn bs" onclick="event.stopPropagation();baixarAprovado(\''+s.id+'\')"><i class="fa-solid fa-download"></i> Gerar</button>':'';
-  const sub=(mostrarSolicitante?'Solicitado por '+esc(s.solicitanteNome||'?')+' · ':'')+fmtDT(s.criadoEm);
-  return'<div class="aprov-item '+st.cls+'" onclick="openAprovModal(\''+s.id+'\')">'+
-    (btn?'<div class="aprov-gerar">'+btn+'</div>':'')+
-    '<div style="flex:1;min-width:0"><div class="ai-titulo">'+esc(s.telaNome||s.tela)+'</div>'+
-    '<div class="ai-sub">'+sub+'</div>'+
-    '<div class="ai-status"><i class="fa-solid '+st.ico+'"></i> '+st.txt+'</div>'+
-    (emi?'<div class="ai-status"><i class="fa-solid '+emi.ico+'"></i> '+emi.txt+'</div>':'')+
-    '</div></div>';
+function guNomeUsuario(id){
+  if(!id)return '';
+  const u=DATA.usuarios?.[id];
+  return(u&&u.nome)||'';
 }
-window.aprovTab=function(t){
-  APROV_TAB=t;
-  document.getElementById('tab-aprov-pend').classList.toggle('active',t==='pend');
-  document.getElementById('tab-aprov-minhas').classList.toggle('active',t==='minhas');
-  document.getElementById('aprov-pend-wrap').classList.toggle('active',t==='pend');
-  document.getElementById('aprov-minhas-wrap').classList.toggle('active',t==='minhas');
-};
-function aprovFiltroAtual(sufixo){
-  const sel=document.getElementById('aprov-filtro-status-'+sufixo);
-  const bus=document.getElementById('aprov-filtro-busca-'+sufixo);
-  return{status:sel?sel.value:'todas',busca:((bus?bus.value:'')||'').trim().toLowerCase()};
+function guIniciais(nome){
+  const p=String(nome||'?').trim().split(/\s+/).filter(Boolean);
+  if(!p.length)return'?';
+  if(p.length===1)return p[0].slice(0,2).toUpperCase();
+  return(p[0][0]+p[p.length-1][0]).toUpperCase();
 }
-function casaBuscaAprov(s,busca){
-  if(!busca)return true;
-  const hay=((s.solicitanteNome||'')+' '+(s.telaNome||'')+' '+(s.tela||'')).toLowerCase();
-  return hay.includes(busca);
+// Numero de documentos que o registro representa. Registros antigos valem 1;
+// um registro agregado de geracao em massa vale o campo `qtd`.
+function guQtdDoc(h){
+  const q=parseInt(h&&h.qtd,10);
+  return(h&&h.tipo==='massa'&&q>0)?q:1;
 }
-window.aprovChipFiltro=function(st){
-  const suf=APROV_TAB==='minhas'?'m':'p';
-  const sel=document.getElementById('aprov-filtro-status-'+suf);
-  if(!sel)return;
-  sel.value=sel.value===st?'todas':st;
-  renderAprovacoes();
-};
-window.limparLogsAprov=function(){
-  if(!podeAprovarGeracao())return;
-  if(!confirm('Apagar TODO o hist\u00f3rico de solicita\u00e7\u00f5es?\n\nPendentes tamb\u00e9m ser\u00e3o apagadas. Esta a\u00e7\u00e3o n\u00e3o pode ser desfeita.'))return;
-  WS_DATA.removeAll('aprovacoes');
-  renderAprovacoes();
-};
-function renderAprovacoes(){
-  const view=document.getElementById('aprov');
-  if(!view)return;
-  const pode=podeAprovarGeracao();
-  const tp=document.getElementById('tab-aprov-pend');
-  if(tp)tp.style.display=pode?'':'none';
-  const tm=document.getElementById('tab-aprov-minhas');
-  if(tm)tm.style.display=pode?'none':'';
-  if(!pode&&APROV_TAB==='pend')APROV_TAB='minhas';
-  if(pode&&APROV_TAB==='minhas')APROV_TAB='pend';
-  aprovTab(APROV_TAB);
-  const bl=document.getElementById('btn-limpar-logs');
-  if(bl)bl.style.display=pode?'':'none';
-  const todas=Object.values(DATA.aprovacoes||{});
-  const nPend=todas.filter(s=>s.status==='pendente').length;
-  const nOk=todas.filter(s=>s.status==='aprovado').length;
-  const nNo=todas.filter(s=>s.status==='reprovado').length;
-  const badge=document.getElementById('aprov-badge');
-  if(badge){const n=pode?nPend:0;badge.style.display=n?'':'none';badge.textContent=n;}
-  const setChip=(id,v,ativo)=>{const el=document.getElementById(id);if(!el)return;el.textContent=v;if(ativo!==undefined)el.classList.toggle('active',ativo);};
-  const fp=aprovFiltroAtual('p');
-  setChip('aprov-chip-pend-p','Pendentes: '+nPend,fp.status==='pendente');
-  setChip('aprov-chip-ok-p','Aprovados: '+nOk,fp.status==='aprovado');
-  setChip('aprov-chip-no-p','Cancelados: '+nNo,fp.status==='reprovado');
-  const lp=document.getElementById('aprov-lista-pend');
-  let htmlP='';
+function guTotaisPorUsuario(){
+  const mapa={};
   const corte30=Date.now()-30*24*60*60*1000;
-  const sec=(titulo,lista)=>'<div class="aprov-sec-titulo">'+titulo+'('+lista.length+')</div>'+(lista.length?lista.map(s=>aprovItemHtml(s,true)).join(''):'<div class="es" style="padding:14px">Nada aqui.</div>');
-  if(fp.status==='todas'||fp.status==='pendente'){
-    const pend=todas.filter(s=>s.status==='pendente'&&casaBuscaAprov(s,fp.busca)).sort((a,b)=>(b.criadoEm||0)-(a.criadoEm||0));
-    htmlP+=sec('Pendentes ',pend);
-  }
-  if(fp.status==='todas'){
-    const aprovados30=todas.filter(s=>s.status==='aprovado'&&(s.aprovadoEm||0)>=corte30&&casaBuscaAprov(s,fp.busca)).sort((a,b)=>(b.aprovadoEm||0)-(a.aprovadoEm||0));
-    htmlP+=sec('Aprovados &mdash; &uacute;ltimos 30 dias ',aprovados30);
-    const reprovados30=todas.filter(s=>s.status==='reprovado'&&(s.reprovadoEm||0)>=corte30&&casaBuscaAprov(s,fp.busca)).sort((a,b)=>(b.reprovadoEm||0)-(a.reprovadoEm||0));
-    htmlP+=sec('Cancelados &mdash; &uacute;ltimos 30 dias ',reprovados30);
-  }else if(fp.status==='aprovado'){
-    const aprovados=todas.filter(s=>s.status==='aprovado'&&casaBuscaAprov(s,fp.busca)).sort((a,b)=>(b.aprovadoEm||0)-(a.aprovadoEm||0));
-    htmlP+=sec('Aprovados ',aprovados);
-  }else if(fp.status==='reprovado'){
-    const reprovados=todas.filter(s=>s.status==='reprovado'&&casaBuscaAprov(s,fp.busca)).sort((a,b)=>(b.reprovadoEm||0)-(a.reprovadoEm||0));
-    htmlP+=sec('Cancelados ',reprovados);
-  }
-  lp.innerHTML=htmlP;
-  const fm=aprovFiltroAtual('m');
-  const minhasTodas=todas.filter(s=>USUARIO_ATUAL&&s.solicitanteId===USUARIO_ATUAL.id);
-  const totalMinhas=minhasTodas.length;
-  setChip('aprov-chip-pend-m','Pendentes: '+minhasTodas.filter(s=>s.status==='pendente').length,fm.status==='pendente');
-  setChip('aprov-chip-ok-m','Aprovados: '+minhasTodas.filter(s=>s.status==='aprovado').length,fm.status==='aprovado');
-  setChip('aprov-chip-no-m','Cancelados: '+minhasTodas.filter(s=>s.status==='reprovado').length,fm.status==='reprovado');
-  let minhas=minhasTodas;
-  if(fm.status!=='todas')minhas=minhas.filter(s=>s.status===fm.status);
-  minhas=minhas.filter(s=>casaBuscaAprov(s,fm.busca)).sort((a,b)=>(b.criadoEm||0)-(a.criadoEm||0));
-  const lm=document.getElementById('aprov-lista-minhas');
-  lm.innerHTML=minhas.length?minhas.map(s=>aprovItemHtml(s,false)).join(''):(totalMinhas?'<div class="es" style="padding:18px">Nenhuma solicita&ccedil;&atilde;o encontrada com os filtros atuais.</div>':'<div class="es" style="padding:18px">Voc&ecirc; n&atilde;o enviou solicita&ccedil;&otilde;es.</div>');
-  setAprovAtualizado();
+  guGeracoes().forEach(h=>{
+    const k=guChaveUsuario(h);
+    if(!mapa[k])mapa[k]={nome:k,usuarioId:(h&&h.usuarioId)||'',total:0,dias30:0,ultimo:0,porTipo:{}};
+    const m=mapa[k];
+    const q=guQtdDoc(h);
+    m.total+=q;
+    if((h.ts||0)>=corte30)m.dias30+=q;
+    if((h.ts||0)>m.ultimo)m.ultimo=h.ts||0;
+    const t=guTipoDoc(h);
+    m.porTipo[t]=(m.porTipo[t]||0)+q;
+  });
+  return Object.values(mapa).sort((a,b)=>b.total-a.total);
 }
-function setAprovAtualizado(){
+function guFiltroAtual(){
+  const sel=document.getElementById('gu-filtro-periodo');
+  const bus=document.getElementById('gu-filtro-busca');
+  return{
+    dias:sel?parseInt(sel.value,10):30,
+    busca:((bus?bus.value:'')||'').trim().toLowerCase(),
+    usuario:GU_USUARIO_SEL
+  };
+}
+function guCorte(){
+  const d=guFiltroAtual().dias;
+  return d>0?Date.now()-d*24*60*60*1000:0;
+}
+function guCasou(h,f){
+  if(f.usuario&&guChaveUsuario(h)!==f.usuario)return false;
+  if(!f.busca)return true;
+  const empNome=(h.empresaId&&DATA.empresas[h.empresaId])?(DATA.empresas[h.empresaId].nome||''):'';
+  const hay=[h.nome,guChaveUsuario(h),h.usuarioNome,guTipoDoc(h),empNome].join(' ').toLowerCase();
+  return hay.includes(f.busca);
+}
+function guCartaoHtml(m,maxTotal){
+  const pct=maxTotal>0?Math.round((m.total/maxTotal)*100):0;
+  const tipos=Object.entries(m.porTipo).sort((a,b)=>b[1]-a[1]).slice(0,3)
+    .map(t=>'<span class="gu-tag" style="background:var(--hl);border:1px solid var(--bd);border-radius:999px;padding:1px 7px;font-size:10px;color:var(--ts)">'+esc(t[0])+': <b style="color:var(--tp)">'+t[1]+'</b></span>').join(' ');
+  return'<div class="gu-card'+(GU_USUARIO_SEL===m.nome?' sel':'')+'" onclick="filtrarGeracoesPorUsuario(\''+m.nome.replace(/'/g,"\\'")+'\')">'+
+    '<div class="gu-cd-top"><div class="gu-av">'+esc(guIniciais(m.nome))+'</div><div class="gu-cd-nome">'+esc(m.nome)+'</div></div>'+
+    '<div class="gu-cd-num">'+m.total+'</div>'+
+    '<div class="gu-cd-lbl">documento(s) gerado(s)</div>'+
+    '<div class="gu-cd-bar"><i style="width:'+pct+'%"></i></div>'+
+    '<div class="gu-cd-sub"><span><b>'+m.dias30+'</b> em 30 dias</span><span>&Uacute;ltimo: <b>'+(m.ultimo?fmtDT(m.ultimo):'—')+'</b></span></div>'+
+    '<div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:8px">'+tipos+'</div>'+
+  '</div>';
+}
+function guTipoDoc(h){
+  if(h&&h.tipo==='massa')return'Geração em Massa';
+  if(h&&h.tipo==='certificado')return'Certificado';
+  return getDocTipo(h&&h.nome);
+}
+function guDataDoc(h){
+  if(h&&h.dataDoc)return h.dataDoc;
+  const d=h&&h.data;
+  if(!d)return '';
+  if(/^\d{2}\/\d{2}\/\d{4},\s*\d{2}:\d{2}$/.test(d))return'';
+  if(String(d).slice(0,10)===new Date(h.ts||0).toLocaleDateString('pt-BR'))return'';
+  return d;
+}
+function guRotuloQtd(h){
+  if(!h||!h.qtd)return'';
+  return(h.tipo==='certificado'?'certificado(s)':'documento(s)');
+}
+function guItemHtml(h){
+  const tipo=guTipoDoc(h);
+  const icone=h.tipo==='massa'?'fa-layer-group':(h.tipo==='certificado'?'fa-certificate':'fa-file-pdf');
+  const emp=h.empresaId?((DATA.empresas[h.empresaId]||{}).nome||h.empresaId):'';
+  const qtd=(h.funcionarioIds&&h.funcionarioIds.length)?h.funcionarioIds.length+' colaborador(es)':'';
+  const dataDoc=guDataDoc(h);
+  const tag=(ic,tx)=>'<span class="gu-tag"><i class="fa-solid '+ic+'"></i> '+esc(tx)+'</span>';
+  const partes=[
+    tag('fa-user',guChaveUsuario(h)),
+    tag('fa-clock',fmtDT(h.ts)),
+    h.qtd?tag('fa-file-lines',h.qtd+' '+guRotuloQtd(h)):'',
+    dataDoc?tag('fa-calendar-day',dataDoc):'',
+    qtd?tag('fa-users',qtd):'',
+    emp?tag('fa-building',emp):''
+  ].filter(Boolean);
+  return'<div class="gu-hitem" onclick="openGeracaoModal(\''+h.id+'\')">'+
+    '<div class="gu-h-ic"><i class="fa-solid '+icone+'"></i></div>'+
+    '<div style="flex:1;min-width:0">'+
+      '<div class="gu-h-tit">'+esc(h.nome||'Documento')+'</div>'+
+      '<div class="gu-h-sub">'+partes.join('')+'</div>'+
+    '</div>'+
+    '<i class="fa-solid fa-chevron-right" style="color:var(--tm);font-size:11px"></i>'+
+  '</div>';
+}
+function renderGeracoes(){
+  const wrap=document.getElementById('gu-cards');
+  if(!wrap)return;
+  const f=guFiltroAtual();
+  const todas=guGeracoes();
+  const totais=guTotaisPorUsuario();
+  const maxTotal=totais.length?totais[0].total:0;
+  const n30=todas.reduce((s,h)=>s+((h.ts||0)>=Date.now()-30*24*60*60*1000?guQtdDoc(h):0),0);
+  const nTotal=todas.reduce((s,h)=>s+guQtdDoc(h),0);
+  const setChip=(id,txt)=>{const el=document.getElementById(id);if(el)el.textContent=txt;};
+  setChip('gu-chip-total','Total geral: '+nTotal+' doc(s)');
+  setChip('gu-chip-30','30 dias: '+n30);
+  setChip('gu-chip-users','Usuários: '+totais.length);
+  wrap.innerHTML=totais.length?totais.map(m=>guCartaoHtml(m,maxTotal)).join(''):
+    '<div class="gu-empty" style="grid-column:1/-1">Nenhuma geração registrada ainda.</div>';
+  const lim=document.getElementById('btn-gu-limpar-filtro');
+  if(lim)lim.style.display=(f.busca||f.usuario||f.dias!==30)?'':'none';
+  const corte=guCorte();
+  const hist=todas.filter(h=>(h.ts||0)>=corte&&guCasou(h,f)).sort((a,b)=>(b.ts||0)-(a.ts||0));
+  const tit=document.getElementById('gu-hist-titulo');
+  const rot=f.dias>0?('últimos '+f.dias+' dias'):'todo o período';
+  const nHist=hist.reduce((s,h)=>s+guQtdDoc(h),0);
+  if(tit)tit.textContent='Histórico de gerações — '+rot+(f.usuario?(' · '+f.usuario):'')+' ('+hist.length+(nHist!==hist.length?' · '+nHist+' doc(s)':'')+')';
+  const box=document.getElementById('gu-hist');
+  box.innerHTML=hist.length?hist.map(guItemHtml).join(''):
+    '<div class="gu-empty">Nenhuma geração encontrada com os filtros atuais.</div>';
+  setGeracoesAtualizado();
+}
+function filtrarGeracoesPorUsuario(nome){
+  GU_USUARIO_SEL=(GU_USUARIO_SEL===nome)?'':nome;
+  renderGeracoes();
+}
+function limparFiltroGeracoes(){
+  GU_USUARIO_SEL='';
+  const bus=document.getElementById('gu-filtro-busca');
+  if(bus)bus.value='';
+  const sel=document.getElementById('gu-filtro-periodo');
+  if(sel)sel.value='30';
+  renderGeracoes();
+}
+function setGeracoesAtualizado(){
   const el=document.getElementById('aprov-atualizado');
   if(!el)return;
   el.innerHTML='<i class="fa-solid fa-clock"></i> Atualizado '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
 }
-window.refreshAprovacoes=function(){
+window.refreshGeracoes=function(){
   const btn=document.getElementById('btn-refresh-aprov');
   if(btn)btn.disabled=true;
-  refreshNode('aprovacoes').then(()=>{
-    if(window.renderAprovacoes)renderAprovacoes();
-    setAprovAtualizado();
+  refreshNode('historico').then(()=>{
+    renderGeracoes();
+    setGeracoesAtualizado();
   }).catch(e=>alert('Erro ao atualizar: '+e.message)).finally(()=>{if(btn)btn.disabled=false;});
 };
-window.openAprovModal=function(id){
-  const s=(DATA.aprovacoes||{})[id];
-  if(!s)return;
-  const st=statusInfo(s);
-  const emi=emitidoInfo(s);
-  const cores={apv:['#fef9c3','#854d0e'],ok:['#dcfce7','#15803d'],no:['#fee2e2','#b91c1c']};
-  const cor=st.cls==='apv-ok'?cores.ok:st.cls==='apv-no'?cores.no:cores.apv;
-  let html='<div style="margin-bottom:12px"><span class="aprov-st-linha" style="background:'+cor[0]+';color:'+cor[1]+'"><i class="fa-solid '+st.ico+'"></i> '+st.txt+'</span></div>';
-  if(emi){
-    const ec=emi.cls==='apv-ok'?cores.ok:cores.apv;
-    html+='<div style="margin-bottom:12px"><span class="aprov-st-linha" style="background:'+ec[0]+';color:'+ec[1]+'"><i class="fa-solid '+emi.ico+'"></i> '+emi.txt+'</span></div>';
-  }
-  const linhas=[['Solicitante',s.solicitanteNome||'—'],['Tela',s.telaNome||s.tela||'—'],['Data da solicitação',fmtDT(s.criadoEm)]];
-  linhas.forEach(r=>{html+='<div class="aprov-detalhe"><b>'+esc(r[0])+'</b><span>'+esc(r[1])+'</span></div>';});
-  (s.resumo||[]).forEach(r=>{html+='<div class="aprov-detalhe"><b>'+esc(r[0])+'</b><span style="white-space:pre-wrap">'+esc(r[1])+'</span></div>';});
-  if(s.status==='reprovado'&&s.motivo)html+='<div class="aprov-detalhe"><b>Motivo da reprovação</b><span style="color:#b91c1c">'+esc(s.motivo)+'</span></div>';
+window.openGeracaoModal=function(id){
+  const h=(DATA.historico||{})[id];
+  if(!h)return;
+  const emp=h.empresaId?((DATA.empresas[h.empresaId]||{}).nome||h.empresaId):'';
+  const dataDoc=guDataDoc(h);
+  const linhas=[
+    ['Documento',h.nome||'—'],
+    ['Tipo',guTipoDoc(h)],
+    ['Usuário gerador',guChaveUsuario(h)],
+    ['Gerado em',fmtDT(h.ts)]
+  ];
+  if(h.qtd)linhas.push([h.tipo==='certificado'?'Certificados emitidos':'Documentos gerados',String(h.qtd)]);
+  if(dataDoc)linhas.push([h.treino?'Data do treinamento':'Data no documento',dataDoc]);
+  if(emp)linhas.push(['Empresa',emp]);
+  if(h.treino)linhas.push(['Treinamento',h.treino]);
+  if(h.funcionarioIds&&h.funcionarioIds.length)linhas.push(['Colaboradores ('+h.funcionarioIds.length+')',nomesFuncs(h.funcionarioIds)]);
+  if(h.expiracao)linhas.push(['Vence em',fmtDT(h.expiracao)]);
+  linhas.push(['ID do registro',h.id||'—']);
+  const html=linhas.map(r=>'<div class="aprov-detalhe"><b>'+esc(r[0])+'</b><span style="white-space:pre-wrap">'+esc(r[1])+'</span></div>').join('');
   document.getElementById('aprov-modal-body').innerHTML=html;
-  const actions=document.getElementById('aprov-modal-actions');
-  const motivoWrap=document.getElementById('aprov-motivo-wrap');
-  motivoWrap.style.display='none';
-  document.getElementById('aprov-motivo').value='';
-  let ac='';
-  if(podeAprovarGeracao()&&s.status==='pendente'){
-    ac+='<button class="btn bxd bxs" style="padding:8px 14px;font-size:12px;background:#fee2e2;color:#b91c1c" onclick="mostrarMotivoReprovacao()"><i class="fa-solid fa-xmark"></i> Reprovar</button>'+
-        '<button class="btn bp" style="padding:8px 14px;font-size:12px" onclick="aprovarSolicitacao(\''+s.id+'\')"><i class="fa-solid fa-check"></i> Aprovar</button>';
-  }else if(s.status==='aprovado'&&USUARIO_ATUAL&&s.solicitanteId===USUARIO_ATUAL.id){
-    ac+='<button class="btn bp" style="padding:8px 14px;font-size:12px" onclick="baixarAprovado(\''+s.id+'\')"><i class="fa-solid fa-download"></i> Gerar</button>';
-  }
-  ac+='<button class="btn bg2" style="padding:8px 14px;font-size:12px" onclick="cls()">Fechar</button>';
-  actions.innerHTML=ac;
-  actions.dataset.sid=id;
+  document.getElementById('aprov-modal-actions').innerHTML=
+    '<button class="btn bg2" style="padding:8px 14px;font-size:12px" onclick="cls()">Fechar</button>';
   document.getElementById('mdl-aprov').style.display='flex';
-};
-window.mostrarMotivoReprovacao=function(){
-  document.getElementById('aprov-motivo-wrap').style.display='block';
-  const actions=document.getElementById('aprov-modal-actions');
-  const sid=actions.dataset.sid;
-  actions.innerHTML='<button class="btn bg2" style="padding:8px 14px;font-size:12px" onclick="cancelarMotivoReprovacao()">Cancelar</button>'+
-    '<button class="btn bxd" style="padding:8px 14px;font-size:12px;background:#fee2e2;color:#b91c1c" onclick="reprovarSolicitacao(\''+sid+'\')"><i class="fa-solid fa-xmark"></i> Confirmar Reprova&ccedil;&atilde;o</button>';
-};
-window.cancelarMotivoReprovacao=function(){
-  document.getElementById('aprov-motivo-wrap').style.display='none';
-  const sid=document.getElementById('aprov-modal-actions').dataset.sid;
-  openAprovModal(sid);
-};
-window.aprovarSolicitacao=function(id){
-  const s=(DATA.aprovacoes||{})[id];
-  if(!s||s.status!=='pendente')return;
-  if(!confirm('Aprovar a gera\u00e7\u00e3o de "'+(s.telaNome||'')+'" solicitada por '+(s.solicitanteNome||'?')+'?'))return;
-  db.ref('aprovacoes/'+id).update({status:'aprovado',aprovadoPor:USUARIO_ATUAL?USUARIO_ATUAL.nome:'',aprovadoEm:Date.now(),motivo:''})
-    .then(()=>WS_DATA.advanceLocalMeta('aprovacoes')).then(()=>{cls();if(window.renderAll)renderAll();}).catch(e=>alert('Erro ao aprovar: '+e.message));
-};
-window.reprovarSolicitacao=function(id){
-  const motivo=(document.getElementById('aprov-motivo').value||'').trim();
-  if(!motivo){alert('Informe o motivo da reprovação.');return;}
-  db.ref('aprovacoes/'+id).update({status:'reprovado',reprovadoPor:USUARIO_ATUAL?USUARIO_ATUAL.nome:'',reprovadoEm:Date.now(),motivo:motivo})
-    .then(()=>WS_DATA.advanceLocalMeta('aprovacoes')).then(()=>{cls();if(window.renderAll)renderAll();}).catch(e=>alert('Erro ao reprovar: '+e.message));
 };
 
 async function rasterizePdfPages(pdfBytes) {

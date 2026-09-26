@@ -791,9 +791,19 @@ async function carregarUsuarioCert(){
     try{
         const nomeSalvo = sessionStorage.getItem('ws_user_nome')||'';
         if(!nomeSalvo || nomeSalvo==='Arnaldo' || nomeSalvo==='wedson') return;
+        // Resolve pelo id (mesma fonte da view "Geração por Usuário"), evitando
+        // depender do nome e uma leitura extra do nó 'usuarios'.
+        const idSalvo = sessionStorage.getItem('ws_user_id')||'';
+        if(idSalvo){
+            const snap = await get(ref(db,'usuarios/'+idSalvo));
+            const u = snap.val();
+            if(u) usuarioAtualCert = Object.assign({id:idSalvo}, u);
+            return;
+        }
         const snap = await get(ref(db,'usuarios'));
         const usuarios = snap.val()||{};
-        usuarioAtualCert = Object.values(usuarios).find(u=>u.nome===nomeSalvo)||null;
+        const achado = Object.values(usuarios).find(u=>u.nome===nomeSalvo)||null;
+        if(achado) usuarioAtualCert = Object.assign({id:Object.keys(usuarios).find(k=>usuarios[k]===achado)||''}, achado);
     }catch(e){ console.error("Erro ao carregar usuário:", e); }
 }
 function empresaPermitidaCert(id){
@@ -1487,13 +1497,59 @@ window.openEditModal = (type, id) => {
                 <option value="3" ${item.validade=='3'?'selected':''}>3 Anos</option>
                 <option value="5" ${item.validade=='5'?'selected':''}>5 Anos</option>
             </select>
+            <div id="avisoValidadeCurso"></div>
             <label>Logo do Curso (aparece na página 1 do certificado):</label>
             <input type="file" id="edit_logoCurso" accept="image/*">
             <label>Mensagem Padrão (Pág 1):</label><textarea id="modal_cursoMensagem" rows="5">${item.mensagem || ''}</textarea>
             <label>Conteúdo Programático (Pág 2 - Uma linha por tópico):</label><textarea id="modal_cursoConteudo" rows="8">${item.conteudo || ''}</textarea>
         `;
         openModal(title, bodyHTML, () => window.saveEditCurso(id));
+        avisarMudancaValidadeCurso(id, el('modal_cursoValidade'), item.validade || 'none');
     }
+}
+
+// Quantos certificados ja foram emitidos para um curso (cache local, sem ler o banco).
+function contarCertificadosDoCurso(cursoId) {
+    let n = 0;
+    for (const k in certificadosGeradosData) {
+        const c = certificadosGeradosData[k];
+        if (c && c.curso && c.curso.id === cursoId) n++;
+    }
+    return n;
+}
+
+// Aviso disparado no instante em que a validade e alterada no select, antes de
+// salvar. Alem do alerta, deixa uma nota visivel no proprio campo para o
+// usuario nao esquecer o efeito ao terminar a edicao.
+function avisarMudancaValidadeCurso(cursoId, selectEl, validadeOriginal) {
+    if (!selectEl) return;
+    const aviso = el('avisoValidadeCurso');
+    const certs = contarCertificadosDoCurso(cursoId);
+
+    selectEl.addEventListener('change', () => {
+        const nova = selectEl.value;
+        if (nova === validadeOriginal) {
+            if (aviso) aviso.innerHTML = '';
+            return;
+        }
+        const texto = 'Isso irá recalcular a validade de ' + certs + ' certificado(s) já emitido(s) do curso "' +
+            (cursosData[cursoId] ? (cursosData[cursoId].nome || '') : '') + '", em massa.\n\n' +
+            'Validade: ' + rotuloValidade(validadeOriginal) + '  ->  ' + rotuloValidade(nova) + '\n' +
+            'O vencimento de todos eles será recalculado a partir da data de fim de cada treinamento.';
+        if (certs > 0) {
+            alert('ATENÇÃO\n\n' + texto);
+            if (aviso) {
+                aviso.innerHTML = '<div style="margin-top:6px;padding:8px 10px;border-radius:6px;' +
+                    'border:1px solid #f59e0b;background:#fffbeb;color:#92400e;font-size:12px;line-height:1.45">' +
+                    '<b>ATENÇÃO:</b> ao salvar, ' + certs + ' certificado(s) já emitido(s) terão a validade ' +
+                    'recalculada em massa (' + rotuloValidade(validadeOriginal) + ' &rarr; ' +
+                    rotuloValidade(nova) + ').</div>';
+            }
+        } else if (aviso) {
+            aviso.innerHTML = '<div style="margin-top:6px;font-size:12px;color:var(--tm)">' +
+                'Nenhum certificado foi emitido deste curso ainda.</div>';
+        }
+    });
 }
 
 window.openEditCertificadoModal = (id) => {
@@ -1609,11 +1665,15 @@ window.saveEditCurso = async (id) => {
     btn.textContent = "Salvando...";
     btn.disabled = true;
 
+    const cursoAtual = cursosData[id] || {};
+    const validadeNova = el('modal_cursoValidade').value;
+    const houveMudancaValidade = (cursoAtual.validade || 'none') !== validadeNova;
+
     try {
         const patch = {
             nome: el('modal_cursoNome').value.trim(),
             carga: el('modal_cursoCarga').value.trim(),
-            validade: el('modal_cursoValidade').value,
+            validade: validadeNova,
             mensagem: el('modal_cursoMensagem').value.trim(),
             conteudo: el('modal_cursoConteudo').value.trim(),
         };
@@ -1622,6 +1682,32 @@ window.saveEditCurso = async (id) => {
         if (logoInput && logoInput.files && logoInput.files.length > 0) {
             const url = await uploadImage(logoInput);
             if (url) patch.logoCurso = url;
+        }
+
+        if (houveMudancaValidade) {
+            // A nova validade so passa a valer se o usuario confirmar o
+            // recalculo; se ele recusar, o curso e salvo com a validade antiga
+            // para nao existir divergencia entre curso e certificados.
+            const cursoComNovaValidade = Object.assign({}, cursoAtual, patch);
+            cursosData[id] = cursoComNovaValidade;
+            const resultado = await recalcularValidadeCurso(id, { bulk: true });
+            if (resultado && Object.keys(resultado.updates).length) {
+                const aplicou = await salvarRecalculo(id, resultado, true, cursoAtual.validade || 'none');
+                if (aplicou) {
+                    window.closeModal();
+                    return;
+                }
+            }
+            cursosData[id] = cursoAtual;
+            patch.validade = cursoAtual.validade || 'none';
+            const recusou = confirm(
+                'ATENÇÃO\n\n' +
+                'O curso continuará com a validade anterior ("' + rotuloValidade(cursoAtual.validade) +
+                '"), e os ' + (resultado ? resultado.afetados : 0) + ' certificado(s) já emitido(s) ' +
+                'ficarão com o vencimento que já têm.\n\n' +
+                'Salvar as outras alterações do curso mesmo assim?'
+            );
+            if (!recusou) return;
         }
 
         await updateItem("cursos", id, patch);
@@ -1639,15 +1725,25 @@ window.saveEditCertificado = async (id) => {
     const dataInicio = el('modal_certDataInicio').value.trim();
     const dataFim = el('modal_certDataFim').value.trim();
 
+    // A validity vem do proprio certificado quando ele ja carrega a copia
+    // (emissoes novas); em certificados antigos, do curso atual.
+    const cert = certificadosGeradosData[id] || {};
+    const cursoId = (cert.curso || {}).id;
+    const validade = cert.curso.validade
+        || (cursoId && cursosData[cursoId] ? (cursosData[cursoId].validade || 'none') : 'none');
+
     const patch = {
         "curso/nome": el('modal_certCursoNome').value.trim(),
         "curso/carga": el('modal_certCursoCarga').value.trim(),
+        "curso/validade": validade,
         "curso/mensagem": el('modal_certMensagem').value.trim(),
         "curso/conteudo": el('modal_certConteudo').value.trim(),
         dataInicio: dataInicio,
         dataFim: dataFim,
         dataInicioBR: fmtDateBR(dataInicio), 
         dataFimBR: fmtDateBR(dataFim),
+        // sem isso o vencimento ficaria fora de sincronia com a nova data
+        expiracao: calcExpiracao(dataFim, validade),
     };
     
     await updateItem("certificadosGerados", id, patch);
@@ -1683,7 +1779,28 @@ function buildMensagemCurso(curso, aluno, dataInicioBR, dataFimBR, empresa){
         .replaceAll("{DATA_FIM_TREINAMENTO}", dataFimBR);
 }
 
+// Vencimento = data de fim do curso + N anos, sempre no mesmo dia do calendario.
+// Feito com aritmetica de texto (sem Date) para nao sofrer com fuso horario: a
+// versao anterior usava 'T23:59:59' + toISOString() e, no Brasil (UTC-3), jogava
+// o vencimento um dia para frente. 29 de fevereiro cai para 28 em ano nao bissexto.
 function calcExpiracao(dataFim, validade) {
+    if (!validade || validade === 'none') return null;
+    const partes = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(dataFim == null ? '' : dataFim).trim());
+    if (!partes) {
+        const d = new Date(dataFim);
+        if (isNaN(d.getTime())) return null;
+        return d.toISOString().slice(0, 10);
+    }
+    const ano = parseInt(partes[1], 10) + parseInt(validade, 10);
+    const mm = partes[2];
+    const ultimoDia = new Date(Date.UTC(ano, parseInt(mm, 10), 0)).getUTCDate();
+    const dd = String(Math.min(parseInt(partes[3], 10), ultimoDia)).padStart(2, '0');
+    return ano + '-' + mm + '-' + dd;
+}
+
+// Como era calculado antes da correcao de fuso. Só é usada para reconhecer a
+// regra de vencimentos gravados no passado, nunca para gravar novos valores.
+function calcExpiracaoLegado(dataFim, validade) {
     if (!validade || validade === 'none') return null;
     const d = new Date(dataFim + "T23:59:59");
     if (isNaN(d.getTime())) return null;
@@ -1691,9 +1808,230 @@ function calcExpiracao(dataFim, validade) {
     return d.toISOString().slice(0, 10);
 }
 
-// ── APROVACOES DE GERACAO (CERTIFICADOS) ────────────────────────────
-let CERT_BYPASS=false;
+// Rotulo legivel da validade do curso, usado nos avisos de recalculo.
+function rotuloValidade(validade){
+    if(!validade||validade==='none')return 'Não vence';
+    return validade+' ano(s)';
+}
+
+const OPCOES_VALIDADE = ['none','1','2','3','5'];
+const PREFIX_CERT = 'certificadosGerados/';
+
+// Descobre qual validade produz o vencimento ja gravado no certificado.
+// Serve para preencher a copia 'curso/validade' em certificados emissos antes
+// deste recurso existirem. Aceita tambem o formato antigo (com o dia adiantado
+// pelo fuso) para dar conta dos registros ja gravados. Devolve null quando nao
+// da para determinar — nesses casos e melhor nao chutar.
+function inferirValidade(dataFim, expiracao){
+    const alvo = expiracao || null;
+    const achados = OPCOES_VALIDADE.filter(v =>
+        calcExpiracao(dataFim, v) === alvo || calcExpiracaoLegado(dataFim, v) === alvo);
+    return achados.length === 1 ? achados[0] : null;
+}
+
+// Le a validade do curso no instante em que a linha de historico esta sendo
+// gravada. Se o curso foi alterado enquanto os PDFs eram montados, usamos o
+// valor atual para nao nascer um registro com a regra antiga; os certificados
+// ja montados ficam por conta de repararValidadesPendentes().
+function cursoValidadeNoFim(cursoId, validadeLida){
+    const atual = cursosData[cursoId];
+    if(atual && (atual.validade||'none') !== (validadeLida||'none')){
+        console.warn('Validade do curso alterada durante a geracao. Aplicando o valor atual.');
+        return atual.validade||'none';
+    }
+    return validadeLida||'none';
+}
+
+// ── RECALCULO EM MASSA DA VALIDADE ───────────────────────────────────────
+// Ao alterar a validade de um curso, todo certificado ja emitido precisa
+// refletir a nova regra. Alem de 'expiracao', mantemos 'curso/validade' (no
+// certificado) e 'validade' (no historico) com o valor que foi aplicado na
+// emissao — sem essa copia nao existe como recalcular registros antigos.
+//
+// bulk = true  -> reavalia todos os certificados do curso (mudanca de validade)
+// bulk = false -> so completa a copia de validade onde ela pode ser deduzida do
+//                 proprio vencimento. Nao altera nenhum vencimento.
+//
+// Cada linha de 'historico' de certificado corresponde a uma execucao com
+// varios certificados. A execucao grava 'ts' em cada certificado e so depois
+// em 'historico', entao os certificados de uma execucao sempre tem ts menor que
+// o da sua linha. Percorrendo as execucoes em ordem cronologica e consumindo os
+// certificados ja percorridos, conseguimos atribuir o 'dataFim' de cada execucao
+// exatamente, sem precisar guardar dataFim no historico.
+async function recalcularValidadeCurso(cursoId, opts = {}) {
+    const bulk = !!opts.bulk;
+    const curso = cursosData[cursoId];
+    if (!curso) return null;
+    const updates = {};
+
+    // 1) certificadosGerados: a expiracao sai do proprio dataFim do certificado
+    const certsDoCurso = getArrayFromData(certificadosGeradosData)
+        .filter(c => c && c.curso && c.curso.id === cursoId)
+        .sort((a, b) => (a.ts || 0) - (b.ts || 0));
+
+    certsDoCurso.forEach(c => {
+        if (bulk) {
+            updates[`certificadosGerados/${c.id}/expiracao`] = calcExpiracao(c.dataFim, curso.validade);
+            updates[`certificadosGerados/${c.id}/curso/validade`] = curso.validade;
+            return;
+        }
+        // reparo: so age quando ainda nao sabemos qual regra foi aplicada
+        if (c.curso.validade) return;
+        const inferida = inferirValidade(c.dataFim, c.expiracao);
+        if (inferida !== null) updates[`certificadosGerados/${c.id}/curso/validade`] = inferida;
+    });
+
+    // 2) historico: recupera o dataFim de cada execucao e refaz o vencimento
+    try {
+        const snap = await get(ref(db, 'historico'));
+        const hist = snap.val() || {};
+        let cert = 0;
+        Object.keys(hist)
+            .sort((a, b) => (hist[a].ts || 0) - (hist[b].ts || 0))
+            .forEach(id => {
+                const h = hist[id];
+                if (!h || h.tipo !== 'certificado' || h.certificadoCursoId !== cursoId) return;
+                if (!bulk && h.validade) return;
+                const ini = cert;
+                while (cert < certsDoCurso.length && (certsDoCurso[cert].ts || 0) <= (h.ts || 0)) cert++;
+                const dataFim = (cert > ini) ? (certsDoCurso[cert - 1].dataFim || '') : '';
+
+                if (bulk) {
+                    updates[`historico/${id}/validade`] = curso.validade;
+                    if (dataFim) updates[`historico/${id}/expiracao`] = calcExpiracao(dataFim, curso.validade);
+                    return;
+                }
+                if (!dataFim) return;
+                const inferida = inferirValidade(dataFim, h.expiracao);
+                if (inferida !== null) updates[`historico/${id}/validade`] = inferida;
+            });
+    } catch (e) {
+        console.error('Falha ao ler historico para recalculo de validade:', e);
+    }
+
+    return {
+        updates,
+        afetados: certsDoCurso.length,
+        cursoNome: curso.nome || 'curso',
+        validadeNova: curso.validade || 'none'
+    };
+}
+
+// Grava o lote em blocos de 400 paths, evitando estouros de payload e travamento.
+async function gravarLote(base, updates) {
+    const chaves = Object.keys(updates);
+    if (!chaves.length) return;
+    const LOTE = 400;
+    for (let i = 0; i < chaves.length; i += LOTE) {
+        const pedaco = {};
+        chaves.slice(i, i + LOTE).forEach(k => { pedaco[k] = updates[k]; });
+        await update(ref(db, base), pedaco);
+    }
+}
+
+// Espelha no cache local e avisa os demais clientes. Usado tanto pelo
+// recalculo confirmado quanto pelo reparo automatico.
+async function gravarValidades(updates) {
+    const certKeys = Object.keys(updates).filter(k => k.startsWith(PREFIX_CERT));
+    const histKeys = Object.keys(updates).filter(k => k.startsWith('historico/'));
+    if (certKeys.length) {
+        const certUpdates = {};
+        certKeys.forEach(k => { certUpdates[k.slice('certificadosGerados/'.length)] = updates[k]; });
+        await gravarLote('certificadosGerados', certUpdates);
+        certKeys.forEach(k => {
+            const p = k.slice(PREFIX_CERT.length).split('/');
+            const alvo = certificadosGeradosData[p[0]];
+            if (!alvo) return;
+            if (p[1] === 'curso' && p[2] === 'validade') alvo.curso = Object.assign({}, alvo.curso, { validade: updates[k] });
+            else if (p[1] === 'expiracao') alvo.expiracao = updates[k];
+        });
+        await WS_DATA.advanceLocalMeta('certificadosGerados');
+    }
+    if (histKeys.length) {
+        const histUpdates = {};
+        histKeys.forEach(k => { histUpdates[k.slice('historico/'.length)] = updates[k]; });
+        await gravarLote('historico', histUpdates);
+        await WS_DATA.advanceLocalMeta('historico');
+    }
+    return { certs: certKeys.length / 2, linhasHist: histKeys.length / 2 };
+}
+
+// Reparo silencioso: completa a copia de validade de certificados emitidos
+// antes deste recurso, sem tocar em nenhum vencimento. Roda no fim de cada
+// emissao e nao escreve nada quando nao ha pendencia.
+async function repararValidadesPendentes() {
+    const alvos = new Set();
+    getArrayFromData(certificadosGeradosData).forEach(c => {
+        const id = c && c.curso && c.curso.id;
+        if (!id || !cursosData[id] || c.curso.validade) return;
+        if (inferirValidade(c.dataFim, c.expiracao) !== null) alvos.add(id);
+    });
+    for (const cursoId of alvos) {
+        try {
+            const r = await recalcularValidadeCurso(cursoId, { bulk: false });
+            if (r && Object.keys(r.updates).length) {
+                await gravarValidades(r.updates);
+                console.log('Validades completadas no curso ' + cursoId + ': ' + r.afetados + ' certificado(s).');
+            }
+        } catch (e) { console.error('Falha no reparo de validades do curso ' + cursoId + ':', e); }
+    }
+}
+
+async function salvarRecalculo(cursoId, resultado, alterarValidade, validadeAntiga) {
+    const { updates, afetados, cursoNome, validadeNova } = resultado;
+    const temCerts = Object.keys(updates).some(k => k.startsWith(PREFIX_CERT));
+    if (!temCerts) {
+        alert('Nenhum certificado emitido deste curso foi encontrado.');
+        return false;
+    }
+    const linhasHist = Object.keys(updates).filter(k => k.startsWith('historico/') && k.endsWith('/expiracao')).length;
+    // O alerta completo ja apareceu ao trocar a opcao no select; aqui fica so a
+    // confirmacao final, porque e este passo que grava de fato no banco.
+    const ok = confirm(
+        'Confirmar o recálculo em massa?\n\n' +
+        afetados + ' certificado(s) de "' + cursoNome + '": ' +
+        rotuloValidade(validadeAntiga) + '  ->  ' + rotuloValidade(validadeNova) +
+        (linhasHist ? '\n' + linhasHist + ' registro(s) do histórico também serão ajustados.' : '') + '\n\n' +
+        'Os vencimentos passados não podem ser desfeitos.'
+    );
+    if (!ok) return false;
+
+    const btn = el('modalSaveButton');
+    const rotuloOriginal = btn ? btn.textContent : '';
+    if (btn) { btn.textContent = 'Recalculando...'; btn.disabled = true; }
+    try {
+        // O curso so e gravado depois do recalculo, para que uma falha no meio
+        // do lote nao deixe o curso com a validade nova e certificados velhos.
+        const gravado = await gravarValidades(updates);
+        if (alterarValidade) {
+            await WS_DATA.update('cursos', cursoId, { validade: validadeNova });
+        }
+        alert('Validade do curso atualizada para "' + rotuloValidade(validadeNova) + '".\n\n' +
+            afetados + ' certificado(s) recalculado(s)' +
+            (gravado.linhasHist ? ' e ' + gravado.linhasHist + ' registro(s) de historico.' : '.'));
+        return true;
+    } catch (e) {
+        console.error('Erro ao recalcular validade:', e);
+        alert('Erro ao recalcular a validade dos certificados. Nada foi alterado no curso.');
+        return false;
+    } finally {
+        if (btn) { btn.textContent = rotuloOriginal; btn.disabled = false; }
+    }
+}
+
+// ── GERACAO DIRETA DE CERTIFICADOS (sem fila de autorizacao) ───────────
 let REPLAY_MODE=false;
+// Grava apenas o id do gerador (o nome e resolvido na renderizacao pelo no
+// 'usuarios' do index.html). Evita duplicar o nome em cada registro.
+function dadosGeradorCert(){
+    let id='';
+    try{
+        const p=window.parent;
+        if(p&&p.USUARIO_ATUAL)id=p.USUARIO_ATUAL.id||'';
+        if(!id)id=sessionStorage.getItem('ws_user_id')||'';
+    }catch(_){}
+    return{usuarioId:id};
+}
 function reportProgress(pct,label){
   if(!REPLAY_MODE)return;
   try{
@@ -1708,125 +2046,7 @@ function fecharReplayProgresso(){
     if(p&&typeof p.fecharProgresso==='function')p.fecharProgresso();
   }catch(_){}
 }
-async function liberarGeracaoCert(){
-    if(CERT_BYPASS){CERT_BYPASS=false;return true;}
-    const nome=sessionStorage.getItem('ws_user_nome')||'';
-    if(nome==='Arnaldo'||nome==='wedson')return true;
-    let usuario=null;
-    try{
-        const snap=await get(ref(db,'usuarios'));
-        const raw=snap.val()||{};
-        usuario=Object.values(raw).find(u=>(u.nome||'')===nome)||null;
-    }catch(_){usuario=null;}
-    if(usuario&&(usuario.mestre||usuario.podeGerar))return true;
-    return await solicitarAprovacaoCert(usuario);
-}
-async function solicitarAprovacaoCert(usuario){
-    const empresaId=el("selEmpresa").value;
-    if(!empresaId){alert("Selecione a empresa.");return false;}
-    const empresa=empresasData[empresaId];
-    if(!empresa){alert("Empresa inválida.");return false;}
-    const selAlunoIds=Array.from(el("listaAlunosCheckbox").querySelectorAll("input[type=checkbox]:checked")).map(i=>i.value);
-    if(selAlunoIds.length===0){alert("Selecione pelo menos um aluno vinculado à empresa.");return false;}
-    const cursosSel=courseSelectionOrder.filter(id=>cursosData[id]);
-    if(cursosSel.length===0){alert("Selecione pelo menos um curso e defina as datas.");return false;}
-    const cursosEstado=[];
-    for(const cid of cursosSel){
-        const di=(el("dataInicio_"+cid)||{}).value||"";
-        const df=(el("dataFim_"+cid)||{}).value||"";
-        if(!di||!df){alert("Defina as datas de início e fim de todos os cursos selecionados.");return false;}
-        cursosEstado.push({courseId:cid,dataInicio:di,dataFim:df});
-    }
-    const assin=JSON.stringify([empresaId,selAlunoIds,cursosEstado]);
-    let duplicada=false;
-    try{
-        const snapPend=await get(ref(db,'aprovacoes'));
-        const rawPend=snapPend.val()||{};
-        duplicada=Object.values(rawPend).some(s=>{
-            if(s.status!=='pendente'||s.tela!=='cert')return false;
-            if(usuario&&s.solicitanteId!==usuario.id)return false;
-            try{return JSON.stringify([s.estado&&s.estado.inputs&&s.estado.inputs.selEmpresa,s.estado&&s.estado.extras&&s.estado.extras.alunos,s.estado&&s.estado.extras&&s.estado.extras.cursos])===assin;}catch(_){return false;}
-        });
-    }catch(_){}
-    if(duplicada){alert("Você já possui uma solicitação idêntica aguardando aprovação.");return false;}
-    const nomesAlunos=selAlunoIds.map(id=>alunosData[id]?(alunosData[id].nome||id):id).join(', ');
-    const resumo=[
-        ["Empresa",empresa.nome||empresaId],
-        ["Alunos",nomesAlunos],
-        ["Cursos",cursosEstado.map(c=>{const cur=cursosData[c.courseId];return (cur?cur.nome:c.courseId)+" ("+fmtDateBR(c.dataInicio)+" a "+fmtDateBR(c.dataFim)+")";}).join('; ')]
-    ];
-    const novoRef=push(ref(db,'aprovacoes'));
-    await set(ref(db,'aprovacoes/'+novoRef.key),{
-        id:novoRef.key,tela:'cert',telaNome:'Emitir Certificados',
-        solicitanteId:usuario?usuario.id:'',solicitanteNome:usuario?(usuario.nome||''):(sessionStorage.getItem('ws_user_nome')||''),
-        status:'pendente',criadoEm:Date.now(),
-        estado:{inputs:{selEmpresa:empresaId},checks:{},extras:{alunos:selAlunoIds,cursos:cursosEstado}},
-        resumo
-    });
-    alert("Solicitação enviada para aprovação.\n\nAcompanhe em \"Aprovações de Geração > Minhas Solicitações\" na tela principal. Após a autorização, o botão GERAR será liberado.");
-    return false;
-}
-async function marcarCertEmitido(id){
-    try{
-        const por=sessionStorage.getItem('ws_user_nome')||'';
-        await update(ref(db,'aprovacoes/'+id),{emitidoEm:Date.now(),emitidoPor:por});
-        try{
-            const p=window.parent;
-            if(p&&p.DATA&&p.DATA.aprovacoes){
-                const rec=p.DATA.aprovacoes[id];
-                if(rec){rec.emitidoEm=Date.now();rec.emitidoPor=por;}
-                if(typeof p.renderAprovacoes==='function')p.renderAprovacoes();
-            }
-        }catch(_){}
-    }catch(e){console.error('Erro ao registrar emissão do certificado:',e);}
-}
-async function processarReplayCert(id){
-    REPLAY_MODE=true;
-    try{
-        reportProgress(4,'Carregando solicitação aprovada...');
-        const snap=await get(ref(db,'aprovacoes/'+id));
-        const s=snap.val();
-        if(!s||s.status!=='aprovado'){alert('Esta solicitação não está aprovada.');fecharReplayProgresso();return;}
-        const est=s.estado||{};
-        const empId=(est.inputs||{}).selEmpresa||'';
-        const alunos=(est.extras||{}).alunos||[];
-        const cursos=(est.extras||{}).cursos||[];
-        const t0=Date.now();
-        while(Date.now()-t0<15000){
-            if(empresasData[empId]&&cursos.every(c=>cursosData[c.courseId]))break;
-            await new Promise(r=>setTimeout(r,300));
-        }
-        reportProgress(10,'Solicitação carregada. Restaurando dados...');
-        el("selEmpresa").value=empId;
-        renderAlunosCheckboxForGeracao();
-        el("listaAlunosCheckbox").querySelectorAll("input[type=checkbox]").forEach(cb=>{cb.checked=alunos.includes(cb.value);});
-        courseSelectionOrder=cursos.map(c=>c.courseId);
-        el("listaCursosCheckbox").querySelectorAll(".course-checkbox").forEach(cb=>{cb.checked=courseSelectionOrder.includes(cb.value);});
-        renderCourseDateSelectors();
-        cursos.forEach(c=>{
-            const di=el("dataInicio_"+c.courseId),df=el("dataFim_"+c.courseId);
-            if(di)di.value=c.dataInicio;
-            if(df)df.value=c.dataFim;
-        });
-        CERT_BYPASS=true;
-        reportProgress(14,'Emitindo certificados...');
-        await gerarCertificados();
-        if(el("printArea").innerHTML.trim()!==""){
-            try{
-                await downloadPDF(el("printArea"), 'certificados_aprovados.pdf');
-                await marcarCertEmitido(id);
-                reportProgress(100,'Certificados emitidos com sucesso!');
-            }
-            catch(e2){ console.error("Erro ao baixar certificados aprovados:", e2); fecharReplayProgresso(); }
-        }else{
-            fecharReplayProgresso();
-        }
-        try{history.replaceState(null,'',location.pathname);}catch(_){}
-    }catch(e){alert('Erro ao processar solicitação aprovada: '+e.message); fecharReplayProgresso();}
-}
-
 async function gerarCertificados(){
-    if(!(await liberarGeracaoCert()))return;
     const empresaId = el("selEmpresa").value;
     if(!empresaId) return alert("Selecione a empresa.");
     const empresa = empresasData[empresaId]; 
@@ -1895,6 +2115,7 @@ async function gerarCertificados(){
                     id: curso.id, 
                     nome: curso.nome, 
                     carga: curso.carga, 
+                    validade: curso.validade || 'none',
                     mensagem: curso.mensagem, 
                     conteudo: curso.conteudo,
                     logoCurso: curso.logoCurso 
@@ -1962,7 +2183,8 @@ async function gerarCertificados(){
         const funcIds = selecionadosAlunos.map(a => a.id);
 
         selectedCoursesWithDates.forEach(courseDateItem => {
-            const exp = calcExpiracao(courseDateItem.dataFim, courseDateItem.curso.validade);
+            const validadeAplicada = cursoValidadeNoFim(courseDateItem.curso.id, courseDateItem.curso.validade);
+            const exp = calcExpiracao(courseDateItem.dataFim, validadeAplicada);
             push(ref(db, 'historico'), {
                 nome: `Certificado - ${courseDateItem.curso.nome}`,
                 data: historyData,
@@ -1970,13 +2192,17 @@ async function gerarCertificados(){
                 empresaId: empresaId,
                 funcionarioIds: funcIds,
                 expiracao: exp,
+                validade: validadeAplicada,
                 tipo: 'certificado',
                 certificadoCursoId: courseDateItem.curso.id,
-                qtd: selecionadosAlunos.length
+                qtd: selecionadosAlunos.length,
+                ...dadosGeradorCert()
             });
         });
 
         await WS_DATA.advanceLocalMeta('historico');
+
+        await repararValidadesPendentes();
 
         if(!REPLAY_MODE) alert(`clique em "OK" Para liberar a visualização de ${certCount} certificado(s). Clique em "Baixar PDF".`);
         printArea.style.display="flex";
@@ -2744,9 +2970,6 @@ window.addEventListener('DOMContentLoaded', async () => {
             }
         }
     });
-
-    const replayId=new URLSearchParams(location.search).get('replay');
-    if(replayId)processarReplayCert(replayId);
 
 });
 
