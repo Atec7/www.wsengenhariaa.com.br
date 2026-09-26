@@ -747,7 +747,9 @@ button.danger:hover { background: #c82333; }
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
 import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-analytics.js";
-import { getDatabase, ref, push, set, update, remove, onValue, get, query, orderByChild, startAt, limitToLast, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-database.js";
+import { getDatabase, ref, push, set, update, remove, onValue, get, query, orderByChild, startAt, limitToLast, serverTimestamp, enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-database.js";
+
+let _wsPersistState = () => Promise.resolve('indisponivel');
 
 // Config Firebase
 const firebaseConfig = {
@@ -766,6 +768,18 @@ const IMGBB_KEY = "95bb16ee776d7e20f26857cec98bd372";
 const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
 const db = getDatabase(app);
+
+// Cache em disco: sem isto, cada abertura deste iframe baixa o node
+// 'certificadosGerados' inteiro. No SDK modular a persistencia ja vem ligada,
+// mas garantimos explicitamente e toleramos falha (outra aba com o cache maior).
+const _persist = (async () => {
+    try { await enableIndexedDbPersistence(db); return 'ativo'; }
+    catch (e) {
+        const c = e && e.code ? e.code : String(e);
+        return String(c).indexOf('failed-precondition') === 0 ? 'reduzido' : 'falhou:' + c;
+    }
+})();
+_wsPersistState = () => _persist;
 
 const wsAdapter = {
     once: (p) => get(ref(db, p)),
@@ -1829,6 +1843,31 @@ function inferirValidade(dataFim, expiracao){
     return achados.length === 1 ? achados[0] : null;
 }
 
+// Certificados novos nao guardam mais a empresa inteira, so o empresaId e um
+// retrato de texto. Estas duas funcoes recompõem o que o PDF precisa na hora de
+// imprimir, a partir de empresasData/cursosData, que ja estao em memoria.
+//
+// Certificado antigo (com empresa e logoCurso embutidos) continua sendo
+// impresso exatamente como antes: o retrato dele tem prioridade no texto e a
+// logo vem do registro atual da empresa.
+function empresaDoCert(cert){
+    if (!cert) return {};
+    const retrato = cert.empresa || null;
+    const atual = (cert.empresaId && empresasData[cert.empresaId]) || null;
+    if (!atual) return retrato || {};
+    return Object.assign({}, atual, retrato || {});
+}
+function certProntoParaImprimir(cert){
+    if (!cert) return cert;
+    const curso = cert.curso || {};
+    let logoCurso = curso.logoCurso;
+    if (!logoCurso && curso.id && cursosData[curso.id]) logoCurso = cursosData[curso.id].logoCurso;
+    return Object.assign({}, cert, {
+        empresa: empresaDoCert(cert),
+        curso: Object.assign({}, curso, { logoCurso })
+    });
+}
+
 // Le a validade do curso no instante em que a linha de historico esta sendo
 // gravada. Se o curso foi alterado enquanto os PDFs eram montados, usamos o
 // valor atual para nao nascer um registro com a regra antiga; os certificados
@@ -1880,6 +1919,11 @@ async function recalcularValidadeCurso(cursoId, opts = {}) {
         const inferida = inferirValidade(c.dataFim, c.expiracao);
         if (inferida !== null) updates[`certificadosGerados/${c.id}/curso/validade`] = inferida;
     });
+
+    // No reparo, se nenhum certificado deste curso esta pendente nao ha o que
+    // alinhar no historico: as linhas ja foram gravadas com a mesma regra.
+    // Sem esta saida, cada emissao reagia o node 'historico' inteiro.
+    if (!bulk && !Object.keys(updates).length) return null;
 
     // 2) historico: recupera o dataFim de cada execucao e refaz o vencimento
     try {
@@ -1959,11 +2003,16 @@ async function gravarValidades(updates) {
 // Reparo silencioso: completa a copia de validade de certificados emitidos
 // antes deste recurso, sem tocar em nenhum vencimento. Roda no fim de cada
 // emissao e nao escreve nada quando nao ha pendencia.
+const _tentadosValidade = new Set();
 async function repararValidadesPendentes() {
     const alvos = new Set();
     getArrayFromData(certificadosGeradosData).forEach(c => {
         const id = c && c.curso && c.curso.id;
         if (!id || !cursosData[id] || c.curso.validade) return;
+        // Curso ja tentado e sem inferencia possivel nao entra de novo: sem isso
+        // ele voltava para a lista em toda emissao e forçava uma leitura
+        // completa do historico (get(ref(db,'historico'))) sem nunca resolver.
+        if (_tentadosValidade.has(id)) return;
         if (inferirValidade(c.dataFim, c.expiracao) !== null) alvos.add(id);
     });
     for (const cursoId of alvos) {
@@ -1972,6 +2021,9 @@ async function repararValidadesPendentes() {
             if (r && Object.keys(r.updates).length) {
                 await gravarValidades(r.updates);
                 console.log('Validades completadas no curso ' + cursoId + ': ' + r.afetados + ' certificado(s).');
+            } else {
+                // Nada a corrigir mesmo assim: nao tenta de novo nesta sessao.
+                _tentadosValidade.add(cursoId);
             }
         } catch (e) { console.error('Falha no reparo de validades do curso ' + cursoId + ':', e); }
     }
@@ -2109,6 +2161,13 @@ async function gerarCertificados(){
     selecionadosAlunos.forEach(aluno => {
         selectedCoursesWithDates.forEach(courseDateItem => {
             const { curso, dataInicio, dataFim, dataInicioBR, dataFimBR } = courseDateItem;
+            // O que vai para o banco e o LEVE. Antes cada certificado guardava a
+            // empresa inteira (logo1/logo2 em base64) e a logo do curso: ~360 KB
+            // por registro, o que fez o node chegar a GB e ser baixado por
+            // todo mundo. Agora fica o empresaId + um retrato de texto (poucos
+            // bytes) e a logo e resolvida na hora de gerar, a partir de
+            // empresasData, que esta em memoria nesta tela.
+            // O PDF desta linha continua igual: recebe a empresa completa.
             const certData = {
                 aluno: { id: aluno.id, nome: aluno.nome, matricula: aluno.matricula, cpf: aluno.cpf },
                 curso: { 
@@ -2117,10 +2176,10 @@ async function gerarCertificados(){
                     carga: curso.carga, 
                     validade: curso.validade || 'none',
                     mensagem: curso.mensagem, 
-                    conteudo: curso.conteudo,
-                    logoCurso: curso.logoCurso 
+                    conteudo: curso.conteudo
                 },
-                empresa: empresa, 
+                empresaId: empresaId,
+                empresa: (empresa && empresa.id) ? { id: empresa.id, nome: empresa.nome, cidade: empresa.cidade, cnpj: empresa.cnpj } : null,
                 dataInicio: dataInicio, dataFim: dataFim,
                 dataInicioBR: dataInicioBR, dataFimBR: dataFimBR,
                 dataGeracao: new Date().toISOString().slice(0, 10),
@@ -2128,8 +2187,14 @@ async function gerarCertificados(){
                 expiracao: calcExpiracao(dataFim, curso.validade)
             };
 
-            printArea.innerHTML += window.buildPage1(certData);
-            printArea.innerHTML += window.buildPage2(certData);
+            // O que vai para o PDF leva as logos de verdade.
+            const certParaImprimir = Object.assign({}, certData, {
+                empresa: empresa,
+                curso: Object.assign({}, certData.curso, { logoCurso: curso.logoCurso })
+            });
+
+            printArea.innerHTML += window.buildPage1(certParaImprimir);
+            printArea.innerHTML += window.buildPage2(certParaImprimir);
             
             const newKey = push(ref(db, 'certificadosGerados')).key;
             updates[`certificadosGerados/${newKey}`] = certData;
@@ -2403,7 +2468,7 @@ window.viewCertificado = (id) => {
     printArea.innerHTML = actionsHtml;
 
     const certContent = document.createElement('div');
-    const latestCertData = certificadosGeradosData[id]; 
+    const latestCertData = certProntoParaImprimir(certificadosGeradosData[id]);
     certContent.innerHTML += window.buildPage1(latestCertData);
     certContent.innerHTML += window.buildPage2(latestCertData);
     printArea.appendChild(certContent);

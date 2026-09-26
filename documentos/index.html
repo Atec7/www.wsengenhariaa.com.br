@@ -676,7 +676,7 @@ hr.dv{border:none;border-top:1px solid var(--bd);margin:18px 0}
       <input id="gu-filtro-busca" class="aprov-inp" placeholder="Buscar documento ou usuário..." oninput="renderGeracoes()">
       <button class="btn bg2" id="btn-gu-limpar-filtro" style="margin-left:auto;display:none" onclick="limparFiltroGeracoes()"><i class="fa-solid fa-xmark"></i> Limpar filtro</button>
     </div>
-    <div class="aprov-sec-titulo">Totais por usuário</div>
+    <div class="aprov-sec-titulo" id="gu-cards-titulo">Totais por usuário</div>
     <div id="gu-cards" class="gu-cards"></div>
   </div>
   <div class="card" style="padding:0;overflow:hidden">
@@ -1031,9 +1031,7 @@ let DATA={empresas:{},funcionarios:{},textos:{},materiais:{},config:{},historico
 let CART=[],SEL_TEXTS=[],CARGO_EPI_CART=[];
 let PENDING_CAT_SEL=null;
 let _replaceHistoryKey=null;
-let certCursoMap=null;
-let certCache=null;
-  let certCacheNode={};
+let certCacheNode={};
 let COL_DOCS_MAP={};
 
 // ── INIT ────────────────────────────────────────────────────────
@@ -1076,7 +1074,14 @@ function initListeners(){
       // 'aprovacoes' saiu do sync: a fila de autorizacao foi desativada e nada
       // le mais esse node. Os dados antigos continuam no banco, apenas param de
       // ser baixados por todos os clients a cada sincronizacao.
-      {path:'certificadosGerados',target:certCacheNode,key:null,tsKey:'dataGeracao'}
+      //
+      // 'certificadosGerados' tambem saiu do sync (ver loadCertOnDemand): o node
+      // carrega a empresa inteira dentro de cada certificado e chegou a GB. A home
+      // so precisa de dois dados por certificado, lidos sob demanda em certifyDoCurso.
+      // tsKey 'ts' (numero) e o mesmo do certificados.html; usar 'dataGeracao'
+      // (texto) aqui fazia o startAt() esbarrar em tipo errado e a consulta voltar
+      // vazia, o que antes disparava pullFull do node inteiro.
+      {path:'certificadosGerados',target:certCacheNode,key:null,tsKey:'ts',sobDemanda:true}
     ],
     onUpdated:function(){ if(window.renderAll)renderAll(); }
   });
@@ -1112,25 +1117,54 @@ function initListeners(){
   addOrcItem();
 }
 function telaAtiva(id){const v=document.getElementById(id);return!!v&&v.classList.contains('active');}
-function renderAll(){WS_DATA.pag.reset();updateDashboard();renderEmps();renderCargos();renderFuncs();renderPessoas();renderTexts();renderMats();renderHistory();populateSelects();renderPool();renderCart();renderCats();renderMsd();if(USUARIO_ATUAL&&document.getElementById('usuarios-lista'))renderUsuariosLista();if(telaAtiva('aprov'))renderGeracoes();if(sessionStorage.getItem('ws_logado')==='1'&&(!USUARIO_ATUAL||!USUARIO_ATUAL.mestre)){const usuarios=DATA.usuarios||{};const nomeSalvo=sessionStorage.getItem('ws_user_nome')||'';const fresh=Object.values(usuarios).find(u=>u.nome===nomeSalvo);if(fresh)aplicarPermissoes(fresh);}setTimeout(()=>fixOldCertHistory(),2000);}
-function loadCertCache(force){
-  if(!force&&certCache!==null)return Promise.resolve();
-  return WS_DATA.refreshNode('certificadosGerados').then(()=>{
-    certifyCacheFromNode();
-    updateDashboard();
-    if(document.getElementById('dash-doc-type').value==='Certificado')populateSubTipo();
+function renderAll(){WS_DATA.pag.reset();
+// A sessao precisa estar montada ANTES de renderizar: a aba de geracoes limita
+// a lista ao proprio usuario, e `usuarios` chega do servidor depois do login.
+if(sessionStorage.getItem('ws_logado')==='1'&&(!USUARIO_ATUAL||!USUARIO_ATUAL.mestre)){const usuarios=DATA.usuarios||{};const nomeSalvo=sessionStorage.getItem('ws_user_nome')||'';const fresh=Object.values(usuarios).find(u=>u.nome===nomeSalvo);if(fresh)aplicarPermissoes(fresh);}updateDashboard();renderEmps();renderCargos();renderFuncs();renderPessoas();renderTexts();renderMats();renderHistory();populateSelects();renderPool();renderCart();renderCats();renderMsd();if(USUARIO_ATUAL&&document.getElementById('usuarios-lista'))renderUsuariosLista();if(telaAtiva('aprov'))renderGeracoes();}
+// Os certificados NAO sao mais sincronizados na home. O node
+// 'certificadosGerados' carrega a empresa inteira dentro de cada certificado
+// (logo1/logo2/logoCurso em base64) e chegou a GB; baixa-lo em todo
+// DOMContentLoaded era o maior custo de banda do sistema.
+// O banco nao foi alterado: a home apenas parou de baixar o node inteiro e
+// passou a ler so o necessario, sob demanda, no momento em que o usuario abre
+// o detalhe. O historico continua sendo a fonte do dashboard.
+
+// Le os certificados de UM curso, e so dele. O filtro por empresa continua
+// acontecendo aqui no cliente, porque o RTDB nao faz query composta.
+function certsDoCurso(cursoId){
+  // Sem o id do curso nao da para filtrar no servidor. Ler o no inteiro aqui
+  // seria exatamente o download gigante que a gente tirou do automatico, então
+  // devolve vazio e deixa a tela avisar, em vez de puxar tudo de novo.
+  if(!cursoId)return Promise.resolve({});
+  const alvo=db.ref('certificadosGerados');
+  const q=alvo.orderByChild('curso/id').equalTo(cursoId);
+  return q.once('value').then(snap=>{
+    const out={};
+    snap.forEach(c=>{if(c&&c.id)out[c.id]=c;});
+    // medicao do que esta consulta custou (so leitura, nada e gravado)
+    let bytes=0;try{bytes=JSON.stringify(out).length;}catch(e){}
+    const st=WS_DATA.stats();
+    st.down['certificadosGerados:curso:'+cursoId]={bytes,pulls:1};
+    st.nDown++;
+    return out;
   });
 }
-function certifyCacheFromNode(){
-  const raw=certCacheNode;const map={};
-  certCache={};
-  Object.values(raw).forEach(c=>{if(!c||!c.id)return;certCache[c.id]=c;if(c.curso&&c.empresa&&c.empresa.id){const key=c.empresa.id+'||'+c.curso.id;if(c.curso.nome&&!map[key])map[key]=c.curso.nome;}});
-  certCursoMap=map;
+function certsDaEmpresaDoCurso(cursoId,empresaId){
+  return certsDoCurso(cursoId).then(all=>{
+    if(!empresaId)return all;
+    const out={};
+    Object.keys(all).forEach(id=>{
+      const c=all[id];
+      // certificado novo guarda empresaId; o antigo so tinha empresa.id
+      const eid=(c&&c.empresaId)||(c&&c.empresa&&c.empresa.id);
+      if(String(eid||'')===String(empresaId))out[id]=c;
+    });
+    return out;
+  });
 }
-function refreshCertCache(){
-  return WS_DATA.refreshNode('certificadosGerados').then(()=>{certifyCacheFromNode();if(window.renderAll)renderAll();});
-}
-function getCertCursoName(h){if(certCursoMap&&h.certificadoCursoId){const key=(h.empresaId||'')+'||'+h.certificadoCursoId;if(certCursoMap[key])return certCursoMap[key];}const sn=stripCert(h.nome).trim();return sn.match(/emitido/i)?'Certificado':sn||'Certificado';}
+// Nome do curso para exibir na linha do historico. Ja vem em h.nome
+// ('Certificado - <curso>'), entao nao depende mais do node de certificados.
+function getCertCursoName(h){const sn=stripCert(h.nome).trim();return sn.match(/emitido/i)?'Certificado':sn||'Certificado';}
 function dashEmpFilters(){
   return{
     empId:document.getElementById('dash-filter-emp').value,
@@ -1503,12 +1537,19 @@ function showCertDetail(key){
     }
     const certList=Object.entries(allCerts).filter(([id,c])=>{
       if(h.certificadoCursoId && c.curso && c.curso.id !== h.certificadoCursoId)return false;
-      if(h.empresaId && c.empresa && c.empresa.id !== h.empresaId)return false;
+      // empresaId no certificado novo, empresa.id no antigo — comparar como
+      // string evita perder o registro por causa de 1 !== '1'
+      if(h.empresaId){
+        const eid=(c&&c.empresaId)||(c&&c.empresa&&c.empresa.id);
+        if(String(eid||'')!==String(h.empresaId))return false;
+      }
       return true;
     }).map(([id,c])=>({id,...c}));
 
     if(!certList.length){
-      document.getElementById('dd-body').innerHTML='<div class="es">Nenhum certificado encontrado para este curso.</div>';
+      document.getElementById('dd-body').innerHTML=h.certificadoCursoId
+        ? '<div class="es">Nenhum certificado encontrado para este curso.</div>'
+        : '<div class="es">Este registro n\u00e3o informa qual curso o certificado pertence, ent\u00e3o a lista completa n\u00e3o pode ser carregada sem baixar o banco inteiro. Abra a aba Certificados para consultar.</div>';
       return;
     }
 
@@ -1580,16 +1621,15 @@ function showCertDetail(key){
     document.getElementById('dd-body').innerHTML=html;
   };
 
-  if(certCache!==null){
-    render(certCache);
-  }else{
-    loadCertCache().then(()=>{
-      if(document.getElementById('dd-body'))render(certCache);
-    }).catch(e=>{
-      console.error(e);
-      document.getElementById('dd-body').innerHTML='<div class="es">Erro ao carregar certificados.</div>';
-    });
-  }
+  document.getElementById('dd-body').innerHTML='<div class="es">Carregando certificados...</div>';
+  certsDaEmpresaDoCurso(h.certificadoCursoId,h.empresaId).then(certs=>{
+    if(!document.getElementById('dd-body'))return;
+    render(certs);
+  }).catch(e=>{
+    console.error(e);
+    const b=document.getElementById('dd-body');
+    if(b)b.innerHTML='<div class="es">Erro ao carregar certificados.</div>';
+  });
 }
 function updateDashboard(){
   const startVal=document.getElementById('dash-date-start').value;
@@ -2178,21 +2218,31 @@ function dashRelPDF(){
 
   genRelatorioPDF(docType,subTipo);
 }
-async function fixOldCertHistory(){
-  if(sessionStorage.getItem('ws_certfix_done'))return;
-  sessionStorage.setItem('ws_certfix_done','1');
+// Migracao de uma vez so. O guard antigo era sessionStorage, que e por aba:
+// cada aba nova reexecutava a migracao e, para isso, baixava o node inteiro de
+// certificados. Agora a flag vive no banco, entao a migracao roda uma vez
+// (em qualquer dispositivo) e nunca mais sozinha. Para reexecutar de proposito,
+// chamar fixOldCertHistory(true).
+async function fixOldCertHistory(force){
+  if(!force){
+    try{
+      const snap=await db.ref('_migracoes/certHistory').once('value');
+      if(snap.val()===true)return;
+    }catch(e){}
+  }
   try{
-    let allCerts=certCache;
-    if(!allCerts&&Object.keys(certCacheNode||{}).length){allCerts=certCacheNode;}
-    if(!allCerts){await loadCertCache();allCerts=certCache;}
-    if(!allCerts)return;
-    const certsArr=Object.entries(allCerts).map(([id,c])=>({id,...c}));
+    // Le o node so aqui, e so quando a migracao realmente vai rodar.
+    const snap=await db.ref('certificadosGerados').once('value');
+    const allCerts={};
+    snap.forEach(c=>{if(c&&c.id)allCerts[c.id]={id:c.id,...c};});
+    if(!Object.keys(allCerts).length){await db.ref('_migracoes/certHistory').set(true);return;}
+    const certsArr=Object.values(allCerts);
     const updates={};
     toArr(DATA.historico).filter(h=>!isBlindagem(h)).forEach(h=>{
       if(!h.id)return;
       const n=(h.nome||'').toLowerCase();
       if(!n.startsWith('certificados - ')||h.tipo==='certificado')return;
-      const matchCerts=certsArr.filter(c=>c.empresa?.id===h.empresaId);
+      const matchCerts=certsArr.filter(c=>(c.empresaId||c.empresa?.id)===h.empresaId);
       if(!matchCerts.length)return;
       const cursos=[...new Set(matchCerts.map(c=>c.curso?.nome).filter(Boolean))];
       const cursoIds=[...new Set(matchCerts.map(c=>c.curso?.id).filter(Boolean))];
@@ -2211,6 +2261,7 @@ async function fixOldCertHistory(){
       await WS_DATA.advanceLocalMeta('historico');
       console.log('Cert history fix: '+keys.length+' entry(s) patched');
     }
+    await db.ref('_migracoes/certHistory').set(true);
   }catch(e){console.warn('fixOldCertHistory:',e);}
 }
 function renderHistory(){
@@ -4808,16 +4859,38 @@ function fmtDT(ts){if(!ts)return'—';const d=new Date(ts);return d.toLocaleDate
 
 // ── RELATORIO: TOTAIS POR USUARIO + HISTORICO ───────────────────────────
 let GU_USUARIO_SEL='';
+const GU_PAG_BASE=100;   // geracoes por pagina na aba
+let GU_PAG_KEY='';       // assinatura do filtro, para reiniciar a paginacao
+// Arnaldo e wedson entram como mestre e veem o gerado por todo mundo. Qualquer
+// outro usuario so enxerga o proprio historico.
+function guEhMestre(){
+  return!!(USUARIO_ATUAL&&USUARIO_ATUAL.mestre);
+}
+// id com que o usuario logado grava no historico. Mestre nao existe em
+// `usuarios`, entao o proprio id de sessao ('mestre' / 'admin') e o que fica.
+function guMeuId(){
+  return(USUARIO_ATUAL&&USUARIO_ATUAL.id)||'';
+}
 function guGeracoes(){
-  return toArr(DATA.historico).filter(h=>!isBlindagem(h)&&h.source!=='blindagem_externa');
+  const base=toArr(DATA.historico).filter(h=>!isBlindagem(h)&&h.source!=='blindagem_externa');
+  if(guEhMestre())return base;
+  const meu=guMeuId();
+  // sem sessao nao devolve nada: melhor lista vazia que vazar o sistema todo
+  if(!meu)return[];
+  return base.filter(h=>String((h&&h.usuarioId)||'')===String(meu));
 }
 function guChaveUsuario(h){
-  return guNomeUsuario(h&&h.usuarioId)||(h&&h.usuarioNome)||'Não informado';
+  return guNomeUsuario(h&&h.usuarioId)||(h&&h.usuarioNome)||guNomeMestre(h&&h.usuarioId)||'Não informado';
+}
+function guNomeMestre(id){
+  if(id==='mestre')return MESTRE_USER;
+  if(id==='admin')return ADMIN_USER;
+  return'';
 }
 function guNomeUsuario(id){
   if(!id)return '';
   const u=DATA.usuarios?.[id];
-  return(u&&u.nome)||'';
+  return(u&&u.nome)||guNomeMestre(id);
 }
 function guIniciais(nome){
   const p=String(nome||'?').trim().split(/\s+/).filter(Boolean);
@@ -4925,15 +4998,25 @@ function renderGeracoes(){
   const wrap=document.getElementById('gu-cards');
   if(!wrap)return;
   const f=guFiltroAtual();
+  const mestre=guEhMestre();
+  // filtro muda a lista: a paginacao precisa comecar de novo
+  const fkey=[f.dias,f.busca,f.usuario,mestre?1:0].join('|');
+  if(GU_PAG_KEY!==fkey){WS_DATA.pag.set('gu',0);GU_PAG_KEY=fkey;}
   const todas=guGeracoes();
   const totais=guTotaisPorUsuario();
   const maxTotal=totais.length?totais[0].total:0;
   const n30=todas.reduce((s,h)=>s+((h.ts||0)>=Date.now()-30*24*60*60*1000?guQtdDoc(h):0),0);
   const nTotal=todas.reduce((s,h)=>s+guQtdDoc(h),0);
   const setChip=(id,txt)=>{const el=document.getElementById(id);if(el)el.textContent=txt;};
-  setChip('gu-chip-total','Total geral: '+nTotal+' doc(s)');
+  setChip('gu-chip-total',(mestre?'Total geral: ':'Meu total: ')+nTotal+' doc(s)');
   setChip('gu-chip-30','30 dias: '+n30);
-  setChip('gu-chip-users','Usuários: '+totais.length);
+  setChip('gu-chip-users',mestre?('Usuários: '+totais.length):'Minhas gerações');
+  // para usuario comum so existiria um card (o proprio), entao a grade some
+  wrap.style.display=mestre?'':'none';
+  const ctit=document.getElementById('gu-cards-titulo');
+  if(ctit)ctit.style.display=mestre?'':'none';
+  const busca=document.getElementById('gu-filtro-busca');
+  if(busca)busca.placeholder=mestre?'Buscar documento ou usuário...':'Buscar nos meus documentos...';
   wrap.innerHTML=totais.length?totais.map(m=>guCartaoHtml(m,maxTotal)).join(''):
     '<div class="gu-empty" style="grid-column:1/-1">Nenhuma geração registrada ainda.</div>';
   const lim=document.getElementById('btn-gu-limpar-filtro');
@@ -4943,9 +5026,13 @@ function renderGeracoes(){
   const tit=document.getElementById('gu-hist-titulo');
   const rot=f.dias>0?('últimos '+f.dias+' dias'):'todo o período';
   const nHist=hist.reduce((s,h)=>s+guQtdDoc(h),0);
-  if(tit)tit.textContent='Histórico de gerações — '+rot+(f.usuario?(' · '+f.usuario):'')+' ('+hist.length+(nHist!==hist.length?' · '+nHist+' doc(s)':'')+')';
+  const quem=mestre?('Geração por Usuário'):('Minhas gerações');
+  if(tit)tit.textContent=quem+' — '+rot+(f.usuario?(' · '+f.usuario):'')+' ('+hist.length+(nHist!==hist.length?' · '+nHist+' doc(s)':'')+')';
+  const pt=document.querySelector('#aprov .pt');
+  if(pt)pt.textContent=quem;
   const box=document.getElementById('gu-hist');
-  box.innerHTML=hist.length?hist.map(guItemHtml).join(''):
+  box.innerHTML=hist.length?WS_DATA.pag.slice(hist,'gu',GU_PAG_BASE).map(guItemHtml).join('')
+      +WS_DATA.pagBtn(hist.length,WS_DATA.pag.count(hist,'gu',GU_PAG_BASE),'gu',GU_PAG_BASE,'renderGeracoes()'):
     '<div class="gu-empty">Nenhuma geração encontrada com os filtros atuais.</div>';
   setGeracoesAtualizado();
 }
@@ -4955,6 +5042,7 @@ function filtrarGeracoesPorUsuario(nome){
 }
 function limparFiltroGeracoes(){
   GU_USUARIO_SEL='';
+  GU_PAG_KEY='';
   const bus=document.getElementById('gu-filtro-busca');
   if(bus)bus.value='';
   const sel=document.getElementById('gu-filtro-periodo');
@@ -4977,6 +5065,9 @@ window.refreshGeracoes=function(){
 window.openGeracaoModal=function(id){
   const h=(DATA.historico||{})[id];
   if(!h)return;
+  // o historico inteiro chega no cliente, entao o clique so nao lista o que nao
+  // e seu — a restricao de verdade precisa vir das regras do Firebase
+  if(!guEhMestre()&&String(h.usuarioId||'')!==String(guMeuId()))return;
   const emp=h.empresaId?((DATA.empresas[h.empresaId]||{}).nome||h.empresaId):'';
   const dataDoc=guDataDoc(h);
   const linhas=[
@@ -5064,7 +5155,7 @@ async function addVerificationOverlay(pdfBytes, docId, validationUrl) {
 }
 
 // ── START ─────────────────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded',()=>{initListeners();loadCertCache();WS_DATA.injectRefreshButton({label:'Atualizar dados'});});
+document.addEventListener('DOMContentLoaded',()=>{initListeners();fixOldCertHistory();WS_DATA.injectRefreshButton({label:'Atualizar dados'});});
 </script>
 </body>
 </html>

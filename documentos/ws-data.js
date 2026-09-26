@@ -13,7 +13,37 @@
   var FRESH_MS = 60000;           // janela onde não checa rede ao reabrir
   var LAST_REFRESH = 0;
 
-  function dbg() {}
+  /* ── medição de tráfego (para saber quanto cada nó custa) ── */
+  var STATS = { down: {}, up: {}, nDown: 0, nUp: 0, nPullFull: 0, nPullInc: 0 };
+  function approxBytes(v) {
+    if (v == null) { return 0; }
+    if (typeof v === 'string') { return v.length; }
+    try { return JSON.stringify(v).length; } catch (e) { return 0; }
+  }
+  function statDown(path, bytes, full) {
+    bytes = bytes || 0;
+    if (!STATS.down[path]) { STATS.down[path] = { bytes: 0, pulls: 0 }; }
+    STATS.down[path].bytes += bytes;
+    STATS.down[path].pulls++;
+    STATS.nDown++;
+    if (full) { STATS.nPullFull++; }
+    return bytes;
+  }
+  function statUp(path, bytes) {
+    bytes = bytes || 0;
+    if (!STATS.up[path]) { STATS.up[path] = { bytes: 0, writes: 0 }; }
+    STATS.up[path].bytes += bytes;
+    STATS.up[path].writes++;
+    STATS.nUp++;
+  }
+  function statReset() { STATS = { down: {}, up: {}, nDown: 0, nUp: 0, nPullFull: 0, nPullInc: 0 }; }
+
+  // inspeção do cache em disco: serve para o painel e para depurar por que uma
+  // página não está enxergando um registro novo.
+  function dbg(path) {
+    if (!path) { return Promise.resolve({}); }
+    return getCache(path);
+  }
 
   /* ── IndexedDB ── */
   function idbOpen() {
@@ -88,7 +118,37 @@
   }
 
   /* ── interface com o Firebase ── */
+  var PERSIST_P = null;            // promessa da persistencia (uma vez so)
+  var PERSIST_STATE = 'nao-chamado';
+
+  // Sem isto, toda partida a frio (aparelho novo, storage limpo, aba anonima)
+  // baixa os nos inteiros. Com o cache em disco, o SDK passa a responder pela
+  // diferenca e baixa so o que mudou.
+  function enablePersistencia(dbCompat) {
+    if (PERSIST_P) { return PERSIST_P; }
+    if (!dbCompat || typeof dbCompat.enablePersistence !== 'function') {
+      PERSIST_STATE = 'indisponivel';
+      PERSIST_P = Promise.resolve(PERSIST_STATE);
+      return PERSIST_P;
+    }
+    PERSIST_STATE = 'ligando';
+    PERSIST_P = Promise.resolve()
+      .then(function () {
+        return dbCompat.enablePersistence(['indexedDB', 'localstorage']);
+      })
+      .then(function () { PERSIST_STATE = 'ativo'; return PERSIST_STATE; })
+      .catch(function (e) {
+        // 'failed-precondition' = outra aba ja esta com o cache maior. Nao e
+        // erro fatal: a tela funciona, so que com cache reduzido.
+        var code = e && e.code ? e.code : String(e);
+        PERSIST_STATE = (code.indexOf('failed-precondition') === 0) ? 'reduzido' : 'falhou:' + code;
+        return PERSIST_STATE;
+      });
+    return PERSIST_P;
+  }
+
   function useDb(compatDb, opts) {
+    enablePersistencia(compatDb);
     return useAdapter({
       once: function (p) { return compatDb.ref(p).once('value'); },
       set: function (p, v) { return compatDb.ref(p).set(v); },
@@ -155,6 +215,7 @@
     var map = slotOf(entry);
     return DB.once(path).then(function (snap) {
       var norm = fromSnapshot(snap);
+      statDown(path, approxBytes(norm), true);
       Object.keys(map).forEach(function (k) { delete map[k]; });
       Object.keys(norm).forEach(function (k) { map[k] = norm[k]; });
       return bump(path).then(function (metaTs) {
@@ -162,10 +223,11 @@
           data: clone(map),
           metaTs: (metaTs != null) ? metaTs : Date.now(),
           savedAt: Date.now(),
+          tsKey: entry.tsKey || null,
           tsValue: maxTs(map, (entry.tsKey || null))
         };
         putCache(path, rec);
-        return { downloaded: true };
+        return { downloaded: true, full: true };
       });
     });
   }
@@ -175,13 +237,32 @@
     var map = slotOf(entry);
     var tsKey = entry.tsKey;
     return getCache(path).then(function (cache) {
-      var since = (cache && cache.tsValue != null) ? cache.tsValue : 0;
-      return DB.orderBy(path, tsKey, since, 2000).then(function (snap) {
+      // Cache gravado com outra tsKey, ou com ts em texto (a antiga
+      // dataGeracao), não serve de ponto de partida: startAt() com string num
+      // índice numérico volta vazio para sempre, e o resgate por pullFull já
+      // foi desligado. Nesses casos é melhor pagar um nó inteiro uma vez e
+      // reescrever o cache no formato certo.
+      if (cache && cache.tsKey && cache.tsKey !== tsKey) { cache = null; }
+      if (cache && cache.tsValue != null &&
+          !(typeof cache.tsValue === 'number' && isFinite(cache.tsValue))) { cache = null; }
+      if (!cache || !cache.data) { return pullFull(path, entry); }
+
+      var since = (cache.tsValue != null) ? cache.tsValue : 0;
+      // +1 porque startAt() é inclusivo: sem isso a leva do limite volta
+      // inteira a cada sync (com dataGeracao, o dia inteiro, a cada sync).
+      var from = (typeof since === 'number' && isFinite(since)) ? since + 1 : since;
+      return DB.orderBy(path, tsKey, from, 2000).then(function (snap) {
         var norm = fromSnapshot(snap);
         var n = Object.keys(norm).length;
+        // Nada novo é o caso NORMAL, não um sinal de cache quebrado.
+        // Cair em pullFull aqui transformava qualquer registro sem o campo
+        // tsKey em download do nó inteiro, repetidamente.
         if (n === 0) {
-          return pullFull(path, entry);
+          if (cache) { cache.savedAt = Date.now(); putCache(path, cache); }
+          return { downloaded: false, vazio: true };
         }
+        statDown(path, approxBytes(norm), false);
+        STATS.nPullInc++;
         Object.keys(norm).forEach(function (k) {
           if (map[k] === undefined || map[k] === null ||
               (map[k] && norm[k] && (map[k][tsKey] === undefined || norm[k][tsKey] >= map[k][tsKey]))) {
@@ -193,10 +274,11 @@
             data: clone(map),
             metaTs: (metaTs != null) ? metaTs : (cache ? cache.metaTs : Date.now()),
             savedAt: Date.now(),
+            tsKey: tsKey || null,
             tsValue: maxTs(map, tsKey)
           };
           putCache(path, rec);
-          return { downloaded: true, incremental: true };
+          return { downloaded: true, incremental: true, novos: n };
         });
       });
     });
@@ -230,7 +312,25 @@
           putCache(path, cache);
           return { shouldPull: false, ok: true };
         }
-        var pull = entry.tsKey ? function () { return pullInc(path, entry); } : function () { return pullFull(path, entry); };
+        if (!entry.tsKey) {
+          return { shouldPull: true, pull: function () { return pullFull(path, entry); } };
+        }
+        // Se a consulta incremental não trouxer nada novo, o _meta observado já
+        // está lido e pode ser adiantado no cache local. Sem isso, todo refresh
+        // seguinte repetiria a consulta porque _meta continuaria "acima" do cache.
+        var pull = function () {
+          return pullInc(path, entry).then(function (r) {
+            if (r && r.vazio && meta != null) {
+              return getCache(path).then(function (c) {
+                if (c && meta > (c.metaTs || 0)) {
+                  c.metaTs = meta; c.savedAt = Date.now(); putCache(path, c);
+                }
+                return r;
+              });
+            }
+            return r;
+          });
+        };
         return { shouldPull: true, pull: pull };
       }).catch(function () {
         return { shouldPull: true, pull: function () { return pullFull(path, entry); } };
@@ -255,13 +355,19 @@
     register: function (entries) {
       REG = {};
       (entries || []).forEach(function (e) {
-        REG[e.path] = { target: e.target, key: e.key || null, tsKey: e.tsKey || null };
+        REG[e.path] = {
+          target: e.target, key: e.key || null, tsKey: e.tsKey || null,
+          // 'sobDemanda' marca nos que nao devem entrar no sync automatico.
+          // Sao nos grandes que so interessam em telas especificas: o cliente
+          // baixa o que precisa na hora em que precisa, e nao a cada abertura.
+          sobDemanda: !!e.sobDemanda
+        };
       });
     },
     init: function (o) {
       this.register(o.entries || []);
       ONUPD = o.onUpdated || null;
-      var paths = Object.keys(REG);
+      var paths = Object.keys(REG).filter(function (p) { return !REG[p].sobDemanda; });
       var self = this;
       var pulls = [];
       var done = paths.map(function (path) {
@@ -298,7 +404,7 @@
     },
     refreshAll: function (manual) {
       if (!manual && (Date.now() - LAST_REFRESH) < 5000) { return Promise.resolve({ downloads: 0 }); }
-      var paths = Object.keys(REG);
+      var paths = Object.keys(REG).filter(function (p) { return !REG[p].sobDemanda; });
       var self = this;
       var pulls = [];
       var chain = Promise.resolve();
@@ -325,6 +431,7 @@
       var v = normalizeVal((val && typeof val === 'object') ? Object.assign({}, val) : val, key);
       var p = node + '/' + key;
       var entry = REG[node];
+      statUp(node, approxBytes(v));
       return DB.set(p, v).then(function () {
         if (entry) { var map = slotOf(entry); map[key] = v; }
         return self.advanceLocalMeta(node);
@@ -333,6 +440,7 @@
     remove: function (node, key) {
       var self = this;
       var entry = REG[node];
+      statUp(node, approxBytes(key));
       return DB.remove(node + '/' + key).then(function () {
         if (entry) { var map = slotOf(entry); delete map[key]; }
         return self.advanceLocalMeta(node);
@@ -341,6 +449,7 @@
     update: function (node, key, patch) {
       var self = this;
       var entry = REG[node];
+      statUp(node, approxBytes(patch));
       return DB.update(node + '/' + key, patch).then(function () {
         if (entry && patch && typeof patch === 'object') {
           var map = slotOf(entry);
@@ -365,9 +474,16 @@
       var r = DB.push(node, val);
       var key = r && r.key ? r.key : null;
       var v = normalizeVal((val && typeof val === 'object') ? Object.assign({}, val) : val, key);
+      statUp(node, approxBytes(v));
       if (entry && key) { var map = slotOf(entry); map[key] = v; }
       return self.advanceLocalMeta(node).then(function () { return key; });
     },
+
+    /* ── medição de tráfego (nada é gravado no banco por aqui) ── */
+    stats: function () { return STATS; },
+    statsReset: statReset,
+    dbg: dbg,
+    persistence: function () { return PERSIST_STATE; },
 
     /* ── paginação de listas ── */
     pag: {
@@ -379,6 +495,8 @@
         return list.slice(0, m);
       },
       more: function (key, base) { this.n[key] = (this.n[key] || base) + base; },
+      // volta uma lista especifica para o tamanho inicial, sem mexer nas outras
+      set: function (key, base) { this.n[key] = base || 0; return this.n[key]; },
       count: function (list, key, base) { return Math.min(this.n[key] || base, list.length); },
       reset: function () { this.n = {}; }
     },
@@ -409,6 +527,15 @@
       b.innerHTML = '<span style="line-height:1">&#x27F3;</span>';
       b.onmouseenter = function () { b.style.background = '#3f3f46'; };
       b.onmouseleave = function () { b.style.background = '#2c2c2e'; };
+      // clique segurado abre o painel de trafego; clique normal atualiza
+      var pressT = null, longPress = false;
+      b.addEventListener('mousedown', function () {
+        longPress = false;
+        pressT = setTimeout(function () { pressT = null; longPress = true; window.WS_DATA.toggleTrafficPanel(); }, 550);
+      });
+      b.addEventListener('mouseup', function () { if (pressT) { clearTimeout(pressT); pressT = null; } });
+      b.addEventListener('mouseleave', function () { if (pressT) { clearTimeout(pressT); pressT = null; } });
+      b.title = label + ' (segure para ver o trafego)';
       var tip = document.createElement('span');
       tip.id = 'ws-refresh-fab-tip';
       tip.style.cssText = 'position:fixed;right:80px;bottom:34px;z-index:2147483000;background:#18181b;color:#fafafa;' +
@@ -418,6 +545,7 @@
       var spin = false;
       b.onclick = function () {
         if (spin) { return; }
+        if (longPress) { longPress = false; return; }   // o clique Longo ja abriu o painel
         spin = true;
         b.style.pointerEvents = 'none';
         b.innerHTML = '<span style="line-height:1;display:inline-block;animation:wsSpin .8s linear infinite">&#x27F3;</span>';
@@ -442,6 +570,72 @@
       };
       document.body.appendChild(b);
       document.body.appendChild(tip);
+    },
+
+    /* ── painel de tráfego: onde o custo aparece, por nó ── */
+    injectTrafficPanel: function () {
+      if (document.getElementById('ws-traffic-panel')) { return; }
+      var panel = document.createElement('div');
+      panel.id = 'ws-traffic-panel';
+      panel.style.cssText = 'position:fixed;left:18px;bottom:88px;z-index:2147483000;display:none;' +
+        'background:#18181b;color:#fafafa;padding:12px 14px;border-radius:8px;font-size:12px;' +
+        'min-width:260px;max-width:340px;box-shadow:0 6px 20px rgba(0,0,0,.32);font-family:DM Sans,arial,sans-serif;';
+      document.body.appendChild(panel);
+      return panel;
+    },
+    toggleTrafficPanel: function () {
+      var panel = this.injectTrafficPanel();
+      if (!panel) { return; }
+      if (panel.style.display === 'none') { panel.style.display = 'block'; this.renderTrafficPanel(panel); }
+      else { panel.style.display = 'none'; }
+    },
+    renderTrafficPanel: function (panel) {
+      panel = panel || document.getElementById('ws-traffic-panel');
+      if (!panel) { return; }
+      var s = STATS;
+      function human(b) {
+        if (b < 1024) { return b + ' B'; }
+        if (b < 1048576) { return (b / 1024).toFixed(1) + ' KB'; }
+        if (b < 1073741824) { return (b / 1048576).toFixed(1) + ' MB'; }
+        return (b / 1073741824).toFixed(2) + ' GB';
+      }
+      var downTotal = 0, upTotal = 0;
+      Object.keys(s.down).forEach(function (k) { downTotal += s.down[k].bytes; });
+      Object.keys(s.up).forEach(function (k) { upTotal += s.up[k].bytes; });
+      var rows = Object.keys(s.down)
+        .map(function (k) { return { k: k, b: s.down[k].bytes, p: s.down[k].pulls }; })
+        .sort(function (a, b) { return b.b - a.b; })
+        .slice(0, 8)
+        .map(function (r) {
+          return '<div style="display:flex;justify-content:space-between;gap:12px;padding:2px 0">' +
+            '<span style="color:#a1a1aa;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' +
+            r.k.replace('certificadosGerados:curso:', 'cert/') + '</span>' +
+            '<span style="font-weight:600">' + human(r.b) + '</span></div>';
+        }).join('');
+      var upRows = Object.keys(s.up)
+        .map(function (k) { return { k: k, b: s.up[k].bytes, w: s.up[k].writes }; })
+        .sort(function (a, b) { return b.b - a.b; })
+        .slice(0, 5)
+        .map(function (r) {
+          return '<div style="display:flex;justify-content:space-between;gap:12px;padding:2px 0">' +
+            '<span style="color:#a1a1aa">' + r.k + ' (' + r.w + 'x)</span>' +
+            '<span style="font-weight:600">' + human(r.b) + '</span></div>';
+        }).join('');
+      var persist = PERSIST_STATE;
+      panel.innerHTML =
+        '<div style="font-weight:700;margin-bottom:6px">Tráfego desta sessão</div>' +
+        '<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid #3f3f46">' +
+          '<span>baixado</span><b style="color:#fbbf24">' + human(downTotal) + '</b></div>' +
+        '<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid #3f3f46">' +
+          '<span>escrito</span><b style="color:#4ade80">' + human(upTotal) + '</b></div>' +
+        '<div style="color:#a1a1aa;padding:3px 0;border-bottom:1px solid #3f3f46">' +
+          'pulls: ' + s.nPullFull + ' inteiro(s) · ' + s.nPullInc + ' incremental · ' +
+          'cache em disco: ' + persist + '</div>' +
+        (rows ? '<div style="margin-top:8px;font-weight:600;color:#a1a1aa">Leitura por nó</div>' + rows : '<div style="margin-top:8px;color:#a1a1aa">nenhuma leitura</div>') +
+        (upRows ? '<div style="margin-top:8px;font-weight:600;color:#a1a1aa">Escrita por nó</div>' + upRows : '') +
+        '<div style="margin-top:10px"><button type="button" style="width:100%;padding:5px;border:1px solid #3f3f46;' +
+        'background:#27272a;color:#e4e4e7;border-radius:5px;cursor:pointer;font-size:11px" ' +
+        'onclick="WS_DATA.statsReset();WS_DATA.renderTrafficPanel()">Zerar medição</button></div>';
     }
   };
 })();
