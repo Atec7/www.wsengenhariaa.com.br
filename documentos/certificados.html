@@ -399,6 +399,28 @@ button.danger:hover { background: #c82333; }
 .conflict-balloon-footer button {
     margin-top: 0;
 }
+
+/* Validade e vencimento por extenso, lado a lado no balão do curso */
+.validade-linha {
+    display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 6px;
+}
+
+/* Responsividade para telas estreitas */
+@media (max-width: 768px) {
+    :root {
+        --sidebar-width: 200px;
+        --header-height: 50px;
+    }
+    header { height: var(--header-height); }
+    .container { padding: 10px; }
+    .card { padding: 14px; }
+    .checklist { gap: 5px; }
+    .checklist label { padding: 8px; font-size: 13px; }
+    button { padding: 8px 12px; font-size: 13px; }
+    .grid { gap: 10px; }
+    .col-3, .col-4, .col-6 { grid-column: span 12; }
+    .validade-linha { flex-direction: column; gap: 4px; }
+}
 </style>
 </head>
 <body>
@@ -1142,7 +1164,7 @@ function renderCourseDateSelectors() {
     courseDates.forEach((item, index) => {
         if (!item) return;
         const { courseId, curso, extraDays, start, end } = item;
-        const vencInicial = calcExpiracao(end, curso.validade);
+        const vencExt = vencimentoExtenso(end, curso.validade);
 
         const html = `
             <div class="course-date-selector" data-course-id="${courseId}" data-extra-days="${extraDays}">
@@ -1165,9 +1187,10 @@ function renderCourseDateSelectors() {
                 <div class="info-balloon">
                     📄 Certificado: <strong>${curso.nome}</strong> — data fim prevista: <strong class="data-fim-preview-${courseId}">${fmtDateBR(end)}</strong>.
                     A data fim é calculada com base na carga horária de <strong>${curso.carga}</strong>.
-                    ${vencInicial ? `<div class="venc-preview-linha-${courseId}" style="margin-top:6px;">
-                        ⏳ Vencimento: <strong class="venc-preview-${courseId}">${fmtDateBR(vencInicial)}</strong>
-                    </div>` : ''}
+                    <div class="validade-linha">
+                        <span>⏳ Validade: <strong>${rotuloValidade(curso.validade)}</strong></span>
+                        ${vencExt ? `<span>📅 Vence na <strong class="venc-ext-${courseId}">${vencExt}</strong></span>` : ''}
+                    </div>
                 </div>
             </div>
         `;
@@ -1182,21 +1205,11 @@ function renderCourseDateSelectors() {
             });
             startInput.addEventListener('input', () => handleDateChange(courseId));
         }
-        // a data de fim pode ser digitada na mao: so a previa de vencimento
+        // a data de fim pode ser digitada na mao: so o extenso do vencimento
         // acompanha, sem mexer no encadeamento dos cursos
         const endInput = document.getElementById(`dataFim_${courseId}`);
         if (endInput) {
-            endInput.addEventListener('input', () => atualizarVencimentoPreview(courseId));
-        }
-    });
-
-    selectedCourseIds.forEach(courseId => {
-        const startInput = document.getElementById(`dataInicio_${courseId}`);
-        if (startInput) {
-            startInput.addEventListener('focus', (e) => {
-                previousStartDates[courseId] = e.target.value;
-            });
-            startInput.addEventListener('input', () => handleDateChange(courseId));
+            endInput.addEventListener('input', () => atualizarVencimentoExtenso(courseId));
         }
     });
 
@@ -1353,22 +1366,18 @@ function atualizarDataFim(courseId) {
         }
     }
 
-    atualizarVencimentoPreview(courseId);
+    atualizarVencimentoExtenso(courseId);
 }
 
-// Reflete no bloco do curso o vencimento = data de fim + validade cadastrada.
-// Usado na geracao em lote (o modal manual tem o proprio, com o mesmo calculo).
-function atualizarVencimentoPreview(courseId) {
+// O vencimento por extenso depende da data de fim, entao acompanha o recalculo
+// automatico da carga horaria e a edicao manual da data de fim.
+function atualizarVencimentoExtenso(courseId) {
     const endInput = document.getElementById(`dataFim_${courseId}`);
-    const alvo = document.querySelector(`.venc-preview-${courseId}`);
+    const alvo = document.querySelector(`.venc-ext-${courseId}`);
     if (!endInput || !alvo) return;
 
     const curso = cursosData[courseId] || {};
-    const exp = endInput.value ? calcExpiracao(endInput.value, curso.validade) : null;
-    alvo.textContent = exp ? fmtDateBR(exp) : 'sem prazo de validade';
-
-    const linha = document.querySelector(`.venc-preview-linha-${courseId}`);
-    if (linha) linha.style.display = exp ? '' : 'none';
+    alvo.textContent = vencimentoExtenso(endInput.value, curso.validade) || '';
 }
 
 function recalcChainFrom(courseId) {
@@ -1834,10 +1843,33 @@ function calcExpiracaoLegado(dataFim, validade) {
     return d.toISOString().slice(0, 10);
 }
 
-// Rotulo legivel da validade do curso, usado nos avisos de recalculo.
+// Rotulo legivel da validade do curso, usado nos avisos de recalculo e no
+// cadastro manual. Plural correto: 1 ano, 2 anos...
 function rotuloValidade(validade){
     if(!validade||validade==='none')return 'Não vence';
-    return validade+' ano(s)';
+    const anos = parseInt(validade,10);
+    if(isNaN(anos))return 'Não vence';
+    return anos + (anos > 1 ? ' anos' : ' ano');
+}
+
+const DIAS_SEMANA = ['domingo','segunda-feira','terça-feira','quarta-feira','quinta-feira','sexta-feira','sábado'];
+const NOMES_MESES = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+
+// Data por extenso: "sexta-feira dia 26 do mês de setembro de 2028".
+// Monta com T00:00:00 para nao suffer com fuso, como o resto da tela.
+function dataExtensoBR(dataISO) {
+    if (!dataISO) return '';
+    const d = new Date(String(dataISO).trim() + 'T00:00:00');
+    if (isNaN(d.getTime())) return '';
+    return DIAS_SEMANA[d.getDay()] + ' dia ' + d.getDate() +
+        ' do mês de ' + NOMES_MESES[d.getMonth()] + ' de ' + d.getFullYear();
+}
+
+// Vencimento (data de fim + validade) ja escrito por extenso. Vazio quando o
+// curso nao tem prazo de validade.
+function vencimentoExtenso(dataFim, validade) {
+    const exp = calcExpiracao(dataFim, validade);
+    return exp ? dataExtensoBR(exp) : '';
 }
 
 const OPCOES_VALIDADE = ['none','1','2','3','5'];
