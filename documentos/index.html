@@ -283,6 +283,18 @@ hr.dv{border:none;border-top:1px solid var(--bd);margin:18px 0}
 .gu-h-sub{font-size:11px;color:var(--tm);margin-top:2px;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
 .gu-h-sub .gu-tag{display:inline-flex;align-items:center;gap:5px;background:var(--hl);border:1px solid var(--bd);border-radius:999px;padding:1px 8px;font-size:10px;font-weight:600;color:var(--ts)}
 .gu-empty{padding:26px;text-align:center;color:var(--tm);font-size:12px}
+/* paginação por páginas do histórico e do relatório */
+.pg-nav{display:flex;align-items:center;justify-content:center;gap:4px;flex-wrap:wrap;padding:10px 8px 4px}
+.pg-nav button{
+  min-width:28px;height:28px;padding:0 7px;border-radius:6px;cursor:pointer;
+  border:1px solid var(--bd);background:#fff;color:var(--tp);
+  font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;
+}
+.pg-nav button:hover:not(:disabled){border-color:var(--tp);background:var(--hl)}
+.pg-nav button.on{background:var(--tp);border-color:var(--tp);color:#fff}
+.pg-nav button:disabled{opacity:.35;cursor:default}
+.pg-gap{color:var(--tm);font-size:12px;padding:0 2px}
+.pg-info{width:100%;text-align:center;color:var(--tm);font-size:11px;margin-top:4px}
 
 </style>
 </head>
@@ -1117,7 +1129,10 @@ function initListeners(){
   addOrcItem();
 }
 function telaAtiva(id){const v=document.getElementById(id);return!!v&&v.classList.contains('active');}
-function renderAll(){WS_DATA.pag.reset();
+function renderAll(){
+// A paginação NÃO é zerada aqui: renderAll roda a cada sincronização e, se
+// voltasse para a primeira página, o histórico saltava para o topo sozinho.
+// `pag.page`/`pag.nav` já ajustam a página quando a lista encolhe.
 // A sessao precisa estar montada ANTES de renderizar: a aba de geracoes limita
 // a lista ao proprio usuario, e `usuarios` chega do servidor depois do login.
 if(sessionStorage.getItem('ws_logado')==='1'&&(!USUARIO_ATUAL||!USUARIO_ATUAL.mestre)){const usuarios=DATA.usuarios||{};const nomeSalvo=sessionStorage.getItem('ws_user_nome')||'';const fresh=Object.values(usuarios).find(u=>u.nome===nomeSalvo);if(fresh)aplicarPermissoes(fresh);}updateDashboard();renderEmps();renderCargos();renderFuncs();renderPessoas();renderTexts();renderMats();renderHistory();populateSelects();renderPool();renderCart();renderCats();renderMsd();if(USUARIO_ATUAL&&document.getElementById('usuarios-lista'))renderUsuariosLista();if(telaAtiva('aprov'))renderGeracoes();}
@@ -1342,17 +1357,7 @@ function addNewPageIfNeeded(doc,y,minSpace){return y;}
 function abrirMassa(){window.location.href='massa.html';}
 function abrirCoringa(){window.location.href='coringa.html';}
 function openConfModal(){document.getElementById('mdl-conf').style.display='flex';}
-function nav(id,el){document.querySelectorAll('.view').forEach(e=>e.classList.remove('active'));document.querySelectorAll('.mi').forEach(e=>e.classList.remove('active'));const target=document.getElementById(id);target.classList.add('active');if(el)el.classList.add('active');if(id==='aprov')atualizarHistoricoRelatorio();}
-// O relatorio "Geracao por Usuario" le o node 'historico', que tambem e escrito
-// por outras telas/abas (certificados.html, massa.html). Como o index so
-// sincroniza no carregamento, o relatorio ficava desatualizado -- ou vazio --
-// ate recarregar a pagina. Aqui o historico e buscado ao abrir a tela e ao
-// voltar para a aba.
-function atualizarHistoricoRelatorio(){
-  if(typeof refreshNode!=='function')return;
-  GU_BUSCOU_HIST=true;
-  refreshNode('historico').then(()=>{GU_PAG_KEY='';if(window.renderGeracoes)window.renderGeracoes();}).catch(()=>{});
-}
+function nav(id,el){document.querySelectorAll('.view').forEach(e=>e.classList.remove('active'));document.querySelectorAll('.mi').forEach(e=>e.classList.remove('active'));const target=document.getElementById(id);target.classList.add('active');if(el)el.classList.add('active');}
 function tabSwitch(id,el){document.querySelectorAll('.tc').forEach(e=>e.classList.remove('active'));document.getElementById(id).classList.add('active');document.querySelectorAll('.tab').forEach(e=>e.classList.remove('active'));if(el)el.classList.add('active');}
 function openM(id,mode){
   if(mode==='new'){
@@ -2274,15 +2279,19 @@ async function fixOldCertHistory(force){
     await db.ref('_migracoes/certHistory').set(true);
   }catch(e){console.warn('fixOldCertHistory:',e);}
 }
+const HIST_POR_PAG=50;
+let HIST_BUSCA='';       // busca anterior: ao mudar, a lista volta a pagina 1
 function renderHistory(){
   const q=(document.getElementById('hist-search').value||'').toLowerCase();
+  if(q!==HIST_BUSCA){HIST_BUSCA=q;WS_DATA.pag.first('hist');}
   const items=toArr(DATA.historico).filter(h=>!isBlindagem(h)).sort((a,b)=>(b.ts||0)-(a.ts||0)).filter(h=>(h.nome||'').toLowerCase().includes(q)||(h.data||'').includes(q));
-  document.getElementById('hist-list').innerHTML=items.length?(WS_DATA.pag.slice(items,'hist',200).map(h=>{
+  const info=WS_DATA.pag.page(items,'hist',HIST_POR_PAG);
+  document.getElementById('hist-list').innerHTML=items.length?(info.slice.map(h=>{
     const isCert=h.tipo==='certificado'||(h.nome||'').toLowerCase().startsWith('certificado');
     const icone=isCert?'fa-certificate':'fa-file-pdf';
     const corIcone=isCert?'var(--sc)':'var(--dn)';
     return `<div class="hr2"><span><i class="fa-solid ${icone}" style="color:${corIcone};margin-right:7px"></i>${esc(h.nome)}</span><button class="btn" style="padding:3px 6px;font-size:10px;" onclick="regenDoc('${esc(h.nome)}')"><i class="fa-solid fa-download"></i></button>${btHistDel(h.id,'Excluir',true)}<span style="color:var(--tm);font-size:11px">${esc(h.data)}</span></div>`;
-  }).join('')+WS_DATA.pagBtn(items.length,WS_DATA.pag.count(items,'hist',200),'hist',200,'renderHistory()')):'<div class="es">Nenhum documento gerado ainda.</div>';
+  }).join('')+WS_DATA.pag.nav(info,'hist','renderHistory()')):'<div class="es">Nenhum documento gerado ainda.</div>';
 }
 function logHistory(nome, dadosExtras={}){
   const data=new Date().toLocaleDateString('pt-BR',{hour:'2-digit',minute:'2-digit'});
@@ -4397,10 +4406,15 @@ document.addEventListener('keydown', function(e) {
 });
 
 // ── LOGIN SYSTEM ─────────────────────────────────────────────────────────
+// Nome dos dois masters no escopo do arquivo: o relatorio "Geracao por
+// Usuario" tambem precisa deles para descobrir o nome de quem gravou o
+// historico (usuarioId 'mestre'/'admin'). Dentro do IIFE do login, o relatorio
+// estourava ReferenceError e a tela inteira ficava vazia.
+const MESTRE_USER='Arnaldo';const ADMIN_USER='wedson';
 let USUARIO_ATUAL=null;
 (function(){
-  const MESTRE_USER='Arnaldo';const MESTRE_PASS='1';
-  const ADMIN_USER='wedson';const ADMIN_PASS='2026';
+  const MESTRE_PASS='1';
+  const ADMIN_PASS='2026';
   const loginScreen=document.getElementById('login-screen');
   const loginShell=document.getElementById('login-shell');
   const loginUser=document.getElementById('login-user');
@@ -4878,9 +4892,8 @@ function fmtDT(ts){if(!ts)return'—';const d=new Date(ts);return d.toLocaleDate
 
 // ── RELATORIO: TOTAIS POR USUARIO + HISTORICO ───────────────────────────
 let GU_USUARIO_SEL='';
-const GU_PAG_BASE=100;   // geracoes por pagina na aba
-let GU_PAG_KEY='';       // assinatura do filtro, para reiniciar a paginacao
-let GU_BUSCOU_HIST=false;// ja tentou baixar o historico vazio uma vez
+const GU_POR_PAG=50;      // geracoes por pagina no relatorio
+let GU_PAG_KEY='';       // assinatura do filtro, para voltar a pagina 1
 // Quantos registros existem no node, ignorando o filtro por usuario. Serve so
 // para explicar na tela o motivo de a lista estar vazia (sem revelar nada de
 // outro usuario: e so a contagem).
@@ -5062,14 +5075,8 @@ function renderGeracoes(){
   const mestre=guEhMestre();
   // filtro muda a lista: a paginacao precisa comecar de novo
   const fkey=[f.dias,f.busca,f.usuario,mestre?1:0].join('|');
-  if(GU_PAG_KEY!==fkey){WS_DATA.pag.set('gu',0);GU_PAG_KEY=fkey;}
+  if(GU_PAG_KEY!==fkey){WS_DATA.pag.first('gu');GU_PAG_KEY=fkey;}
   const todas=guGeracoes();
-  // Historico veio vazio: pode ser so o node ainda nao baixado nesta sessao.
-  // Busca uma vez e redesenha em vez de mostrar "nada" sem explicacao.
-  if(!todas.length&&!GU_BUSCOU_HIST&&guTotalNoNode()===0&&typeof refreshNode==='function'){
-    GU_BUSCOU_HIST=true;
-    refreshNode('historico').then(()=>{GU_PAG_KEY='';renderGeracoes();}).catch(()=>{});
-  }
   const totais=guTotaisPorUsuario();
   const maxTotal=totais.length?totais[0].total:0;
   const n30=todas.reduce((s,h)=>s+((h.ts||0)>=Date.now()-30*24*60*60*1000?guQtdDoc(h):0),0);
@@ -5098,8 +5105,8 @@ function renderGeracoes(){
   const pt=document.querySelector('#aprov .pt');
   if(pt)pt.textContent=quem;
   const box=document.getElementById('gu-hist');
-  box.innerHTML=hist.length?WS_DATA.pag.slice(hist,'gu',GU_PAG_BASE).map(guItemHtml).join('')
-      +WS_DATA.pagBtn(hist.length,WS_DATA.pag.count(hist,'gu',GU_PAG_BASE),'gu',GU_PAG_BASE,'renderGeracoes()'):
+  const info=WS_DATA.pag.page(hist,'gu',GU_POR_PAG);
+  box.innerHTML=hist.length?(info.slice.map(guItemHtml).join('')+WS_DATA.pag.nav(info,'gu','renderGeracoes()')):
      '<div class="gu-empty">'+guVazioTexto(f)+guDiagHtml()+'</div>';
   setGeracoesAtualizado();
 }
@@ -5134,7 +5141,6 @@ function setGeracoesAtualizado(){
 window.refreshGeracoes=function(){
   const btn=document.getElementById('btn-refresh-aprov');
   if(btn)btn.disabled=true;
-  GU_BUSCOU_HIST=true;
   refreshNode('historico').then(()=>{
     renderGeracoes();
     setGeracoesAtualizado();
@@ -5233,13 +5239,11 @@ async function addVerificationOverlay(pdfBytes, docId, validationUrl) {
 }
 
 // ── START ─────────────────────────────────────────────────────────
+// Sem sincronizacao automatica: cada aba abre uma vez, usa o cache persistente
+// e so busca no banco quando o usuario aperta "Atualizar". O historico e
+// escrito por outras telas/abas (certificados.html, massa.html), mas recarregar
+// sozinho gastava download a cada troca de aba.
 document.addEventListener('DOMContentLoaded',()=>{initListeners();fixOldCertHistory();WS_DATA.injectRefreshButton({label:'Atualizar dados'});});
-// Volta para a aba depois de gerar em outra tela: o relatorio precisa buscar o
-// historico de novo, senao continua mostrando a foto de antes.
-document.addEventListener('visibilitychange',()=>{
-  if(document.visibilityState==='visible'&&telaAtiva('aprov'))atualizarHistoricoRelatorio();
-});
-window.addEventListener('focus',()=>{if(telaAtiva('aprov'))atualizarHistoricoRelatorio();});
 </script>
 </body>
 </html>

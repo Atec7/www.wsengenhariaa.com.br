@@ -487,7 +487,8 @@
 
     /* ── paginação de listas ── */
     pag: {
-      n: {},
+      n: {},   // limite das listas com "carregar mais"
+      p: {},   // página atual das listas paginadas
       slice: function (list, key, base) {
         if (!list || !list.length) { return list; }
         if (list.length <= base) { return list; }
@@ -498,7 +499,41 @@
       // volta uma lista especifica para o tamanho inicial, sem mexer nas outras
       set: function (key, base) { this.n[key] = base || 0; return this.n[key]; },
       count: function (list, key, base) { return Math.min(this.n[key] || base, list.length); },
-      reset: function () { this.n = {}; }
+      /* paginação por páginas: não renderiza a lista inteira de uma vez, o que
+         travava a tela quando o histórico tinha muitos registros. */
+      goto: function (key, p) { this.p[key] = p; return p; },
+      cur: function (key) { return this.p[key] || 1; },
+      first: function (key) { this.p[key] = 1; },
+      page: function (list, key, perPage) {
+        var total = (list || []).length;
+        var pp = perPage || 50;
+        var pages = Math.max(1, Math.ceil(total / pp));
+        var p = Math.min(Math.max(this.p[key] || 1, 1), pages);
+        this.p[key] = p;
+        return {
+          total: total, pages: pages, page: p, per: pp,
+          slice: (list || []).slice((p - 1) * pp, p * pp)
+        };
+      },
+      nav: function (info, key, renderFn) {
+        if (!info || info.pages <= 1) { return ''; }
+        var go = function (p) { return 'WS_DATA.pag.goto(\'' + key + '\',' + p + ');' + renderFn; };
+        var items = [];
+        for (var i = 1; i <= info.pages; i++) {
+          if (info.pages > 7 && i > 2 && i < info.pages - 1 && Math.abs(i - info.page) > 1) {
+            if (items[items.length - 1] !== '…') { items.push('<span class="pg-gap">…</span>'); }
+            continue;
+          }
+          items.push('<button type="button" class="' + (i === info.page ? 'on' : '') + '" onclick="' + go(i) + '">' + i + '</button>');
+        }
+        return '<div class="pg-nav">' +
+          '<button type="button" class="pg-step"' + (info.page > 1 ? ' onclick="' + go(info.page - 1) + '"' : ' disabled') + '>‹</button>' +
+          items.join('') +
+          '<button type="button" class="pg-step"' + (info.page < info.pages ? ' onclick="' + go(info.page + 1) + '"' : ' disabled') + '>›</button>' +
+          '<span class="pg-info">' + info.total + ' registro(s) · página ' + info.page + ' de ' + info.pages + '</span>' +
+          '</div>';
+      },
+      reset: function () { this.n = {}; this.p = {}; }
     },
     pagBtn: function (listLen, shown, key, base, renderFn) {
       if (listLen <= shown) { return ''; }

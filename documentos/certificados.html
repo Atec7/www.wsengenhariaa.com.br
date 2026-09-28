@@ -449,6 +449,9 @@ button.danger:hover { background: #c82333; }
 }
 .mc-tabela-datas select { min-width: 240px; }
 .mc-tabela-datas input[type="date"] { min-width: 135px; }
+/* Dia da semana da data, logo abaixo do campo */
+.mc_dia { font-size: 11px; color: var(--muted); margin-top: 2px; min-height: 14px; }
+.mc_dia.fds { color: #b91c1c; font-weight: 700; }
 .mc-tabela-datas .mc_venc { font-size: 12px; color: var(--muted); white-space: nowrap; }
 
 /* Responsividade para telas estreitas */
@@ -1222,11 +1225,13 @@ function renderCourseDateSelectors() {
                     <div class="col-6">
                         <label for="dataInicio_${courseId}">Data de Início:</label>
                         <input type="date" id="dataInicio_${courseId}" value="${start}" required>
+                        <div class="mc_dia"></div>
                         <small class="date-hint">ⓘ Data de início do treinamento</small>
                     </div>
                     <div class="col-6">
                         <label for="dataFim_${courseId}">Data de Fim:</label>
                         <input type="date" id="dataFim_${courseId}" value="${end}" required>
+                        <div class="mc_dia"></div>
                         <small class="date-hint">ⓘ Calculada automaticamente conforme carga horária</small>
                     </div>
                 </div>
@@ -1258,6 +1263,9 @@ function renderCourseDateSelectors() {
             endInput.addEventListener('input', () => atualizarVencimentoExtenso(courseId));
         }
     });
+
+    // Dia da semana embaixo de cada data de início e de fim
+    if (typeof certPintarDias === 'function') certPintarDias(container);
 
     const initialConflicts = detectConflicts();
     if (initialConflicts.length > 0) {
@@ -1424,6 +1432,7 @@ function atualizarVencimentoExtenso(courseId) {
 
     const curso = cursosData[courseId] || {};
     alvo.textContent = vencimentoExtenso(endInput.value, curso.validade) || '';
+    if (typeof certPintarDias === 'function') certPintarDias(el('courseDatesContainer') || document);
 }
 
 function recalcChainFrom(courseId) {
@@ -1495,8 +1504,10 @@ function renderCertificadosGerados(){
 function openModal(title, bodyHTML, saveHandler) {
     el('modalTitle').textContent = title;
     el('modalBody').innerHTML = bodyHTML;
+    // Data de início/fim já entra com o dia da semana escrito embaixo.
+    if (typeof certPintarDias === 'function') certPintarDias(el('modalBody'));
     window.modalSaveHandler = saveHandler;
-    el('modalSaveButton').onclick = () => window.modalSaveHandler(); 
+    el('modalSaveButton').onclick = () => window.modalSaveHandler();
     el('genericModal').style.display = 'flex';
 }
 window.closeModal = () => {
@@ -1661,10 +1672,12 @@ window.openEditCertificadoModal = (id) => {
             <div class="col-6">
                 <label>Data de Início do Treinamento:</label>
                 <input type="date" id="modal_certDataInicio" value="${cert.dataInicio}">
+                <div class="mc_dia"></div>
             </div>
             <div class="col-6">
                 <label>Data de Fim do Treinamento:</label>
                 <input type="date" id="modal_certDataFim" value="${cert.dataFim}">
+                <div class="mc_dia"></div>
             </div>
         </div>
         <label>Mensagem Padrão (Pág 1 - Editável):</label>
@@ -2511,8 +2524,8 @@ function certManualRenderLinhas(chave) {
             `${esc(a.nome)}${a.token === CERT_MANUAL_AVULSO ? ' (digitado)' : ''}</option>`).join('');
         return `<tr data-linha="${esc(l.id)}">` +
             `<td><select class="mc_aluno">${opcoes || '<option value="">—</option>'}</select></td>` +
-            `<td><input type="date" class="mc_di" value="${l.inicio}"></td>` +
-            `<td><input type="date" class="mc_df" value="${l.fim}"></td>` +
+            `<td><input type="date" class="mc_di" value="${l.inicio}"><div class="mc_dia"></div></td>` +
+            `<td><input type="date" class="mc_df" value="${l.fim}"><div class="mc_dia"></div></td>` +
             '<td class="mc_venc"></td>' +
             `<td><button type="button" class="secondary mc-remover-linha" style="margin-top:0;padding:2px 8px;font-size:12px" ` +
             `data-remover="${esc(l.id)}" data-curso-remover="${esc(chave)}">Remover</button></td>` +
@@ -2862,14 +2875,14 @@ function certManualBlocoCurso(c) {
             const opcoes = turma.map(a =>
                 `<option value="${esc(a.token)}"${a.token === l.token ? ' selected' : ''}>` +
                 `${esc(a.nome)}${a.token === CERT_MANUAL_AVULSO ? ' (digitado)' : ''}</option>`).join('');
-            return `<tr data-linha="${esc(l.id)}">` +
-                `<td><select class="mc_aluno">${opcoes || '<option value="">—</option>'}</select></td>` +
-                `<td><input type="date" class="mc_di" value="${l.inicio}"></td>` +
-                `<td><input type="date" class="mc_df" value="${l.fim}"></td>` +
-                '<td class="mc_venc"></td>' +
-                `<td><button type="button" class="secondary" style="margin-top:0;padding:2px 8px;font-size:12px" ` +
-                `data-remover="${esc(l.id)}" data-curso-remover="${esc(c.chave)}">Remover</button></td>` +
-                '</tr>';
+        return `<tr data-linha="${esc(l.id)}">` +
+            `<td><select class="mc_aluno">${opcoes || '<option value="">—</option>'}</select></td>` +
+            `<td><input type="date" class="mc_di" value="${l.inicio}"><div class="mc_dia"></div></td>` +
+            `<td><input type="date" class="mc_df" value="${l.fim}"><div class="mc_dia"></div></td>` +
+            '<td class="mc_venc"></td>' +
+            `<td><button type="button" class="secondary" style="margin-top:0;padding:2px 8px;font-size:12px" ` +
+            `data-remover="${esc(l.id)}" data-curso-remover="${esc(c.chave)}">Remover</button></td>` +
+            '</tr>';
         }).join('') + '</tbody></table></div>' +
         '</div>' +
         '</div></details>';
@@ -2909,6 +2922,51 @@ function certManualRenderCursos() {
 
 // Vencimento de cada linha, recalculado sem redesenhar o formulário (o
 // redesenho apagaria o que está sendo digitado).
+// Nome do dia da semana de uma data 'AAAA-MM-DD'. A data vem do input type=date
+// e é sempre local, então ler direto a string evita o fuso empurrar o dia.
+function certManualDiaSemana(data) {
+    if (!data || !/^\d{4}-\d{2}-\d{2}$/.test(data)) return '';
+    const [a, m, d] = data.split('-').map(Number);
+    return DIAS_SEMANA[new Date(a, m - 1, d).getDay()] || '';
+}
+function certManualFimDeSemana(data) {
+    if (!data || !/^\d{4}-\d{2}-\d{2}$/.test(data)) return false;
+    const [a, m, d] = data.split('-').map(Number);
+    const dia = new Date(a, m - 1, d).getDay();
+    return dia === 0 || dia === 6;
+}
+// Escreve o dia da semana embaixo de um input de data, marcando sábado e
+// domingo em vermelho: o fim de semana é o erro mais comum na hora de lançar.
+// Serve para as datas do cadastro manual e para as da geração em lote.
+function certPintarDias(container) {
+    const alvo = container || document;
+    if (!alvo || !alvo.querySelectorAll) return;
+    alvo.querySelectorAll('input[type="date"]').forEach(input => {
+        const caixa = input.parentElement && input.parentElement.querySelector('.mc_dia');
+        if (!caixa) return;
+        const nome = certManualDiaSemana(input.value);
+        const fds = certManualFimDeSemana(input.value);
+        caixa.textContent = nome || '—';
+        caixa.title = nome ? (fds ? 'Fim de semana' : 'Dia útil') : 'Escolha a data';
+        caixa.className = 'mc_dia' + (nome && fds ? ' fds' : '');
+    });
+}
+function certManualAtualizarDias() {
+    certPintarDias(el('mc_blocos'));
+}
+// Qualquer data da tela (lançamento manual, geração em lote, edição de
+// certificado) escreve o dia da semana assim que a data muda.
+document.addEventListener('input', ev => {
+    const inp = ev.target;
+    if (!inp || inp.type !== 'date') return;
+    if (inp.parentElement && inp.parentElement.querySelector('.mc_dia')) certPintarDias(inp.parentElement.parentElement || document);
+});
+document.addEventListener('change', ev => {
+    const inp = ev.target;
+    if (!inp || inp.type !== 'date') return;
+    if (inp.parentElement && inp.parentElement.querySelector('.mc_dia')) certPintarDias(inp.parentElement.parentElement || document);
+});
+
 function certManualAtualizarVencimentos() {
     const box = el('mc_blocos');
     if (box) {
@@ -2924,6 +2982,7 @@ function certManualAtualizarVencimentos() {
             });
         });
     }
+    certManualAtualizarDias();
     certManualResumo();
 }
 
