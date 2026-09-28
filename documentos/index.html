@@ -1342,7 +1342,17 @@ function addNewPageIfNeeded(doc,y,minSpace){return y;}
 function abrirMassa(){window.location.href='massa.html';}
 function abrirCoringa(){window.location.href='coringa.html';}
 function openConfModal(){document.getElementById('mdl-conf').style.display='flex';}
-function nav(id,el){document.querySelectorAll('.view').forEach(e=>e.classList.remove('active'));document.querySelectorAll('.mi').forEach(e=>e.classList.remove('active'));const target=document.getElementById(id);target.classList.add('active');if(el)el.classList.add('active');}
+function nav(id,el){document.querySelectorAll('.view').forEach(e=>e.classList.remove('active'));document.querySelectorAll('.mi').forEach(e=>e.classList.remove('active'));const target=document.getElementById(id);target.classList.add('active');if(el)el.classList.add('active');if(id==='aprov')atualizarHistoricoRelatorio();}
+// O relatorio "Geracao por Usuario" le o node 'historico', que tambem e escrito
+// por outras telas/abas (certificados.html, massa.html). Como o index so
+// sincroniza no carregamento, o relatorio ficava desatualizado -- ou vazio --
+// ate recarregar a pagina. Aqui o historico e buscado ao abrir a tela e ao
+// voltar para a aba.
+function atualizarHistoricoRelatorio(){
+  if(typeof refreshNode!=='function')return;
+  GU_BUSCOU_HIST=true;
+  refreshNode('historico').then(()=>{GU_PAG_KEY='';if(window.renderGeracoes)window.renderGeracoes();}).catch(()=>{});
+}
 function tabSwitch(id,el){document.querySelectorAll('.tc').forEach(e=>e.classList.remove('active'));document.getElementById(id).classList.add('active');document.querySelectorAll('.tab').forEach(e=>e.classList.remove('active'));if(el)el.classList.add('active');}
 function openM(id,mode){
   if(mode==='new'){
@@ -4403,7 +4413,14 @@ let USUARIO_ATUAL=null;
   function aplicarPermissoes(usuario){
     USUARIO_ATUAL=usuario;
     try{
-      if(usuario&&usuario.nome){sessionStorage.setItem('ws_user_nome',usuario.nome);sessionStorage.setItem('ws_user_id',usuario.id||'');}
+      if(usuario&&usuario.nome){
+        sessionStorage.setItem('ws_user_nome',usuario.nome);sessionStorage.setItem('ws_user_id',usuario.id||'');
+        // Espelho no localStorage: o sessionStorage vale so na aba, e as telas
+        // de geracao (certificados.html/massa.html) podem ser abertas em outra
+        // aba. Sem isso o `usuarioId` do historico saia vazio e a geracao sumia
+        // do relatorio "Geracao por Usuario".
+        localStorage.setItem('ws_user_nome',usuario.nome);localStorage.setItem('ws_user_id',usuario.id||'');
+      }
     }catch(_){}
     const navGerus=document.getElementById('nav-ger-usuarios');
     if(navGerus)navGerus.style.display=usuario&&usuario.mestre&&usuario.nome==='Arnaldo'?'':'none';
@@ -4500,6 +4517,8 @@ let USUARIO_ATUAL=null;
     sessionStorage.removeItem('ws_logado');
     sessionStorage.removeItem('ws_user_nome');
     sessionStorage.removeItem('ws_user_id');
+    localStorage.removeItem('ws_user_nome');
+    localStorage.removeItem('ws_user_id');
     localStorage.removeItem('ws_user');
     localStorage.removeItem('ws_pass');
     USUARIO_ATUAL=null;
@@ -4861,6 +4880,47 @@ function fmtDT(ts){if(!ts)return'—';const d=new Date(ts);return d.toLocaleDate
 let GU_USUARIO_SEL='';
 const GU_PAG_BASE=100;   // geracoes por pagina na aba
 let GU_PAG_KEY='';       // assinatura do filtro, para reiniciar a paginacao
+let GU_BUSCOU_HIST=false;// ja tentou baixar o historico vazio uma vez
+// Quantos registros existem no node, ignorando o filtro por usuario. Serve so
+// para explicar na tela o motivo de a lista estar vazia (sem revelar nada de
+// outro usuario: e so a contagem).
+function guTotalNoNode(){
+  return toArr(DATA.historico).filter(h=>!isBlindagem(h)&&h.source!=='blindagem_externa').length;
+}
+// Foto do que o cliente esta vendo, para dar para diagnosticar lista vazia sem
+// precisar abrir o console: quantos registros chegaram do banco, quantos
+// sobraram depois de cada filtro e quem e o usuario da sessao.
+function guDiagnostico(){
+  const todos=toArr(DATA.historico);
+  const validos=todos.filter(h=>!isBlindagem(h)&&h.source!=='blindagem_externa');
+  const meus=guGeracoes();
+  const f=guFiltroAtual();
+  const corte=guCorte();
+  const noPeriodo=meus.filter(h=>(h.ts||0)>=corte);
+  const dts=validos.map(h=>h.ts||0).filter(Boolean).sort((a,b)=>b-a);
+  const d=Math.max(...dts,0);
+  return{
+    sessao:(USUARIO_ATUAL?((USUARIO_ATUAL.nome||'?')+' (id '+(USUARIO_ATUAL.id||'vazio')+', '+(guEhMestre()?'mestre':'usuário')+')'):'sem sessão'),
+    noNode:validos.length,
+    aposUsuario:meus.length,
+    noPeriodo:noPeriodo.length,
+    periodo:f.dias>0?('últimos '+f.dias+' dias'):'todo o período',
+    maisRecente:d?fmtDT(d):'—',
+    totalAtras:guTotaisPorUsuario().length
+  };
+}
+function guDiagHtml(){
+  const d=guDiagnostico();
+  return'<div style="margin-top:10px;padding:8px 10px;border:1px dashed var(--bd);border-radius:6px;'+
+    'font-size:11px;color:var(--tm);text-align:left;line-height:1.7">'+
+    '<b>Diagnóstico</b><br>'+
+    'Sessão: '+esc(d.sessao)+'<br>'+
+    'Registros no histórico: <b>'+d.noNode+'</b><br>'+
+    'Visíveis para este usuário: <b>'+d.aposUsuario+'</b><br>'+
+    'Dentro do período ('+esc(d.periodo)+'): <b>'+d.noPeriodo+'</b><br>'+
+    'Geração mais recente: <b>'+esc(d.maisRecente)+'</b>'+
+    '</div>';
+}
 // Arnaldo e wedson entram como mestre e veem o gerado por todo mundo. Qualquer
 // outro usuario so enxerga o proprio historico.
 function guEhMestre(){
@@ -4898,11 +4958,12 @@ function guIniciais(nome){
   if(p.length===1)return p[0].slice(0,2).toUpperCase();
   return(p[0][0]+p[p.length-1][0]).toUpperCase();
 }
-// Numero de documentos que o registro representa. Registros antigos valem 1;
-// um registro agregado de geracao em massa vale o campo `qtd`.
+// Numero de documentos que o registro representa. Registro antigo vale 1; um
+// registro agregado vale o campo `qtd` (geracao em massa ou grupo de
+// certificados), que e o mesmo numero mostrado na lista de itens.
 function guQtdDoc(h){
   const q=parseInt(h&&h.qtd,10);
-  return(h&&h.tipo==='massa'&&q>0)?q:1;
+  return(h&&(h.tipo==='massa'||h.tipo==='certificado')&&q>0)?q:1;
 }
 function guTotaisPorUsuario(){
   const mapa={};
@@ -5003,6 +5064,12 @@ function renderGeracoes(){
   const fkey=[f.dias,f.busca,f.usuario,mestre?1:0].join('|');
   if(GU_PAG_KEY!==fkey){WS_DATA.pag.set('gu',0);GU_PAG_KEY=fkey;}
   const todas=guGeracoes();
+  // Historico veio vazio: pode ser so o node ainda nao baixado nesta sessao.
+  // Busca uma vez e redesenha em vez de mostrar "nada" sem explicacao.
+  if(!todas.length&&!GU_BUSCOU_HIST&&guTotalNoNode()===0&&typeof refreshNode==='function'){
+    GU_BUSCOU_HIST=true;
+    refreshNode('historico').then(()=>{GU_PAG_KEY='';renderGeracoes();}).catch(()=>{});
+  }
   const totais=guTotaisPorUsuario();
   const maxTotal=totais.length?totais[0].total:0;
   const n30=todas.reduce((s,h)=>s+((h.ts||0)>=Date.now()-30*24*60*60*1000?guQtdDoc(h):0),0);
@@ -5018,7 +5085,7 @@ function renderGeracoes(){
   const busca=document.getElementById('gu-filtro-busca');
   if(busca)busca.placeholder=mestre?'Buscar documento ou usuário...':'Buscar nos meus documentos...';
   wrap.innerHTML=totais.length?totais.map(m=>guCartaoHtml(m,maxTotal)).join(''):
-    '<div class="gu-empty" style="grid-column:1/-1">Nenhuma geração registrada ainda.</div>';
+    '<div class="gu-empty" style="grid-column:1/-1">'+(mestre?'Nenhuma geração registrada ainda.':'Use o histórico abaixo para ver as suas gerações.')+guDiagHtml()+'</div>';
   const lim=document.getElementById('btn-gu-limpar-filtro');
   if(lim)lim.style.display=(f.busca||f.usuario||f.dias!==30)?'':'none';
   const corte=guCorte();
@@ -5033,8 +5100,18 @@ function renderGeracoes(){
   const box=document.getElementById('gu-hist');
   box.innerHTML=hist.length?WS_DATA.pag.slice(hist,'gu',GU_PAG_BASE).map(guItemHtml).join('')
       +WS_DATA.pagBtn(hist.length,WS_DATA.pag.count(hist,'gu',GU_PAG_BASE),'gu',GU_PAG_BASE,'renderGeracoes()'):
-    '<div class="gu-empty">Nenhuma geração encontrada com os filtros atuais.</div>';
+     '<div class="gu-empty">'+guVazioTexto(f)+guDiagHtml()+'</div>';
   setGeracoesAtualizado();
+}
+// Explica o motivo da lista vazia: nada no node, registros de outra pessoa,
+// ou so registros fora do periodo escolhido.
+function guVazioTexto(f){
+  const noNode=guTotalNoNode();
+  if(!noNode)return 'Nenhuma geração registrada ainda. Clique em <b>Atualizar</b> para buscar no banco.';
+  if(!guGeracoes().length)return 'Há '+noNode+' geração(ões) no sistema, mas nenhuma foi registrada com o seu usuário. '+
+    'Gerações feitas em outra aba antes deste ajuste entram aqui depois de geradas de novo.';
+  if(f.dias>0)return 'Nenhuma geração nos últimos '+f.dias+' dias. Troque o período para "todo o período".';
+  return 'Nenhuma geração encontrada com os filtros atuais.';
 }
 function filtrarGeracoesPorUsuario(nome){
   GU_USUARIO_SEL=(GU_USUARIO_SEL===nome)?'':nome;
@@ -5057,6 +5134,7 @@ function setGeracoesAtualizado(){
 window.refreshGeracoes=function(){
   const btn=document.getElementById('btn-refresh-aprov');
   if(btn)btn.disabled=true;
+  GU_BUSCOU_HIST=true;
   refreshNode('historico').then(()=>{
     renderGeracoes();
     setGeracoesAtualizado();
@@ -5156,6 +5234,12 @@ async function addVerificationOverlay(pdfBytes, docId, validationUrl) {
 
 // ── START ─────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded',()=>{initListeners();fixOldCertHistory();WS_DATA.injectRefreshButton({label:'Atualizar dados'});});
+// Volta para a aba depois de gerar em outra tela: o relatorio precisa buscar o
+// historico de novo, senao continua mostrando a foto de antes.
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='visible'&&telaAtiva('aprov'))atualizarHistoricoRelatorio();
+});
+window.addEventListener('focus',()=>{if(telaAtiva('aprov'))atualizarHistoricoRelatorio();});
 </script>
 </body>
 </html>

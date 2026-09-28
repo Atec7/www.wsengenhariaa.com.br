@@ -2171,6 +2171,10 @@ function dadosGeradorCert(){
         const p=window.parent;
         if(p&&p.USUARIO_ATUAL)id=p.USUARIO_ATUAL.id||'';
         if(!id)id=sessionStorage.getItem('ws_user_id')||'';
+        // Ultimo recurso: a tela de geracao pode estar em outra aba, e ali o
+        // sessionStorage da aba do login nao existe. Sem id, o relatorio
+        // "Geracao por Usuario" nao consegue agrupar a geracao.
+        if(!id)id=localStorage.getItem('ws_user_id')||'';
     }catch(_){}
     return{usuarioId:id};
 }
