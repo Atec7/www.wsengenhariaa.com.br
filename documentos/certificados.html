@@ -432,6 +432,18 @@ button.danger:hover { background: #c82333; }
     border-radius: 999px; padding: 2px 10px; white-space: nowrap;
 }
 
+/* Datas do cadastro manual: uma ou mais datas dentro do bloco do curso */
+.mc-periodo {
+    border-left: 3px solid var(--border); padding-left: 12px; margin-bottom: 10px;
+}
+.mc-periodo-topo {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 12px; font-weight: 700; color: var(--muted); margin-bottom: 2px;
+}
+.mc-periodo-topo button { margin-left: auto; }
+.mc-add-datas { width: 100%; }
+.mc-lista { max-height: 240px; overflow-y: auto; margin-bottom: 4px; }
+
 /* Responsividade para telas estreitas */
 @media (max-width: 768px) {
     :root {
@@ -2355,9 +2367,26 @@ async function gerarCertificados(){
 // curso. A única diferença é não montar PDF. O PDF continua disponível
 // depois em '✅ Certificados Gerados > Ver/Editar > Baixar PDF'.
 const CERT_MANUAL_NOVO = '__novo__';
-let certManualAlunoIds = [];       // ids marcados (ou o sentinel 'digitar')
-let certManualCursoIds = [];
-let certManualDatas = {};          // curso -> {inicio, fim} já digitadas
+// A escolha é por curso: cada curso tem a sua própria lista de alunos, o seu
+// aluno digitado e as suas datas. Assim o mesmo aluno pode fazer um curso numa
+// data e outro curso noutra data, sem cruzar tudo com tudo.
+let certManualCursoIds = [];              // cursos marcados no topo do modal
+let certManualAlunosPorCurso = {};        // curso -> [ids de alunos marcados]
+let certManualAvulsoPorCurso = {};        // curso -> {ativo, nome, cpf, matricula}
+let certManualDatas = {};                 // curso -> [{id, inicio, fim}] (um ou mais períodos)
+let certManualSeqPeriodo = 0;
+
+// id único de período, para as linhas de data não se confundirem entre si
+function certManualNovoPeriodo() {
+    return 'p' + (++certManualSeqPeriodo);
+}
+
+function certManualIdsAluno(chave) {
+    return certManualAlunosPorCurso[chave] || [];
+}
+function certManualAvulso(chave) {
+    return certManualAvulsoPorCurso[chave] || { ativo: false, nome: '', cpf: '', matricula: '' };
+}
 
 function certManualAlunosDaEmpresa(empresaId) {
     return getArrayFromData(alunosData)
@@ -2416,7 +2445,8 @@ function certManualRecalcularFim(linha) {
     const df = linha.querySelector('.mc_df');
     if (!di || !df || !di.value) return;
 
-    const horas = certManualHoras(linha.dataset.curso);
+    const bloco = linha.closest('[data-bloco]');
+    const horas = certManualHoras(bloco ? bloco.dataset.bloco : CERT_MANUAL_NOVO);
     const extra = horas > 0 ? Math.ceil(horas / 8) - 1 : 0;
     const d = new Date(di.value + 'T00:00:00');
     if (isNaN(d.getTime())) return;
@@ -2425,26 +2455,20 @@ function certManualRecalcularFim(linha) {
     df.value = d.getFullYear() + '-' +
         String(d.getMonth() + 1).padStart(2, '0') + '-' +
         String(d.getDate()).padStart(2, '0');
-    certManualDatas[linha.dataset.curso] = { inicio: di.value, fim: df.value };
 }
 
-// Alunos e cursos já marcados, normalizados para o formato do certificado.
-function certManualAlunosSelecionados() {
+// Alunos de um curso: os marcados na lista dele mais, se estiver ligado, o
+// aluno digitado dentro daquele curso. Normaliza para o formato do certificado.
+function certManualAlunosDoCurso(chave) {
     const lista = [];
-    certManualAlunoIds.forEach(chave => {
-        if (chave === CERT_MANUAL_NOVO) {
-            const nome = (el('mc_alunoNome') && el('mc_alunoNome').value.trim()) || '';
-            if (!nome) return;
-            lista.push({
-                id: '', nome: nome,
-                matricula: (el('mc_alunoMatricula') && el('mc_alunoMatricula').value.trim()) || '',
-                cpf: ((el('mc_alunoCpf') && el('mc_alunoCpf').value) || '').replace(/\D/g, '')
-            });
-            return;
-        }
-        const a = alunosData[chave];
-        if (a) lista.push({ id: a.id || chave, nome: a.nome || '', matricula: a.matricula || '', cpf: a.cpf || '' });
+    certManualIdsAluno(chave).forEach(id => {
+        const a = alunosData[id];
+        if (a) lista.push({ id: a.id || id, nome: a.nome || '', matricula: a.matricula || '', cpf: a.cpf || '' });
     });
+    const av = certManualAvulso(chave);
+    if (av.ativo && av.nome) {
+        lista.push({ id: '', nome: av.nome, matricula: av.matricula || '', cpf: (av.cpf || '').replace(/\D/g, '') });
+    }
     return lista.sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
 }
 function certManualCursosSelecionados() {
@@ -2471,13 +2495,16 @@ function certManualValidade(chave) {
 
 // Datas: reaproveita as datas já escolhidas para aquele curso na tela de
 // geração; senão hoje, com o fim estendido pela carga horária (mesma regra
-// dos seletores de data da geração).
+// dos seletores de data da geração). Cada curso tem uma lista de períodos:
+// mais de um quando o mesmo aluno faz o mesmo curso em datas diferentes.
 function certManualDatasPadrao(chave) {
     const salvo = certManualDatas[chave];
-    if (salvo) return salvo;
+    if (salvo && salvo.length) return salvo;
     if (chave !== CERT_MANUAL_NOVO) {
         const di = el('dataInicio_' + chave), df = el('dataFim_' + chave);
-        if (di && di.value && df && df.value) return { inicio: di.value, fim: df.value };
+        if (di && di.value && df && df.value) {
+            return [{ id: certManualNovoPeriodo(), inicio: di.value, fim: df.value }];
+        }
     }
     const hoje = new Date().toISOString().slice(0, 10);
     let fim = hoje;
@@ -2488,22 +2515,56 @@ function certManualDatasPadrao(chave) {
         d.setDate(d.getDate() + extra);
         fim = d.toISOString().slice(0, 10);
     }
-    return { inicio: hoje, fim: fim };
+    return [{ id: certManualNovoPeriodo(), inicio: hoje, fim: fim }];
 }
 
-// Antes de redesenhar as datas, guarda o que já foi digitado: sem isso,
-// marcar mais um curso apagaria as datas dos anteriores.
+// Antes de redesenhar os blocos, guarda o que já foi digitado: sem isso,
+// marcar mais um curso apagaria os alunos e as datas dos anteriores.
 function certManualColetarDatas() {
-    const box = el('mc_datas');
+    const box = el('mc_blocos');
     if (!box) return;
-    box.querySelectorAll('[data-curso]').forEach(linha => {
-        const di = linha.querySelector('.mc_di'), df = linha.querySelector('.mc_df');
-        if (di && df) certManualDatas[linha.dataset.curso] = { inicio: di.value, fim: df.value };
+    box.querySelectorAll('[data-bloco]').forEach(bloco => {
+        const chave = bloco.dataset.bloco;
+        const periodos = [];
+        bloco.querySelectorAll('[data-periodo]').forEach(linha => {
+            const di = linha.querySelector('.mc_di'), df = linha.querySelector('.mc_df');
+            if (di && df) {
+                periodos.push({ id: linha.dataset.periodo, inicio: di.value, fim: df.value });
+            }
+        });
+        if (periodos.length) certManualDatas[chave] = periodos;
+        else delete certManualDatas[chave];
     });
 }
 
-function certManualRenderAlunos() {
-    const box = el('mc_listaAlunos');
+// Mais um período para o mesmo curso: nasce com as datas do último, para o
+// usuário só precisar ajustar o dia (o fim se refaz pela carga horária).
+function certManualAdicionarPeriodo(chave) {
+    certManualColetarDatas();
+    const periodos = certManualDatas[chave] || certManualDatasPadrao(chave);
+    const ultimo = periodos[periodos.length - 1];
+    certManualDatas[chave] = periodos.concat([{
+        id: certManualNovoPeriodo(),
+        inicio: ultimo.inicio,
+        fim: ultimo.fim
+    }]);
+    certManualRenderBlocos();
+    certManualResumo();
+}
+function certManualRemoverPeriodo(chave, idPeriodo) {
+    certManualColetarDatas();
+    const periodos = (certManualDatas[chave] || []).filter(p => p.id !== idPeriodo);
+    // O último período não sai: todo curso marcado precisa de pelo menos um.
+    if (!periodos.length) return;
+    certManualDatas[chave] = periodos;
+    certManualRenderBlocos();
+    certManualResumo();
+}
+
+// Lista de alunos de UM curso, já respeitando empresa, filtros e busca (que
+// valem para todos os cursos ao mesmo tempo).
+function certManualRenderListaAlunos(chave) {
+    const box = document.querySelector('#mc_blocos [data-bloco="' + chave + '"] .mc-lista');
     if (!box) return;
     const termo = (el('mc_buscaAluno').value || '').trim().toLowerCase();
     const obra = (el('mc_obra').value || '').trim();
@@ -2521,27 +2582,191 @@ function certManualRenderAlunos() {
         }
         return true;
     });
-    certManualContadores(filtrados.length, todos.length);
-    const on = (v) => certManualAlunoIds.includes(v) ? ' checked' : '';
-    box.innerHTML =
-        `<label><input type="checkbox" data-chave="${CERT_MANUAL_NOVO}"${on(CERT_MANUAL_NOVO)}>` +
-        `<span>✏️ Registrar aluno que não está na lista (digitar)</span></label>` +
-        (filtrados.length
-            ? filtrados.map(a =>
-                `<label><input type="checkbox" data-chave="${esc(a.id)}"${on(a.id)}>` +
-                `<span>${esc(a.nome)}${a.matricula ? ' — ' + esc(a.matricula) : ''}</span></label>`).join('')
-            : `<p style="color:var(--muted);margin:0">${todos.length
-                ? 'Nenhum aluno encontrado com esse filtro.'
-                : 'Nenhum aluno vinculado a esta empresa. Use a opção acima para digitar o nome.'}</p>`);
+    const marcados = certManualIdsAluno(chave);
+    const on = (v) => marcados.includes(v) ? ' checked' : '';
+    box.dataset.total = filtrados.length;
+    box.innerHTML = filtrados.length
+        ? filtrados.map(a =>
+            `<label><input type="checkbox" data-aluno="${esc(a.id)}"${on(a.id)}>` +
+            `<span>${esc(a.nome)}${a.matricula ? ' — ' + esc(a.matricula) : ''}</span></label>`).join('')
+        : `<p style="color:var(--muted);margin:0">${todos.length
+            ? 'Nenhum aluno encontrado com esse filtro.'
+            : 'Nenhum aluno vinculado a esta empresa. Use a opção de digitar o nome abaixo.'}</p>`;
     box.querySelectorAll('input[type=checkbox]').forEach(inp => {
         inp.addEventListener('change', () => {
-            const chave = inp.dataset.chave;
-            certManualAlunoIds = inp.checked
-                ? certManualAlunoIds.concat([chave])
-                : certManualAlunoIds.filter(x => x !== chave);
-            certManualAlternarCampos();
+            const id = inp.dataset.aluno;
+            certManualAlunosPorCurso[chave] = inp.checked
+                ? certManualIdsAluno(chave).concat([id])
+                : certManualIdsAluno(chave).filter(x => x !== id);
+            certManualResumo();
+            certManualAtualizarSelo(chave);
         });
     });
+    certManualAtualizarSelo(chave);
+}
+
+// "N alunos · M datas" no título do bloco do curso.
+function certManualAtualizarSelo(chave) {
+    const alvo = document.querySelector('#mc_blocos [data-bloco="' + chave + '"] .mc-badge');
+    if (!alvo) return;
+    const n = certManualAlunosDoCurso(chave).length;
+    const d = (certManualDatas[chave] || certManualDatasPadrao(chave)).length;
+    alvo.textContent = n + ' aluno' + (n === 1 ? '' : 's') + ' · ' + d + ' data' + (d === 1 ? '' : 's');
+    // O texto das datas diz para quem elas valem, então anda junto com o selo.
+    const quem = document.querySelector('#mc_blocos [data-bloco="' + chave + '"] .mc-quem');
+    if (quem) quem.textContent = n + ' aluno(s) marcado(s) aqui';
+}
+
+// Um bloco por curso marcado: alunos, aluno digitado e as datas daquele curso.
+function certManualRenderBlocos() {
+    const box = el('mc_blocos');
+    if (!box) return;
+    const cursos = certManualCursosSelecionados();
+    if (!cursos.length) {
+        box.innerHTML = '<p style="color:var(--muted)">Marque um ou mais cursos acima para escolher os alunos e as datas de cada um.</p>';
+        certManualResumo();
+        return;
+    }
+    box.innerHTML = '<div class="actions" style="margin-top:0;justify-content:space-between;align-items:center;">' +
+        '<b style="font-size:14px">Alunos e datas de cada curso</b>' +
+        (cursos.length > 1
+            ? '<button type="button" class="secondary" id="mcCopiarDatas" style="margin-top:0">' +
+              'Copiar as datas do 1º curso para todos</button>'
+            : '') +
+        '</div>' +
+        cursos.map(c => certManualBlocoCurso(c)).join('');
+
+    // listas de alunos
+    cursos.forEach(c => certManualRenderListaAlunos(c.chave));
+
+    // marcar todos os alunos visíveis daquele curso (respeta busca e filtros)
+    box.querySelectorAll('[data-todos]').forEach(btn => {
+        btn.onclick = () => {
+            const chave = btn.dataset.todos;
+            const lista = document.querySelector('#mc_blocos [data-bloco="' + chave + '"] .mc-lista');
+            const visiveis = lista ? [...lista.querySelectorAll('input[type=checkbox]')].map(i => i.dataset.aluno) : [];
+            // Não perde quem já estava marcado e ficou fora do filtro atual.
+            const foraDoFiltro = certManualIdsAluno(chave).filter(id => !visiveis.includes(id));
+            certManualAlunosPorCurso[chave] = visiveis.concat(foraDoFiltro);
+            certManualRenderListaAlunos(chave);
+            certManualResumo();
+        };
+    });
+    box.querySelectorAll('[data-nenhum]').forEach(btn => {
+        btn.onclick = () => {
+            certManualAlunosPorCurso[btn.dataset.nenhum] = [];
+            certManualRenderListaAlunos(btn.dataset.nenhum);
+            certManualResumo();
+        };
+    });
+
+    // "digitar aluno" dentro do curso
+    box.querySelectorAll('[data-avulso]').forEach(inp => {
+        inp.addEventListener('change', () => {
+            const chave = inp.dataset.avulso;
+            const av = certManualAvulso(chave);
+            certManualAvulsoPorCurso[chave] = Object.assign({}, av, { ativo: inp.checked });
+            const bloco = inp.closest('[data-bloco]');
+            const campos = bloco.querySelector('.mc-avulso-campos');
+            if (campos) campos.style.display = inp.checked ? 'block' : 'none';
+            certManualResumo();
+            certManualAtualizarSelo(chave);
+        });
+    });
+    box.querySelectorAll('[data-av-campo]').forEach(inp => {
+        inp.addEventListener('input', () => {
+            const bloco = inp.closest('[data-bloco]');
+            const chave = bloco.dataset.bloco;
+            const campo = inp.dataset.avCampo;
+            const av = certManualAvulso(chave);
+            certManualAvulsoPorCurso[chave] = Object.assign({}, av, { [campo]: inp.value });
+            certManualResumo();
+            certManualAtualizarSelo(chave);
+        });
+    });
+
+    // datas
+    box.querySelectorAll('[data-add]').forEach(btn => {
+        btn.onclick = () => certManualAdicionarPeriodo(btn.dataset.add);
+    });
+    box.querySelectorAll('[data-remover]').forEach(btn => {
+        btn.onclick = () => certManualRemoverPeriodo(btn.dataset.cursoRemover, btn.dataset.remover);
+    });
+    box.querySelectorAll('.mc_di, .mc_df').forEach(inp => {
+        inp.addEventListener('change', () => {
+            // A data de fim é automática: segue a carga horária do curso.
+            if (inp.classList.contains('mc_di')) {
+                certManualRecalcularFim(inp.closest('[data-periodo]'));
+            }
+            certManualColetarDatas();
+            certManualAtualizarVencimentos();
+        });
+    });
+
+    const btnCopiar = el('mcCopiarDatas');
+    if (btnCopiar) {
+        btnCopiar.onclick = () => {
+            certManualColetarDatas();
+            const primeiro = certManualCursosSelecionados()[0];
+            const primeira = primeiro && certManualDatas[primeiro.chave];
+            if (!primeira || !primeira.length) return;
+            // Só o 1º período de cada curso: os demais foram escolhidos a dedo.
+            certManualCursosSelecionados().forEach(c => {
+                const atuais = certManualDatas[c.chave] || certManualDatasPadrao(c.chave);
+                certManualDatas[c.chave] = [Object.assign({}, atuais[0], primeira[0])];
+            });
+            certManualRenderBlocos();
+        };
+    }
+
+    certManualAtualizarVencimentos();
+}
+
+// HTML de um curso: lista de alunos, campos do aluno digitado e as datas.
+function certManualBlocoCurso(c) {
+    const av = certManualAvulso(c.chave);
+    const periodos = certManualDatasPadrao(c.chave);
+    const nAlunos = certManualAlunosDoCurso(c.chave).length;
+    return `<details class="mc-bloco" data-bloco="${esc(c.chave)}" open>` +
+        `<summary>📘 ${esc(c.nome)}${c.carga ? ' <span style="font-weight:400;color:var(--muted)">— ' + esc(c.carga) + '</span>' : ''} ` +
+        `<span class="mc-badge"></span></summary>` +
+        '<div class="mc-bloco-corpo">' +
+        '<div class="actions" style="margin-top:0;margin-bottom:6px">' +
+        '<b style="font-size:13px">Alunos deste curso</b>' +
+        `<button type="button" class="secondary" style="margin-top:0;font-size:12px;padding:3px 10px" data-todos="${esc(c.chave)}">Marcar todos</button>` +
+        `<button type="button" class="secondary" style="margin-top:0;font-size:12px;padding:3px 10px" data-nenhum="${esc(c.chave)}">Desmarcar</button>` +
+        '</div>' +
+        '<div class="mc-lista checklist"></div>' +
+        `<label style="display:block;margin-top:8px">` +
+        `<input type="checkbox" data-avulso="${esc(c.chave)}"${av.ativo ? ' checked' : ''}>` +
+        `<span>✏️ Este aluno não está na lista (digitar)</span></label>` +
+        '<div class="mc-avulso-campos" style="display:' + (av.ativo ? 'block' : 'none') + ';border-left:3px solid var(--border);padding-left:12px;margin-top:8px;">' +
+        '<div class="grid">' +
+        `<div class="col-6"><label>Nome do aluno:</label><input data-av-campo="nome" value="${esc(av.nome)}" placeholder="Nome completo"></div>` +
+        `<div class="col-3"><label>CPF:</label><input data-av-campo="cpf" value="${esc(av.cpf)}" placeholder="00000000000"></div>` +
+        `<div class="col-3"><label>Matrícula:</label><input data-av-campo="matricula" value="${esc(av.matricula)}"></div>` +
+        '</div></div>' +
+        '<h3 style="margin-top:16px;font-size:14px">Datas deste curso</h3>' +
+        '<p style="color:var(--muted);font-size:12px;margin:0 0 8px">A data de fim é calculada pela carga horária, como no gerador normal. ' +
+        'Cada data vale para os <span class="mc-quem">' + nAlunos + ' aluno(s) marcado(s) aqui</span>.</p>' +
+        '<div class="mc-datas">' +
+        periodos.map((d, i) =>
+            `<div class="mc-periodo" data-periodo="${esc(d.id)}">` +
+            (periodos.length > 1
+                ? `<div class="mc-periodo-topo"><span>${i + 1}ª data</span>` +
+                  `<button type="button" class="secondary" style="margin-top:0;padding:2px 8px;font-size:12px" ` +
+                  `data-remover="${esc(d.id)}" data-curso-remover="${esc(c.chave)}">Remover</button></div>`
+                : '') +
+            '<div class="grid">' +
+            `<div class="col-6"><label>Data de início</label><input type="date" class="mc_di" value="${d.inicio}"></div>` +
+            `<div class="col-6"><label>Data de fim</label><input type="date" class="mc_df" value="${d.fim}"></div>` +
+            '</div>' +
+            '<div class="mc_venc" style="margin-top:8px;font-size:12px;color:var(--muted)"></div>' +
+            `</div>`).join('') +
+        `<button type="button" class="secondary mc-add-datas" data-add="${esc(c.chave)}" style="margin-top:4px">` +
+        `＋ Adicionar outra data deste curso</button>` +
+        '</div>' +
+        '</div></details>';
 }
 
 function certManualRenderCursos() {
@@ -2553,7 +2778,7 @@ function certManualRenderCursos() {
         (c.nome || '').toLowerCase().includes(termo) ||
         (c.carga || '').toLowerCase().includes(termo));
     const on = (v) => certManualCursoIds.includes(v) ? ' checked' : '';
-    certManualContadores(null, null, filtrados.length, todos.length);
+    certManualContadores(filtrados.length, todos.length);
     box.innerHTML =
         `<label><input type="checkbox" data-chave="${CERT_MANUAL_NOVO}"${on(CERT_MANUAL_NOVO)}>` +
         `<span>✏️ Registrar curso que não está na lista (digitar)</span></label>` +
@@ -2576,117 +2801,75 @@ function certManualRenderCursos() {
     });
 }
 
-function certManualRenderDatas() {
-    const box = el('mc_datas');
-    if (!box) return;
-    const cursos = certManualCursosSelecionados();
-    if (!cursos.length) {
-        box.innerHTML = '<p style="color:var(--muted)">Selecione um ou mais cursos para definir as datas.</p>';
-        certManualResumo();
-        return;
-    }
-    box.innerHTML =
-        '<div class="actions" style="margin-top:0;justify-content:space-between;align-items:center;">' +
-        '<b style="font-size:14px">Datas por curso</b>' +
-        (cursos.length > 1
-            ? '<button type="button" class="secondary" id="mcCopiarDatas" style="margin-top:0">' +
-              'Copiar as datas do 1º curso para todos</button>'
-            : '') +
-        '</div>' +
-        cursos.map((c, i) => {
-            const d = certManualDatasPadrao(c.chave);
-            return `<div data-curso="${esc(c.chave)}" style="border:1px solid var(--border);border-radius:6px;padding:10px 12px;margin-bottom:10px;">` +
-                `<div style="font-weight:600;font-size:14px">${esc(c.nome)}` +
-                (c.carga ? ` <span style="font-weight:400;color:var(--muted)">— ${esc(c.carga)}</span>` : '') +
-                `</div>` +
-                '<div class="grid">' +
-                `<div class="col-6"><label>Data de início</label><input type="date" class="mc_di" value="${d.inicio}"></div>` +
-                `<div class="col-6"><label>Data de fim</label><input type="date" class="mc_df" value="${d.fim}"></div>` +
-                '</div>' +
-                `<div class="mc_venc" style="margin-top:8px;font-size:12px;color:var(--muted)"></div>` +
-                `</div>`;
-        }).join('');
-
-    const btnCopiar = el('mcCopiarDatas');
-    if (btnCopiar) {
-        btnCopiar.onclick = () => {
-            certManualColetarDatas();
-            const primeira = certManualDatas[document.querySelector('#mc_datas [data-curso]').dataset.curso];
-            if (!primeira) return;
-            certManualCursosSelecionados().forEach(c => { certManualDatas[c.chave] = { inicio: primeira.inicio, fim: primeira.fim }; });
-            certManualRenderDatas();
-        };
-    }
-    box.querySelectorAll('.mc_di, .mc_df').forEach(inp => {
-        inp.addEventListener('change', () => {
-            certManualColetarDatas();
-            // A data de fim é automática: segue a carga horária do curso.
-            if (inp.classList.contains('mc_di')) {
-                certManualRecalcularFim(inp.closest('[data-curso]'));
-            }
-            certManualAtualizarVencimentos();
-        });
-    });
-    certManualAtualizarVencimentos();
-}
-
 // Vencimento de cada linha de data, recalculado sem redesenhar o formulário
 // (o redesenho apagaria o que está sendo digitado).
 function certManualAtualizarVencimentos() {
-    const box = el('mc_datas');
+    const box = el('mc_blocos');
     if (box) {
-        box.querySelectorAll('[data-curso]').forEach(linha => {
-            const alvo = linha.querySelector('.mc_venc');
-            if (!alvo) return;
-            const df = linha.querySelector('.mc_df');
-            const validade = certManualValidade(linha.dataset.curso);
-            const exp = df && df.value ? calcExpiracao(df.value, validade) : null;
-            alvo.innerHTML = 'Vencimento: <b>' + (exp ? fmtDateBR(exp) : '—') + '</b>' +
-                (validade === 'none' ? ' <span style="font-weight:400">(o curso não vence)</span>' : '');
+        box.querySelectorAll('[data-bloco]').forEach(bloco => {
+            const validade = certManualValidade(bloco.dataset.bloco);
+            bloco.querySelectorAll('[data-periodo]').forEach(linha => {
+                const alvo = linha.querySelector('.mc_venc');
+                if (!alvo) return;
+                const df = linha.querySelector('.mc_df');
+                const exp = df && df.value ? calcExpiracao(df.value, validade) : null;
+                alvo.innerHTML = 'Vencimento: <b>' + (exp ? fmtDateBR(exp) : '—') + '</b>' +
+                    (validade === 'none' ? ' <span style="font-weight:400">(o curso não vence)</span>' : '');
+            });
         });
     }
     certManualResumo();
 }
 
-// Contador no título de cada bloco recolhível: "3 de 12" quando há filtro e
-// "2 marcados" com o que já foi escolhido. Alunos e cursos começam recolhidos,
+// Contador no título do bloco de cursos: "3 de 12" quando há busca e
+// "2 selecionados" com o que já foi escolhido. Os blocos começam recolhidos,
 // então é por ali que se acompanha o que foi selecionado.
-function certManualContadores(alunosVisiveis, alunosTotal, cursosVisiveis, cursosTotal) {
-    const put = (id, visiveis, total, marcados) => {
-        const alvo = el(id);
-        if (!alvo) return;
-        // Guarda o "x de y" para continuar exibindo quando só o marcado muda.
-        if (visiveis !== null) alvo.dataset.origem = visiveis + ' de ' + total;
-        const origem = alvo.dataset.origem || '';
-        alvo.textContent = (origem ? origem + ' · ' : '') + marcados +
-            ' marcado' + (marcados === 1 ? '' : 's');
-    };
-    put('mc_contAlunos', alunosVisiveis, alunosTotal, certManualAlunoIds.length);
-    put('mc_contCursos', cursosVisiveis, cursosTotal, certManualCursoIds.length);
+function certManualContadores(cursosVisiveis, cursosTotal) {
+    const alvo = el('mc_contCursos');
+    if (!alvo) return;
+    // Guarda o "x de y" para continuar exibindo quando só o marcado muda.
+    if (cursosVisiveis !== null) alvo.dataset.origem = cursosVisiveis + ' de ' + cursosTotal;
+    const origem = alvo.dataset.origem || '';
+    const marcados = certManualCursoIds.length;
+    alvo.textContent = (origem ? origem + ' · ' : '') + marcados +
+        ' selecionado' + (marcados === 1 ? '' : 's');
 }
 
 function certManualResumo() {
-    certManualContadores(null, null, null, null);
+    certManualContadores(null, null);
     const box = el('mc_resumo');
     if (!box) return;
-    const nAlunos = certManualAlunoIds.length;
     const cursos = certManualCursosSelecionados();
-    if (!cursos.length || !nAlunos) {
-        box.innerHTML = '<span style="color:var(--muted)">Selecione alunos e cursos para ver o total.</span>';
+    if (!cursos.length) {
+        box.innerHTML = '<span style="color:var(--muted)">Marque um curso acima para escolher os alunos e as datas.</span>';
         return;
     }
-    box.innerHTML = '<b>' + (nAlunos * cursos.length) + ' certificado(s)</b> serão cadastrados — ' +
-        nAlunos + ' aluno(s) × ' + cursos.length + ' curso(s).';
+    // Cada curso vale (seus alunos) x (suas datas): o mesmo aluno pode estar em
+    // cursos diferentes, e cada curso tem as datas que o usuário digitou.
+    const linhas = cursos.map(c => {
+        const alunos = certManualAlunosDoCurso(c.chave).length;
+        const datas = (certManualDatas[c.chave] || certManualDatasPadrao(c.chave)).length;
+        return { nome: c.nome, alunos: alunos, datas: datas, total: alunos * datas };
+    });
+    const soma = linhas.reduce((s, l) => s + l.total, 0);
+    if (!soma) {
+        box.innerHTML = '<span style="color:var(--muted)">Escolha os alunos de cada curso para ver o total.</span>';
+        return;
+    }
+    box.innerHTML = '<b>' + soma + ' certificado(s)</b> serão cadastrados:' +
+        '<ul style="margin:6px 0 0;padding-left:18px">' +
+        linhas.map(l => `<li>${esc(l.nome)}: ${l.alunos} aluno(s) × ${l.datas} data(s) = <b>${l.total}</b></li>`).join('') +
+        '</ul>';
 }
 
-// Os blocos de aluno/curso avulsos só aparecem quando a opção "digitar" está
-// marcada na lista acima deles. Sempre passa por aqui depois de mudar uma
-// seleção: recolhe o que já foi digitado e redesenha as datas.
+// O bloco de curso avulso só aparece quando a opção "digitar" está marcada.
+// Sempre passa por aqui depois de mudar a seleção de cursos: recolhe o que já
+// foi digitado e redesenha os blocos.
 function certManualAlternarCampos() {
     certManualColetarDatas();
-    el('mc_alunoNovo').style.display = certManualAlunoIds.includes(CERT_MANUAL_NOVO) ? 'block' : 'none';
-    el('mc_cursoNovo').style.display = certManualCursoIds.includes(CERT_MANUAL_NOVO) ? 'block' : 'none';
-    certManualRenderDatas();
+    const bloco = el('mc_cursoNovo');
+    if (bloco) bloco.style.display = certManualCursoIds.includes(CERT_MANUAL_NOVO) ? 'block' : 'none';
+    certManualRenderBlocos();
 }
 
 window.openCertManualModal = () => {
@@ -2697,11 +2880,17 @@ window.openCertManualModal = () => {
         return alert('Nenhuma empresa disponível para você. Cadastre a empresa antes de lançar o certificado.');
     }
 
-    // Pré-seleciona o que já estiver marcado na tela de geração.
+    // Pré-seleciona o que já estiver marcado na tela de geração. Os alunos
+    // entram em todos os cursos marcados, e cada curso ajusta os seus.
     let empresaId = el('selEmpresa').value || '';
     if (!empresaId || !empresaPermitidaCert(empresaId) || !empresasData[empresaId]) empresaId = empresas[0].id;
-    certManualAlunoIds = marcadosDaTela('listaAlunosCheckbox', 'input[type=checkbox]', certManualAlunosDaEmpresa(empresaId).map(a => a.id));
+    const alunosDaTela = marcadosDaTela('listaAlunosCheckbox', 'input[type=checkbox]',
+        certManualAlunosDaEmpresa(empresaId).map(a => a.id));
     certManualCursoIds = marcadosDaTela('listaCursosCheckbox', '.course-checkbox', Object.keys(cursosData));
+    certManualAlunosPorCurso = {};
+    certManualAlunosPorCurso[CERT_MANUAL_NOVO] = alunosDaTela.slice();
+    certManualCursoIds.forEach(c => { certManualAlunosPorCurso[c] = alunosDaTela.slice(); });
+    certManualAvulsoPorCurso = {};
     certManualDatas = {};
 
     const empresaOptions = empresas.map(e =>
@@ -2710,31 +2899,9 @@ window.openCertManualModal = () => {
         `<option value="${v}" ${v === 'none' ? 'selected' : ''}>${rotuloValidade(v)}</option>`).join('');
 
     const bodyHTML = `
-        <p style="color:var(--muted)">Grava os certificados no sistema com os mesmos dados da geração normal, um para cada aluno × curso. Nenhum PDF é gerado aqui.</p>
+        <p style="color:var(--muted)">Marque os cursos e, dentro de cada um, escolha os alunos e as datas. Cada aluno de cada data vira um certificado. Nenhum PDF é gerado aqui.</p>
         <label>Empresa (certificadora):</label>
         <select id="mc_empresa">${empresaOptions}</select>
-
-        <div class="grid">
-            <div class="col-4"><label>Obra</label><select id="mc_obra"><option value="">Todas</option></select></div>
-            <div class="col-4"><label>Cidade</label><select id="mc_cidade"><option value="">Todas</option></select></div>
-            <div class="col-4"><label>Filial</label><select id="mc_filial"><option value="">Todas</option></select></div>
-        </div>
-
-        <details class="mc-bloco" id="mc_blocoAlunos">
-            <summary>👥 Selecione alunos <span class="mc-badge" id="mc_contAlunos"></span></summary>
-            <div class="mc-bloco-corpo">
-                <input id="mc_buscaAluno" placeholder="Pesquisar aluno por nome ou matrícula">
-                <div id="mc_listaAlunos" class="checklist"></div>
-                <div id="mc_alunoNovo" style="display:none;border-left:3px solid var(--border);padding-left:12px;margin-top:8px;">
-                    <label>Nome do aluno:</label>
-                    <input id="mc_alunoNome" placeholder="Nome completo">
-                    <label>CPF (apenas números):</label>
-                    <input id="mc_alunoCpf" placeholder="00000000000">
-                    <label>Matrícula:</label>
-                    <input id="mc_alunoMatricula">
-                </div>
-            </div>
-        </details>
 
         <details class="mc-bloco" id="mc_blocoCursos">
             <summary>📚 Selecione cursos <span class="mc-badge" id="mc_contCursos"></span></summary>
@@ -2752,50 +2919,59 @@ window.openCertManualModal = () => {
             </div>
         </details>
 
-        <h3 style="margin-top:18px">Datas do Evento por Curso</h3>
-        <p style="color:var(--muted);font-size:13px;margin:0 0 8px">A data de fim é calculada pela carga horária do curso, como no gerador normal.</p>
-        <div id="mc_datas"></div>
+        <div class="grid" style="margin-top:14px">
+            <div class="col-4"><label>Obra</label><select id="mc_obra"><option value="">Todas</option></select></div>
+            <div class="col-4"><label>Cidade</label><select id="mc_cidade"><option value="">Todas</option></select></div>
+            <div class="col-4"><label>Filial</label><select id="mc_filial"><option value="">Todas</option></select></div>
+        </div>
+        <input id="mc_buscaAluno" placeholder="Pesquisar aluno por nome ou matrícula (vale para todos os cursos)">
+
+        <div id="mc_blocos" style="margin-top:10px"></div>
         <div id="mc_resumo" style="margin-top:14px;padding:8px 10px;background:#f8f9fa;border:1px solid var(--border);border-radius:4px;font-size:13px;"></div>
     `;
 
     openModal('Cadastrar Certificado Manualmente', bodyHTML, () => window.salvarCertManual());
 
+    // Empresa e filtros valem para todos os blocos de curso: muda a lista de
+    // alunos de cada um, sem mexer nas datas.
+    const relistarAlunos = () => {
+        el('mc_buscaAluno').value = '';
+        certManualPopLocais();
+        certManualCursosSelecionados().forEach(c => certManualRenderListaAlunos(c.chave));
+    };
     el('mc_empresa').addEventListener('change', () => {
         // Só mantém marcados os alunos que continuam visíveis na nova empresa.
         const validos = certManualAlunosDaEmpresa(el('mc_empresa').value).map(a => a.id);
-        certManualAlunoIds = certManualAlunoIds.filter(id => id === CERT_MANUAL_NOVO || validos.includes(id));
-        el('mc_buscaAluno').value = '';
-        certManualPopLocais();
-        certManualRenderAlunos();
-        certManualAlternarCampos();
+        Object.keys(certManualAlunosPorCurso).forEach(chave => {
+            certManualAlunosPorCurso[chave] =
+                certManualIdsAluno(chave).filter(id => validos.includes(id));
+        });
+        relistarAlunos();
     });
-    ['mc_obra', 'mc_cidade', 'mc_filial'].forEach(id => el(id).addEventListener('change', () => {
-        el('mc_buscaAluno').value = '';
-        certManualRenderAlunos();
-    }));
-    el('mc_buscaAluno').addEventListener('input', certManualRenderAlunos);
+    ['mc_obra', 'mc_cidade', 'mc_filial'].forEach(id => el(id).addEventListener('change', relistarAlunos));
+    el('mc_buscaAluno').addEventListener('input', () => {
+        certManualCursosSelecionados().forEach(c => certManualRenderListaAlunos(c.chave));
+    });
     el('mc_buscaCurso').addEventListener('input', certManualRenderCursos);
-    ['mc_alunoNome', 'mc_alunoCpf', 'mc_alunoMatricula', 'mc_cursoNome']
-        .forEach(id => el(id).addEventListener('input', certManualResumo));
+    el('mc_cursoNome').addEventListener('input', certManualResumo);
     // A carga horária digitada também mexe na data de fim do curso avulso.
     el('mc_cursoCarga').addEventListener('input', () => {
-        certManualResumo();
-        const linha = document.querySelector('#mc_datas [data-curso="' + CERT_MANUAL_NOVO + '"]');
+        const linha = document.querySelector('#mc_blocos [data-bloco="' + CERT_MANUAL_NOVO + '"] [data-periodo]');
         if (linha) {
             certManualRecalcularFim(linha);
+            certManualColetarDatas();
             certManualAtualizarVencimentos();
+        } else {
+            certManualResumo();
         }
     });
     el('mc_cursoValidade').addEventListener('change', () => {
         certManualColetarDatas();
-        certManualRenderDatas();
+        certManualRenderBlocos();
     });
 
     certManualPopLocais();
-    certManualRenderAlunos();
     certManualRenderCursos();
-    certManualColetarDatas();
-    certManualRenderDatas();
     certManualAlternarCampos();
 };
 
@@ -2818,45 +2994,59 @@ window.salvarCertManual = async () => {
         const empresa = empresasData[empresaId];
         if (!empresa) return alert('Selecione a empresa.');
 
-        const alunos = certManualAlunosSelecionados();
-        if (!alunos.length) return alert('Selecione pelo menos um aluno (ou marque a opção de digitar o nome).');
-
         const cursos = certManualCursosSelecionados();
         if (!cursos.length) return alert('Selecione pelo menos um curso (ou marque a opção de digitar o nome).');
         if (cursos.some(c => c.nome.indexOf('Curso digitado') === 0)) {
             return alert('Preencha o nome do curso que será digitado manualmente.');
         }
 
-        // Uma linha de data por curso marcado.
+        // Cada curso tem os seus alunos e as suas datas. Um curso marcado sem
+        // aluno nenhum não entra: o usuário escolhe quem faz cada curso.
         certManualColetarDatas();
-        const datasPorCurso = {};
+        const plano = [];
         for (const c of cursos) {
-            const d = certManualDatas[c.chave] || certManualDatasPadrao(c.chave);
-            if (!d.inicio || !d.fim) return alert('Informe a data de início e a data de fim de "' + c.nome + '".');
-            if (d.fim < d.inicio) return alert('Em "' + c.nome + '", a data de fim não pode ser anterior à data de início.');
-            datasPorCurso[c.chave] = d;
+            const alunos = certManualAlunosDoCurso(c.chave);
+            if (!alunos.length) {
+                return alert('No curso "' + c.nome + '", escolha ao menos um aluno ' +
+                    '(marque na lista ou digite o nome do aluno que não está nela).');
+            }
+            const periodos = certManualDatas[c.chave] || certManualDatasPadrao(c.chave);
+            const rotulo = (periodos.length > 1) ? ' (' + periodos.length + ' datas)' : '';
+            for (let i = 0; i < periodos.length; i++) {
+                const d = periodos[i];
+                const onde = rotulo + (periodos.length > 1 ? ', ' + (i + 1) + 'ª' : '');
+                if (!d.inicio || !d.fim) return alert('Informe a data de início e a data de fim de "' + c.nome + '"' + onde + '.');
+                if (d.fim < d.inicio) return alert('Em "' + c.nome + '"' + onde + ', a data de fim não pode ser anterior à data de início.');
+            }
+            plano.push({ curso: c, alunos: alunos, periodos: periodos });
         }
 
-        // Mesmo cruzamento da geração normal: um certificado por aluno x curso.
+        // Um certificado por aluno x data, dentro de cada curso. O mesmo aluno
+        // pode estar em vários cursos, cada um com as datas que foram escolhidas.
         const pares = [];
-        cursos.forEach(curso => {
-            const d = datasPorCurso[curso.chave];
+        const periodosPorCurso = [];
+        plano.forEach(p => {
+            const curso = p.curso;
             const validade = certManualValidade(curso.chave);
             const base = (curso.chave === CERT_MANUAL_NOVO) ? curso : (cursosData[curso.chave] || curso);
-            alunos.forEach(aluno => {
-                pares.push({
-                    aluno: aluno,
-                    curso: {
-                        id: curso.id,
-                        nome: curso.nome,
-                        carga: curso.carga,
-                        validade: validade,
-                        mensagem: base.mensagem || '',
-                        conteudo: base.conteudo || ''
-                    },
-                    dataInicio: d.inicio,
-                    dataFim: d.fim,
-                    expiracao: calcExpiracao(d.fim, validade)
+            const cursoCert = {
+                id: curso.id,
+                nome: curso.nome,
+                carga: curso.carga,
+                validade: validade,
+                mensagem: base.mensagem || '',
+                conteudo: base.conteudo || ''
+            };
+            p.periodos.forEach(d => {
+                periodosPorCurso.push({ curso: curso, cursoCert: cursoCert, d: d, validade: validade, qtd: p.alunos.length });
+                p.alunos.forEach(aluno => {
+                    pares.push({
+                        aluno: aluno,
+                        curso: cursoCert,
+                        dataInicio: d.inicio,
+                        dataFim: d.fim,
+                        expiracao: calcExpiracao(d.fim, validade)
+                    });
                 });
             });
         });
@@ -2876,7 +3066,6 @@ window.salvarCertManual = async () => {
         const agora = Date.now();
         const dataGeracao = new Date().toISOString().slice(0, 10);
         const horaGeracao = new Date().toLocaleDateString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-        const idsAluno = alunos.filter(a => a.id).map(a => a.id);
         const updates = {};
         const novos = [];
 
@@ -2907,22 +3096,36 @@ window.salvarCertManual = async () => {
             novos.push({ id: certKey, data: certData });
         });
 
-        // Uma linha de histórico por curso, como na geração em lote.
-        cursos.forEach(curso => {
-            const d = datasPorCurso[curso.chave];
-            const validade = certManualValidade(curso.chave);
+        // Uma linha de histórico por curso e data, como na geração em lote.
+        // A linha leva só os alunos daquele curso; com mais de uma data no mesmo
+        // curso, o período entra no nome para distinguir as linhas.
+        const totalPorCurso = {};
+        periodosPorCurso.forEach(p => {
+            totalPorCurso[p.curso.chave] = (totalPorCurso[p.curso.chave] || 0) + 1;
+        });
+        const idsPorCurso = {};
+        plano.forEach(p => {
+            idsPorCurso[p.curso.chave] = p.alunos.filter(a => a.id).map(a => a.id);
+        });
+        periodosPorCurso.forEach(p => {
+            const chave = p.curso.chave;
+            const comPeriodo = totalPorCurso[chave] > 1;
             const histKey = db.ref('historico').push().key;
             updates['historico/' + histKey] = {
-                nome: 'Certificado - ' + curso.nome,
+                nome: 'Certificado - ' + p.curso.nome + (comPeriodo
+                    ? ' (' + fmtDateBR(p.d.inicio) + ' a ' + fmtDateBR(p.d.fim) + ')'
+                    : ''),
                 data: horaGeracao,
                 ts: agora,
                 empresaId: empresaId,
-                funcionarioIds: idsAluno,
-                expiracao: calcExpiracao(d.fim, validade),
-                validade: validade,
+                funcionarioIds: idsPorCurso[chave],
+                dataInicio: p.d.inicio,
+                dataFim: p.d.fim,
+                expiracao: calcExpiracao(p.d.fim, p.validade),
+                validade: p.validade,
                 tipo: 'certificado',
-                certificadoCursoId: curso.id,
-                qtd: alunos.length,
+                certificadoCursoId: p.curso.id,
+                qtd: p.qtd,
                 ...dadosGeradorCert()
             };
         });
@@ -2935,8 +3138,10 @@ window.salvarCertManual = async () => {
         await WS_DATA.advanceLocalMeta('historico');
         renderCertificadosGerados();
 
+        const nAlunos = new Set(pares.map(p => p.aluno.nome + '|' + p.aluno.id)).size;
         window.closeModal();
-        alert(novos.length + ' certificado(s) cadastrado(s) para ' + alunos.length + ' aluno(s).\n\n' +
+        alert(novos.length + ' certificado(s) cadastrado(s) em ' + cursos.length + ' curso(s), ' +
+            'para ' + nAlunos + ' aluno(s).\n\n' +
             'O PDF não foi gerado. Para gerar depois, abra em "✅ Certificados Gerados" > Ver/Editar > Baixar PDF.');
     } catch (e) {
         console.error('Erro ao cadastrar certificados manualmente:', e);
