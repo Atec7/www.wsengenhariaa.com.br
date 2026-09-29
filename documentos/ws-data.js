@@ -403,19 +403,23 @@
       });
     },
     refreshAll: function (manual) {
+      return this.refreshPaths(null, manual);
+    },
+    /* Só os nós informados (ou todos, quando paths = null). As checagens de
+       _meta vão em paralelo: em cadeia, 8 nós viravam 8 esperas seguidas e o
+       botão de atualizar demorava mesmo quando nada tinha mudado. */
+    refreshPaths: function (paths, manual) {
       if (!manual && (Date.now() - LAST_REFRESH) < 5000) { return Promise.resolve({ downloads: 0 }); }
-      var paths = Object.keys(REG).filter(function (p) { return !REG[p].sobDemanda; });
+      var lista = (Array.isArray(paths) && paths.length)
+        ? paths.filter(function (p) { return !!REG[p] && !REG[p].sobDemanda; })
+        : Object.keys(REG).filter(function (p) { return !REG[p].sobDemanda; });
       var self = this;
       var pulls = [];
-      var chain = Promise.resolve();
-      paths.forEach(function (path) {
-        chain = chain.then(function () {
-          return syncNode(path, REG[path], !!manual).then(function (r) {
-            if (r.shouldPull) { pulls.push(r.pull()); }
-          });
-        });
-      });
-      return chain.then(function () {
+      return Promise.all(lista.map(function (path) {
+        return syncNode(path, REG[path], !!manual).then(function (r) {
+          if (r.shouldPull) { pulls.push(r.pull()); }
+        }).catch(function () {});
+      })).then(function () {
         if (!pulls.length) { self.afterSync(); if (ONUPD) { ONUPD(); } return { downloads: 0 }; }
         return Promise.all(pulls).then(function () {
           self.afterSync();
@@ -423,6 +427,42 @@
           return { downloads: pulls.length };
         });
       });
+    },
+    /* Vigia barata: consulta só o _meta dos nós indicados (poucas centenas de
+       bytes) e baixa o nó inteiro apenas quando ele realmente mudou. É o que
+       faz o colaborador novo aparecer sozinho, sem pagar o certificadoGerados
+       a cada ciclo. Devolve uma função para parar. */
+    watchPaths: function (paths, ms, onChange) {
+      var lista = (Array.isArray(paths) ? paths : []).filter(function (p) { return !!REG[p]; });
+      if (!lista.length) { return function () {}; }
+      var intervalo = ms || 20000;
+      var parar = false;
+      var timer = null;
+      function ciclo() {
+        if (parar) { return; }
+        Promise.all(lista.map(function (p) {
+          return getCache(p).then(function (c) {
+            return DB.once('_meta/' + p).then(function (snap) {
+              var meta = snap.val();
+              if (!meta || (c && meta <= (c.metaTs || 0))) { return null; }
+              return syncNode(p, REG[p], true).then(function (r) {
+                if (r.shouldPull) { return r.pull().then(function () { return p; }); }
+                return null;
+              });
+            });
+          }).catch(function () { return null; });
+        })).then(function (mudou) {
+          var lista2 = mudou.filter(Boolean);
+          if (lista2.length) {
+            if (ONUPD) { ONUPD(); }
+            if (typeof onChange === 'function') { try { onChange(lista2); } catch (e) {} }
+          }
+        }).catch(function () {}).then(function () {
+          if (!parar) { timer = setTimeout(ciclo, intervalo); }
+        });
+      }
+      timer = setTimeout(ciclo, intervalo);
+      return function () { parar = true; if (timer) { clearTimeout(timer); timer = null; } };
     },
 
     /* ── helpers de escrita (mantêm cache/memória quentes + bump meta) ── */
@@ -548,6 +588,9 @@
       opts = opts || {};
       var label = opts.label || 'Atualizar dados';
       var ifApp = opts.onlyWhen || null;
+      // paths: nós que o botão realmente atualiza. Sem isso ele baixava o
+      // certificadosGerados inteiro (megabytes) só para ver um colaborador novo.
+      var only = (Array.isArray(opts.paths) && opts.paths.length) ? opts.paths.slice() : null;
       var already = document.getElementById('ws-refresh-fab');
       if (already && already.parentNode) { already.parentNode.removeChild(already); }
       var b = document.createElement('button');
@@ -590,7 +633,7 @@
           st.textContent = '@keyframes wsSpin{to{transform:rotate(360deg)}}';
           document.head.appendChild(st);
         }
-        window.WS_DATA.refreshAll(true).then(function (res) {
+        window.WS_DATA.refreshPaths(only, true).then(function (res) {
           spin = false;
           b.style.pointerEvents = '';
           b.innerHTML = '<span style="line-height:1">&#x2713;</span>';

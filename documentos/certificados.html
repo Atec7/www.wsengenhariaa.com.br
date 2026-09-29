@@ -903,7 +903,7 @@ function certPessoaDeFuncionario(f) {
 function certAlunos() {
     const mapa = new Map();
     getArrayFromData(alunosData).forEach(a => {
-        if (a && a.id !== undefined) mapa.set(String(a.id), a);
+        if (a && a.id !== undefined && (a.nome || a.cpf)) mapa.set(String(a.id), a);
     });
     getArrayFromData(funcionariosData).forEach(f => {
         if (!f || f.id === undefined) return;
@@ -4139,7 +4139,18 @@ window.addEventListener('DOMContentLoaded', async () => {
             renderAlunosCheckboxForGeracao();
         }
     });
-    WS_DATA.injectRefreshButton({ label: 'Atualizar dados' });
+    // O botão atualiza tudo menos o 'certificadosGerados': aquele nó guarda o
+    // texto de cada curso de cada certificado e custa megabytes, e nada dele
+    // muda quando se cadastra um colaborador.
+    WS_DATA.injectRefreshButton({
+        label: 'Atualizar dados',
+        paths: ['empresas', 'alunos', 'funcionarios', 'cursos', 'obras', 'cidades', 'filiais']
+    });
+    // Colaborador novo aparece sozinho: a vigia lê só o _meta de 'alunos' e
+    // 'funcionarios' (poucas centenas de bytes) e baixa o nó só se mudou.
+    WS_DATA.watchPaths(['alunos', 'funcionarios'], 20000, function (paths) {
+        console.info('Colaboradores atualizados em:', paths.join(', '));
+    });
     window.renderEmpresas = renderEmpresas;
     window.renderAlunos = renderAlunos;
     window.renderCursos = renderCursos;
