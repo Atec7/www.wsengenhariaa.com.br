@@ -1117,6 +1117,49 @@ function initListeners(){
       _funcUpsert(k,updates);
     });
   });
+  // Cura colaborador que ficou sem espelho em 'alunos' (a tela de certificados
+  // usa o espelho, então a falta dele some o aluno dali).
+  db.ref('funcionarios').once('value').then(snap=>{
+    const raw=snap.val()||{};
+    const alvos={};
+    Object.entries(raw).forEach(([k,v])=>{
+      if(!v||alvos[k])return;
+      if(!v.nome&&!v.cpf)return;
+      alvos[`alunos/${k}`]={
+        nome:v.nome||'',
+        cpf:v.cpf||'',
+        matricula:v.matricula||'',
+        matriculaNumero:v.matriculaNumero||v.matricula||'',
+        empresaVinculoId:v.empresaId||'',
+        filialId:v.filialId||'',
+        obraId:v.obraId||'',
+        cidadeId:v.cidadeId||''
+      };
+    });
+    const chaves=Object.keys(alvos);
+    if(!chaves.length)return;
+    db.ref('alunos').once('value').then(asnap=>{
+      const existentes=asnap.val()||{};
+      const updates={};
+      chaves.forEach(p=>{
+        const id=p.split('/')[1];
+        const atual=existentes[id];
+        // Só preenche o que falta: não sobrescreve dado editado na tela de alunos.
+        const falta={};
+        Object.keys(alvos[p]).forEach(c=>{
+          const novo=alvos[p][c];
+          if((atual&&atual[c]!==undefined&&String(atual[c]).trim()!=='')||!novo)return;
+          falta[c]=novo;
+        });
+        if(Object.keys(falta).length)updates[p]=falta;
+      });
+      if(!Object.keys(updates).length)return;
+      return db.ref().update(updates).then(()=>{
+        console.info('Espelho de colaboradoresRepair: registros completados em alunos.',Object.keys(updates).length);
+        if(window.renderAll)renderAll();
+      });
+    }).catch(()=>{});
+  }).catch(()=>{});
   const sc=localStorage.getItem('epi_cart_memory');
   if(sc){try{CART=JSON.parse(sc);}catch(e){}}
   const to=localStorage.getItem('orc_intro_padrao');
@@ -3235,7 +3278,10 @@ function sv(type){
 }
 function saveFinal(type,d){spin(true);  const path={empresa:'empresas',funcionario:'funcionarios',texto:'textos',material:'materiais',cargo:'cargos',pessoa:'pessoas'}[type];const id=d.id||uid();d.id=id;WS_DATA.write(path,id,d).then(()=>{
     if(type==='funcionario'){
-      return WS_DATA.write('alunos',id,{nome:d.nome,cpf:d.cpf,matricula:d.matricula||'',matriculaNumero:d.matricula||'',empresaVinculoId:d.empresaId,filialId:d.filialId,obraId:d.obraId,cidadeId:d.cidadeId}).catch(()=>{});
+      return WS_DATA.write('alunos',id,{nome:d.nome,cpf:d.cpf,matricula:d.matricula||'',matriculaNumero:d.matricula||'',empresaVinculoId:d.empresaId,filialId:d.filialId,obraId:d.obraId,cidadeId:d.cidadeId}).catch(e=>{
+        console.error('Falha ao espilhar colaborador em alunos:',e);
+        alert('Colaborador salvo, mas n\u00e3o foi poss\u00edvel espelhar em "alunos".\nA tela de Certificados l\u00ea tamb\u00e9m o cadastro de colaboradores, ent\u00e3o ele deve aparecer l\u00e1. Se n\u00e3o aparecer, clique em "Atualizar dados" l\u00e1.\n\n'+(e&&e.message?e.message:e));
+      });
     }
   }).then(()=>{
     spin(false);cls();if(window.renderAll)renderAll();

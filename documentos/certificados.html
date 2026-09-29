@@ -872,11 +872,57 @@ function empresaPermitidaCert(id){
     return usuarioAtualCert.empresas.includes(String(id));
 }
 let alunosData = {};
+// O cadastro de colaboradores (index.html) grava em 'funcionarios' e espelha em
+// 'alunos'. Se o espelho falhar, o colaborador some dos certificados; por isso a
+// tela de certificados lê os dois e monta uma lista única.
+let funcionariosData = {};
 let cursosData = {};
 let certificadosGeradosData = {}; 
 let currentCertificadoId = null;
 let courseSelectionOrder = [];
 let previousStartDates = {};
+
+// Lista única de pessoas para os certificados: 'alunos' (espelho do cadastro)
+// + 'funcionarios' (cadastro de colaboradores). Quem estiver nos dois entra uma
+// vez só e, com os dados do 'alunos' quando existirem.
+function certPessoaDeFuncionario(f) {
+    if (!f) return null;
+    return {
+        id: String(f.id),
+        nome: f.nome || '',
+        cpf: f.cpf || '',
+        matricula: f.matricula || '',
+        matriculaNumero: f.matriculaNumero || f.matricula || '',
+        empresaVinculoId: f.empresaVinculoId !== undefined ? f.empresaVinculoId : (f.empresaId || ''),
+        filialId: f.filialId || '',
+        obraId: f.obraId || '',
+        cidadeId: f.cidadeId || '',
+        funcao: f.funcao || ''
+    };
+}
+function certAlunos() {
+    const mapa = new Map();
+    getArrayFromData(alunosData).forEach(a => {
+        if (a && a.id !== undefined) mapa.set(String(a.id), a);
+    });
+    getArrayFromData(funcionariosData).forEach(f => {
+        if (!f || f.id === undefined) return;
+        const id = String(f.id);
+        if (mapa.has(id)) return;
+        const pessoa = certPessoaDeFuncionario(f);
+        if (pessoa && (pessoa.nome || pessoa.cpf)) mapa.set(id, pessoa);
+    });
+    return [...mapa.values()];
+}
+function certAlunoPorId(id) {
+    if (id === undefined || id === null || id === '') return null;
+    const k = String(id);
+    const a = alunosData[k];
+    if (a) return Object.assign({}, a, { id: a.id !== undefined ? a.id : k });
+    const f = funcionariosData[k];
+    if (f) return certPessoaDeFuncionario(f);
+    return null;
+}
 
 const el=id=>document.getElementById(id);
 const toDataUrlFile=input=>new Promise(res=>{
@@ -1000,7 +1046,7 @@ function renderEmpresas(){
 
 function renderAlunos(){
     const termo = (el("alunoBuscaRapida")?.value || "").trim().toLowerCase();
-    const alunos = getArrayFromData(alunosData).filter(a => {
+    const alunos = certAlunos().filter(a => {
         if (!termo) return true;
         const nome = (a.nome || "").toLowerCase();
         const cpf = formatCPF(a.cpf || "").toLowerCase();
@@ -1044,7 +1090,7 @@ function renderAlunos(){
 function esc(s){return String(s||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
 function popSelLocCert(){
     const eid = el("selEmpresa").value;
-    const alunosEmp = eid ? getArrayFromData(alunosData).filter(a => a.empresaVinculoId === eid) : [];
+    const alunosEmp = eid ? certAlunos().filter(a => a.empresaVinculoId === eid) : [];
     [['selObra','obraId','obras','obra'],['selCidade','cidadeId','cidades','cidade'],['selFilial','filialId','filiais','filial']].forEach(([selId,field,col,leg]) => {
         const sel = el(selId);
         if (!sel) return;
@@ -1080,7 +1126,7 @@ function renderAlunosCheckboxForGeracao(){
     const cdSel = el("selCidade")?.value || "";
     const flSel = el("selFilial")?.value || "";
 
-    const alunosFiltrados = getArrayFromData(alunosData).filter(a => {
+    const alunosFiltrados = certAlunos().filter(a => {
         if (a.empresaVinculoId !== empresaIdSelecionada) return false;
         if (obSel && String(a.obraId||'').trim() !== String(obSel).trim()) return false;
         if (cdSel && String(a.cidadeId||'').trim() !== String(cdSel).trim()) return false;
@@ -1554,7 +1600,8 @@ window.openEditModal = (type, id) => {
         openModal(title, bodyHTML, () => window.saveEditEmpresa(id));
 
     } else if (type === 'aluno') {
-        item = alunosData[id];
+        item = certAlunoPorId(id);
+        if (!item) { alert("Aluno não encontrado."); return; }
         title = `Editar Aluno: ${item.nome}`;
         
         const empresaOptions = empresas.map(e=>
@@ -1738,8 +1785,8 @@ window.saveEditAluno = async (id) => {
     if (!empresaVinculoId) return alert("Selecione a empresa de vínculo para o aluno.");
 
     const novoCpf = el('modal_alunoCPF').value.trim().replace(/\D/g, '');
-    const cpfExistente = getArrayFromData(alunosData)
-        .some(a => a.id !== id && a.cpf === novoCpf);
+    const cpfExistente = certAlunos()
+        .some(a => String(a.id) !== String(id) && a.cpf === novoCpf);
     if (cpfExistente) {
         return alert("Já existe outro aluno cadastrado com este CPF.");
     }
@@ -2211,7 +2258,7 @@ async function gerarCertificados(){
     const empresa = empresasData[empresaId]; 
     if(!empresa) return alert("Empresa inválida.");
 
-    const alunosFiltrados = getArrayFromData(alunosData).filter(a => a.empresaVinculoId === empresaId);
+    const alunosFiltrados = certAlunos().filter(a => a.empresaVinculoId === empresaId);
     const selAlunoIds = Array.from(el("listaAlunosCheckbox").querySelectorAll("input[type=checkbox]:checked")).map(i => i.value);
     const selCursoElements = el("courseDatesContainer").querySelectorAll(".course-date-selector");
     const selecionadosAlunos = alunosFiltrados.filter(a => selAlunoIds.includes(a.id));
@@ -2417,7 +2464,7 @@ function certManualAvulso(chave) {
 }
 
 function certManualAlunosDaEmpresa(empresaId) {
-    return getArrayFromData(alunosData)
+    return certAlunos()
         .filter(a => a.empresaVinculoId === empresaId)
         .sort((a, b) => (a.nome || '').localeCompare(b.nome || '', 'pt-BR'));
 }
@@ -2491,7 +2538,7 @@ function certManualRecalcularFim(linha) {
 function certManualAlunosDoCurso(chave) {
     const lista = [];
     certManualIdsAluno(chave).forEach(id => {
-        const a = alunosData[id];
+        const a = certAlunoPorId(id);
         if (a) lista.push({ token: id, id: a.id || id, nome: a.nome || '', matricula: a.matricula || '', cpf: a.cpf || '' });
     });
     const av = certManualAvulso(chave);
@@ -3686,7 +3733,7 @@ window.saveAluno = async () => {
     if(!nome||!cpf||!matricula||!empresaVinculoId) 
         return alert("Preencha todos os campos obrigatórios (Nome, CPF, Matrícula e Vínculo com Empresa).");
 
-    const cpfExistente = getArrayFromData(alunosData)
+    const cpfExistente = certAlunos()
         .some(a => a.cpf === cpf);
     if (cpfExistente) {
         return alert("Já existe um aluno cadastrado com este CPF.");
@@ -3759,25 +3806,31 @@ async function transferirAlunosEmMassa(){
         return alert("Selecione pelo menos um aluno na tabela.");
 
     const updates = {};
+    let total = 0;
     selecionados.forEach(id => {
-        const aluno = alunosData[id];
+        const aluno = certAlunoPorId(id);
         if (!aluno) return;
         if (origemId && aluno.empresaVinculoId !== origemId) return;
+        // Aluno que só existe no cadastro de colaboradores entra também em
+        // 'funcionarios', senão a transferência não valeria para o cadastro.
+        if (!alunosData[id]) updates[`funcionarios/${id}/empresaId`] = destinoId;
         updates[`alunos/${id}/empresaVinculoId`] = destinoId;
+        total++;
     });
 
-    if (Object.keys(updates).length === 0) {
+    if (total === 0) {
         return alert("Nenhum aluno elegível para transferência com o filtro de origem selecionado.");
     }
 
-    if (!confirm(`Transferir ${Object.keys(updates).length} aluno(s) para a empresa selecionada?`)) return;
+    if (!confirm(`Transferir ${total} aluno(s) para a empresa selecionada?`)) return;
 
     try {
         await db.ref().update(updates);
         Object.keys(updates).forEach(up => {
             const parts = up.split('/');
             const aid = parts[1];
-            if (alunosData[aid]) alunosData[aid].empresaVinculoId = destinoId;
+            if (parts[0] === 'alunos' && alunosData[aid]) alunosData[aid].empresaVinculoId = destinoId;
+            if (parts[0] === 'funcionarios' && funcionariosData[aid]) funcionariosData[aid].empresaId = destinoId;
         });
         await WS_DATA.advanceLocalMeta('alunos');
         alert("Alunos transferidos com sucesso.");
@@ -4074,6 +4127,7 @@ window.addEventListener('DOMContentLoaded', async () => {
         entries: [
             { path: 'empresas', target: empresasData, key: null },
             { path: 'alunos', target: alunosData, key: null },
+            { path: 'funcionarios', target: funcionariosData, key: null },
             { path: 'cursos', target: cursosData, key: null },
             { path: 'obras', target: obrasData, key: null },
             { path: 'cidades', target: cidadesData, key: null },
