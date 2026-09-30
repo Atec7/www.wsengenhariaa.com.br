@@ -1343,10 +1343,66 @@ label.secondary:hover { background: var(--surface-2); border-color: #A9B7C8; }
     }
 }
 
+/* ---------- 15.1 Pino de empresa na geração ----------
+   Mantém a empresa selecionada visível enquanto o usuário rola
+   a seção "Gerar Certificados" até os cursos. */
+.empresa-pin {
+    position: sticky;
+    top: 14px;
+    z-index: 40;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 12px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--primary);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-md);
+    padding: 10px 14px;
+    margin: 0 0 18px;
+    font-size: 14px;
+    color: var(--text);
+    animation: fadeUp .35s ease both;
+}
+.empresa-pin[hidden] { display: none; }
+.empresa-pin .pin-ico {
+    display: grid;
+    place-items: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: #EAF2FB;
+    color: var(--primary);
+    flex: 0 0 auto;
+}
+.empresa-pin .pin-ico svg { width: 15px; height: 15px; }
+.empresa-pin .pin-label { color: var(--muted); white-space: nowrap; }
+.empresa-pin strong {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+    font-weight: 600;
+}
+.empresa-pin .pin-clear {
+    margin-left: auto;
+    height: 30px;
+    padding: 0 12px;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--danger, #B42318);
+    background: #FDF3F2;
+    border: 1px solid #F4D3D0;
+    border-radius: 999px;
+    cursor: pointer;
+}
+.empresa-pin .pin-clear:hover { background: #FAE4E2; }
+
 /* ---------- 16. Impressão ----------
    Garante que a navegação e a barra superior não vazem para o papel. */
 @media print {
-    .sidebar, .nav-scrim, .nav-toggle, header, .steps, .zona-risco { display: none !important; }
+    .sidebar, .nav-scrim, .nav-toggle, header, .steps, .zona-risco, .empresa-pin { display: none !important; }
     .main-content { margin-left: 0; width: 100%; }
     .container { max-width: none; padding: 0; }
 }
@@ -1641,6 +1697,13 @@ label.secondary:hover { background: var(--surface-2); border-color: #A9B7C8; }
                 <span class="sec-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7Z"/><path d="M14 2v5h5"/><path d="M9 15.5l2 2 4-4"/></svg></span>
                 <span>Gerar Certificados<span class="sec-sub">Emissão em massa para a turma selecionada</span></span>
             </h2>
+
+            <div class="empresa-pin" id="empresaPin" hidden>
+                <span class="pin-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21V10"/><path d="M12 10 6 5a6 6 0 0 1 12 0Z"/><rect x="9" y="14" width="6" height="3" rx="1.5"/></svg></span>
+                <span class="pin-label">Empresa selecionada:</span>
+                <strong id="empresaPinNome"></strong>
+                <button type="button" class="pin-clear" id="empresaPinLimpar" title="Limpar a empresa selecionada">Limpar</button>
+            </div>
 
             <ol class="steps">
                 <li class="step"><span class="step-n">1</span><div><strong>Configure a emissão</strong><small>Empresa, obra e filial; marque alunos e cursos</small></div></li>
@@ -2008,6 +2071,10 @@ async function removeItem(node, id){
 }
 
 function renderEmpresas(){
+    // Guarda a escolha da geração antes de reconstruir o seletor (a
+    // atualização periódica não pode desmarcar o que o usuário escolheu).
+    const empresaEscolhida = el("selEmpresa") ? el("selEmpresa").value : "";
+    const filtroEmpresaBusca = el("selEmpresaBusca") ? el("selEmpresaBusca").value : "";
     const termo = (el("empresaBuscaRapida")?.value || "").trim().toLowerCase();
 
     const empresas = getArrayFromData(empresasData).filter(e => empresaPermitidaCert(e.id)).filter(e => {
@@ -2043,6 +2110,17 @@ function renderEmpresas(){
         const opts = '<option value="">Qualquer</option>' + empresaOptions;
         origem.innerHTML = opts;
         destino.innerHTML = '<option value="">Selecione...</option>' + empresaOptions;
+    }
+
+    // Não deixa a atualização periódica desmarcar a empresa que o usuário
+    // já escolheu na geração (nem apagar a busca que ele estava fazendo).
+    el("selEmpresa").value = empresaEscolhida;
+    if (filtroEmpresaBusca.trim()) {
+        const t = filtroEmpresaBusca.trim().toLowerCase();
+        Array.from(el("selEmpresa").options).forEach((opt, i) => {
+            if (i === 0) return;
+            opt.style.display = (opt.text || "").toLowerCase().includes(t) ? "" : "none";
+        });
     }
 }
 
@@ -2084,8 +2162,18 @@ function renderAlunos(){
         };
     }
 
+    // A re-renderização periódica não pode apagar os alunos que o usuário
+    // já marcou na geração de certificados.
+    const alunosMarcadosAnt = Array.from(el("listaAlunosCheckbox").querySelectorAll("input[type=checkbox]:checked")).map(i => i.value);
+
     popSelLocCert();
     renderAlunosCheckboxForGeracao();
+
+    if (alunosMarcadosAnt.length) {
+        el("listaAlunosCheckbox").querySelectorAll("input[type=checkbox]").forEach(i => {
+            if (alunosMarcadosAnt.includes(i.value)) i.checked = true;
+        });
+    }
 }
 
 // Popula os seletores de Obra/Cidade/Filial em cascata, conforme a empresa selecionada.
@@ -2150,7 +2238,24 @@ function renderAlunosCheckboxForGeracao(){
     listaAlunosCheckbox.innerHTML = alunosFiltrados.map(a=>`<label><input type="checkbox" value="${a.id}"> <span>${a.nome} — Mat.: ${a.matricula}</span></label>`).join("");
 }
 
+function atualizarEmpresaPin(){
+    const pin = el("empresaPin");
+    const sel = el("selEmpresa");
+    if (!pin || !sel) return;
+    const opt = sel.options[sel.selectedIndex];
+    const nome = opt && opt.value ? (opt.textContent || opt.text || "").trim() : "";
+    el("empresaPinNome").textContent = nome || "Nenhuma empresa selecionada.";
+    pin.hidden = !nome;
+}
+
 function renderCursos(){
+    // A re-renderização periódica não pode apagar a seleção da geração:
+    // cursos marcados, texto da busca e datas já ajustadas pelo usuário.
+    const cursosMarcadosAnt = courseSelectionOrder.slice();
+    const cursoBuscaAnt = el("selCursoBusca").value;
+    const datasAnt = {};
+    el("courseDatesContainer").querySelectorAll("input").forEach(inp => { datasAnt[inp.id] = inp.value; });
+
     const cursos = getArrayFromData(cursosData).sort((a,b)=>(a.nome||'').localeCompare(b.nome||'', 'pt-BR'));
     el("tabelaCursos").innerHTML =
         `<tr><th>Curso</th><th>Carga</th><th>Ações</th></tr>`+
@@ -2163,12 +2268,18 @@ function renderCursos(){
         </tr>`).join("")+
         (cursos.length>WS_DATA.pag.count(cursos,'ccursos',120)?'<tr><td colspan="3" style="text-align:center;padding:10px">'+WS_DATA.pagBtn(cursos.length,WS_DATA.pag.count(cursos,'ccursos',120),'ccursos',120,'renderCursos()')+'</td></tr>':'');
     
-    courseSelectionOrder = [];
+    courseSelectionOrder = cursosMarcadosAnt;
 
-    el("selCursoBusca").value = "";
+    el("selCursoBusca").value = cursoBuscaAnt;
 
     renderCursosCheckbox();
     renderCourseDateSelectors();
+
+    // Devolve as datas que o usuário já tinha tocado (início/fim por curso).
+    Object.keys(datasAnt).forEach(id => {
+        const inp = document.getElementById(id);
+        if (inp) inp.value = datasAnt[id];
+    });
 }
 
 function renderCursosCheckbox(){
@@ -5176,7 +5287,7 @@ window.addEventListener('DOMContentLoaded', async () => {
         ],
         onUpdated: function () {
             renderEmpresas(); renderAlunos(); renderCursos(); renderCertificadosGerados();
-            renderAlunosCheckboxForGeracao();
+    atualizarEmpresaPin();
         }
     });
     // O botão atualiza tudo menos o 'certificadosGerados': aquele nó guarda o
@@ -5200,7 +5311,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     aplicarNavArnaldo();
     setupMobileNav();
 
-    el("selEmpresa").addEventListener('change', () => { popSelLocCert(); renderAlunosCheckboxForGeracao(); });
+    el("selEmpresa").addEventListener('change', () => { popSelLocCert(); renderAlunosCheckboxForGeracao(); atualizarEmpresaPin(); });
     el("selObra").addEventListener('change', renderAlunosCheckboxForGeracao);
     el("selCidade").addEventListener('change', renderAlunosCheckboxForGeracao);
     el("selFilial").addEventListener('change', renderAlunosCheckboxForGeracao);
@@ -5240,6 +5351,19 @@ window.addEventListener('DOMContentLoaded', async () => {
                 sel.value = "";
             }
         }
+        atualizarEmpresaPin();
+    });
+
+    el("empresaPinLimpar").addEventListener("click", () => {
+        const sel = el("selEmpresa");
+        sel.value = "";
+        Array.from(sel.options).forEach(opt => { opt.style.display = ""; });
+        el("selEmpresaBusca").value = "";
+        popSelLocCert();
+        renderAlunosCheckboxForGeracao();
+        atualizarEmpresaPin();
+        const topo = el("secaoGeracao");
+        if (topo) topo.scrollIntoView({ behavior: "smooth", block: "start" });
     });
 
 });
