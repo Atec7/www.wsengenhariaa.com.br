@@ -329,7 +329,6 @@ hr.dv{border:none;border-top:1px solid var(--bd);margin:18px 0}
     <div class="mi" onclick="nav('pessoas',this)"><i class="fa-solid fa-user"></i> Pessoas</div>
     <div class="mi" onclick="nav('catalogos',this)"><i class="fa-solid fa-warehouse"></i> Obras, Cidades e Filiais</div>
     <div class="mi" onclick="nav('texts',this)"><i class="fa-solid fa-paragraph"></i> Textos &amp; NRs</div>
-    <div class="mi" id="nav-import" style="display:none" onclick="nav('import',this)"><i class="fa-solid fa-file-import"></i> Importar Colaboradores</div>
   </div>
   <div class="nav-grp">
     <div class="nav-lbl">Documentos</div>
@@ -516,44 +515,10 @@ hr.dv{border:none;border-top:1px solid var(--bd);margin:18px 0}
     <div><strong id="alert-incompleto-txt"></strong><div style="font-size:12px">Registros sem nome: sobraram de versões antigas e não são pessoas. Não aparecem nos certificados.</div></div>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <button class="btn" style="background:#fff;color:#b91c1c;border:1px solid #fca5a5" onclick="restaurarLixeira()"><i class="fa-solid fa-rotate-left"></i> Restaurar da lixeira</button>
-      <button class="btn" style="background:#fff;color:#b91c1c;border:1px solid #fca5a5" onclick="limparRegistrosIncompletos()"><i class="fa-solid fa-broom"></i> Exportar incompletos (não apaga)</button>
+      <button class="btn" style="background:#fff;color:#b91c1c;border:1px solid #fca5a5" onclick="limparRegistrosIncompletos()"><i class="fa-solid fa-broom"></i> Mover incompletos p/ lixeira</button>
     </div>
   </div>
   <div class="card" style="padding:0;overflow:hidden"><div id="lst-f"></div></div>
-</div>
-
-<div id="import" class="view">
-  <div class="ph"><div><div class="pt">Importar Colaboradores</div><div class="pd">Carga em massa a partir de um CSV, com valida&ccedil;&atilde;o antes de gravar</div></div>
-    <button class="btn" onclick="baixarModeloImport()"><i class="fa-solid fa-download"></i> Baixar modelo CSV</button>
-  </div>
-
-  <div class="card">
-    <div class="pt" style="margin:0 0 4px">1. Escolha o arquivo</div>
-    <div class="pd" style="margin:0 0 10px">Separado por ponto e v&iacute;rgula, primeira linha com os nomes das colunas. O arquivo n&atilde;o sai do seu computador at&eacute; voc&ecirc; confirmar a grava&ccedil;&atilde;o.</div>
-    <input type="file" id="imp-file" accept=".csv,text/csv" onchange="lerCsvImport(this)">
-    <div class="pd" style="margin-top:8px" id="imp-arquivo">Nenhum arquivo selecionado.</div>
-  </div>
-
-  <div class="card" id="imp-card-rel" style="display:none">
-    <div class="pt" style="margin:0 0 4px">2. Conferir o que ser&aacute; gravado</div>
-    <div class="pd" style="margin:0 0 10px">Nada foi gravado ainda. Revise os problemas e ajuste o CSV antes de continuar.</div>
-    <div id="imp-resumo" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px"></div>
-    <div id="imp-erros" style="border:1px solid var(--bd);border-radius:6px;max-height:260px;overflow-y:auto"></div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
-      <button class="btn bp" id="imp-gravar" onclick="gravarImportacao()"><i class="fa-solid fa-floppy-disk"></i> Gravar no banco</button>
-      <button class="btn" onclick="baixarRejeitados()"><i class="fa-solid fa-file-export"></i> Baixar rejeitados (CSV)</button>
-      <button class="btn bd2" onclick="cancelarImportacao()"><i class="fa-solid fa-xmark"></i> Cancelar</button>
-    </div>
-    <div id="imp-progress" style="display:none;margin-top:10px">
-      <div style="height:8px;width:0%;background:linear-gradient(90deg,var(--hi),var(--wn));border-radius:4px" id="imp-bar"></div>
-      <div style="font-size:11px;color:var(--tm);margin-top:4px" id="imp-msg"></div>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="pt" style="margin:0 0 4px">Colunas reconhecidas</div>
-    <div class="pd" style="margin:0">Obrigat&oacute;rias: <b>nome</b>, <b>empresa</b>. Recomendadas: <b>cpf</b>, <b>matricula</b>, <b>obra</b>, <b>filial</b>, <b>cidade</b>, <b>funcao</b>, <b>dataAdm</b>, <b>asoTipo</b>, <b>asoEmissao</b>, <b>asoData</b>. Em empresa/obra/filial/cidade informe o nome do cadastro ou o id.</div>
-  </div>
 </div>
 
 <div id="pessoas" class="view">
@@ -1148,25 +1113,29 @@ function initListeners(){
   window.limparRegistrosIncompletos=async function(){
     const ids=_idsSemNome(DATA.funcionarios);
     if(!ids.length)return alert('Nenhum registro incompleto encontrado em Colaboradores.');
-    // NEUTRALIZADO em 2026-09-30. Esta função movia os registros para
-    // '_lixeira' e depois os apagava de 'funcionarios'; em 28/09 levou ~500
-    // colaboradores embora a lixeira não tivesse cópia recuperável. Agora é
-    // somente-leitura: mostra e exporta o que está sem nome e sem CPF, sem
-    // escrever nada no banco. A limpeza é manual, campo a campo.
-    const alvo={};
-    ids.forEach(id=>{alvo[id]=DATA.funcionarios[id]||{};});
-    const carimbo=new Date().toISOString().replace(/[:.]/g,'-').slice(0,19);
-    const nome='incompletos-'+carimbo+'.json';
-    let baixou=false;
+    // NUNCA apagar direto: vai para a lixeira, que tem botão de restaurar.
+    if(prompt('Vou MOVER '+ids.length+' registro(s) para a lixeira (dá para desfazer).\n\nDigite APAGAR para confirmar:')!=='APAGAR')return;
+    spin(true);
     try{
-      const url=URL.createObjectURL(new Blob([JSON.stringify(alvo,null,2)],{type:'application/json'}));
-      const a=document.createElement('a');
-      a.href=url;a.download=nome;document.body.appendChild(a);a.click();a.remove();
-      setTimeout(()=>URL.revokeObjectURL(url),2000);
-      baixou=true;
-    }catch(e){console.log(alvo);}
-    alert(ids.length+' registro(s) sem nome e sem CPF.\n\nNada foi apagado do banco.\n\n'
-      +(baixou?'A lista foi baixada em "'+nome+'" para você revisar.':'Não consegui baixar o arquivo; a lista está no console (F12).'));
+      const snap=await db.ref('alunos').once('value');
+      const alunos=snap.val()||{};
+      const updates={};
+      const lix={};
+      const quando=Date.now();
+      ids.forEach(id=>{
+        const reg=Object.assign({},DATA.funcionarios[id]);
+        lix[id]=reg;
+        updates['funcionarios/'+id]=null;
+        if(_semNome(alunos[id]))updates['alunos/'+id]=null;
+      });
+      await db.ref('_lixeira/funcionarios/'+quando).set(lix);
+      await db.ref().update(updates);
+      ids.forEach(id=>{delete DATA.funcionarios[id];});
+      await WS_DATA.advanceLocalMeta('funcionarios');
+      await WS_DATA.advanceLocalMeta('alunos');
+      spin(false);if(window.renderAll)renderAll();
+      alert(ids.length+' registro(s) foram para a lixeira.\nUse "Restaurar da lixeira" se precisar voltar.');
+    }catch(e){spin(false);alert('Erro ao mover para a lixeira: '+e.message);}
   };
   // Desfaz a limpeza: devolve tudo que está na lixeira para 'funcionarios'.
   window.restaurarLixeira=async function(){
@@ -3509,246 +3478,6 @@ async function vincularEmMassa(){
   }
   spin(false);
 }
-// Importação de colaboradores em massa (CSV).
-// A tela só aparece para o usuário Arnaldo (ver aplicarPermissoes) e as funções
-// conferem a sessão de novo, porque esconder o item de menu não é proteção.
-// A validação repete as mesmas regras do formulário manual — nome e empresa
-// obrigatórios, CPF único, e obra/filial/cidade existentes no cadastro — para
-// que a carga não recrie as linhas quebradas que a limpeza apagava. Nada é
-// gravado até o relatório ser aprovado na mão.
-const IMP_COLS=[
-  {k:'nome',rot:'Nome',obrig:true},
-  {k:'cpf',rot:'CPF'},
-  {k:'empresa',rot:'Empresa',obrig:true},
-  {k:'matricula',rot:'Matricula'},
-  {k:'obra',rot:'Obra'},
-  {k:'filial',rot:'Filial'},
-  {k:'cidade',rot:'Cidade'},
-  {k:'funcao',rot:'Funcao'},
-  {k:'cbo',rot:'CBO'},
-  {k:'setor',rot:'Setor'},
-  {k:'dataAdm',rot:'Data de admissao'},
-  {k:'asoTipo',rot:'ASO tipo'},
-  {k:'asoEmissao',rot:'ASO emissao'},
-  {k:'asoData',rot:'ASO validade'}
-];
-const IMP_ASO_TIPOS=['ADMISSIONAL','DEMISSIONAL','PERIODICO','MUDANCA_FUNCAO','RETORNO_TRABALHO'];
-let IMP_LOTE=null;
-
-function impPodeUsar(){
-  if(USUARIO_ATUAL&&USUARIO_ATUAL.mestre&&USUARIO_ATUAL.nome==='Arnaldo')return true;
-  alert('Acesso restrito ao administrador.');return false;
-}
-function impSemAcento(s){return String(s==null?'':s).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();}
-function impData(s){
-  const t=String(s||'').trim();if(!t)return '';
-  let m=t.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})$/),dia,mes,ano;
-  if(m){dia=+m[1];mes=+m[2];ano=+m[3];}
-  else{
-    m=t.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
-    if(!m)return '';
-    ano=+m[1];mes=+m[2];dia=+m[3];
-  }
-  if(mes<1||mes>12||dia<1||dia>31)return '';
-  // '10/13/2024' casaria com o formato e viraria "2024-13-10": confere no calendário
-  const dt=new Date(Date.UTC(ano,mes-1,dia));
-  if(dt.getUTCFullYear()!==ano||dt.getUTCMonth()!==mes-1||dt.getUTCDate()!==dia)return '';
-  return ano+'-'+String(mes).padStart(2,'0')+'-'+String(dia).padStart(2,'0');
-}
-// Resolve o que veio no CSV para um id do cadastro: aceita o id ou o nome.
-// Devolve o id, ou {erro} quando não acha ou quando o nome é ambíguo.
-function impResolver(col,txt){
-  const s=String(txt==null?'':txt).trim();
-  if(!s)return null;
-  const arr=toArr(DATA[col]);
-  const porId=arr.find(x=>String(x.id||'').trim()===s);
-  if(porId)return String(porId.id).trim();
-  const alvo=impSemAcento(s);
-  const achados=arr.filter(x=>impSemAcento(x.nome)===alvo);
-  if(achados.length===1)return String(achados[0].id).trim();
-  if(achados.length>1)return{erro:'"'+s+'" existe '+achados.length+'x em '+col};
-  // O nome precisa bater exatamente com o do cadastro: vincular a empresa
-  // errada é bem pior do que recusar a linha. Mostra até 5 opções para não
-  // obrigar o usuário a adivinhar o texto exato.
-  const opcoes=arr.map(x=>String(x.nome||'').trim()).filter(Boolean).slice(0,5);
-  return{erro:'"'+s+'" n\u00e3o existe em '+col+(opcoes.length?' (existem: '+opcoes.join(', ')+(arr.length>5?', ...':'')+')':'')};
-}
-function impBaixar(txt,nome){
-  const url=URL.createObjectURL(new Blob(['\uFEFF'+txt],{type:'text/csv;charset=utf-8'}));
-  const a=document.createElement('a');
-  a.href=url;a.download=nome;document.body.appendChild(a);a.click();a.remove();
-  setTimeout(()=>URL.revokeObjectURL(url),2000);
-}
-function baixarModeloImport(){
-  if(!impPodeUsar())return;
-  impBaixar(IMP_COLS.map(c=>c.rot).join(';')+'\r\n','modelo-colaboradores.csv');
-}
-function impCsv(texto){
-  const t=String(texto||'').replace(/^\uFEFF/,'');
-  const sep=[',',';','\t','|'].map(d=>({d,n:(t.slice(0,8000).split(d).length-1)})).sort((a,b)=>b.n-a.n)[0].d;
-  const linhas=[];let campo='',linha=[],aspas=false;
-  for(let i=0;i<t.length;i++){
-    const c=t[i];
-    if(aspas){
-      if(c==='"'){if(t[i+1]==='"'){campo+='"';i++;}else aspas=false;}else campo+=c;
-    }else if(c==='"')aspas=true;
-    else if(c===sep){linha.push(campo);campo='';}
-    else if(c==='\n'){linha.push(campo);linhas.push(linha);linha=[];campo='';}
-    else if(c!=='\r')campo+=c;
-  }
-  if(campo!==''||linha.length){linha.push(campo);linhas.push(linha);}
-  return linhas.filter(l=>l.some(c=>String(c).trim()!==''));
-}
-function lerCsvImport(input){
-  if(!impPodeUsar()){input.value='';return;}
-  const arq=input.files&&input.files[0];
-  IMP_LOTE=null;
-  document.getElementById('imp-card-rel').style.display='none';
-  if(!arq){document.getElementById('imp-arquivo').textContent='Nenhum arquivo selecionado.';return;}
-  const fr=new FileReader();
-  fr.onload=()=>{
-    document.getElementById('imp-arquivo').textContent='Arquivo: '+arq.name+' ('+Math.round(arq.size/1024)+' KB)';
-    impValidar(impCsv(fr.result));
-  };
-  fr.onerror=()=>alert('N\u00e3o consegui ler o arquivo.');
-  fr.readAsText(arq,'UTF-8');
-}
-function impValidar(linhas){
-  if(!linhas.length){alert('O arquivo est\u00e1 vazio.');return;}
-  const cab=linhas[0].map(impSemAcento);
-  const mapa=[];
-  IMP_COLS.forEach(c=>{
-    let i=cab.findIndex(h=>h===impSemAcento(c.rot));
-    if(i<0)i=cab.findIndex(h=>h&&h.replace(/[^a-z]/g,'').startsWith(impSemAcento(c.rot).slice(0,5)));
-    if(i>=0)mapa.push({k:c.k,obrig:c.obrig,i});
-  });
-  const faltando=IMP_COLS.filter(c=>c.obrig&&!mapa.some(m=>m.k===c.k));
-  if(faltando.length){alert('Faltam colunas obrigat\u00f3rias no cabe\u00e7alho: '+faltando.map(c=>c.rot).join(', '));return;}
-
-  const cpfsExistentes=new Set(toArr(DATA.funcionarios).map(f=>String(f.cpf||'').replace(/\D/g,'')).filter(Boolean));
-  const vistos={};
-  const okRows=[],erros=[];
-  for(let n=1;n<linhas.length;n++){
-    const l=linhas[n], linha=n+1, e=[];
-    const val=k=>{const m=mapa.find(x=>x.k===k);return m?String(l[m.i]==null?'':l[m.i]).trim():'';};
-    const nome=val('nome');
-    if(!nome)e.push('nome obrigat\u00f3rio');
-
-    const emp=impResolver('empresas',val('empresa'));
-    if(!val('empresa'))e.push('empresa obrigat\u00f3ria');
-    else if(emp&&emp.erro)e.push(emp.erro);
-
-    const cpf=val('cpf').replace(/\D/g,'');
-    if(cpf){
-      if(cpf.length!==11)e.push('CPF com '+cpf.length+' d\u00edgitos (esperado 11)');
-      else if(cpfsExistentes.has(cpf))e.push('CPF j\u00e1 cadastrado no banco');
-      else if(vistos[cpf])e.push('CPF repetido na linha '+vistos[cpf]);
-      else vistos[cpf]=linha;
-    }
-
-    const res={};
-    [['obra','obras'],['filial','filiais'],['cidade','cidades']].forEach(([col,node])=>{
-      const v=impResolver(node,val(col));
-      if(v&&v.erro)e.push(v.erro);
-      else res[col+'Id']=v||null;
-    });
-
-    const asoTipo=impSemAcento(val('asoTipo')).replace(/\s+/g,'_').toUpperCase();
-    if(val('asoTipo')&&!IMP_ASO_TIPOS.includes(asoTipo))e.push('ASO tipo "'+val('asoTipo')+'" inv\u00e1lido (use '+IMP_ASO_TIPOS.join(', ')+')');
-
-    const dataAdm=impData(val('dataAdm')),asoEmissao=impData(val('asoEmissao')),asoDate=impData(val('asoDate'));
-    [['dataAdm',dataAdm],['asoEmissao',asoEmissao],['asoDate',asoDate]].forEach(([k,conv])=>{
-      if(val(k)&&!conv)e.push(k+' inv\u00e1lida: "'+val(k)+'" (use AAAA-MM-DD)');
-    });
-
-    if(e.length){erros.push({linha,nome:nome||'(sem nome)',msgs:e,bruto:l});}
-    else{
-      const rec={id:null,nome,cpf,empresaId:emp,matricula:val('matricula'),obraId:res.obraId,filialId:res.filialId,cidadeId:res.cidadeId,
-        funcao:val('funcao'),cbo:val('cbo'),setor:val('setor'),dataAdm,asoTipo:asoTipo||'',asoEmissao,asoDate};
-      if(!rec.matricula)delete rec.matricula;
-      if(!rec.cbo)delete rec.cbo;
-      if(!rec.setor)delete rec.setor;
-      if(!rec.funcao)delete rec.funcao;
-      if(!rec.asaoTipo)delete rec.asaoTipo;
-      ['obraId','filialId','cidadeId'].forEach(k=>{if(!rec[k])delete rec[k];});
-      okRows.push({linha,rec,aviso:(!rec.filialId||!rec.obraId)?'ficar\u00e1 sem v\u00ednculo completo':null});
-    }
-  }
-  IMP_LOTE={ok:okRows,erros:erros,cabecalho:linhas[0].map(c=>String(c).trim())};
-  impRelatorio();
-}
-function impRelatorio(){
-  const L=IMP_LOTE;
-  const chip=(txt,cor,bg)=>'<span class="bdg" style="background:'+bg+';color:'+cor+'">'+esc(txt)+'</span>';
-  document.getElementById('imp-resumo').innerHTML=[
-    chip(L.ok.length+' para gravar','#15803d','#dcfce7'),
-    chip(L.erros.length+' rejeitada(s)','#b91c1c','#fee2e2'),
-    chip(L.ok.filter(r=>r.aviso).length+' sem v\u00ednculo completo','#c2410c','#ffedd5')
-  ].join('');
-  const nomeEmp=id=>((DATA.empresas&&DATA.empresas[id])||{}).nome||id||'?';
-  const nomeObra=id=>((DATA.obras&&DATA.obras[id])||{}).nome||id||'';
-  const linhas=[
-    L.erros.map(e=>'<div class="tr2" style="border-left:3px solid #fca5a5"><div><div class="rn">Linha '+e.linha+' \u00b7 '+esc(e.nome)+'</div><div class="rs">'+e.msgs.map(esc).join(' \u00b7 ')+'</div></div></div>').join(''),
-    L.ok.slice(0,50).map(r=>'<div class="tr2" style="border-left:3px solid '+(r.aviso?'#fdba74':'#86efac')+'"><div><div class="rn">Linha '+r.linha+' \u00b7 '+esc(r.rec.nome)+'</div><div class="rs">'
-      +esc(r.rec.cpf||'sem CPF')+' \u00b7 '+esc(nomeEmp(r.rec.empresaId))
-      +(r.rec.obraId?' \u00b7 '+esc(nomeObra(r.rec.obraId)):'')+(r.aviso?' \u00b7 <span style="color:#c2410c">'+esc(r.aviso)+'</span>':'')
-      +'</div></div></div>').join('')
-  ].filter(Boolean).join('');
-  document.getElementById('imp-erros').innerHTML=linhas
-    ?linhas+(L.ok.length>50?'<div class="es" style="padding:8px">mostrando 50 de '+L.ok.length+' \u2026</div>':'')
-    :'<div class="es" style="padding:10px">Nenhuma linha para gravar e nenhuma rejeitada.</div>';
-  document.getElementById('imp-card-rel').style.display='';
-  document.getElementById('imp-gravar').disabled=!L.ok.length;
-}
-function baixarRejeitados(){
-  if(!impPodeUsar())return;
-  if(!IMP_LOTE||!IMP_LOTE.erros.length){alert('Nenhuma linha rejeitada.');return;}
-  const cab=IMP_LOTE.cabecalho.concat(['Motivo']).join(';');
-  const corpo=IMP_LOTE.erros.map(e=>e.bruto.concat([e.msgs.join(' | ')]).join(';'));
-  impBaixar(cab+'\r\n'+corpo.join('\r\n')+'\r\n','rejeitados.csv');
-}
-function cancelarImportacao(){
-  IMP_LOTE=null;
-  document.getElementById('imp-file').value='';
-  document.getElementById('imp-arquivo').textContent='Nenhum arquivo selecionado.';
-  document.getElementById('imp-card-rel').style.display='none';
-}
-async function gravarImportacao(){
-  if(!impPodeUsar())return;
-  if(!IMP_LOTE||!IMP_LOTE.ok.length)return;
-  const L=IMP_LOTE;
-  if(!confirm('Gravar '+L.ok.length+' colaborador(es) em "funcionarios" e espelhar em "alunos"?\n\nEsta ação não pode ser desfeita pela tela.'))return;
-  const bar=document.getElementById('imp-bar'),msg=document.getElementById('imp-msg');
-  document.getElementById('imp-gravar').disabled=true;
-  document.getElementById('imp-progress').style.display='';
-  spin(true);
-  let feitos=0,falhas=[];
-  try{
-    for(const item of L.ok){
-      const id=uid();
-      const rec=Object.assign({},item.rec,{id:id,importadoEm:new Date().toISOString().slice(0,10)});
-      try{
-        await WS_DATA.write('funcionarios',id,rec);
-        await WS_DATA.write('alunos',id,{
-          nome:rec.nome,cpf:rec.cpf||'',matricula:rec.matricula||'',matriculaNumero:rec.matricula||'',
-          empresaVinculoId:rec.empresaId||'',filialId:rec.filialId||'',obraId:rec.obraId||'',cidadeId:rec.cidadeId||''
-        }).catch(e=>{console.error('Espelho em alunos falhou:',e);});
-        feitos++;
-      }catch(e){falhas.push('Linha '+item.linha+' ('+item.rec.nome+'): '+e.message);}
-      bar.style.width=Math.round(((feitos+falhas.length)/L.ok.length)*100)+'%';
-      msg.textContent=(feitos+falhas.length)+' de '+L.ok.length+' \u00b7 '+feitos+' gravado(s), '+falhas.length+' falha(s)';
-    }
-    await WS_DATA.refreshNode('funcionarios');
-    spin(false);
-    alert(feitos+' colaborador(es) gravado(s).'+(falhas.length?'\n\n'+falhas.length+' falha(s):\n'+falhas.slice(0,10).join('\n'):''));
-    cancelarImportacao();
-    if(window.renderAll)renderAll();
-  }catch(e){
-    spin(false);
-    alert('Erro durante a grava\u00e7\u00e3o: '+e.message);
-    document.getElementById('imp-gravar').disabled=false;
-  }
-}
 function onDataAdmChange(){
   const dataAdm=document.getElementById('i-f-dt').value;
   if(!dataAdm)return;
@@ -4840,14 +4569,6 @@ let USUARIO_ATUAL=null;
     }catch(_){}
     const navGerus=document.getElementById('nav-ger-usuarios');
     if(navGerus)navGerus.style.display=usuario&&usuario.mestre&&usuario.nome==='Arnaldo'?'':'none';
-    // Importação em massa é exclusiva do Arnaldo, pelo mesmo critério do
-    // gerenciamento de usuários acima. As funções do importador conferem a
-    // sessão de novo (impPodeUsar), então esconder o item não é a proteção.
-    const ehArnaldo=!!(usuario&&usuario.mestre&&usuario.nome==='Arnaldo');
-    const navImport=document.getElementById('nav-import');
-    if(navImport)navImport.style.display=ehArnaldo?'':'none';
-    const telaImport=document.getElementById('import');
-    if(telaImport&&!ehArnaldo)telaImport.classList.remove('active');
     if(!usuario||usuario.mestre)return;
     const telas=usuario.telas||{};
     const bch=document.getElementById('btn-clear-hist');

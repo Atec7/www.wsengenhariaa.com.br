@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Diagnostico - recuperar colaboradores (somente leitura)</title>
+<style>
+  body{font-family:DM Sans,system-ui,Segoe UI,Roboto,sans-serif;background:#f6f7f9;color:#18181b;margin:0;padding:24px}
+  .c{max-width:1000px;margin:0 auto}
+  h1{font-size:21px;margin:0 0 4px}
+  .sub{color:#6b7280;font-size:13px;margin-bottom:16px}
+  .card{background:#fff;border:1px solid #e4e4e7;border-radius:10px;padding:16px;margin-bottom:12px}
+  button{font:inherit;padding:9px 14px;border-radius:8px;border:1px solid #d4d4d8;background:#fff;cursor:pointer}
+  button.p{background:#2c2c2e;color:#fff;border-color:#2c2c2e}
+  pre{background:#0f172a;color:#e2e8f0;padding:12px;border-radius:8px;font-size:12px;max-height:520px;overflow:auto;white-space:pre-wrap}
+  .warn{background:#fffbeb;border:1px solid #fde68a;color:#92400e;border-radius:8px;padding:10px 12px;font-size:13px;margin-bottom:14px}
+  .tag{display:inline-block;background:#f4f4f5;border-radius:6px;padding:2px 8px;font-size:12px}
+</style>
+</head>
+<body>
+<div class="c">
+  <h1>Diagnostico de recuperacao</h1>
+  <div class="sub">Esta pagina apenas LE o armazenamento do navegador. Nao escreve nada, no banco nem no disco.</div>
+
+  <div class="warn">
+    <strong>Abra no mesmo navegador e na mesma origem em que voce usava o sistema.</strong><br>
+    Se o sistema abria por <code>file:///C:/Users/grupo/Desktop/documentos/index.html</code>, esta pagina
+    (que esta na mesma pasta) compartilha a origem. Nao limpe os dados do navegador e nao feche a aba do sistema.
+  </div>
+
+  <div class="card">
+    <button class="p" id="go">Executar diagnostico</button>
+    <span class="tag" id="st">aguardando</span>
+    <div class="sub" style="margin-top:8px">Nao feche esta aba: a leitura leva alguns segundos.</div>
+  </div>
+
+  <div class="card"><pre id="out">aguardando...</pre></div>
+</div>
+
+<script>
+const out=document.getElementById('out'), st=document.getElementById('status')||document.getElementById('st');
+let L=[];
+function log(s){ L.push(s); out.textContent=L.join('\n'); out.scrollTop=out.scrollHeight; }
+function stt(s){ st.textContent=s; }
+
+function abrirTodos(){
+  return new Promise(function(res){
+    if(!navigator.storage || !navigator.storage.getDirectory){ return res([]); }
+    navigator.storage.getDirectory().then(function(dir){
+      return dir.keys();
+    }).then(function(keys){
+      var ps=keys.map(function(k){
+        return dir.getFileHandle(k).then(function(h){ return h.getFile(); })
+          .then(function(f){ return f.arrayBuffer(); })
+          .then(function(b){ return {name:k.name, size:b.byteLength, buf:b}; })
+          .catch(function(){ return null; });
+      });
+      return Promise.all(ps).then(function(r){ res(r.filter(Boolean)); });
+    }).catch(function(){ res([]); });
+  });
+}
+
+function idbDump(dbName, fn){
+  return new Promise(function(res){
+    var rq;
+    try{ rq=indexedDB.open(dbName); }catch(e){ return res(null); }
+    rq.onerror=function(){ res(null); };
+    rq.onsuccess=function(){
+      var d=rq.result;
+      var stores=Array.prototype.slice.call(d.objectStoreNames);
+      if(!stores.length){ d.close(); return res({db:dbName,stores:[],rows:[]}); }
+      var out={db:dbName,stores:stores,rows:[]};
+      var pend=stores.length;
+      stores.forEach(function(sn){
+        try{
+          var tx=d.transaction(sn,'readonly');
+          var stx=tx.objectStore(sn);
+          var all=stx.openCursor();
+          all.onsuccess=function(ev){
+            var c=ev.target.result;
+            if(c){ out.rows.push({store:sn,key:c.key,value:c.value}); c.continue(); }
+            else if(--pend===0){ d.close(); res(out); }
+          };
+          all.onerror=function(){ if(--pend===0){ d.close(); res(out); } };
+        }catch(e){ if(--pend===0){ d.close(); res(out); } }
+      });
+    };
+  });
+}
+
+function pareceFuncionario(o){
+  if(!o || typeof o!=='object') return false;
+  var chaves=['cpf','funcao','setor','empresaId','matricula','dataAdm','asoDate','filialId','obraId','cbo'];
+  var achou=0;
+  chaves.forEach(function(k){ if(o[k]!==undefined) achou++; });
+  return achou>=2;
+}
+
+function analisarMapa(m){
+  var ids=Object.keys(m||{});
+  var nomes=0, cpfs=0, comFuncao=0;
+  ids.forEach(function(i){
+    var r=m[i];
+    if(!r) return;
+    if(r.nome) nomes++;
+    if(r.cpf) cpfs++;
+    if(r.funcao||r.setor||r.cargo||r.dataAdm) comFuncao++;
+  });
+  return {total:ids.length, nomes:nomes, cpfs:cpfs, comDadosPessoais:comFuncao, mapa:m};
+}
+
+document.getElementById('go').onclick=function(){
+  L=[]; stt('lendo...');
+  log('origem: '+location.origin+'  ('+location.protocol+'://)');
+  log('hora: '+new Date().toLocaleString());
+  log('');
+
+  var nomesDB=Promise.resolve();
+  if(navigator.storage && navigator.storage.getDirectory){
+    nomesDB=navigator.storage.getDirectory().then(function(d){
+      return d.keys().then(function(ks){ return ks.map(function(k){return k.name;}); });
+    }).catch(function(){ return []; });
+  }else{ nomesDB=Promise.resolve([]); }
+
+  nomesDB.then(function(nomes){
+    log('== IndexedDB: bancos visiveis nesta origem ==');
+    if(navigator.storage && !navigator.storage.getDirectory){
+      log('  (API nao disponivel neste navegador)');
+    }else{
+      log(nomes.length? '  '+nomes.join(', ') : '  nenhum');
+    }
+    log('');
+
+    var alvo = nomes.filter(function(n){
+      return /ws_cache|firebase|localforage|rxdb|dexie|db/i.test(n);
+    });
+    if(!alvo.length) alvo = ['ws_cache','firebaseLocalStorageDb'];
+
+    log('== Varrendo bancos: '+alvo.join(', ')+' ==');
+    return alvo.reduce(function(p,n){
+      return p.then(function(acc){
+        return idbDump(n).then(function(r){
+          if(!r){ log('  ['+n+'] nao abriu'); return acc; }
+          log('  ['+n+'] stores: '+(r.stores.join(', ')||'nenhum')+'  linhas: '+r.rows.length);
+          var achados=[];
+          r.rows.forEach(function(row){
+            var v=row.value;
+            var cands=[];
+            if(v && typeof v==='object'){
+              if(v.data && typeof v.data==='object') cands.push(v.data);
+              if(typeof v.v==='string'){ try{ cands.push(JSON.parse(v.v)); }catch(e){} }
+              cands.push(v);
+            }else if(typeof v==='string'){
+              try{ cands.push(JSON.parse(v)); }catch(e){}
+            }
+            cands.forEach(function(c){
+              if(!c || typeof c!=='object') return;
+              var ids=Object.keys(c);
+              if(ids.length<20) return;
+              var amostras=ids.slice(0,12).map(function(i){return c[i];}).filter(pareceFuncionario);
+              if(amostras.length>=6){
+                achados.push({store:row.store,key:String(row.key),res:analisarMapa(c)});
+              }
+            });
+          });
+          if(achados.length){
+            log('   >>> ENCONTRADO em ['+n+']:');
+            achados.forEach(function(a){
+              log('       store='+a.store+' chave='+a.key.slice(0,90));
+              log('       -> '+a.res.total+' registro(s) | com nome: '+a.res.nomes+' | com cpf: '+a.res.cpfs+' | com cargo/setor/dataAdm: '+a.res.comDadosPessoais);
+            });
+            achados.forEach(function(a,i){ window['_achado'+i]=a.res.mapa; });
+            window['_achados']=achados;
+          }else{
+            log('   (nenhum mapa com cara de colaboradores)');
+          }
+          return acc.concat(achados);
+        });
+      });
+    }, Promise.resolve([]));
+  }).then(function(achados){
+    log('');
+    log('== localStorage ==');
+    var achouLs=false;
+    try{
+      for(var i=0;i<localStorage.length;i++){
+        var k=localStorage.key(i);
+        if(/func|colab|aluno|ws_cache/i.test(k)){
+          var v=localStorage.getItem(k);
+          var obj=null; try{obj=JSON.parse(v);}catch(e){}
+          var m = (obj&&obj.data)?obj.data:(obj&&typeof obj==='object'?obj:null);
+          var info = m?analisarMapa(m):null;
+          log('  '+k+' = '+(info?info.total+' registro(s), salvo '+(obj&&obj.savedAt?new Date(obj.savedAt).toLocaleString():'?'):(v.length+' bytes (nao parseou)'));
+          if(info&&info.total>0){ achouLs=true; window['_ls_'+k]=m; }
+        }
+      }
+    }catch(e){ log('  erro: '+e.message); }
+    if(!achouLs) log('  (nada relacionado)');
+    log('');
+    log('== CacheStorage / service worker ==');
+    try{
+      if(!window.caches){ log('  sem suporte'); return null; }
+      return caches.keys().then(function(ks){
+        log('  caches: '+(ks.length?ks.join(', '):'nenhum'));
+        return ks.reduce(function(p,k){
+          return p.then(function(acc){
+            return caches.open(k).then(function(c){ return c.keys(); }).then(function(rs){
+              rs.forEach(function(r){ acc.push(k+' -> '+r.url); });
+              return acc;
+            });
+          });
+        }, Promise.resolve([]));
+      }).then(function(urls){
+        if(urls.length) log('  '+urls.join('\n  ')); else log('  (vazio)');
+      });
+    }catch(e){ log('  erro: '+e.message); }
+  }).then(function(){
+    log('');
+    log('== FIM ==');
+    stt('concluido');
+  }).catch(function(e){
+    log('ERRO: '+(e&&e.message?e.message:e));
+    stt('erro');
+  });
+};
+</script>
+</body>
+</html>

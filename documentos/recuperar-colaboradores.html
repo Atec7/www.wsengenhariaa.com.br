@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Recuperar colaboradores</title>
+<style>
+  body{font-family:DM Sans,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:#f6f7f9;color:#18181b;margin:0;padding:24px}
+  .c{max-width:1000px;margin:0 auto}
+  h1{font-size:22px;margin:0 0 4px}
+  .sub{color:#6b7280;font-size:13px;margin-bottom:18px}
+  .card{background:#fff;border:1px solid #e4e4e7;border-radius:10px;padding:16px;margin-bottom:14px}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:10px}
+  button{font:inherit;padding:9px 14px;border-radius:8px;border:1px solid #d4d4d8;background:#fff;cursor:pointer}
+  button.p{background:#2c2c2e;color:#fff;border-color:#2c2c2e}
+  button.d{background:#b91c1c;color:#fff;border-color:#b91c1c}
+  button:disabled{opacity:.5;cursor:not-allowed}
+  table{width:100%;border-collapse:collapse;font-size:13px;margin-top:10px}
+  th,td{text-align:left;padding:6px 8px;border-bottom:1px solid #f4f4f5;vertical-align:top}
+  th{color:#6b7280;font-weight:600;font-size:12px;text-transform:uppercase}
+  .ok{color:#15803d}.av{color:#b45309}.er{color:#b91c1c}
+  pre{background:#0f172a;color:#e2e8f0;padding:10px;border-radius:8px;font-size:12px;max-height:320px;overflow:auto;white-space:pre-wrap}
+  .tag{display:inline-block;background:#f4f4f5;border-radius:6px;padding:2px 8px;font-size:12px;margin-right:6px}
+  .warn{background:#fffbeb;border:1px solid #fde68a;color:#92400e;border-radius:8px;padding:10px 12px;font-size:13px;margin-bottom:14px}
+</style>
+</head>
+<body>
+<div class="c">
+  <h1>Recuperar colaboradores</h1>
+  <div class="sub">Lê o cache local do navegador (que ainda tem os dados de antes da exclusão) e devolve ao banco o que estiver faltando. Não sobrescreve registro que já existe.</div>
+
+  <div class="warn">
+    <strong>Antes de mexer:</strong> abra esta página no <strong>mesmo navegador e mesma origem</strong> em que você apagou (por exemplo <code>file:///C:/Users/grupo/Desktop/documentos/recuperar-colaboradores.html</code>).
+    Não limpe os dados do navegador nem feche a aba do sistema antes de tentar.
+  </div>
+
+  <div class="card">
+    <div class="row">
+      <button class="p" id="btn-analisar">Analisar cache x banco</button>
+      <button id="btn-baixar">Baixar backup JSON</button>
+      <span id="status" class="tag">aguardando</span>
+    </div>
+    <pre id="log" style="display:none"></pre>
+  </div>
+
+  <div class="card" id="card-restore" style="display:none">
+    <div class="row" style="justify-content:space-between">
+      <div><strong id="resumo">—</strong><div class="sub" style="margin:4px 0 0" id="detalhe">—</div></div>
+      <button class="d" id="btn-restaurar">Restaurar no banco</button>
+    </div>
+    <div style="max-height:420px;overflow:auto">
+      <table><thead><tr><th>id</th><th>nome</th><th>cpf</th><th>empresa</th><th>funcao</th><th>origem</th></tr></thead>
+      <tbody id="tb"></tbody></table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="sub" style="margin:0 0 6px"><strong>Se não houver nada para recuperar</strong> (cache já sobrescrito), as saídas são:</div>
+    <ol class="sub" style="margin:0;padding-left:18px">
+      <li>Outro navegador / outro computador onde o sistema foi aberto: rode a análise lá.</li>
+      <li>Firebase Console → Realtime Database → <em>funcionarios</em> → aba de exclusões (soft delete) ou <em>Exportar JSON</em> / restore de backup.</li>
+    </ol>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+<script>
+const FIREBASE_CONFIG={apiKey:"AIzaSyBehqlRiCiDniyPi3bjHtkH7q2-Px-KoZc",authDomain:"cadastr-produtos-clevir.firebaseapp.com",databaseURL:"https://cadastr-produtos-clevir-default-rtdb.firebaseio.com",projectId:"cadastr-produtos-clevir",storageBucket:"cadastr-produtos-clevir.firebasestorage.app",messagingSenderId:"1028296092810",appId:"1:1028296092810:web:86859328b19c1fdf511173"};
+firebase.initializeApp(FIREBASE_CONFIG);
+const db=firebase.database();
+
+const IDB_NAME='ws_cache', IDB_STORE='nodes', LS_PREFIX='ws_cache_v1_';
+const status=document.getElementById('status'), logEl=document.getElementById('log');
+const cardRestore=document.getElementById('card-restore');
+let analise=null;
+
+function log(msg,cls){
+  logEl.style.display='block';
+  const d=document.createElement('div');
+  if(cls) d.className=cls;
+  d.textContent=msg;
+  logEl.appendChild(d);
+  logEl.scrollTop=logEl.scrollHeight;
+}
+function setStatus(t,cls){ status.textContent=t; status.className='tag'+(cls?' '+cls:''); }
+
+function idbGet(path){
+  return new Promise(function(res,rej){
+    if(typeof indexedDB==='undefined') return rej(new Error('no-idb'));
+    const rq=indexedDB.open(IDB_NAME,1);
+    rq.onerror=()=>rej(rq.error||new Error('idb-open'));
+    rq.onsuccess=()=>{
+      const d=rq.result;
+      if(!d.objectStoreNames.contains(IDB_STORE)){ d.close(); return rej(new Error('sem store')); }
+      const tx=d.transaction(IDB_STORE,'readonly');
+      const r=tx.objectStore(IDB_STORE).get(path);
+      r.onsuccess=()=>{ d.close(); res(r.result||null); };
+      r.onerror=()=>{ d.close(); rej(r.error); };
+    };
+  });
+}
+function cacheDe(path){
+  return idbGet(path).then(function(rec){
+    if(rec&&rec.data) return {rec:rec,de:'IndexedDB'};
+    try{
+      const raw=localStorage.getItem(LS_PREFIX+path);
+      if(raw){ const p=JSON.parse(raw); if(p&&p.data) return {rec:p,de:'localStorage'}; }
+    }catch(e){}
+    return {rec:null,de:null};
+  }).catch(function(){
+    try{
+      const raw=localStorage.getItem(LS_PREFIX+path);
+      if(raw){ const p=JSON.parse(raw); if(p&&p.data) return {rec:p,de:'localStorage'}; }
+    }catch(e){}
+    return {rec:null,de:null};
+  });
+}
+function arr(map){ return Object.keys(map||{}).map(k=>Object.assign({id:map[k].id!==undefined?map[k].id:k},map[k])); }
+
+document.getElementById('btn-analisar').onclick=function(){
+  setStatus('analisando...');
+  logEl.innerHTML='';
+  Promise.all([cacheDe('funcionarios'),cacheDe('alunos')]).then(function(r){
+    const f=r[0], a=r[1];
+    if(!f.rec&&!a.rec){
+      setStatus('cache vazio','er');
+      log('Nenhum cache de funcionarios/alunos encontrado neste navegador.','er');
+      log('Se os dados sumiram do cache, use outro navegador ou o console do Firebase.');
+      return;
+    }
+    log('cache funcionarios: '+(f.rec?arr(f.rec.data).length+' registro(s), de '+f.de+', salvo em '+new Date(f.rec.savedAt||0).toLocaleString():'nada'));
+    log('cache alunos: '+(a.rec?arr(a.rec.data).length+' registro(s), de '+a.de+', salvo em '+new Date(a.rec.savedAt||0).toLocaleString():'nada'));
+    const cacheF=arr(f.rec&&f.rec.data);
+    const cacheA=arr(a.rec&&a.rec.data);
+    setStatus('consultando banco...');
+    return Promise.all([db.ref('funcionarios').once('value'),db.ref('alunos').once('value')]).then(function(s){
+      const srvF=s[0].val()||{}, srvA=s[1].val()||{};
+      log('banco funcionarios: '+Object.keys(srvF).length+' registro(s)');
+      log('banco alunos: '+Object.keys(srvA).length+' registro(s)');
+      const falta=[];
+      cacheF.forEach(rec=>{
+        const id=String(rec.id);
+        if(srvF[id]===undefined) falta.push({rec:rec,no:'funcionarios',id:id});
+      });
+      cacheA.forEach(rec=>{
+        const id=String(rec.id);
+        if(srvA[id]===undefined) falta.push({rec:rec,no:'alunos',id:id});
+        else if(srvF[id]===undefined) falta.push({rec:rec,no:'funcionarios',id:id});
+      });
+      // mesma pessoa que está em 'alunos' mas o 'funcionarios' continua vazio
+      cacheA.forEach(rec=>{
+        const id=String(rec.id);
+        if(srvA[id]!==undefined&&srvF[id]===undefined){
+          const alvo=Object.assign({},rec);
+          delete alvo.id;
+          if(rec.empresaVinculoId!==undefined) alvo.empresaId=rec.empresaVinculoId;
+          falta.push({rec:alvo,no:'funcionarios',id:id});
+        }
+      });
+      analise={falta:falta,srvF:srvF,srvA:srvA,cacheF:cacheF,cacheA:cacheA};
+      cardRestore.style.display='block';
+      document.getElementById('resumo').textContent=falta.length?falta.length+' registro(s) para restaurar':'Nada faltando no banco';
+      document.getElementById('detalhe').textContent=falta.length
+        ? 'Serão gravados apenas os ids que não existem no banco. Nada é sobrescrito.'
+        : 'O banco já tem tudo o que o cache tinha. Se ainda faltam pessoas, elas não estavam no cache deste navegador.';
+      const tb=document.getElementById('tb');
+      tb.innerHTML=falta.map(f=>'<tr><td>'+f.id+'</td><td>'+esc(f.rec.nome||'')+'</td><td>'+esc(f.rec.cpf||'')+'</td><td>'+esc(f.rec.empresaId||f.rec.empresaVinculoId||'')+'</td><td>'+esc(f.rec.funcao||'')+'</td><td>'+f.no+'</td></tr>').join('');
+      document.getElementById('btn-restaurar').disabled=!falta.length;
+      setStatus(falta.length?falta.length+' a restaurar':'em dia',falta.length?'av':'ok');
+      log(falta.length?'Prontos para restaurar: '+falta.length:'Nada a restaurar.');
+    });
+  }).catch(function(e){ setStatus('erro','er'); log('Erro: '+(e&&e.message?e.message:e),'er'); });
+};
+function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+document.getElementById('btn-restaurar').onclick=function(){
+  if(!analise||!analise.falta.length) return;
+  if(!confirm('Gravar '+analise.falta.length+' registro(s) no banco? Nada existente é alterado.')) return;
+  const updates={};
+  analise.falta.forEach(f=>{ updates[f.no+'/'+f.id]=f.rec; });
+  setStatus('gravando...');
+  db.ref().update(updates).then(function(){
+    setStatus('restaurado','ok');
+    log('Restaurados '+analise.falta.length+' registro(s). Atualize o index.html.','ok');
+    alert('Pronto: '+analise.falta.length+' registro(s) restaurados. Atualize a tela do sistema.');
+  }).catch(function(e){ setStatus('erro','er'); log('Falha ao gravar: '+(e&&e.message?e.message:e),'er'); });
+};
+
+document.getElementById('btn-baixar').onclick=function(){
+  Promise.all([cacheDe('funcionarios'),cacheDe('alunos')]).then(function(r){
+    const dump={funcionarios:(r[0].rec&&r[0].rec.data)||null,alunos:(r[1].rec&&r[1].rec.data)||null,
+      meta:{funcGeradoEm:r[0].rec?r[0].rec.savedAt:null,aluGeradoEm:r[1].rec?r[1].rec.savedAt:null}};
+    const blob=new Blob([JSON.stringify(dump,null,2)],{type:'application/json'});
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);
+    a.download='backup-colaboradores-'+Date.now()+'.json';
+    a.click();
+    setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+    setStatus('backup gerado','ok');
+  });
+};
+</script>
+</body>
+</html>

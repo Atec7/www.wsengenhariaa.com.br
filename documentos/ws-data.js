@@ -290,13 +290,25 @@
   }
 
   /* ── sync de um nó (fase 1: cache imediato; fase 2: rede se mudou) ── */
-  function syncNode(path, entry, manual) {
+  /* forcar = "o usuário mandou atualizar": baixa o nó mesmo que o _meta diga que
+     nada mudou. Sem isso, o botão respondia "Tudo em dia" e o colaborador
+     recém-cadastrado nunca aparecia — a atualização depende do carimbo _meta,
+     que falha quando a gravação é negada ou feita fora do WS_DATA. */
+  function syncNode(path, entry, manual, forcar) {
     var map = slotOf(entry);
     return getCache(path).then(function (cache) {
       if (cache && cache.data) {
         var cdata = cache.data;
         Object.keys(map).forEach(function (k) { delete map[k]; });
         Object.keys(cdata).forEach(function (k) { map[k] = cdata[k]; });
+      }
+      if (forcar) {
+        return {
+          shouldPull: true,
+          pull: function () {
+            return (entry.tsKey ? pullInc(path, entry) : pullFull(path, entry));
+          }
+        };
       }
       var fresh = needsCacheRefresh(cache, manual);
       if (fresh === false) {
@@ -393,6 +405,18 @@
     afterSync: function () {
       LAST_REFRESH = Date.now();
     },
+    /* Situação do cache dos nós pedidos: quando foi baixado pela última vez e
+       quantos registros tem. Serve para dizer se a lista está velha ou se o
+       registro simplesmente não chegou. */
+    cacheInfo: function (paths) {
+      return (Array.isArray(paths) ? paths : []).map(function (p) {
+        var c = CACHE[p];
+        if (!c) { return p + ': sem cache'; }
+        var n = c.data ? Object.keys(c.data).length : 0;
+        var quando = c.savedAt ? new Date(c.savedAt).toLocaleTimeString() : '?';
+        return p + ': ' + n + ' reg. (' + quando + ')';
+      }).join(' · ');
+    },
     refreshNode: function (path) {
       var entry = REG[path];
       if (!entry) { return Promise.resolve({ downloaded: false }); }
@@ -403,12 +427,12 @@
       });
     },
     refreshAll: function (manual) {
-      return this.refreshPaths(null, manual);
+      return this.refreshPaths(null, manual, !!manual);
     },
     /* Só os nós informados (ou todos, quando paths = null). As checagens de
        _meta vão em paralelo: em cadeia, 8 nós viravam 8 esperas seguidas e o
        botão de atualizar demorava mesmo quando nada tinha mudado. */
-    refreshPaths: function (paths, manual) {
+    refreshPaths: function (paths, manual, forcar) {
       if (!manual && (Date.now() - LAST_REFRESH) < 5000) { return Promise.resolve({ downloads: 0 }); }
       var lista = (Array.isArray(paths) && paths.length)
         ? paths.filter(function (p) { return !!REG[p] && !REG[p].sobDemanda; })
@@ -416,7 +440,7 @@
       var self = this;
       var pulls = [];
       return Promise.all(lista.map(function (path) {
-        return syncNode(path, REG[path], !!manual).then(function (r) {
+        return syncNode(path, REG[path], !!manual, !!forcar).then(function (r) {
           if (r.shouldPull) { pulls.push(r.pull()); }
         }).catch(function () {});
       })).then(function () {
@@ -431,21 +455,28 @@
     /* Vigia barata: consulta só o _meta dos nós indicados (poucas centenas de
        bytes) e baixa o nó inteiro apenas quando ele realmente mudou. É o que
        faz o colaborador novo aparecer sozinho, sem pagar o certificadoGerados
-       a cada ciclo. Devolve uma função para parar. */
-    watchPaths: function (paths, ms, onChange) {
+       a cada ciclo. A cada `forcarACada` ciclos sem mudança também baixa, como
+       rede de segurança para quando o carimbo _meta não é gravado. Devolve uma
+       função para parar. */
+    watchPaths: function (paths, ms, onChange, forcarACada) {
       var lista = (Array.isArray(paths) ? paths : []).filter(function (p) { return !!REG[p]; });
       if (!lista.length) { return function () {}; }
       var intervalo = ms || 20000;
+      var forcaEm = forcarACada || 6;
+      var parados = 0;
       var parar = false;
       var timer = null;
       function ciclo() {
         if (parar) { return; }
+        parados++;
+        var forcar = parados >= forcaEm;
         Promise.all(lista.map(function (p) {
           return getCache(p).then(function (c) {
             return DB.once('_meta/' + p).then(function (snap) {
               var meta = snap.val();
-              if (!meta || (c && meta <= (c.metaTs || 0))) { return null; }
-              return syncNode(p, REG[p], true).then(function (r) {
+              if (!forcar && meta && c && meta <= (c.metaTs || 0)) { return null; }
+              if (!forcar && !meta) { return null; }
+              return syncNode(p, REG[p], true, forcar).then(function (r) {
                 if (r.shouldPull) { return r.pull().then(function () { return p; }); }
                 return null;
               });
@@ -453,6 +484,7 @@
           }).catch(function () { return null; });
         })).then(function (mudou) {
           var lista2 = mudou.filter(Boolean);
+          if (lista2.length) { parados = 0; }
           if (lista2.length) {
             if (ONUPD) { ONUPD(); }
             if (typeof onChange === 'function') { try { onChange(lista2); } catch (e) {} }
@@ -591,6 +623,9 @@
       // paths: nós que o botão realmente atualiza. Sem isso ele baixava o
       // certificadosGerados inteiro (megabytes) só para ver um colaborador novo.
       var only = (Array.isArray(opts.paths) && opts.paths.length) ? opts.paths.slice() : null;
+      // "Atualizar" significa baixar de novo: sem forcar, o botão só perguntava
+      // ao _meta e respondia "Tudo em dia" mesmo com registro novo no banco.
+      var forcar = opts.forcar !== false;
       var already = document.getElementById('ws-refresh-fab');
       if (already && already.parentNode) { already.parentNode.removeChild(already); }
       var b = document.createElement('button');
@@ -633,7 +668,7 @@
           st.textContent = '@keyframes wsSpin{to{transform:rotate(360deg)}}';
           document.head.appendChild(st);
         }
-        window.WS_DATA.refreshPaths(only, true).then(function (res) {
+        window.WS_DATA.refreshPaths(only, true, forcar).then(function (res) {
           spin = false;
           b.style.pointerEvents = '';
           b.innerHTML = '<span style="line-height:1">&#x2713;</span>';

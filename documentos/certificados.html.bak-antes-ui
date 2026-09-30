@@ -71,6 +71,12 @@ header {
     overflow-y: auto; 
 }
 
+.sidebar-title {
+    font-size: 22px;
+    font-weight: 900;
+    color: var(--primary);
+    padding: 0 20px 20px;
+}
 .sidebar a {
     display: flex;
     align-items: center;
@@ -295,6 +301,10 @@ button.danger:hover { background: #c82333; }
   background: #fff;
   padding: 2px;
 }
+.nome-sistema{
+  text-align: center;
+  
+}
 .info-balloon {
     background: #f0f7ff;
     border: 1px solid #bae0ff;
@@ -460,972 +470,29 @@ button.danger:hover { background: #c82333; }
     .col-3, .col-4, .col-6 { grid-column: span 12; }
     .validade-linha { flex-direction: column; gap: 4px; }
 }
-
-/* =====================================================================
-   WS CERTIFICADOS — Design System v2
-   ---------------------------------------------------------------------
-   Camada de apresentação (shell, navegação, formulários, tabelas).
-   NÃO altera a renderização dos certificados: as regras de impressão e
-   do html2pdf (.cert-page, .cert-page2, .presenca-page, @media print)
-   permanecem intactas, e a herança do body é fixada explicitamente na
-   seção 3 para que o PDF saia idêntico ao anterior.
-   ===================================================================== */
-
-/* ---------- 1. Tokens ---------- */
-:root {
-    --primary:        #0B4F8F;
-    --primary-700:    #083C6D;
-    --primary-600:    #0A4A87;
-    --primary-100:    #DCEAF7;
-    --primary-050:    #F2F8FD;
-
-    --bg:             #F4F6F9;
-    --surface:        #FFFFFF;
-    --surface-2:      #FAFBFD;
-
-    --text:           #16202E;
-    --text-2:         #475569;
-    --muted:          #6B7A8D;
-
-    --border:         #E3E8EF;
-    --border-strong:  #CBD5E1;
-
-    --danger:         #DC2626;
-    --danger-050:     #FEF2F2;
-    --success:        #15803D;
-    --warning:        #B45309;
-
-    --radius-xs:      6px;
-    --radius-sm:      8px;
-    --radius:         12px;
-    --radius-lg:      16px;
-
-    --shadow-xs:      0 1px 2px rgba(16, 24, 40, .05);
-    --shadow-sm:      0 1px 3px rgba(16, 24, 40, .08), 0 1px 2px rgba(16, 24, 40, .04);
-    --shadow-md:      0 4px 14px rgba(16, 24, 40, .07), 0 2px 4px rgba(16, 24, 40, .04);
-    --shadow-lg:      0 16px 40px rgba(16, 24, 40, .12);
-    --shadow-nav:     1px 0 0 var(--border);
-
-    --ring:           0 0 0 3px rgba(11, 79, 143, .18);
-    --ease:           cubic-bezier(.4, 0, .2, 1);
-
-    --sidebar-width:  264px;
-    --header-height:  68px;
-
-    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Inter",
-            "Helvetica Neue", Arial, sans-serif;
-}
-
-/* ---------- 2. Base ---------- */
-body {
-    font-family: var(--font);
-    background: var(--bg);
-    color: var(--text);
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    font-size: 15px;
-}
-
-::selection { background: var(--primary-100); color: var(--primary-700); }
-
-/* Foco visível e consistente para navegação por teclado */
-:focus-visible {
-    outline: 2px solid var(--primary);
-    outline-offset: 2px;
-    border-radius: 4px;
-}
-
-/* ---------- 3. Blindagem do PDF ----------
-   .cert-page herdava tipografia, cor e entrelinha do body. Como o body
-   mudou, fixamos aqui o mesmo valor herdado antes para manter o
-   certificado impresso e o exportado pelo html2pdf byte-a-byte iguais. */
-.cert-page, .cert-page2 {
-    font-family: Arial, sans-serif;
-    font-size: 16px;
-    font-weight: 400;
-    font-style: normal;
-    line-height: normal;
-    letter-spacing: normal;
-    color: #212529;
-}
-
-/* O <header> interno da página 2 do certificado era atingido pelo estilo
-   global da barra superior (altura 60px, fundo branco, borda inferior).
-   Restaura o layout natural do documento para o PDF sair limpo. */
-.cert-page2 header {
-    height: auto;
-    min-height: 0;
-    display: block;
-    padding: 0;
-    margin: 0 0 10mm;
-    background: none;
-    border: none;
-    box-shadow: none;
-    color: inherit;
-    font-size: inherit;
-    font-weight: inherit;
-    letter-spacing: normal;
-    line-height: normal;
-    gap: normal;
-    align-items: normal;
-    justify-content: normal;
-    flex: none;
-    position: static;
-    z-index: auto;
-}
-
-/* O h2 "Certificamos que" da página 1 não tem display inline e receberia
-   o tratamento de título de seção. Anula para manter o PDF idêntico. */
-.cert-page h2 {
-    display: block;
-    margin: 0;
-    padding: 0;
-    border: none;
-    letter-spacing: normal;
-    line-height: normal;
-    color: #212529;
-}
-
-/* ---------- 4. Sidebar ---------- */
-.sidebar {
-    width: var(--sidebar-width);
-    background: var(--surface);
-    border-right: 1px solid var(--border);
-    box-shadow: none;
-    padding: 0;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-}
-
-.brand {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 20px 20px 18px;
-    border-bottom: 1px solid var(--border);
-    flex-shrink: 0;
-}
-.brand-mark {
-    width: 40px;
-    height: 40px;
-    flex-shrink: 0;
-    border-radius: 10px;
-    background: linear-gradient(140deg, var(--primary) 0%, var(--primary-700) 100%);
-    color: #fff;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 4px 10px rgba(11, 79, 143, .28);
-}
-.brand-mark svg { width: 21px; height: 21px; }
-.brand-text { min-width: 0; }
-.brand-text strong {
-    display: block;
-    font-size: 15px;
-    font-weight: 700;
-    color: var(--text);
-    letter-spacing: -.01em;
-    line-height: 1.25;
-}
-.brand-text span {
-    display: block;
-    font-size: 11.5px;
-    color: var(--muted);
-    letter-spacing: .02em;
-    margin-top: 1px;
-}
-
-.nav {
-    flex: 1;
-    overflow-y: auto;
-    padding: 14px 12px 18px;
-}
-.nav-group {
-    margin: 18px 0 6px;
-    padding: 0 10px;
-    font-size: 10.5px;
-    font-weight: 700;
-    letter-spacing: .09em;
-    text-transform: uppercase;
-    color: #94A3B8;
-}
-.nav-group:first-child { margin-top: 4px; }
-
-.sidebar .nav a {
-    position: relative;
-    display: flex;
-    align-items: center;
-    gap: 11px;
-    padding: 9px 11px;
-    margin-bottom: 2px;
-    border-radius: var(--radius-sm);
-    border-left: none;
-    color: var(--text-2);
-    font-size: 14px;
-    font-weight: 500;
-    text-decoration: none;
-    transition: background-color .15s var(--ease), color .15s var(--ease);
-}
-.sidebar .nav a svg {
-    width: 18px;
-    height: 18px;
-    flex-shrink: 0;
-    color: #8FA0B4;
-    transition: color .15s var(--ease);
-}
-.sidebar .nav a b { font-weight: inherit; }
-.sidebar .nav a:hover {
-    background: var(--surface-2);
-    color: var(--text);
-}
-.sidebar .nav a:hover svg { color: var(--text-2); }
-.sidebar .nav a.active {
-    background: var(--primary-050);
-    color: var(--primary-700);
-    font-weight: 600;
-}
-.sidebar .nav a.active svg { color: var(--primary); }
-.sidebar .nav a.active::before {
-    content: '';
-    position: absolute;
-    left: -12px;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 3px;
-    height: 20px;
-    border-radius: 0 3px 3px 0;
-    background: var(--primary);
-}
-
-.sidebar-foot {
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 13px 20px;
-    border-top: 1px solid var(--border);
-    background: var(--surface-2);
-    font-size: 11.5px;
-    color: var(--muted);
-    font-weight: 500;
-}
-.sidebar-foot .dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: #22C55E;
-    box-shadow: 0 0 0 3px rgba(34, 197, 94, .16);
-    flex-shrink: 0;
-}
-
-/* Véu do menu no mobile */
-.nav-scrim {
-    position: fixed;
-    inset: 0;
-    background: rgba(15, 23, 42, .45);
-    backdrop-filter: blur(2px);
-    z-index: 90;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity .22s var(--ease);
-}
-
-/* ---------- 5. Topbar ---------- */
-.main-content { background: var(--bg); }
-
-.main-content > header {
-    height: var(--header-height);
-    background: rgba(255, 255, 255, .88);
-    backdrop-filter: saturate(180%) blur(12px);
-    border-bottom: 1px solid var(--border);
-    padding: 0 28px;
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    font-size: 15px;
-    font-weight: 700;
-    color: var(--text);
-    flex-shrink: 0;
-    z-index: 50;
-}
-.topbar-titles { min-width: 0; }
-.topbar-title {
-    margin: 0;
-    font-size: 16px;
-    font-weight: 700;
-    color: var(--text);
-    letter-spacing: -.01em;
-    line-height: 1.2;
-}
-.topbar-sub {
-    margin: 2px 0 0;
-    font-size: 12.5px;
-    font-weight: 500;
-    color: var(--muted);
-    line-height: 1.2;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-.topbar-meta {
-    margin-left: auto;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex-shrink: 0;
-}
-.chip {
-    display: inline-flex;
-    align-items: center;
-    height: 26px;
-    padding: 0 10px;
-    border-radius: 999px;
-    background: var(--primary-050);
-    border: 1px solid var(--primary-100);
-    color: var(--primary-700);
-    font-size: 11.5px;
-    font-weight: 700;
-    letter-spacing: .01em;
-    white-space: nowrap;
-}
-.chip-quiet {
-    background: var(--surface-2);
-    border-color: var(--border);
-    color: var(--muted);
-    font-weight: 600;
-}
-
-.nav-toggle {
-    display: none;
-    margin: 0;
-    padding: 0;
-    width: 38px;
-    height: 38px;
-    flex-shrink: 0;
-    align-items: center;
-    justify-content: center;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    color: var(--text-2);
-    box-shadow: var(--shadow-xs);
-}
-.nav-toggle:hover { background: var(--surface-2); border-color: var(--border-strong); }
-.nav-toggle svg { width: 20px; height: 20px; }
-
-/* ---------- 6. Container e títulos ---------- */
-.container {
-    max-width: 1280px;
-    padding: 28px 28px 72px;
-}
-
-.secao { animation: fadeUp .28s var(--ease); }
-@keyframes fadeUp {
-    from { opacity: 0; transform: translateY(6px); }
-    to   { opacity: 1; transform: none; }
-}
-
-h2 {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin: 0 0 18px;
-    padding: 0;
-    border-bottom: none;
-    color: var(--text);
-    font-size: 22px;
-    font-weight: 700;
-    letter-spacing: -.02em;
-    line-height: 1.25;
-}
-h2 .sec-icon {
-    width: 38px;
-    height: 38px;
-    flex-shrink: 0;
-    border-radius: 10px;
-    background: var(--primary-050);
-    border: 1px solid var(--primary-100);
-    color: var(--primary);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-h2 .sec-icon svg { width: 19px; height: 19px; }
-h2 .sec-sub {
-    display: block;
-    font-size: 13.5px;
-    font-weight: 400;
-    color: var(--muted);
-    letter-spacing: 0;
-    margin-top: 3px;
-}
-
-h3 {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin: 26px 0 0;
-    padding-left: 11px;
-    border-left: 3px solid var(--primary-100);
-    color: var(--text);
-    font-size: 15px;
-    font-weight: 700;
-    letter-spacing: -.01em;
-}
-.card > h3:first-child, .card > .grid + h3 { margin-top: 0; }
-h3 + p, h3 + .grid { margin-top: 12px; }
-
-/* Parágrafos de apoio dentro dos cards */
-.card p[style*="var(--muted)"] {
-    margin: 0 0 14px;
-    line-height: 1.6;
-}
-
-/* ---------- 7. Cards ---------- */
-.card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    box-shadow: var(--shadow-sm);
-    padding: 24px;
-    margin-bottom: 22px;
-}
-.card:last-child { margin-bottom: 0; }
-
-/* ---------- 8. Formulários ---------- */
-label {
-    display: block;
-    font-size: 12.5px;
-    font-weight: 600;
-    color: var(--text-2);
-    margin-top: 0;
-    margin-bottom: 6px;
-    letter-spacing: .005em;
-}
-.checklist label, .mc-tabela-datas label { margin: 0; }
-
-input:not([type="checkbox"]):not([type="radio"]),
-textarea, select {
-    width: 100%;
-    padding: 0 12px;
-    height: 42px;
-    border: 1px solid var(--border-strong);
-    border-radius: var(--radius-sm);
-    background: var(--surface);
-    color: var(--text);
-    font-family: inherit;
-    font-size: 14px;
-    margin-top: 0;
-    transition: border-color .15s var(--ease), box-shadow .15s var(--ease), background-color .15s var(--ease);
-    appearance: none;
-}
-textarea { height: auto; min-height: 88px; padding: 10px 12px; line-height: 1.5; resize: vertical; }
-
-select {
-    padding-right: 34px;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236B7A8D' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 11px center;
-    background-size: 15px;
-    cursor: pointer;
-}
-select[multiple] { height: auto; padding: 8px; }
-
-input:not([type="checkbox"]):not([type="radio"]):hover,
-textarea:hover, select:hover { border-color: #A9B7C8; }
-
-input:not([type="checkbox"]):not([type="radio"]):focus,
-textarea:focus, select:focus {
-    outline: none;
-    border-color: var(--primary);
-    box-shadow: var(--ring);
-}
-
-input::placeholder, textarea::placeholder { color: #A0AEC0; }
-
-input[type="checkbox"] {
-    appearance: none;
-    width: 18px;
-    height: 18px;
-    flex-shrink: 0;
-    border: 1.5px solid var(--border-strong);
-    border-radius: 5px;
-    background: var(--surface);
-    cursor: pointer;
-    display: inline-grid;
-    place-content: center;
-    transition: background-color .14s var(--ease), border-color .14s var(--ease);
-}
-input[type="checkbox"]::after {
-    content: '';
-    width: 9px;
-    height: 9px;
-    transform: scale(0);
-    transition: transform .14s var(--ease);
-    background: #fff;
-    clip-path: polygon(14% 45%, 0 60%, 39% 100%, 100% 22%, 84% 6%, 39% 70%);
-}
-input[type="checkbox"]:hover { border-color: var(--primary); }
-input[type="checkbox"]:checked {
-    background: var(--primary);
-    border-color: var(--primary);
-}
-input[type="checkbox"]:checked::after { transform: scale(1); }
-
-/* Upload de arquivo com botão próprio */
-input[type="file"] {
-    height: auto;
-    padding: 7px 8px;
-    font-size: 13px;
-    color: var(--muted);
-    cursor: pointer;
-    background: var(--surface-2);
-}
-input[type="file"]::file-selector-button {
-    font-family: inherit;
-    font-size: 12.5px;
-    font-weight: 600;
-    color: var(--primary-700);
-    background: var(--primary-050);
-    border: 1px solid var(--primary-100);
-    border-radius: 6px;
-    padding: 6px 12px;
-    margin-right: 10px;
-    cursor: pointer;
-    transition: background-color .15s var(--ease);
-}
-input[type="file"]::file-selector-button:hover { background: var(--primary-100); }
-
-.date-hint { color: var(--muted); font-size: 11.5px; margin-top: 5px; }
-
-/* ---------- 9. Botões ---------- */
-button {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    height: 40px;
-    padding: 0 16px;
-    background: var(--primary);
-    color: #fff;
-    border: 1px solid transparent;
-    border-radius: var(--radius-sm);
-    font-family: inherit;
-    font-size: 13.5px;
-    font-weight: 600;
-    letter-spacing: -.005em;
-    white-space: nowrap;
-    cursor: pointer;
-    margin-top: 0;
-    box-shadow: var(--shadow-xs);
-    transition: background-color .15s var(--ease), box-shadow .15s var(--ease),
-                transform .1s var(--ease), border-color .15s var(--ease);
-}
-button svg { width: 16px; height: 16px; flex-shrink: 0; }
-button:hover { background: var(--primary-600); box-shadow: var(--shadow-md); }
-button:active { transform: translateY(1px); box-shadow: var(--shadow-xs); }
-button:disabled { opacity: .55; cursor: not-allowed; transform: none; box-shadow: none; }
-
-button.secondary {
-    background: var(--surface);
-    color: var(--text-2);
-    border-color: var(--border-strong);
-    box-shadow: var(--shadow-xs);
-}
-button.secondary:hover { background: var(--surface-2); border-color: #A9B7C8; color: var(--text); }
-
-button.danger {
-    background: var(--surface);
-    color: var(--danger);
-    border-color: #F3C2C2;
-    box-shadow: var(--shadow-xs);
-}
-button.danger:hover { background: var(--danger-050); border-color: #E79C9C; color: #B91C1C; }
-
-button.ghost {
-    background: transparent;
-    color: var(--text-2);
-    border-color: transparent;
-    box-shadow: none;
-}
-button.ghost:hover { background: var(--surface-2); color: var(--text); }
-
-.close-btn {
-    background: none;
-    border: none;
-    width: 32px;
-    height: 32px;
-    padding: 0;
-    border-radius: 8px;
-    color: var(--muted);
-    font-size: 20px;
-    box-shadow: none;
-    flex-shrink: 0;
-}
-.close-btn:hover { background: var(--surface-2); color: var(--text); }
-
-/* Rótulo usado como botão (Importar JSON) */
-label.secondary {
-    display: inline-flex;
-    align-items: center;
-    height: 40px;
-    padding: 0 16px;
-    margin: 0;
-    border-radius: var(--radius-sm);
-    border: 1px solid var(--border-strong);
-    background: var(--surface);
-    color: var(--text-2);
-    font-size: 13.5px;
-    font-weight: 600;
-    cursor: pointer;
-    box-shadow: var(--shadow-xs);
-    transition: background-color .15s var(--ease), border-color .15s var(--ease);
-}
-label.secondary:hover { background: var(--surface-2); border-color: #A9B7C8; }
-
-.actions {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    flex-wrap: wrap;
-    margin-top: 18px;
-}
-.card .actions:first-of-type { margin-top: 20px; }
-
-/* Zona de risco: separa o destrutivo do fluxo normal */
-.zona-risco {
-    display: flex;
-    align-items: flex-start;
-    gap: 12px;
-    flex-wrap: wrap;
-    margin-top: 24px;
-    padding: 14px 16px;
-    border: 1px solid #F3D4D4;
-    border-left: 3px solid var(--danger);
-    border-radius: var(--radius-sm);
-    background: var(--danger-050);
-}
-.zona-risco .actions { margin: 0; }
-.zona-risco-txt { flex: 1; min-width: 180px; }
-.zona-risco-txt strong {
-    display: block;
-    font-size: 12.5px;
-    font-weight: 700;
-    color: #991B1B;
-    letter-spacing: .01em;
-}
-.zona-risco-txt span {
-    display: block;
-    font-size: 12px;
-    color: #9F6B6B;
-    line-height: 1.5;
-    margin-top: 2px;
-}
-
-/* ---------- 10. Stepper do fluxo de emissão ---------- */
-.steps {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
-    gap: 10px;
-    list-style: none;
-    margin: 0 0 20px;
-    padding: 0;
-}
-.step {
-    display: flex;
-    align-items: flex-start;
-    gap: 11px;
-    padding: 13px 15px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    box-shadow: var(--shadow-xs);
-}
-.step-n {
-    width: 24px;
-    height: 24px;
-    flex-shrink: 0;
-    border-radius: 7px;
-    background: var(--primary-050);
-    border: 1px solid var(--primary-100);
-    color: var(--primary-700);
-    font-size: 12px;
-    font-weight: 700;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-.step strong {
-    display: block;
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--text);
-    line-height: 1.35;
-}
-.step small {
-    display: block;
-    font-size: 11.5px;
-    color: var(--muted);
-    line-height: 1.45;
-    margin-top: 2px;
-}
-
-/* ---------- 11. Checklist ---------- */
-.checklist {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-    gap: 8px;
-    margin-top: 8px;
-}
-.checklist > p { grid-column: 1 / -1; }
-.checklist label {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    padding: 10px 12px;
-    margin: 0;
-    font-size: 13.5px;
-    font-weight: 500;
-    color: var(--text-2);
-    cursor: pointer;
-    box-shadow: var(--shadow-xs);
-    transition: border-color .15s var(--ease), background-color .15s var(--ease),
-                box-shadow .15s var(--ease);
-}
-.checklist label:hover {
-    background: var(--primary-050);
-    border-color: var(--primary-100);
-}
-.checklist label span { line-height: 1.4; }
-/* Funciona com e sem logo no meio do label (input + img + span) */
-.checklist label:has(input:checked) {
-    background: var(--primary-050);
-    border-color: var(--primary);
-    box-shadow: var(--ring);
-}
-.checklist label:has(input:checked) span {
-    font-weight: 600;
-    color: var(--primary-700);
-}
-.checklist input:checked + span { font-weight: 600; color: var(--primary-700); }
-
-/* ---------- 12. Tabelas ---------- */
-.table {
-    width: 100%;
-    border-collapse: separate;
-    border-spacing: 0;
-    margin-top: 14px;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    overflow: hidden;
-    box-shadow: var(--shadow-xs);
-    background: var(--surface);
-}
-.table th, .table td {
-    padding: 11px 14px;
-    text-align: left;
-    font-size: 13.5px;
-    border-bottom: 1px solid var(--border);
-    vertical-align: middle;
-}
-.table thead th, .table tr:first-child > th {
-    position: sticky;
-    top: 0;
-    z-index: 2;
-    background: var(--surface-2);
-    color: var(--text-2);
-    font-size: 11.5px;
-    font-weight: 700;
-    letter-spacing: .05em;
-    text-transform: uppercase;
-    white-space: nowrap;
-    border-bottom: 1px solid var(--border-strong);
-}
-.table tbody tr:nth-child(even), .table tr:nth-child(even) td { background: #FCFDFE; }
-.table tbody tr:hover, .table tr:hover td { background: var(--primary-050); }
-.table tbody tr:last-child td { border-bottom: none; }
-.table td.vencido { color: #B91C1C; font-weight: 600; }
-.table td.actions { display: table-cell; }
-.table td.actions button { height: 32px; padding: 0 11px; font-size: 12.5px; }
-
-/* Estado vazio: o JS escreve uma única célula com colspan */
-.table td:only-child { text-align: center; color: var(--muted); font-size: 13.5px; padding: 30px 16px; }
-.table td:only-child::before {
-    content: '';
-    display: block;
-    width: 34px;
-    height: 34px;
-    margin: 0 auto 10px;
-    border-radius: 9px;
-    background: var(--surface-2) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2394A3B8' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 7h18v13H3z'/%3E%3Cpath d='M3 7V5a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v2'/%3E%3C/svg%3E") no-repeat center/18px;
-    border: 1px solid var(--border);
-}
-
-/* ---------- 13. Blocos e avisos herdados ---------- */
-.info-balloon {
-    background: var(--primary-050);
-    border: 1px solid var(--primary-100);
-    border-left: 3px solid var(--primary);
-    border-radius: var(--radius-sm);
-    color: var(--primary-700);
-    padding: 10px 13px;
-    margin-top: 12px;
-    font-size: 12.5px;
-    line-height: 1.55;
-}
-.course-date-selector {
-    background: var(--surface-2);
-    border: 1px solid var(--border);
-    border-left: 3px solid var(--primary);
-    border-radius: var(--radius-sm);
-    padding: 16px;
-    margin-top: 14px;
-}
-.course-date-selector h4 { border-bottom: none; padding-bottom: 0; }
-.branco { color: var(--danger); font-weight: 600; }
-
-.modal-overlay { background: rgba(15, 23, 42, .55); backdrop-filter: blur(3px); }
-.modal-content {
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-lg);
-    padding: 28px;
-    border: 1px solid var(--border);
-}
-.modal-header h3 { padding-left: 0; border-left: none; margin: 0; }
-
-/* ---------- 14. Responsivo ---------- */
-@media (max-width: 1024px) {
-    :root { --sidebar-width: 280px; }
-
-    .sidebar {
-        transform: translateX(-100%);
-        transition: transform .26s var(--ease);
-        box-shadow: var(--shadow-lg);
-    }
-    body.nav-open .sidebar { transform: none; }
-    body.nav-open .nav-scrim { opacity: 1; pointer-events: auto; }
-    body.nav-open { overflow: hidden; }
-
-    .nav-toggle { display: inline-flex; }
-    .main-content { margin-left: 0; width: 100%; }
-    header { padding: 0 18px; }
-    .container { padding: 20px 18px 64px; }
-}
-
-@media (max-width: 768px) {
-    :root { --header-height: 60px; }
-    .topbar-sub { display: none; }
-    .topbar-title { font-size: 15px; }
-    .chip-quiet { display: none; }
-    .container { padding: 16px 14px 56px; }
-    .card { padding: 16px; }
-    h2 { font-size: 19px; }
-    h2 .sec-icon { width: 34px; height: 34px; }
-    h2 .sec-icon svg { width: 17px; height: 17px; }
-    .grid { gap: 12px; }
-    button { height: 38px; padding: 0 14px; font-size: 13px; }
-    .steps { grid-template-columns: 1fr; }
-    .checklist { grid-template-columns: 1fr; }
-    .table th, .table td { padding: 9px 11px; }
-}
-
-/* ---------- 15. Preferências de movimento ---------- */
-@media (prefers-reduced-motion: reduce) {
-    *, *::before, *::after {
-        animation-duration: .001ms !important;
-        animation-iteration-count: 1 !important;
-        transition-duration: .001ms !important;
-        scroll-behavior: auto !important;
-    }
-}
-
-/* ---------- 16. Impressão ----------
-   Garante que a navegação e a barra superior não vazem para o papel. */
-@media print {
-    .sidebar, .nav-scrim, .nav-toggle, header, .steps, .zona-risco { display: none !important; }
-    .main-content { margin-left: 0; width: 100%; }
-    .container { max-width: none; padding: 0; }
-}
 </style>
 </head>
 <body>
-<div class="nav-scrim" id="navScrim"></div>
-
-<div class="sidebar" id="sidebar">
-    <div class="brand">
-        <div class="brand-mark" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 2 7l10 5 10-5-10-5Z"/><path d="M6 9.5V15c0 1.7 2.7 3 6 3s6-1.3 6-3V9.5"/><path d="M22 7v6"/></svg>
-        </div>
-        <div class="brand-text">
-            <strong>WS Certificados</strong>
-            <span>Sistema de emissão</span>
-        </div>
-    </div>
-
-    <nav class="nav" aria-label="Navegação principal">
-        <p class="nav-group">Cadastros</p>
-        <a href="#secaoEmpresa" class="menu-link active">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21h18"/><path d="M5 21V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v16"/><path d="M15 21V9h4a2 2 0 0 1 2 2v10"/><path d="M9 7h2M9 11h2M9 15h2"/></svg>
-            <span>Empresas</span>
-        </a>
-        <a href="#secaoAlunos" class="menu-link">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-            <span>Alunos</span>
-        </a>
-        <a href="#secaoCursos" class="menu-link">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 10 12 5 2 10l10 5 10-5Z"/><path d="M6 12.5V17c0 1.7 2.7 3 6 3s6-1.3 6-3v-4.5"/></svg>
-            <span>Cursos</span>
-        </a>
-
-        <p class="nav-group">Operação</p>
-        <a href="#secaoGeracao" class="menu-link">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7Z"/><path d="M14 2v5h5"/><path d="M9 15.5l2 2 4-4"/></svg>
-            <span>Gerar certificados</span>
-        </a>
-        <a href="#secaoGerados" class="menu-link" id="nav-secao-gerados" style="display:none;">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7h18v13H3z"/><path d="M3 7V5a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v2"/><path d="M8.5 12.5l2 2 4.5-4.5"/></svg>
-            <span>Certificados gerados</span>
-        </a>
-
-        <p class="nav-group" id="nav-grupo-sistema" style="display:none;">Sistema</p>
-        <a href="#secaoBackup" class="menu-link" id="nav-secao-backup" style="display:none;">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v6c0 1.7 3.6 3 8 3s8-1.3 8-3V6"/><path d="M4 12v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></svg>
-            <span>Backup de dados</span>
-        </a>
-    </nav>
-
-    <div class="sidebar-foot">
-        <span class="dot"></span>
-        <span>V4.8 &middot; Atecseven Tecnologia</span>
-    </div>
+<div class="sidebar">
+    <div class="sidebar-title">CERTIFICADOS</div>
+    <h3>Cadastros</h3>
+    <a href="#secaoEmpresa" class="menu-link active">🟨Empresas</a>
+    <a href="#secaoAlunos" class="menu-link">🟨Alunos</a>
+    <a href="#secaoCursos" class="menu-link">🟨Cursos</a>
+    <h3>Operação</h3>
+    <a href="#secaoGeracao" class="menu-link"><b>🟩Gerar Certificados</b></a>
 </div>
 
 <div class="main-content">
-    <header class="topbar">
-        <button class="nav-toggle" id="navToggle" type="button" aria-label="Abrir menu de navegação" aria-expanded="false" aria-controls="sidebar">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
-        </button>
-        <div class="topbar-titles">
-            <h1 class="topbar-title">Sistema de Certificados</h1>
-            <p class="topbar-sub">WS Engenharia Consultoria e Treinamentos</p>
-        </div>
-        <div class="topbar-meta">
-            <span class="chip">V4.8</span>
-            <span class="chip chip-quiet">Atecseven Tecnologia LTDA</span>
-        </div>
+    <header class="nome-sistema">
+        Sistema de Certificados WS ENGENHARIA CONSULTORIA E TREINAMENTOS (Versão V4.8 - Atecseven Tecnologia LTDA)
     </header>
     <div class="container">
 
         <div id="secaoEmpresa" class="secao">
-            <h2>
-                <span class="sec-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21h18"/><path d="M5 21V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v16"/><path d="M15 21V9h4a2 2 0 0 1 2 2v10"/></svg></span>
-                <span>Cadastrar Empresa Certificadora<span class="sec-sub">Logo, instrutor, assinaturas e identidade visual do certificado</span></span>
-            </h2>
+            <h2>Cadastrar Empresa Certificadora</h2>
             <div class="card">
+                <p style="color:var(--muted)"></p>
                 <div class="grid">
                     <div class="col-6">
                         <label>Nome da empresa</label>
@@ -1503,10 +570,7 @@ label.secondary:hover { background: var(--surface-2); border-color: #A9B7C8; }
         </div>
 
         <div id="secaoAlunos" class="secao">
-            <h2>
-                <span class="sec-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
-                <span>Cadastro de Alunos<span class="sec-sub">Base de participantes que alimentam a emissão</span></span>
-            </h2>
+            <h2>Cadastro de Alunos</h2>
             <div class="card">
                 <div class="grid">
                     <div class="col-6">
@@ -1539,14 +603,7 @@ label.secondary:hover { background: var(--surface-2); border-color: #A9B7C8; }
                 <div class="actions">
                     <button id="btnSalvarAluno">Salvar aluno</button>
                     <button class="secondary" id="btnLimparAluno">Limpar formulário</button>
-                </div>
-
-                <div class="zona-risco">
-                    <div class="zona-risco-txt">
-                        <strong>Apagar todos os alunos</strong>
-                        <span>Remove a base inteira de alunos. Não é possível desfazer.</span>
-                    </div>
-                    <button class="danger" id="btnApagarTudoAlunos">Apagar Todos Alunos</button>
+                    <button class="danger" id="btnApagarTudoAlunos" style="margin-top:0">Apagar Todos Alunos</button>
                 </div>
 
                 <h3>Alunos cadastrados</h3>
@@ -1580,10 +637,7 @@ label.secondary:hover { background: var(--surface-2); border-color: #A9B7C8; }
         </div>
 
         <div id="secaoCursos" class="secao">
-            <h2>
-                <span class="sec-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 10 12 5 2 10l10 5 10-5Z"/><path d="M6 12.5V17c0 1.7 2.7 3 6 3s6-1.3 6-3v-4.5"/></svg></span>
-                <span>Cadastro de Cursos<span class="sec-sub">Conteúdo, carga horária, validade e programas de cada treinamento</span></span>
-            </h2>
+            <h2>📚 Cadastro de Cursos</h2>
             <div class="card">
                 <div class="grid">
                     <div class="col-12">
@@ -1623,13 +677,7 @@ label.secondary:hover { background: var(--surface-2); border-color: #A9B7C8; }
                 <div class="actions">
                     <button id="btnSalvarCurso">Salvar curso</button>
                     <button class="secondary" id="btnLimparCurso">Limpar formulário</button>
-                </div>
-                <div class="zona-risco">
-                    <div class="zona-risco-txt">
-                        <strong>Apagar todos os cursos</strong>
-                        <span>Remove a base inteira de cursos. Não é possível desfazer.</span>
-                    </div>
-                    <button class="danger" id="btnApagarTudoCursos">Apagar Todos Cursos</button>
+                    <button class="danger" id="btnApagarTudoCursos" style="margin-top:0">Apagar Todos Cursos</button>
                 </div>
                 <h3>Cursos cadastrados</h3>
                 <table class="table" id="tabelaCursos"></table>
@@ -1637,17 +685,7 @@ label.secondary:hover { background: var(--surface-2); border-color: #A9B7C8; }
         </div>
 
         <div id="secaoGeracao" class="secao">
-            <h2>
-                <span class="sec-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7Z"/><path d="M14 2v5h5"/><path d="M9 15.5l2 2 4-4"/></svg></span>
-                <span>Gerar Certificados<span class="sec-sub">Emissão em massa para a turma selecionada</span></span>
-            </h2>
-
-            <ol class="steps">
-                <li class="step"><span class="step-n">1</span><div><strong>Configure a emissão</strong><small>Empresa, obra e filial; marque alunos e cursos</small></div></li>
-                <li class="step"><span class="step-n">2</span><div><strong>Salve os certificados</strong><small>Registra cada emitido no banco de dados</small></div></li>
-                <li class="step"><span class="step-n">3</span><div><strong>Baixe em PDF</strong><small>Ou gere as listas de presença por curso</small></div></li>
-            </ol>
-
+            <h2>Gerar Certificados</h2>
             <div class="card">
                 <h3>Dados Gerais</h3>
                 <div class="grid">
@@ -1678,11 +716,15 @@ label.secondary:hover { background: var(--surface-2); border-color: #A9B7C8; }
                     </div>
                 </div>
                 <label>Selecione alunos</label>
-                <input id="selAlunoBusca" placeholder="Pesquisar aluno por nome ou matrícula">
+                <div style="margin-bottom:6px;">
+                    <input id="selAlunoBusca" placeholder="Pesquisar aluno por nome ou matrícula" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:4px;font-size:14px;">
+                </div>
                 <div id="listaAlunosCheckbox" class="checklist">Nenhum aluno carregado. Selecione a empresa acima.</div>
 
                 <label>Selecione cursos</label>
-                <input id="selCursoBusca" placeholder="Pesquisar curso por nome ou carga">
+                <div style="margin-bottom:6px;">
+                    <input id="selCursoBusca" placeholder="Pesquisar curso por nome ou carga" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:4px;font-size:14px;">
+                </div>
                 <div id="listaCursosCheckbox" class="checklist"></div>
 
                 <h3>Datas do Evento por Curso</h3>
@@ -1690,13 +732,13 @@ label.secondary:hover { background: var(--surface-2); border-color: #A9B7C8; }
                 <div id="courseDatesContainer"></div>
 
                 <div class="actions">
-                    <button id="btnGerar">Gerar e salvar certificados</button>
-                    <button class="secondary" id="btnImprimir">Baixar certificado em PDF</button>
+                    <button id="btnGerar">1. Gerar e salvar certificados</button>
+                    <button class="secondary" id="btnImprimir">2. Baixar Certificado em PDF</button>
                 </div>
                 <div class="actions">
                     <button class="secondary" id="btnCertManual"
                         title="Lança um certificado no sistema com os mesmos dados da geração normal, sem gerar PDF">
-                        Cadastrar Certificado Manualmente
+                        📝 Cadastrar Certificado Manualmente
                     </button>
                 </div>
             </div>
@@ -1714,20 +756,14 @@ label.secondary:hover { background: var(--surface-2); border-color: #A9B7C8; }
         </div>
         
         <div id="secaoGerados" class="secao" style="display:none;">
-            <h2>
-                <span class="sec-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7h18v13H3z"/><path d="M3 7V5a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v2"/><path d="M8.5 12.5l2 2 4.5-4.5"/></svg></span>
-                <span>Certificados Gerados<span class="sec-sub">Visualize, edite e baixe os certificados já salvos</span></span>
-            </h2>
+            <h2>✅ Certificados Gerados</h2>
             <div class="card">
                 <p style="color:var(--muted)">CLIQUE EM "OK" PARA LIBERAR A VISUALIZAÇÃO!</p>
-                <table class="table" id="tabelaCertificadosGerados"></table>
-                <div class="zona-risco">
-                    <div class="zona-risco-txt">
-                        <strong>Apagar todos os certificados gerados</strong>
-                        <span>Remove em massa do banco. Não é possível desfazer.</span>
-                    </div>
-                    <button class="danger" id="btnApagarCertificados">Apagar Todos Certificados Gerados</button>
+                <div class="actions">
+                    <button class="danger" id="btnApagarCertificados" style="margin-top:0">Apagar Todos Certificados Gerados</button>
                 </div>
+                <h3>Lista de Certificados</h3>
+                <table class="table" id="tabelaCertificadosGerados"></table>
             </div>
             
             <h3>Preview de Certificado Individual</h3>
@@ -1737,22 +773,13 @@ label.secondary:hover { background: var(--surface-2); border-color: #A9B7C8; }
         </div>
 
         <div id="secaoBackup" class="secao">
-            <h2>
-                <span class="sec-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v6c0 1.7 3.6 3 8 3s8-1.3 8-3V6"/><path d="M4 12v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></svg></span>
-                <span>Backup de Dados<span class="sec-sub">Exportação, restauração e limpeza do banco local</span></span>
-            </h2>
+            <h2>💾 Backup de Dados</h2>
             <div class="card">
                 <p style="color:var(--muted)">Os dados são salvos no json. Use as opções abaixo para segurança.</p>
                 <div class="actions">
                     <button id="btnExport">Exportar JSON</button>
                     <label class="secondary" for="importFile" style="padding:10px 14px;border-radius:4px;cursor:pointer;font-weight:600;">Importar JSON</label>
                     <input type="file" id="importFile" accept="application/json" style="display:none">
-                </div>
-                <div class="zona-risco">
-                    <div class="zona-risco-txt">
-                        <strong>Apagar TUDO</strong>
-                        <span>Remove todos os dados: empresas, alunos e cursos. Não é possível desfazer.</span>
-                    </div>
                     <button class="danger" id="btnApagarTudo" title="Apaga TODOS os dados (Empresas, Alunos e Cursos)">Apagar TUDO</button>
                 </div>
             </div>
@@ -4408,7 +3435,7 @@ window.salvarCertManual = async () => {
         window.closeModal();
         alert(novos.length + ' certificado(s) cadastrado(s) em ' + cursos.length + ' curso(s), ' +
             'para ' + nAlunos + ' aluno(s).\n\n' +
-            'O PDF não foi gerado. Para gerar depois, abra em "Certificados Gerados" > Ver/Editar > Baixar PDF.');
+            'O PDF não foi gerado. Para gerar depois, abra em "✅ Certificados Gerados" > Ver/Editar > Baixar PDF.');
     } catch (e) {
         console.error('Erro ao cadastrar certificados manualmente:', e);
         alert('Erro ao cadastrar os certificados. Nada foi gravado.');
@@ -4583,7 +3610,7 @@ window.handleIndividualDownload = () => {
 
 function imprimirNativo(){
     if(el("printArea").innerHTML.trim()==="" && el("printAreaGerados").innerHTML.trim()==="") {
-        return alert("Nenhum certificado gerado para impressão. Gere um em 'Gerar Certificados' ou visualize um em 'Certificados Gerados'.");
+        return alert("Nenhum certificado gerado para impressão. Gere um em '✨ Gerar Certificados' ou visualize um em '✅ Certificados Gerados'.");
     }
     alert("Iniciando impressão nativa. Entrar em Contato com suporrte (64) 9 9295-2748'.");
     setTimeout(() => {
@@ -4848,8 +3875,6 @@ function setupNavigation() {
     const sections = document.querySelectorAll('.secao');
 
     const showSection = (targetId) => {
-        // Itens administrativos só abrem para o Arnaldo (ver aplicarNavArnaldo).
-        if ((targetId === 'secaoGerados' || targetId === 'secaoBackup') && !ehArnaldoCert()) return;
         sections.forEach(sec => {
             sec.style.display = 'none';
         });
@@ -4869,48 +3894,13 @@ function setupNavigation() {
     menuLinks.forEach(link => {
         link.addEventListener('click', (e) => {
             e.preventDefault();
-            const targetId = link.getAttribute('href').substring(1);
-            closeNav();
+            const targetId = e.target.closest('a').getAttribute('href').substring(1);
             showSection(targetId);
         });
     });
 
     showSection('secaoEmpresa');
 }
-
-function ehArnaldoCert(){
-    if(usuarioAtualCert) return !!(usuarioAtualCert.mestre && usuarioAtualCert.nome === 'Arnaldo');
-    return (sessionStorage.getItem('ws_user_nome') || '') === 'Arnaldo';
-}
-
-function aplicarNavArnaldo(){
-    const ehArnaldo = ehArnaldoCert();
-    ['nav-secao-gerados', 'nav-grupo-sistema', 'nav-secao-backup'].forEach(id => {
-        const n = document.getElementById(id);
-        if (n) n.style.display = ehArnaldo ? '' : 'none';
-    });
-}
-
-function closeNav() {
-    document.body.classList.remove('nav-open');
-    const toggle = document.getElementById('navToggle');
-    if (toggle) toggle.setAttribute('aria-expanded', 'false');
-}
-
-window.setupMobileNav = () => {
-    const toggle = document.getElementById('navToggle');
-    const scrim = document.getElementById('navScrim');
-    if (!toggle) return;
-
-    const openNav = () => {
-        document.body.classList.add('nav-open');
-        toggle.setAttribute('aria-expanded', 'true');
-    };
-
-    toggle.addEventListener('click', openNav);
-    if (scrim) scrim.addEventListener('click', closeNav);
-    window.closeNav = closeNav;
-};
 
 window.buildPage1 = ({aluno, curso, empresa, dataInicioBR, dataFimBR, dataFim, expiracao}) => {
     const mensagem = buildMensagemCurso(curso, aluno, dataInicioBR, dataFimBR, empresa);
@@ -5197,8 +4187,6 @@ window.addEventListener('DOMContentLoaded', async () => {
     window.renderCertificadosGerados = renderCertificadosGerados; 
 
     setupNavigation();
-    aplicarNavArnaldo();
-    setupMobileNav();
 
     el("selEmpresa").addEventListener('change', () => { popSelLocCert(); renderAlunosCheckboxForGeracao(); });
     el("selObra").addEventListener('change', renderAlunosCheckboxForGeracao);
