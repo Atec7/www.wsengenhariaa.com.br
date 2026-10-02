@@ -319,7 +319,7 @@ function massLogHistory(resumo,qtd,empresaId,treino,dataFmt){
       treino:treino||'',
       dataDoc:dataFmt||'',
       ...massGerador()
-    });
+    }).catch(e=>console.error('Falha ao gravar histórico:',e));
   }catch(e){console.warn('massLogHistory:',e);}
 }
 

@@ -624,7 +624,7 @@ function coringaLogHistory(nome,dadosExtras={}){
     let id='';
     try{id=sessionStorage.getItem('ws_user_id')||'';}catch(_){}
     const data=new Date().toLocaleDateString('pt-BR',{hour:'2-digit',minute:'2-digit'});
-    WS_DATA.push('historico',{nome,data,ts:Date.now(),...dadosExtras,usuarioId:id});
+    WS_DATA.push('historico',{nome,data,ts:Date.now(),...dadosExtras,usuarioId:id}).catch(e=>console.error('Falha ao gravar histórico:',e));
   }catch(e){console.warn('coringaLogHistory:',e);}
 }
 

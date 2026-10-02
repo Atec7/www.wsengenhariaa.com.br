@@ -1086,32 +1086,16 @@ let CART=[],SEL_TEXTS=[],CARGO_EPI_CART=[];
 let PENDING_CAT_SEL=null;
 let _replaceHistoryKey=null;
 let certCacheNode={};
+let ALUNOS_NODE={};
 let COL_DOCS_MAP={};
 
 // ── INIT ────────────────────────────────────────────────────────
 function refreshNode(p){
   return WS_DATA.refreshNode(p);
 }
-function _funcUpsert(k,updates){
-  const prev=DATA.funcionarios[k];
-  if(prev){
-    const keys=['nome','cpf','empresaId','funcao','matricula','filialId','obraId','cidadeId'];
-    const same=keys.every(key=>(prev[key]||'')===(updates[key]||''));
-    if(same)return Promise.resolve();
-    return db.ref('funcionarios/'+k).update(updates).then(()=>{
-      Object.assign(DATA.funcionarios[k],updates);
-      return WS_DATA.advanceLocalMeta('funcionarios');
-    }).catch(()=>{});
-  }
-  return db.ref('funcionarios/'+k).set(Object.assign({id:k,cbo:'',setor:'',dataAdm:''},updates)).then(()=>{
-    const rec=Object.assign(prev||{id:k,cbo:'',setor:'',dataAdm:''},updates);
-    DATA.funcionarios[k]=rec;
-    return WS_DATA.advanceLocalMeta('funcionarios');
-  }).catch(()=>{});
-}
 function initListeners(){
   WS_DATA.useDb(db,{timestamp:firebase.database.ServerValue.TIMESTAMP});
-  WS_DATA.init({
+  const _syncInicial=WS_DATA.init({
     entries:[
       {path:'empresas',target:DATA,key:'empresas'},
       {path:'funcionarios',target:DATA,key:'funcionarios'},
@@ -1125,6 +1109,8 @@ function initListeners(){
       {path:'cidades',target:DATA,key:'cidades'},
       {path:'filiais',target:DATA,key:'filiais'},
       {path:'usuarios',target:DATA,key:'usuarios'},
+      // 'alunos' entra no cache (baixa só quando muda) para o espelho abaixo.
+      {path:'alunos',target:ALUNOS_NODE,key:null},
       // 'aprovacoes' saiu do sync: a fila de autorizacao foi desativada e nada
       // le mais esse node. Os dados antigos continuam no banco, apenas param de
       // ser baixados por todos os clients a cada sincronizacao.
@@ -1139,7 +1125,6 @@ function initListeners(){
     ],
     onUpdated:function(){ if(window.renderAll)renderAll(); }
   });
-  const _syncAlunos=new Set();
   // Registros quebrados deixados por versões antigas: sem nome e sem CPF. Não
   // são pessoas, só linhas "Sem vínculo completo / ? · —" na lista.
   const _semNome=f=>!!f&&!String(f.nome||'').trim()&&!String(f.cpf||'').trim();
@@ -1204,71 +1189,36 @@ function initListeners(){
       WS_DATA.refreshNode('funcionarios').then(()=>{if(window.renderAll)renderAll();});
     }catch(e){spin(false);alert('Erro ao restaurar: '+e.message);}
   };
-  db.ref('alunos').once('value').then(snap=>{
-    const raw=snap.val()||{};
-    Object.entries(raw).forEach(([k,v])=>{
-      if(!v||_syncAlunos.has(k))return;
-      // Registro sem nome e sem CPF não é colaborador: espelhar isso para
-      // 'funcionarios' era o que encheva a tela de linhas "Sem vínculo completo".
-      if(!v.nome&&!v.cpf)return;
-      _syncAlunos.add(k);
-      const updates={
-        id:k,
-        nome:v.nome||'',
-        cpf:v.cpf||'',
-        empresaId:v.empresaVinculoId||'',
-        funcao:v.matricula||'',
-        matricula:(v.matriculaNumero||v.matricula||''),
-        filialId:v.filialId||'',
-        obraId:v.obraId||'',
-        cidadeId:v.cidadeId||''
-      };
-      _funcUpsert(k,updates);
+  // ANTES: a cada abertura da página eram baixados 'alunos' (2x) e
+  // 'funcionarios' inteiros, direto do banco, e cada colaborador era
+  // regravado a partir de 'alunos' — com o campo `funcao` (cargo) recebendo a
+  // MATRÍCULA. Era isso que fazia o cargo editado "não salvar", o colaborador
+  // excluído voltar, e cada abertura custar centenas de KB.
+  // AGORA: usa o cache do WS_DATA e só CRIA o colaborador que existe em
+  // 'alunos' (cadastrado na tela de certificados) e falta em 'funcionarios'.
+  // A transação aborta se o registro já existir no servidor: nunca sobrescreve.
+  _syncInicial.then(()=>{
+    const funcs=DATA.funcionarios||{};
+    if(!Object.keys(funcs).length)return; // sync falhou/offline: não arrisca
+    const faltam=Object.keys(ALUNOS_NODE).filter(k=>{
+      const v=ALUNOS_NODE[k];
+      return v&&!funcs[k]&&(String(v.nome||'').trim()||String(v.cpf||'').trim());
     });
-  });
-  // Cura colaborador que ficou sem espelho em 'alunos' (a tela de certificados
-  // usa o espelho, então a falta dele some o aluno dali).
-  db.ref('funcionarios').once('value').then(snap=>{
-    const raw=snap.val()||{};
-    const alvos={};
-    Object.entries(raw).forEach(([k,v])=>{
-      if(!v||alvos[k])return;
-      if(!v.nome&&!v.cpf)return;
-      alvos[`alunos/${k}`]={
-        nome:v.nome||'',
-        cpf:v.cpf||'',
-        matricula:v.matricula||'',
-        matriculaNumero:v.matriculaNumero||v.matricula||'',
-        empresaVinculoId:v.empresaId||'',
-        filialId:v.filialId||'',
-        obraId:v.obraId||'',
-        cidadeId:v.cidadeId||''
-      };
+    if(!faltam.length)return;
+    return Promise.all(faltam.map(k=>{
+      const v=ALUNOS_NODE[k];
+      const rec={id:k,nome:v.nome||'',cpf:v.cpf||'',empresaId:v.empresaVinculoId||'',funcao:'',
+        matricula:(v.matriculaNumero||v.matricula||''),filialId:v.filialId||'',obraId:v.obraId||'',
+        cidadeId:v.cidadeId||'',cbo:'',setor:'',dataAdm:''};
+      return db.ref('funcionarios/'+k).transaction(cur=>cur===null?rec:undefined)
+        .then(r=>r&&r.committed).catch(()=>false);
+    })).then(res=>{
+      if(!res.some(Boolean))return;
+      return WS_DATA.advanceLocalMeta('funcionarios')
+        .then(()=>WS_DATA.refreshNode('funcionarios'))
+        .then(()=>{if(window.renderAll)renderAll();});
     });
-    const chaves=Object.keys(alvos);
-    if(!chaves.length)return;
-    db.ref('alunos').once('value').then(asnap=>{
-      const existentes=asnap.val()||{};
-      const updates={};
-      chaves.forEach(p=>{
-        const id=p.split('/')[1];
-        const atual=existentes[id];
-        // Só preenche o que falta: não sobrescreve dado editado na tela de alunos.
-        const falta={};
-        Object.keys(alvos[p]).forEach(c=>{
-          const novo=alvos[p][c];
-          if((atual&&atual[c]!==undefined&&String(atual[c]).trim()!=='')||!novo)return;
-          falta[c]=novo;
-        });
-        if(Object.keys(falta).length)updates[p]=falta;
-      });
-      if(!Object.keys(updates).length)return;
-      return db.ref().update(updates).then(()=>{
-        console.info('Espelho de colaboradoresRepair: registros completados em alunos.',Object.keys(updates).length);
-        if(window.renderAll)renderAll();
-      });
-    }).catch(()=>{});
-  }).catch(()=>{});
+  }).catch(e=>console.warn('Espelho alunos->colaboradores:',e));
   const sc=localStorage.getItem('epi_cart_memory');
   if(sc){try{CART=JSON.parse(sc);}catch(e){}}
   const to=localStorage.getItem('orc_intro_padrao');
@@ -1307,7 +1257,9 @@ function certsDoCurso(cursoId){
   const q=alvo.orderByChild('curso/id').equalTo(cursoId);
   return q.once('value').then(snap=>{
     const out={};
-    snap.forEach(c=>{if(c&&c.id)out[c.id]=c;});
+    // snap.forEach entrega DataSnapshot (tem .key, não .id): o teste antigo
+    // `c.id` era sempre falso e a lista do detalhe vinha sempre vazia.
+    snap.forEach(c=>{const v=c.val();if(v)out[c.key]=Object.assign({id:c.key},v);});
     // medicao do que esta consulta custou (so leitura, nada e gravado)
     let bytes=0;try{bytes=JSON.stringify(out).length;}catch(e){}
     const st=WS_DATA.stats();
@@ -2448,8 +2400,13 @@ function renderHistory(){
 function logHistory(nome, dadosExtras={}){
   const data=new Date().toLocaleDateString('pt-BR',{hour:'2-digit',minute:'2-digit'});
   const rec={nome,data,ts:Date.now(),...dadosExtras,...dadosGerador()};
-  WS_DATA.push('historico',rec);
-  if(_replaceHistoryKey){WS_DATA.remove('historico',_replaceHistoryKey);_replaceHistoryKey=null;}
+  // O registro antigo só sai depois que o novo foi confirmado pelo servidor;
+  // antes os dois iam juntos e uma falha na gravação perdia o histórico.
+  const _subst=_replaceHistoryKey;_replaceHistoryKey=null;
+  WS_DATA.push('historico',rec).then(()=>{
+    if(_subst)return WS_DATA.remove('historico',_subst);
+  }).then(()=>{if(typeof renderHistory==='function')renderHistory();})
+    .catch(e=>{console.error('Falha ao gravar histórico:',e);alert('Não foi possível salvar no histórico: '+(e&&e.message?e.message:e));});
 }
 // Grava apenas o id do gerador: o nome e resolvido na renderizacao pelo no
 // 'usuarios', que ja e sincronizado. Isso evita duplicar o nome em cada
@@ -3401,7 +3358,7 @@ function btnsEnt(telaId,path,kind,rec){if(!usuarioPodeExcluir(telaId))return'';c
 function btCat(col,rid){if(!usuarioPodeExcluir('catalogos'))return'';return `<button class="btn bd2" onclick="delCat('${col}','${rid}')"><i class="fa-solid fa-trash"></i></button>`;}
 function btHistDel(key,label,sm){if(!podeExcluirHist())return'';const st=sm?'padding:3px 6px;font-size:10px;':'';return `<button class="btn bd2" style="margin-left:6px;${st}" onclick="deleteHistoryItem('${key}')"><i class="fa-solid fa-trash"></i> ${esc(label||'Excluir')}</button>`;}
 const TELA_DEL_PATH={empresas:'emps',funcionarios:'funcs',cargos:'cargos',pessoas:'pessoas',textos:'texts',materiais:'epi'};
-function del(path,id){const tela=TELA_DEL_PATH[path];if(tela&&!usuarioPodeExcluir(tela)){alert('Voc\u00ea n\u00e3o tem permiss\u00e3o para excluir.');return;}if(!confirm('Confirma a exclus\u00e3o?'))return;WS_DATA.remove(path,id).then(()=>{if(path==='funcionarios'){return WS_DATA.remove('alunos',id).catch(()=>{});}}).then(()=>{if(window.renderAll)renderAll();}).catch(e=>alert('Erro: '+e.message));}
+function del(path,id){const tela=TELA_DEL_PATH[path];if(tela&&!usuarioPodeExcluir(tela)){alert('Voc\u00ea n\u00e3o tem permiss\u00e3o para excluir.');return;}if(!confirm('Confirma a exclus\u00e3o?'))return;WS_DATA.remove(path,id).then(()=>{if(path==='funcionarios'){/* o espelho em 'alunos' precisa sair junto, senão o colaborador reaparece na tela de certificados */return WS_DATA.remove('alunos',id).catch(e=>{alert('Colaborador excluído, mas não foi possível removê-lo de "alunos" (certificados). Tente excluir de novo.\n\n'+(e&&e.message?e.message:e));});}}).then(()=>{if(window.renderAll)renderAll();}).catch(e=>alert('Erro ao excluir: '+e.message));}
 function getFormData(t){
   if(t==='empresa')return{id:v('eid'),nome:v('i-e-nm'),cnpj:v('i-e-cj'),endereco:v('i-e-ender'),obras:getChecked('eCatObraChk'),cidades:getChecked('eCatCidadeChk'),filiais:getChecked('eCatFilialChk'),logoUrl:v('i-e-lid')};
   if(t==='funcionario'){

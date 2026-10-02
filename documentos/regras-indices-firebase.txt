@@ -1,0 +1,25 @@
+COMO APLICAR (2 minutos)
+Firebase Console -> Realtime Database -> aba "Regras".
+
+Dentro de "rules", ACRESCENTE as 2 linhas abaixo, mantendo o que já existe
+(".read", ".write" e qualquer outra regra que você já tenha):
+
+    "historico":           { ".indexOn": ["ts"] },
+    "certificadosGerados": { ".indexOn": ["ts", "curso/id"] },
+
+Exemplo completo, SE hoje suas regras forem só leitura/escrita liberadas:
+
+{
+  "rules": {
+    ".read": true,
+    ".write": true,
+    "historico":           { ".indexOn": ["ts"] },
+    "certificadosGerados": { ".indexOn": ["ts", "curso/id"] }
+  }
+}
+
+Clique em "Publicar".
+
+Por quê: sem índice, toda consulta "só os certificados novos" ou "só os
+certificados deste curso" faz o Firebase mandar o nó INTEIRO para o navegador
+filtrar. Hoje o banco responde "Index not defined" para essas consultas.

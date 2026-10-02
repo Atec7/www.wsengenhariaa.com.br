@@ -147,14 +147,19 @@
     return PERSIST_P;
   }
 
+  var DB_URL = null;               // usado só para listar chaves (shallow)
+
   function useDb(compatDb, opts) {
     enablePersistencia(compatDb);
+    try { DB_URL = compatDb.app.options.databaseURL || null; } catch (e) { DB_URL = null; }
     return useAdapter({
       once: function (p) { return compatDb.ref(p).once('value'); },
       set: function (p, v) { return compatDb.ref(p).set(v); },
       update: function (p, v) { return compatDb.ref(p).update(v); },
       remove: function (p) { return compatDb.ref(p).remove(); },
-      push: function (p, v) { var r = compatDb.ref(p).push(v); return { key: r.key }; },
+      // Devolve a promessa da gravação junto com a chave: antes ela era
+      // descartada e uma gravação negada aparecia na tela como salva.
+      push: function (p, v) { var r = compatDb.ref(p).push(v); return { key: r.key, done: r }; },
       orderBy: function (p, child, start, limit) {
         var q = compatDb.ref(p).orderByChild(child).startAt(start);
         if (limit) { q = q.limitToLast(limit); }
@@ -169,6 +174,28 @@
   function refOf(p) { return p; }
 
   /* ── meta ── */
+  // Leitura pura do carimbo. As funções de download usavam bump() (que GRAVA o
+  // _meta) só para descobrir o valor: cada leitura virava escrita, as outras
+  // abas viam o _meta mudar, baixavam o nó inteiro e gravavam de novo — um
+  // pingue-pongue entre aparelhos que era a maior parte do consumo diário.
+  function readMeta(node) {
+    if (!DB) { return Promise.resolve(null); }
+    return DB.once('_meta/' + node).then(function (snap) { return snap.val(); })
+      .catch(function () { return null; });
+  }
+  // Só as chaves do nó (sem os dados), para saber o que foi excluído em outro
+  // aparelho. O pull incremental só enxerga registros novos.
+  function shallowKeys(path) {
+    if (!DB_URL || typeof fetch !== 'function') { return Promise.resolve(null); }
+    var url = DB_URL.replace(/\/+$/, '') + '/' + path + '.json?shallow=true';
+    return fetch(url).then(function (r) {
+      if (!r.ok) { throw new Error('http ' + r.status); }
+      return r.json();
+    }).then(function (j) {
+      statDown(path + ':chaves', approxBytes(j), false);
+      return j || {};
+    }).catch(function () { return null; });
+  }
   function bump(node) {
     if (!DB) { return Promise.resolve(null); }
     return DB.set('_meta/' + node, TS).then(function () {
@@ -213,15 +240,21 @@
   /* ── pull único (nó inteiro) ── */
   function pullFull(path, entry) {
     var map = slotOf(entry);
-    return DB.once(path).then(function (snap) {
+    var metaTs = null;
+    // O carimbo é lido ANTES dos dados: uma gravação que chegue no meio fica
+    // com carimbo maior e é baixada no próximo sync, em vez de se perder.
+    return readMeta(path).then(function (m) {
+      metaTs = m;
+      return DB.once(path);
+    }).then(function (snap) {
       var norm = fromSnapshot(snap);
       statDown(path, approxBytes(norm), true);
       Object.keys(map).forEach(function (k) { delete map[k]; });
       Object.keys(norm).forEach(function (k) { map[k] = norm[k]; });
-      return bump(path).then(function (metaTs) {
+      return Promise.resolve().then(function () {
         var rec = {
           data: clone(map),
-          metaTs: (metaTs != null) ? metaTs : Date.now(),
+          metaTs: (metaTs != null) ? metaTs : 0,
           savedAt: Date.now(),
           tsKey: entry.tsKey || null,
           tsValue: maxTs(map, (entry.tsKey || null))
@@ -233,16 +266,21 @@
   }
 
   /* ── pull incremental (só registros novos) ── */
-  function pullInc(path, entry) {
+  function pullInc(path, entry, reconciliar) {
     var map = slotOf(entry);
     var tsKey = entry.tsKey;
-    return getCache(path).then(function (cache) {
+    var metaLido = null;
+    return readMeta(path).then(function (m) {
+      metaLido = m;
+      return getCache(path);
+    }).then(function (cache) {
       // Cache gravado com outra tsKey, ou com ts em texto (a antiga
       // dataGeracao), não serve de ponto de partida: startAt() com string num
       // índice numérico volta vazio para sempre, e o resgate por pullFull já
       // foi desligado. Nesses casos é melhor pagar um nó inteiro uma vez e
       // reescrever o cache no formato certo.
       if (cache && cache.tsKey && cache.tsKey !== tsKey) { cache = null; }
+      if (cacheInvalido(entry, cache)) { cache = null; }
       if (cache && cache.tsValue != null &&
           !(typeof cache.tsValue === 'number' && isFinite(cache.tsValue))) { cache = null; }
       if (!cache || !cache.data) { return pullFull(path, entry); }
@@ -254,25 +292,39 @@
       return DB.orderBy(path, tsKey, from, 2000).then(function (snap) {
         var norm = fromSnapshot(snap);
         var n = Object.keys(norm).length;
-        // Nada novo é o caso NORMAL, não um sinal de cache quebrado.
-        // Cair em pullFull aqui transformava qualquer registro sem o campo
-        // tsKey em download do nó inteiro, repetidamente.
-        if (n === 0) {
-          if (cache) { cache.savedAt = Date.now(); putCache(path, cache); }
-          return { downloaded: false, vazio: true };
+        if (n > 0) {
+          statDown(path, approxBytes(norm), false);
+          STATS.nPullInc++;
+          Object.keys(norm).forEach(function (k) {
+            if (map[k] === undefined || map[k] === null ||
+                (map[k] && norm[k] && (map[k][tsKey] === undefined || norm[k][tsKey] >= map[k][tsKey]))) {
+              map[k] = norm[k];
+            }
+          });
         }
-        statDown(path, approxBytes(norm), false);
-        STATS.nPullInc++;
-        Object.keys(norm).forEach(function (k) {
-          if (map[k] === undefined || map[k] === null ||
-              (map[k] && norm[k] && (map[k][tsKey] === undefined || norm[k][tsKey] >= map[k][tsKey]))) {
-            map[k] = norm[k];
+        // Exclusões feitas em outro aparelho: o incremental nunca as via e o
+        // registro apagado continuava na tela para sempre. Só acontece quando
+        // o _meta mudou, e baixa apenas as chaves.
+        var rec0 = reconciliar ? shallowKeys(path) : Promise.resolve(null);
+        return rec0.then(function (chaves) {
+          var removidos = 0;
+          if (chaves && typeof chaves === 'object') {
+            Object.keys(map).forEach(function (k) {
+              if (!Object.prototype.hasOwnProperty.call(chaves, k)) { delete map[k]; removidos++; }
+            });
           }
-        });
-        return bump(path).then(function (metaTs) {
+          // Nada novo é o caso NORMAL, não um sinal de cache quebrado.
+          if (n === 0 && removidos === 0) {
+            if (cache) {
+              cache.savedAt = Date.now();
+              if (metaLido != null && metaLido > (cache.metaTs || 0)) { cache.metaTs = metaLido; }
+              putCache(path, cache);
+            }
+            return { downloaded: false, vazio: true };
+          }
           var rec = {
             data: clone(map),
-            metaTs: (metaTs != null) ? metaTs : (cache ? cache.metaTs : Date.now()),
+            metaTs: (metaLido != null) ? metaLido : (cache ? cache.metaTs : 0),
             savedAt: Date.now(),
             tsKey: tsKey || null,
             tsValue: maxTs(map, tsKey)
@@ -294,9 +346,14 @@
      nada mudou. Sem isso, o botão respondia "Tudo em dia" e o colaborador
      recém-cadastrado nunca aparecia — a atualização depende do carimbo _meta,
      que falha quando a gravação é negada ou feita fora do WS_DATA. */
+  function cacheInvalido(entry, cache) {
+    if (!entry || !entry.invalidar || !cache || !cache.data) { return false; }
+    try { return !!entry.invalidar(cache.data); } catch (e) { return false; }
+  }
   function syncNode(path, entry, manual, forcar) {
     var map = slotOf(entry);
     return getCache(path).then(function (cache) {
+      if (cacheInvalido(entry, cache)) { delCache(path); cache = null; }
       if (cache && cache.data) {
         var cdata = cache.data;
         Object.keys(map).forEach(function (k) { delete map[k]; });
@@ -306,7 +363,7 @@
         return {
           shouldPull: true,
           pull: function () {
-            return (entry.tsKey ? pullInc(path, entry) : pullFull(path, entry));
+            return (entry.tsKey ? pullInc(path, entry, true) : pullFull(path, entry));
           }
         };
       }
@@ -331,7 +388,7 @@
         // está lido e pode ser adiantado no cache local. Sem isso, todo refresh
         // seguinte repetiria a consulta porque _meta continuaria "acima" do cache.
         var pull = function () {
-          return pullInc(path, entry).then(function (r) {
+          return pullInc(path, entry, true).then(function (r) {
             if (r && r.vazio && meta != null) {
               return getCache(path).then(function (c) {
                 if (c && meta > (c.metaTs || 0)) {
@@ -355,13 +412,50 @@
     useDb: useDb,
     useAdapter: useAdapter,
     bump: bump,
+    /* Chamado depois de gravações feitas DIRETO no db (fora do WS_DATA), cujo
+       conteúdo não está na memória. Antes, esta função marcava o cache local
+       como "em dia" sem ter o dado novo: ao reabrir a página, o registro
+       editado voltava ao valor antigo e o excluído reaparecia. Agora ela só
+       carimba o servidor e deixa o cache vencido, para o próximo sync baixar. */
     advanceLocalMeta: function (node) {
-      return getCache(node).then(function (c) {
-        return bump(node).then(function (ts) {
-          if (c && ts != null) { c.metaTs = ts; c.savedAt = Date.now(); putCache(node, c); }
+      return bump(node).then(function (ts) {
+        return getCache(node).then(function (c) {
+          if (c) { c.savedAt = 0; putCache(node, c); }
           return ts;
-        }).catch(function () { return null; });
-      });
+        });
+      }).catch(function () { return null; });
+    },
+    /* Depois de gravar pelo WS_DATA: a memória já tem a mudança, então ela vai
+       para o cache em disco. O carimbo local só avança se o cache estava em dia
+       antes desta gravação; senão o próximo sync ainda baixa o que os outros
+       gravaram nesse meio-tempo. */
+    _commitLocal: function (node) {
+      var entry = REG[node];
+      return readMeta(node).then(function (antes) {
+        return getCache(node).then(function (c) {
+          return bump(node).then(function (ts) {
+            if (!c) { return ts; }
+            if (entry && c.data) {
+              var map = slotOf(entry);
+              var emDia = (antes == null) || (antes <= (c.metaTs || 0));
+              c.data = clone(map);
+              if (emDia && ts != null) {
+                c.metaTs = ts;
+                if (entry.tsKey) { c.tsValue = maxTs(map, entry.tsKey); }
+                c.savedAt = Date.now();
+              } else {
+                c.savedAt = 0;
+              }
+            } else {
+              // nó não registrado nesta página: o cache (de outra página do
+              // mesmo navegador) não tem a mudança; deixa vencido.
+              c.savedAt = 0;
+            }
+            putCache(node, c);
+            return ts;
+          });
+        });
+      }).catch(function () { return null; });
     },
 
     register: function (entries) {
@@ -372,7 +466,10 @@
           // 'sobDemanda' marca nos que nao devem entrar no sync automatico.
           // Sao nos grandes que so interessam em telas especificas: o cliente
           // baixa o que precisa na hora em que precisa, e nao a cada abertura.
-          sobDemanda: !!e.sobDemanda
+          sobDemanda: !!e.sobDemanda,
+          // invalidar(cache) -> true descarta o cache em disco deste nó (ex.: o
+          // formato dos dados mudou no servidor e o cache antigo é pesado).
+          invalidar: (typeof e.invalidar === 'function') ? e.invalidar : null
         };
       });
     },
@@ -388,7 +485,9 @@
         }).catch(function () {});
       });
       setTimeout(function () { self.afterSync(); if (ONUPD) { ONUPD(); } }, 80);
-      Promise.all(done).then(function () {
+      // Devolve uma promessa que resolve quando o sync inicial com o servidor
+      // terminou (quem precisa de dado atual, e não do cache, espera por ela).
+      return Promise.all(done).then(function () {
         if (!pulls.length) { self.afterSync(); if (ONUPD) { ONUPD(); } return; }
         return Promise.all(pulls).then(function () {
           self.afterSync();
@@ -462,14 +561,23 @@
       var lista = (Array.isArray(paths) ? paths : []).filter(function (p) { return !!REG[p]; });
       if (!lista.length) { return function () {}; }
       var intervalo = ms || 20000;
-      var forcaEm = forcarACada || 6;
+      // A "rede de segurança" que baixava os nós inteiros a cada N ciclos
+      // (com 20 s e N=6: a cada 2 minutos, em cada aba aberta, o dia todo)
+      // foi desligada por padrão. Com o _meta só sendo gravado em escritas
+      // reais, ler o carimbo é suficiente.
+      var forcaEm = forcarACada || 0;
       var parados = 0;
       var parar = false;
       var timer = null;
       function ciclo() {
         if (parar) { return; }
+        // aba em segundo plano não consulta nada
+        if (typeof document !== 'undefined' && document.hidden) {
+          timer = setTimeout(ciclo, intervalo);
+          return;
+        }
         parados++;
-        var forcar = parados >= forcaEm;
+        var forcar = forcaEm > 0 && parados >= forcaEm;
         Promise.all(lista.map(function (p) {
           return getCache(p).then(function (c) {
             return DB.once('_meta/' + p).then(function (snap) {
@@ -506,7 +614,7 @@
       statUp(node, approxBytes(v));
       return DB.set(p, v).then(function () {
         if (entry) { var map = slotOf(entry); map[key] = v; }
-        return self.advanceLocalMeta(node);
+        return self._commitLocal(node);
       });
     },
     remove: function (node, key) {
@@ -515,7 +623,7 @@
       statUp(node, approxBytes(key));
       return DB.remove(node + '/' + key).then(function () {
         if (entry) { var map = slotOf(entry); delete map[key]; }
-        return self.advanceLocalMeta(node);
+        return self._commitLocal(node);
       });
     },
     update: function (node, key, patch) {
@@ -523,12 +631,16 @@
       var entry = REG[node];
       statUp(node, approxBytes(patch));
       return DB.update(node + '/' + key, patch).then(function () {
+        var completo = false;
         if (entry && patch && typeof patch === 'object') {
           var map = slotOf(entry);
-          var prev = map[key] && typeof map[key] === 'object' ? map[key] : {};
+          completo = !!(map[key] && typeof map[key] === 'object');
+          var prev = completo ? map[key] : {};
           map[key] = Object.assign({}, prev, patch);
         }
-        return self.advanceLocalMeta(node);
+        // Sem o registro inteiro na memória, o cache ficaria só com o patch:
+        // nesse caso deixa o próximo sync baixar o registro completo.
+        return completo ? self._commitLocal(node) : self.advanceLocalMeta(node);
       });
     },
     removeAll: function (node) {
@@ -537,7 +649,7 @@
       return DB.remove(node).then(function () {
         if (entry) { var map = slotOf(entry); Object.keys(map).forEach(function (k) { delete map[k]; }); }
         delCache(node);
-        return self.advanceLocalMeta(node);
+        return self.bump(node);
       });
     },
     push: function (node, val) {
@@ -547,8 +659,36 @@
       var key = r && r.key ? r.key : null;
       var v = normalizeVal((val && typeof val === 'object') ? Object.assign({}, val) : val, key);
       statUp(node, approxBytes(v));
-      if (entry && key) { var map = slotOf(entry); map[key] = v; }
-      return self.advanceLocalMeta(node).then(function () { return key; });
+      // Espera o servidor confirmar: antes o registro entrava na tela mesmo
+      // quando a gravação era negada, e sumia ao recarregar.
+      var feito = (r && r.done && typeof r.done.then === 'function') ? r.done : Promise.resolve();
+      return Promise.resolve(feito).then(function () {
+        if (entry && key) { var map = slotOf(entry); map[key] = v; }
+        return self._commitLocal(node);
+      }).then(function () { return key; });
+    },
+
+    /* ── conteúdo imutável (ex.: imagem guardada pelo hash) ──
+       Baixa uma vez por aparelho e guarda para sempre no IndexedDB: o mesmo
+       hash nunca muda de conteúdo, então não há o que sincronizar. Não usa o
+       localStorage (imagens estourariam a cota e quebrariam os outros caches). */
+    _imut: {},
+    imutavel: function (path) {
+      var self = this;
+      if (self._imut[path] !== undefined) { return Promise.resolve(self._imut[path]); }
+      var chave = 'imut:' + path;
+      return idbGet(chave).catch(function () { return null; }).then(function (r) {
+        if (r && r.v !== undefined) { self._imut[path] = r.v; return r.v; }
+        return DB.once(path).then(function (snap) {
+          var v = snap.val();
+          statDown('imut', approxBytes(v), false);
+          if (v != null) {
+            self._imut[path] = v;
+            idbPut(chave, { v: v, savedAt: Date.now() }).catch(function () {});
+          }
+          return v;
+        });
+      });
     },
 
     /* ── medição de tráfego (nada é gravado no banco por aqui) ── */

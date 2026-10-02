@@ -3144,24 +3144,6 @@ function empresaDoCert(cert){
     if (!atual) return retrato || {};
     return Object.assign({}, atual, retrato || {});
 }
-// Certificados antigos guardavam as imagens da empresa (logo, assinaturas,
-// fundo) em base64 DENTRO de cada certificado: ~150 MB repetidos no banco. A
-// migração guarda cada imagem uma vez só em 'certImagens/<hash>' e deixa no
-// certificado apenas empresa.imgRefs = {campo: hash}. Aqui as imagens voltam
-// para o certificado antes de imprimir, com o mesmo conteúdo de antes. Cada
-// imagem é baixada uma vez por aparelho e fica no cache para sempre.
-async function resolverImagensCert(cert){
-    if (!cert || !cert.empresa || !cert.empresa.imgRefs) return cert;
-    const refs = cert.empresa.imgRefs;
-    const empresa = Object.assign({}, cert.empresa);
-    delete empresa.imgRefs;
-    await Promise.all(Object.keys(refs).map(async campo => {
-        if (empresa[campo]) return;
-        const img = await WS_DATA.imutavel('certImagens/' + refs[campo]);
-        if (img) empresa[campo] = img;
-    }));
-    return Object.assign({}, cert, { empresa });
-}
 function certProntoParaImprimir(cert){
     if (!cert) return cert;
     const curso = cert.curso || {};
@@ -4760,19 +4742,14 @@ window.viewCertificado = (id) => {
     printArea.innerHTML = actionsHtml;
 
     const certContent = document.createElement('div');
-    certContent.innerHTML = '<div style="padding:20px;opacity:.7">Carregando certificado...</div>';
+    const latestCertData = certProntoParaImprimir(certificadosGeradosData[id]);
+    certContent.innerHTML += window.buildPage1(latestCertData);
+    certContent.innerHTML += window.buildPage2(latestCertData);
     printArea.appendChild(certContent);
-    printArea.style.display = "flex";
-    el('secaoGerados').scrollIntoView({ behavior: 'smooth' });
 
-    resolverImagensCert(certificadosGeradosData[id]).then(c => {
-        if (currentCertificadoId !== id) return; // usuário já abriu outro
-        const latestCertData = certProntoParaImprimir(c);
-        certContent.innerHTML = window.buildPage1(latestCertData) + window.buildPage2(latestCertData);
-    }).catch(e => {
-        console.error('Erro ao carregar imagens do certificado:', e);
-        certContent.innerHTML = '<div style="padding:20px;color:#b91c1c">Erro ao carregar as imagens do certificado. Verifique a conexão e tente de novo.</div>';
-    });
+    printArea.style.display = "flex";
+
+    el('secaoGerados').scrollIntoView({ behavior: 'smooth' });
 };
 
 window.deleteCertificado = (id) => {
@@ -5320,19 +5297,6 @@ window.buildListaPresenca = ({curso, empresa, dataInicioBR, dataFimBR, alunos}) 
 
 window.addEventListener('DOMContentLoaded', async () => {
     await carregarUsuarioCert();
-    // Depois da migração das imagens, o cache antigo deste aparelho ainda tem
-    // os ~150 MB embutidos: descarta e baixa a versão leve (uma vez só).
-    let certMigrado = false;
-    try { certMigrado = !!(await db.ref('_migracoes/certImagens').once('value')).val(); } catch (e) {}
-    const certCacheAntigo = data => {
-        if (!certMigrado) return false;
-        for (const k in data) {
-            const e = data[k] && data[k].empresa;
-            if (!e) continue;
-            for (const f in e) if (typeof e[f] === 'string' && e[f].length > 1000 && e[f].indexOf('data:') === 0) return true;
-        }
-        return false;
-    };
     WS_DATA.init({
         entries: [
             { path: 'empresas', target: empresasData, key: null },
@@ -5342,7 +5306,7 @@ window.addEventListener('DOMContentLoaded', async () => {
             { path: 'obras', target: obrasData, key: null },
             { path: 'cidades', target: cidadesData, key: null },
             { path: 'filiais', target: filiaisData, key: null },
-            { path: 'certificadosGerados', target: certificadosGeradosData, key: null, tsKey: 'ts', invalidar: certCacheAntigo }
+            { path: 'certificadosGerados', target: certificadosGeradosData, key: null, tsKey: 'ts' }
         ],
         onUpdated: function () {
             renderEmpresas(); renderAlunos(); renderCursos(); renderCertificadosGerados();
