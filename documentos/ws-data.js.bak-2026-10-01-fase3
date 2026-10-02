@@ -108,9 +108,8 @@
   }
   function putCache(path, rec) {
     CACHE[path] = rec;
-    var p = idbPut(path, rec).catch(function () {});
+    idbPut(path, rec).catch(function () {});
     try { localStorage.setItem(LS_PREFIX + path, JSON.stringify(rec)); } catch (e) {}
-    return p;   // quem precisa (aviso entre páginas) espera o disco
   }
   function delCache(path) {
     if (CACHE[path]) { delete CACHE[path]; }
@@ -161,12 +160,6 @@
       // Devolve a promessa da gravação junto com a chave: antes ela era
       // descartada e uma gravação negada aparecia na tela como salva.
       push: function (p, v) { var r = compatDb.ref(p).push(v); return { key: r.key, done: r }; },
-      // Escuta em tempo real; devolve a função que para de escutar.
-      on: function (p, cb) {
-        var ref = compatDb.ref(p);
-        var h = ref.on('value', cb, function () {});
-        return function () { ref.off('value', h); };
-      },
       orderBy: function (p, child, start, limit) {
         var q = compatDb.ref(p).orderByChild(child).startAt(start);
         if (limit) { q = q.limitToLast(limit); }
@@ -414,40 +407,6 @@
     });
   }
 
-  /* ── aviso entre páginas do mesmo navegador (index.html e o iframe de
-     certificados, outras abas): quem grava avisa os outros na hora, sem rede.
-     Antes a outra página só descobria o cadastro novo na próxima checagem. */
-  var CANAL = null;
-  try { if (typeof BroadcastChannel === 'function') { CANAL = new BroadcastChannel('ws_data_v1'); } } catch (e) { CANAL = null; }
-  var RENDER_T = null;
-  function avisarTela() {
-    if (!ONUPD) { return; }
-    if (RENDER_T) { clearTimeout(RENDER_T); }
-    RENDER_T = setTimeout(function () { RENDER_T = null; try { ONUPD(); } catch (e) {} }, 60);
-  }
-  function anunciar(msg) {
-    if (!CANAL) { return; }
-    try { CANAL.postMessage(msg); } catch (e) {}
-  }
-  if (CANAL) {
-    CANAL.onmessage = function (ev) {
-      var m = ev && ev.data;
-      if (!m || !m.node || !REG[m.node]) { return; }
-      var map = slotOf(REG[m.node]);
-      if (m.op === 'set') { map[m.key] = m.val; }
-      else if (m.op === 'patch') {
-        var prev = (map[m.key] && typeof map[m.key] === 'object') ? map[m.key] : {};
-        map[m.key] = Object.assign({}, prev, m.val);
-      }
-      else if (m.op === 'del') { delete map[m.key]; }
-      else if (m.op === 'clear') { Object.keys(map).forEach(function (k) { delete map[k]; }); }
-      // a memória desta página esquece o cache: o próximo acesso relê o disco,
-      // que quem gravou já atualizou.
-      delete CACHE[m.node];
-      avisarTela();
-    };
-  }
-
   /* ── API pública ── */
   window.WS_DATA = {
     useDb: useDb,
@@ -492,7 +451,8 @@
               // mesmo navegador) não tem a mudança; deixa vencido.
               c.savedAt = 0;
             }
-            return putCache(node, c).then(function () { return ts; });
+            putCache(node, c);
+            return ts;
           });
         });
       }).catch(function () { return null; });
@@ -600,55 +560,18 @@
     watchPaths: function (paths, ms, onChange, forcarACada) {
       var lista = (Array.isArray(paths) ? paths : []).filter(function (p) { return !!REG[p]; });
       if (!lista.length) { return function () {}; }
-      function avisar(mudou) {
-        if (!mudou.length) { return; }
-        if (ONUPD) { ONUPD(); }
-        if (typeof onChange === 'function') { try { onChange(mudou); } catch (e) {} }
-      }
-      // Baixa o nó só se o carimbo do servidor passou o do cache. Quando a
-      // gravação foi feita neste mesmo navegador, o aviso entre páginas já
-      // atualizou a tela e o cache em disco: aqui não baixa nada.
-      function checar(p, meta) {
-        return getCache(p).then(function (c) {
-          if (!meta || (c && meta <= (c.metaTs || 0))) { return null; }
-          return syncNode(p, REG[p], true, false).then(function (r) {
-            if (r.shouldPull) { return r.pull().then(function () { return p; }); }
-            return null;
-          });
-        }).catch(function () { return null; });
-      }
-
-      // TEMPO REAL: o servidor avisa no instante em que o _meta muda (poucos
-      // bytes). Antes a página perguntava a cada 30 s, e o colaborador novo
-      // levava até 30 s para aparecer em certificados.
-      if (DB && typeof DB.on === 'function') {
-        var timers = {};
-        var offs = lista.map(function (p) {
-          return DB.on('_meta/' + p, function (snap) {
-            var meta = snap && snap.val ? snap.val() : null;
-            // pequena espera: dá tempo de o aviso entre páginas (mesmo
-            // navegador) chegar e evitar um download desnecessário.
-            if (timers[p]) { clearTimeout(timers[p]); }
-            timers[p] = setTimeout(function () {
-              timers[p] = null;
-              checar(p, meta).then(function (x) { avisar(x ? [x] : []); });
-            }, 400);
-          });
-        });
-        return function () {
-          offs.forEach(function (f) { try { f(); } catch (e) {} });
-          Object.keys(timers).forEach(function (k) { if (timers[k]) { clearTimeout(timers[k]); } });
-        };
-      }
-
-      // Sem escuta em tempo real (adaptador antigo): consulta periódica.
       var intervalo = ms || 20000;
+      // A "rede de segurança" que baixava os nós inteiros a cada N ciclos
+      // (com 20 s e N=6: a cada 2 minutos, em cada aba aberta, o dia todo)
+      // foi desligada por padrão. Com o _meta só sendo gravado em escritas
+      // reais, ler o carimbo é suficiente.
       var forcaEm = forcarACada || 0;
       var parados = 0;
       var parar = false;
       var timer = null;
       function ciclo() {
         if (parar) { return; }
+        // aba em segundo plano não consulta nada
         if (typeof document !== 'undefined' && document.hidden) {
           timer = setTimeout(ciclo, intervalo);
           return;
@@ -656,19 +579,24 @@
         parados++;
         var forcar = forcaEm > 0 && parados >= forcaEm;
         Promise.all(lista.map(function (p) {
-          return DB.once('_meta/' + p).then(function (snap) {
-            var meta = snap.val();
-            if (forcar) {
-              return syncNode(p, REG[p], true, true).then(function (r) {
-                return r.shouldPull ? r.pull().then(function () { return p; }) : null;
+          return getCache(p).then(function (c) {
+            return DB.once('_meta/' + p).then(function (snap) {
+              var meta = snap.val();
+              if (!forcar && meta && c && meta <= (c.metaTs || 0)) { return null; }
+              if (!forcar && !meta) { return null; }
+              return syncNode(p, REG[p], true, forcar).then(function (r) {
+                if (r.shouldPull) { return r.pull().then(function () { return p; }); }
+                return null;
               });
-            }
-            return checar(p, meta);
+            });
           }).catch(function () { return null; });
         })).then(function (mudou) {
-          var l2 = mudou.filter(Boolean);
-          if (l2.length) { parados = 0; }
-          avisar(l2);
+          var lista2 = mudou.filter(Boolean);
+          if (lista2.length) { parados = 0; }
+          if (lista2.length) {
+            if (ONUPD) { ONUPD(); }
+            if (typeof onChange === 'function') { try { onChange(lista2); } catch (e) {} }
+          }
         }).catch(function () {}).then(function () {
           if (!parar) { timer = setTimeout(ciclo, intervalo); }
         });
@@ -687,7 +615,7 @@
       return DB.set(p, v).then(function () {
         if (entry) { var map = slotOf(entry); map[key] = v; }
         return self._commitLocal(node);
-      }).then(function (r) { anunciar({ op: 'set', node: node, key: key, val: v }); return r; });
+      });
     },
     remove: function (node, key) {
       var self = this;
@@ -696,7 +624,7 @@
       return DB.remove(node + '/' + key).then(function () {
         if (entry) { var map = slotOf(entry); delete map[key]; }
         return self._commitLocal(node);
-      }).then(function (r) { anunciar({ op: 'del', node: node, key: key }); return r; });
+      });
     },
     update: function (node, key, patch) {
       var self = this;
@@ -713,7 +641,7 @@
         // Sem o registro inteiro na memória, o cache ficaria só com o patch:
         // nesse caso deixa o próximo sync baixar o registro completo.
         return completo ? self._commitLocal(node) : self.advanceLocalMeta(node);
-      }).then(function (r) { anunciar({ op: 'patch', node: node, key: key, val: patch }); return r; });
+      });
     },
     removeAll: function (node) {
       var self = this;
@@ -722,7 +650,7 @@
         if (entry) { var map = slotOf(entry); Object.keys(map).forEach(function (k) { delete map[k]; }); }
         delCache(node);
         return self.bump(node);
-      }).then(function (r) { anunciar({ op: 'clear', node: node }); return r; });
+      });
     },
     push: function (node, val) {
       var self = this;
@@ -737,7 +665,7 @@
       return Promise.resolve(feito).then(function () {
         if (entry && key) { var map = slotOf(entry); map[key] = v; }
         return self._commitLocal(node);
-      }).then(function () { anunciar({ op: 'set', node: node, key: key, val: v }); return key; });
+      }).then(function () { return key; });
     },
 
     /* ── conteúdo imutável (ex.: imagem guardada pelo hash) ──

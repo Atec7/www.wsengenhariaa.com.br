@@ -5358,8 +5358,9 @@ window.addEventListener('DOMContentLoaded', async () => {
     });
     // Colaborador novo aparece sozinho: a vigia lê só o _meta de 'alunos' e
     // 'funcionarios' (poucas centenas de bytes) e baixa o nó só se mudou.
-    // Sem o 6º argumento: o download forçado a cada 6 ciclos (2 min) baixava
-    // 'alunos' + 'funcionarios' inteiros o dia todo em cada aba aberta.
+    // Colaborador cadastrado no index.html aparece na hora: no mesmo navegador
+    // o aviso chega direto da outra página (sem rede); em outro aparelho o
+    // servidor avisa assim que o carimbo _meta muda, e só então baixa o nó.
     WS_DATA.watchPaths(['alunos', 'funcionarios'], 30000, function (paths) {
         console.info('Colaboradores atualizados em:', paths.join(', '));
     });
