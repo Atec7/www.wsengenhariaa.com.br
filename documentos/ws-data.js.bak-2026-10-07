@@ -156,7 +156,7 @@
     return useAdapter({
       once: function (p) { return compatDb.ref(p).once('value'); },
       set: function (p, v) { return compatDb.ref(p).set(v); },
-      update: function (p, v) { return (p ? compatDb.ref(p) : compatDb.ref()).update(v); },
+      update: function (p, v) { return compatDb.ref(p).update(v); },
       remove: function (p) { return compatDb.ref(p).remove(); },
       // Devolve a promessa da gravação junto com a chave: antes ela era
       // descartada e uma gravação negada aparecia na tela como salva.
@@ -448,17 +448,6 @@
     };
   }
 
-  function aplicarOps(map, ops) {
-    (ops || []).forEach(function (o) {
-      if (o.op === 'set') { map[o.key] = o.val; }
-      else if (o.op === 'patch') {
-        var prev = (map[o.key] && typeof map[o.key] === 'object') ? map[o.key] : {};
-        map[o.key] = Object.assign({}, prev, o.val);
-      }
-      else if (o.op === 'del') { delete map[o.key]; }
-    });
-  }
-
   /* ── API pública ── */
   window.WS_DATA = {
     useDb: useDb,
@@ -481,67 +470,32 @@
        para o cache em disco. O carimbo local só avança se o cache estava em dia
        antes desta gravação; senão o próximo sync ainda baixa o que os outros
        gravaram nesse meio-tempo. */
-    _commitLocal: function (node, ops) {
+    _commitLocal: function (node) {
       var entry = REG[node];
-      // Nó carregado inteiro nesta página: a memória é a verdade. Nó sob demanda
-      // (ex.: certificadosGerados no index.html) ou não registrado: a memória
-      // está incompleta e NÃO pode virar o cache compartilhado; aplica só a
-      // alteração (ops) em cima do cache do disco.
-      var cheio = !!(entry && !entry.sobDemanda);
       return readMeta(node).then(function (antes) {
         return getCache(node).then(function (c) {
           return bump(node).then(function (ts) {
-            if (!c || !c.data) { return ts; }
-            var emDia = (antes == null) || (antes <= (c.metaTs || 0));
-            if (cheio) {
-              c.data = clone(slotOf(entry));
-            } else if (ops && ops.length) {
-              aplicarOps(c.data, ops);
+            if (!c) { return ts; }
+            if (entry && c.data) {
+              var map = slotOf(entry);
+              var emDia = (antes == null) || (antes <= (c.metaTs || 0));
+              c.data = clone(map);
+              if (emDia && ts != null) {
+                c.metaTs = ts;
+                if (entry.tsKey) { c.tsValue = maxTs(map, entry.tsKey); }
+                c.savedAt = Date.now();
+              } else {
+                c.savedAt = 0;
+              }
             } else {
-              emDia = false;   // não sabemos o que mudou: o próximo sync baixa
-            }
-            if (emDia && ts != null) {
-              c.metaTs = ts;
-              var tk = c.tsKey || (entry && entry.tsKey);
-              if (tk) { c.tsValue = maxTs(c.data, tk); }
-              c.savedAt = Date.now();
-            } else {
+              // nó não registrado nesta página: o cache (de outra página do
+              // mesmo navegador) não tem a mudança; deixa vencido.
               c.savedAt = 0;
             }
             return putCache(node, c).then(function () { return ts; });
           });
         });
       }).catch(function () { return null; });
-    },
-
-    /* Várias alterações em nós diferentes, num lote ATÔMICO no servidor (ou
-       tudo, ou nada). ops: [{op:'del'|'set'|'patch', node, key, val}].
-       Atualiza memória, cache em disco e avisa as outras páginas abertas. */
-    lote: function (ops) {
-      var self = this;
-      ops = (ops || []).filter(function (o) { return o && o.node && o.key; });
-      if (!ops.length) { return Promise.resolve(); }
-      var up = {};
-      ops.forEach(function (o) {
-        var base = o.node + '/' + o.key;
-        if (o.op === 'del') { up[base] = null; }
-        else if (o.op === 'set') { up[base] = normalizeVal(Object.assign({}, o.val), o.key); }
-        else if (o.op === 'patch') { Object.keys(o.val || {}).forEach(function (f) { up[base + '/' + f] = o.val[f]; }); }
-      });
-      statUp('lote', approxBytes(up));
-      return DB.update('', up).then(function () {
-        var porNo = {};
-        ops.forEach(function (o) { (porNo[o.node] = porNo[o.node] || []).push(o); });
-        return Promise.all(Object.keys(porNo).map(function (node) {
-          var entry = REG[node];
-          if (entry) { aplicarOps(slotOf(entry), porNo[node]); }
-          return self._commitLocal(node, porNo[node]);
-        }));
-      }).then(function () {
-        ops.forEach(function (o) {
-          anunciar({ op: o.op, node: o.node, key: o.key, val: o.op === 'set' ? up[o.node + '/' + o.key] : o.val });
-        });
-      });
     },
 
     register: function (entries) {
@@ -732,7 +686,7 @@
       statUp(node, approxBytes(v));
       return DB.set(p, v).then(function () {
         if (entry) { var map = slotOf(entry); map[key] = v; }
-        return self._commitLocal(node, [{ op: 'set', key: key, val: v }]);
+        return self._commitLocal(node);
       }).then(function (r) { anunciar({ op: 'set', node: node, key: key, val: v }); return r; });
     },
     remove: function (node, key) {
@@ -741,7 +695,7 @@
       statUp(node, approxBytes(key));
       return DB.remove(node + '/' + key).then(function () {
         if (entry) { var map = slotOf(entry); delete map[key]; }
-        return self._commitLocal(node, [{ op: 'del', key: key }]);
+        return self._commitLocal(node);
       }).then(function (r) { anunciar({ op: 'del', node: node, key: key }); return r; });
     },
     update: function (node, key, patch) {
@@ -758,7 +712,7 @@
         }
         // Sem o registro inteiro na memória, o cache ficaria só com o patch:
         // nesse caso deixa o próximo sync baixar o registro completo.
-        return completo ? self._commitLocal(node, [{ op: 'patch', key: key, val: patch }]) : self.advanceLocalMeta(node);
+        return completo ? self._commitLocal(node) : self.advanceLocalMeta(node);
       }).then(function (r) { anunciar({ op: 'patch', node: node, key: key, val: patch }); return r; });
     },
     removeAll: function (node) {
@@ -782,74 +736,8 @@
       var feito = (r && r.done && typeof r.done.then === 'function') ? r.done : Promise.resolve();
       return Promise.resolve(feito).then(function () {
         if (entry && key) { var map = slotOf(entry); map[key] = v; }
-        return self._commitLocal(node, [{ op: 'set', key: key, val: v }]);
+        return self._commitLocal(node);
       }).then(function () { anunciar({ op: 'set', node: node, key: key, val: v }); return key; });
-    },
-
-    /* ── vínculo histórico <-> certificados ──
-       Cada geração de certificados grava uma linha em 'historico' (o que o
-       index.html lista) e N registros em 'certificadosGerados' (o que o
-       certificados.html lista). A linha guarda certIds e cada certificado guarda
-       histKey. Excluir de um lado TEM que excluir do outro, num lote atômico. */
-    _lerHist: function (key, mapa) {
-      if (mapa && mapa[key]) { return Promise.resolve(mapa[key]); }
-      return DB.once('historico/' + key).then(function (s) { return s.val(); }).catch(function () { return null; });
-    },
-    // Quantos certificados uma linha arrasta junto (para a confirmação).
-    certsDaLinha: function (linha) {
-      return (linha && linha.tipo === 'certificado' && Array.isArray(linha.certIds)) ? linha.certIds.filter(Boolean) : [];
-    },
-    excluirLinhasHistorico: function (keys, mapaHist) {
-      var self = this;
-      keys = (keys || []).filter(Boolean);
-      return Promise.all(keys.map(function (k) { return self._lerHist(k, mapaHist); })).then(function (linhas) {
-        var ops = [];
-        var nCerts = 0;
-        keys.forEach(function (k, i) {
-          ops.push({ op: 'del', node: 'historico', key: k });
-          self.certsDaLinha(linhas[i]).forEach(function (cid) {
-            ops.push({ op: 'del', node: 'certificadosGerados', key: cid });
-            nCerts++;
-          });
-        });
-        return self.lote(ops).then(function () { return { linhas: keys.length, certificados: nCerts }; });
-      });
-    },
-    excluirCertificados: function (ids, mapaCerts) {
-      var self = this;
-      ids = (ids || []).filter(Boolean);
-      mapaCerts = mapaCerts || {};
-      var apagar = {};
-      ids.forEach(function (id) { apagar[id] = true; });
-      var porLinha = {};
-      ids.forEach(function (id) {
-        var c = mapaCerts[id];
-        if (c && c.histKey) { (porLinha[c.histKey] = porLinha[c.histKey] || []).push(id); }
-      });
-      var hks = Object.keys(porLinha);
-      return Promise.all(hks.map(function (hk) { return self._lerHist(hk); })).then(function (linhas) {
-        var ops = ids.map(function (id) { return { op: 'del', node: 'certificadosGerados', key: id }; });
-        hks.forEach(function (hk, i) {
-          var l = linhas[i];
-          if (!l) { return; }
-          var restantes = (Array.isArray(l.certIds) ? l.certIds : []).filter(function (cid) { return cid && !apagar[cid]; });
-          if (!restantes.length) { ops.push({ op: 'del', node: 'historico', key: hk }); return; }
-          // aluno sai da linha só se não tiver outro certificado nela
-          var alunosQueFicam = {};
-          restantes.forEach(function (cid) {
-            var rc = mapaCerts[cid];
-            if (rc && rc.aluno && rc.aluno.id) { alunosQueFicam[rc.aluno.id] = true; }
-          });
-          var saem = {};
-          porLinha[hk].forEach(function (id) {
-            var c = mapaCerts[id];
-            if (c && c.aluno && c.aluno.id && !alunosQueFicam[c.aluno.id]) { saem[c.aluno.id] = true; }
-          });
-          var funcs = (Array.isArray(l.funcionarioIds) ? l.funcionarioIds : []).filter(function (a) { return !saem[a]; });
-          ops.push({ op: 'patch', node: 'historico', key: hk, val: { certIds: restantes, funcionarioIds: funcs, qtd: restantes.length } });
-        });
-        return self.lote(ops).then(function () { return { certificados: ids.length, linhas: hks.length }; });
-      });
     },
 
     /* ── conteúdo imutável (ex.: imagem guardada pelo hash) ──

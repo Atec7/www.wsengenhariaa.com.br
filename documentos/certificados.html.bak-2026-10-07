@@ -3466,15 +3466,9 @@ async function gerarCertificados(){
     
     let certCount = 0;
     const updates = {};
-    // Ligação explícita certificado <-> linha do histórico: cada curso desta
-    // geração já nasce com a chave da sua linha, e cada certificado guarda essa
-    // chave (histKey). A linha guarda os ids dos certificados (certIds). É o que
-    // permite excluir de um lado e sumir do outro.
-    const histKeyPorCurso = selectedCoursesWithDates.map(() => db.ref('historico').push().key);
-    const certIdsPorCurso = selectedCoursesWithDates.map(() => []);
 
     selecionadosAlunos.forEach(aluno => {
-        selectedCoursesWithDates.forEach((courseDateItem, iCurso) => {
+        selectedCoursesWithDates.forEach(courseDateItem => {
             const { curso, dataInicio, dataFim, dataInicioBR, dataFimBR } = courseDateItem;
             // O que vai para o banco e o LEVE. Antes cada certificado guardava a
             // empresa inteira (logo1/logo2 em base64) e a logo do curso: ~360 KB
@@ -3499,8 +3493,7 @@ async function gerarCertificados(){
                 dataInicioBR: dataInicioBR, dataFimBR: dataFimBR,
                 dataGeracao: new Date().toISOString().slice(0, 10),
                 ts: Date.now(),
-                expiracao: calcExpiracao(dataFim, curso.validade),
-                histKey: histKeyPorCurso[iCurso]
+                expiracao: calcExpiracao(dataFim, curso.validade)
             };
 
             // O que vai para o PDF leva as logos de verdade.
@@ -3514,7 +3507,6 @@ async function gerarCertificados(){
             
             const newKey = db.ref('certificadosGerados').push().key;
             updates[`certificadosGerados/${newKey}`] = certData;
-            certIdsPorCurso[iCurso].push(newKey);
             certCount++;
         });
     });
@@ -3564,13 +3556,10 @@ async function gerarCertificados(){
         const historyTs = Date.now();
         const funcIds = selecionadosAlunos.map(a => a.id);
 
-        // Antes: um push solto por curso, sem esperar a gravação (uma falha
-        // deixava certificado sem linha). Agora vai tudo num lote só.
-        const histUpdates = {};
-        selectedCoursesWithDates.forEach((courseDateItem, iCurso) => {
+        selectedCoursesWithDates.forEach(courseDateItem => {
             const validadeAplicada = cursoValidadeNoFim(courseDateItem.curso.id, courseDateItem.curso.validade);
             const exp = calcExpiracao(courseDateItem.dataFim, validadeAplicada);
-            histUpdates['historico/' + histKeyPorCurso[iCurso]] = {
+            db.ref('historico').push({
                 nome: `Certificado - ${courseDateItem.curso.nome}`,
                 data: historyData,
                 ts: historyTs,
@@ -3581,11 +3570,9 @@ async function gerarCertificados(){
                 tipo: 'certificado',
                 certificadoCursoId: courseDateItem.curso.id,
                 qtd: selecionadosAlunos.length,
-                certIds: certIdsPorCurso[iCurso],
                 ...dadosGeradorCert()
-            };
+            });
         });
-        await db.ref().update(histUpdates);
 
         await WS_DATA.advanceLocalMeta('historico');
 
@@ -4466,24 +4453,21 @@ window.salvarCertManual = async () => {
             const porData = {};
             p.pares.forEach(par => {
                 const l = par.linha;
-                const marca = l.inicio + '|' + l.fim;
-                if (!porData[marca]) {
-                    porData[marca] = {
-                        curso: curso, cursoCert: cursoCert, d: l,
-                        validade: validade, alunos: [], qtd: 0,
-                        // ligação com a linha do histórico (ver geração normal)
-                        histKey: db.ref('historico').push().key, certIds: []
-                    };
-                    datasPorCurso.push(porData[marca]);
-                }
                 pares.push({
                     aluno: par.aluno,
                     curso: cursoCert,
                     dataInicio: l.inicio,
                     dataFim: l.fim,
-                    expiracao: calcExpiracao(l.fim, validade),
-                    grupo: porData[marca]
+                    expiracao: calcExpiracao(l.fim, validade)
                 });
+                const marca = l.inicio + '|' + l.fim;
+                if (!porData[marca]) {
+                    porData[marca] = {
+                        curso: curso, cursoCert: cursoCert, d: l,
+                        validade: validade, alunos: [], qtd: 0
+                    };
+                    datasPorCurso.push(porData[marca]);
+                }
                 porData[marca].alunos.push(par.aluno);
                 porData[marca].qtd = porData[marca].alunos.length;
             });
@@ -4527,11 +4511,9 @@ window.salvarCertManual = async () => {
                 dataGeracao: dataGeracao,
                 ts: agora,
                 expiracao: p.expiracao,
-                origemManual: true,
-                histKey: p.grupo.histKey
+                origemManual: true
             };
             const certKey = db.ref('certificadosGerados').push().key;
-            p.grupo.certIds.push(certKey);
             updates['certificadosGerados/' + certKey] = certData;
             novos.push({ id: certKey, data: certData });
         });
@@ -4546,7 +4528,7 @@ window.salvarCertManual = async () => {
         datasPorCurso.forEach(p => {
             const chave = p.curso.chave;
             const comPeriodo = totalPorCurso[chave] > 1;
-            const histKey = p.histKey;
+            const histKey = db.ref('historico').push().key;
             updates['historico/' + histKey] = {
                 nome: 'Certificado - ' + p.curso.nome + (comPeriodo
                     ? ' (' + fmtDateBR(p.d.inicio) + ' a ' + fmtDateBR(p.d.fim) + ')'
@@ -4562,7 +4544,6 @@ window.salvarCertManual = async () => {
                 tipo: 'certificado',
                 certificadoCursoId: p.curso.id,
                 qtd: p.qtd,
-                certIds: p.certIds,
                 ...dadosGeradorCert()
             };
         });
@@ -4794,33 +4775,15 @@ window.viewCertificado = (id) => {
     });
 };
 
-window.deleteCertificado = async (id) => {
-    // O certificado sai junto da linha do histórico do index.html: o aluno é
-    // tirado da linha e, se a linha ficar sem certificados, ela é excluída.
-    if (!confirm("Tem certeza que deseja excluir este certificado?\n\nEle também sai do Histórico de documentos.")) return;
-    try {
-        await WS_DATA.excluirCertificados([id], certificadosGeradosData);
-        rerenderCert();
-        alert("Excluído com sucesso!");
-    } catch (e) {
-        console.error("Erro ao excluir certificado:", e);
-        alert("Erro ao excluir: " + (e && e.message ? e.message : e));
-        return;
-    }
+window.deleteCertificado = (id) => {
+    removeItem("certificadosGerados", id);
     el("printAreaGerados").style.display = "none"; 
     currentCertificadoId = null;
 };
 
 window.clearAllCertificados = async () => {
-    if (!confirm("Tem certeza que deseja apagar TODOS os certificados gerados?\n\nOs registros de certificado do Histórico de documentos também serão excluídos.")) return;
+    if (!confirm("Tem certeza que deseja apagar TODOS os certificados gerados?")) return;
     try { 
-        // Linhas de certificado do histórico saem junto (o index.html as lista).
-        const hsnap = await db.ref('historico').once('value');
-        const hist = hsnap.val() || {};
-        const linhasCert = Object.keys(hist).filter(k => hist[k] && hist[k].tipo === 'certificado');
-        if (linhasCert.length) {
-            await WS_DATA.lote(linhasCert.map(k => ({ op: 'del', node: 'historico', key: k })));
-        }
         await WS_DATA.removeAll('certificadosGerados'); 
         alert("Todos os certificados gerados foram removidos.");
         el("printAreaGerados").style.display = "none";
@@ -5398,9 +5361,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     // Colaborador cadastrado no index.html aparece na hora: no mesmo navegador
     // o aviso chega direto da outra página (sem rede); em outro aparelho o
     // servidor avisa assim que o carimbo _meta muda, e só então baixa o nó.
-    // 'certificadosGerados' também: excluído pelo histórico do index.html (em
-    // outro aparelho) some daqui na hora.
-    WS_DATA.watchPaths(['alunos', 'funcionarios', 'certificadosGerados'], 30000, function (paths) {
+    WS_DATA.watchPaths(['alunos', 'funcionarios'], 30000, function (paths) {
         console.info('Colaboradores atualizados em:', paths.join(', '));
     });
     window.renderEmpresas = renderEmpresas;

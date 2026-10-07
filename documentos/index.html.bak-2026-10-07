@@ -1125,9 +1125,6 @@ function initListeners(){
     ],
     onUpdated:function(){ if(window.renderAll)renderAll(); }
   });
-  // Histórico em tempo real: o que for gerado ou excluído em outra tela ou
-  // aparelho aparece/some aqui na hora (o servidor avisa pelo _meta).
-  WS_DATA.watchPaths(['historico']);
   // Registros quebrados deixados por versões antigas: sem nome e sem CPF. Não
   // são pessoas, só linhas "Sem vínculo completo / ? · —" na lista.
   const _semNome=f=>!!f&&!String(f.nome||'').trim()&&!String(f.cpf||'').trim();
@@ -2419,15 +2416,10 @@ function dadosGerador(){
 }
 function deleteHistoryItem(key){
   if(!podeExcluirHist()){alert('Voc\u00ea n\u00e3o tem permiss\u00e3o para excluir.');return;}
-  // Linha de certificado leva junto os certificados dela (que o
-  // certificados.html lista). Antes só a linha saía e o certificado ficava.
-  const linha=(DATA.historico||{})[key];
-  const nCert=WS_DATA.certsDaLinha(linha).length;
-  const msg=nCert?'Excluir este registro do hist\u00f3rico?\n\nOs '+nCert+' certificado(s) ligados a ele tamb\u00e9m ser\u00e3o exclu\u00eddos da tela de Certificados.':'Excluir este registro do hist\u00f3rico?';
-  if(!confirm(msg))return;
-  WS_DATA.excluirLinhasHistorico([key],DATA.historico).then(()=>{renderHistory();if(window.renderAll)renderAll();}).catch(e=>{alert('Erro ao excluir: '+e.message);});
+  if(!confirm('Excluir este registro do hist\u00f3rico?'))return;
+  WS_DATA.remove('historico',key).then(()=>{renderHistory();}).catch(e=>{alert('Erro: '+e.message);});
 }
-function clearHistory(){if(!podeExcluirHist()){alert('Voc\u00ea n\u00e3o tem permiss\u00e3o para excluir.');return;}const keys=Object.keys(DATA.historico||{});if(!keys.length)return;const nCert=keys.reduce((n,k)=>n+WS_DATA.certsDaLinha(DATA.historico[k]).length,0);if(!confirm('Tem certeza que deseja limpar todo o hist\u00f3rico de documentos?'+(nCert?'\n\nOs '+nCert+' certificado(s) ligados a esses registros tamb\u00e9m ser\u00e3o exclu\u00eddos da tela de Certificados.':'')))return;WS_DATA.excluirLinhasHistorico(keys,DATA.historico).then(()=>{renderHistory();if(window.renderAll)renderAll();}).catch(e=>{alert('Erro ao limpar hist\u00f3rico: '+e.message);});}
+function clearHistory(){if(!podeExcluirHist()){alert('Voc\u00ea n\u00e3o tem permiss\u00e3o para excluir.');return;}if(!confirm('Tem certeza que deseja limpar todo o hist\u00f3rico de documentos?'))return;WS_DATA.removeAll('historico').then(()=>{renderHistory();}).catch(e=>{alert('Erro ao limpar hist\u00f3rico: '+e.message);});}
 
 // ── RELATORIO PDF ──────────────────────────────────────────────────
 function getDocTipo(nome){
