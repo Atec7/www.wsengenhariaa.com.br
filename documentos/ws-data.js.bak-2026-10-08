@@ -799,9 +799,7 @@
     certsDaLinha: function (linha) {
       return (linha && linha.tipo === 'certificado' && Array.isArray(linha.certIds)) ? linha.certIds.filter(Boolean) : [];
     },
-    // extras: {linha: [ids]} certificados a apagar junto, além dos certIds da
-    // linha (linhas antigas, sem certIds: os que a tela mostrou para a linha).
-    excluirLinhasHistorico: function (keys, mapaHist, extras) {
+    excluirLinhasHistorico: function (keys, mapaHist) {
       var self = this;
       keys = (keys || []).filter(Boolean);
       return Promise.all(keys.map(function (k) { return self._lerHist(k, mapaHist); })).then(function (linhas) {
@@ -809,10 +807,7 @@
         var nCerts = 0;
         keys.forEach(function (k, i) {
           ops.push({ op: 'del', node: 'historico', key: k });
-          var vistos = {};
-          self.certsDaLinha(linhas[i]).concat((extras && extras[k]) || []).forEach(function (cid) {
-            if (!cid || vistos[cid]) { return; }
-            vistos[cid] = true;
+          self.certsDaLinha(linhas[i]).forEach(function (cid) {
             ops.push({ op: 'del', node: 'certificadosGerados', key: cid });
             nCerts++;
           });

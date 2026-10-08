@@ -1643,32 +1643,6 @@ function showDashDetail(key){
   document.getElementById('dd-body').innerHTML=html;
   document.getElementById('mdl-dash-detail').style.display='flex';
 }
-// Ids do Firebase (push) embutem o horário de criação em ms: serve de relógio
-// para registros antigos que não gravaram 'ts'.
-const _PUSH_CH='-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz';
-function tempoDoId(id){let t=0;const s=String(id||'');for(let i=0;i<8;i++){const v=_PUSH_CH.indexOf(s[i]);if(v<0)return 0;t=t*64+v;}return t;}
-let _DD_CERT_IDS=[];
-// Certificados que pertencem a UMA linha do histórico.
-// 1) linha nova: ela guarda certIds (exato).
-// 2) linha antiga: mesmos alunos da linha, criados até 30 min antes dela; um
-//    por aluno (o mais recente). Mesma regra usada para ligar os antigos.
-function certsDaGeracao(key,h,lista){
-  if(Array.isArray(h.certIds)&&h.certIds.length){
-    const ids=new Set(h.certIds);
-    return lista.filter(c=>ids.has(c.id));
-  }
-  const alunos=new Set((h.funcionarioIds||[]).map(String));
-  const tLinha=tempoDoId(key)||h.ts||0;
-  const porAluno={};
-  lista.forEach(c=>{
-    const a=String(c.aluno&&c.aluno.id||'');
-    if(!alunos.has(a))return;
-    const t=(typeof c.ts==='number')?c.ts:tempoDoId(c.id);
-    if(!t||t>tLinha+2000||t<tLinha-30*60*1000)return;
-    if(!porAluno[a]||t>porAluno[a].t)porAluno[a]={t,c};
-  });
-  return Object.values(porAluno).map(x=>x.c);
-}
 function showCertDetail(key){
   if(!key)return;
   const h=DATA.historico[key];
@@ -1683,7 +1657,7 @@ function showCertDetail(key){
       document.getElementById('dd-body').innerHTML='<div class="es">Nenhum certificado encontrado.</div>';
       return;
     }
-    const certListCurso=Object.entries(allCerts).filter(([id,c])=>{
+    const certList=Object.entries(allCerts).filter(([id,c])=>{
       if(h.certificadoCursoId && c.curso && c.curso.id !== h.certificadoCursoId)return false;
       // empresaId no certificado novo, empresa.id no antigo — comparar como
       // string evita perder o registro por causa de 1 !== '1'
@@ -1693,11 +1667,6 @@ function showCertDetail(key){
       }
       return true;
     }).map(([id,c])=>({id,...c}));
-    // Só os certificados DESTA geração. Antes a lista trazia todos os do curso
-    // na empresa (de qualquer mês), e o "Excluir Registro" só apagava os desta
-    // linha: os outros "voltavam" ao atualizar.
-    const certList=certsDaGeracao(key,h,certListCurso);
-    _DD_CERT_IDS=certList.map(c=>c.id);
 
     if(!certList.length){
       document.getElementById('dd-body').innerHTML=h.certificadoCursoId
@@ -1768,7 +1737,7 @@ function showCertDetail(key){
     }
 
     html+=`<div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--bd);text-align:center">
-      <button class="btn bd2" onclick="deleteHistoryItem('${key}',_DD_CERT_IDS)"><i class="fa-solid fa-trash"></i> Excluir Registro e ${certList.length} certificado(s)</button>
+      <button class="btn bd2" onclick="deleteHistoryItem('${key}')"><i class="fa-solid fa-trash"></i> Excluir Registro</button>
     </div>`;
 
     document.getElementById('dd-body').innerHTML=html;
@@ -2448,19 +2417,15 @@ function logHistory(nome, dadosExtras={}){
 function dadosGerador(){
   return{usuarioId:(USUARIO_ATUAL&&USUARIO_ATUAL.id)||''};
 }
-function deleteHistoryItem(key,certIdsTela){
+function deleteHistoryItem(key){
   if(!podeExcluirHist()){alert('Voc\u00ea n\u00e3o tem permiss\u00e3o para excluir.');return;}
   // Linha de certificado leva junto os certificados dela (que o
   // certificados.html lista). Antes só a linha saía e o certificado ficava.
   const linha=(DATA.historico||{})[key];
-  const extras=Array.isArray(certIdsTela)?certIdsTela:[];
-  const nCert=new Set(WS_DATA.certsDaLinha(linha).concat(extras)).size;
+  const nCert=WS_DATA.certsDaLinha(linha).length;
   const msg=nCert?'Excluir este registro do hist\u00f3rico?\n\nOs '+nCert+' certificado(s) ligados a ele tamb\u00e9m ser\u00e3o exclu\u00eddos da tela de Certificados.':'Excluir este registro do hist\u00f3rico?';
   if(!confirm(msg))return;
-  WS_DATA.excluirLinhasHistorico([key],DATA.historico,{[key]:extras}).then(()=>{
-    const m=document.getElementById('mdl-dash-detail');if(m&&extras.length)m.style.display='none';
-    renderHistory();if(window.renderAll)renderAll();
-  }).catch(e=>{alert('Erro ao excluir: '+e.message);});
+  WS_DATA.excluirLinhasHistorico([key],DATA.historico).then(()=>{renderHistory();if(window.renderAll)renderAll();}).catch(e=>{alert('Erro ao excluir: '+e.message);});
 }
 function clearHistory(){if(!podeExcluirHist()){alert('Voc\u00ea n\u00e3o tem permiss\u00e3o para excluir.');return;}const keys=Object.keys(DATA.historico||{});if(!keys.length)return;const nCert=keys.reduce((n,k)=>n+WS_DATA.certsDaLinha(DATA.historico[k]).length,0);if(!confirm('Tem certeza que deseja limpar todo o hist\u00f3rico de documentos?'+(nCert?'\n\nOs '+nCert+' certificado(s) ligados a esses registros tamb\u00e9m ser\u00e3o exclu\u00eddos da tela de Certificados.':'')))return;WS_DATA.excluirLinhasHistorico(keys,DATA.historico).then(()=>{renderHistory();if(window.renderAll)renderAll();}).catch(e=>{alert('Erro ao limpar hist\u00f3rico: '+e.message);});}
 
