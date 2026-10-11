@@ -4422,7 +4422,7 @@ function P_funcBlock(doc,func,y,isLandscape){
   doc.setFont('helvetica','bold');doc.setFontSize(11);doc.setTextColor(...C.dark);
   doc.text((func.nome||'—').toUpperCase(),m+3,y+5.5);
   doc.setFont('helvetica','normal');doc.setFontSize(7);doc.setTextColor(...C.sub);
-  doc.text('Funcao: '+(resolveCargo(func.funcao)?.nome||func.funcao||'—'),col2+3,y+5.5);
+  doc.text('Fun\u00E7\u00E3o: '+(resolveCargo(func.funcao)?.nome||func.funcao||'—'),col2+3,y+5.5);
   doc.text('CBO: '+(func.cbo||'—'),col2+3,y+9.5);
   doc.text('Admiss\u00E3o: '+fmtData(func.dataAdm||'—'),col2+3,y+13.5);
   return y+bh+3;
@@ -4728,7 +4728,7 @@ async function genList(){
   cy=P_section(doc,'Lista de Participantes',cy,false);
   doc.autoTable({
     startY:cy,
-    head:[['No.','NOME COMPLETO','FUNCAO','CBO','ASSINATURA']],
+    head:[['No.','NOME COMPLETO','FUN\u00C7\u00C3O','CBO','ASSINATURA']],
     body:funcs.map((f,i)=>[String(i+1).padStart(2,'0'),f.nome||'',resolveCargo(f.funcao)?.nome||f.funcao||'',f.cbo||'','']),
     columnStyles:{0:{cellWidth:10,halign:'center'},1:{cellWidth:uw*0.33},2:{cellWidth:uw*0.22},3:{cellWidth:uw*0.11,halign:'center'},4:{cellWidth:uw*0.30}},
     ...P_tableStyles(false)
@@ -4901,7 +4901,7 @@ async function drawEPI(doc,func,emp,dataFmt,items,showVencCa=true,blankRows=0){
   const cw=uw/4;
   [1,2,3].forEach(i=>{doc.setDrawColor(...C.bdr);doc.line(m+cw*i,by,m+cw*i,by+bh);});
   const lcols=[m+3,m+cw+3,m+cw*2+3,m+cw*3+3];
-  const llbls=['COLABORADOR','FUNCAO / CBO','SETOR','DATA DE ENTREGA'];
+  const llbls=['COLABORADOR','FUN\u00C7\u00C3O / CBO','SETOR','DATA DE ENTREGA'];
   const lvals=[func?.nome||'',(resolveCargo(func?.funcao)?.nome||func?.funcao||'')+(func?.cbo?' / '+func.cbo:''),func?.setor||'',dataFmt];
   llbls.forEach((lbl,i)=>{
     doc.setFont('helvetica','normal');doc.setFontSize(6);doc.setTextColor(...C.sub);
