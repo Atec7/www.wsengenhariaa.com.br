@@ -3287,6 +3287,8 @@ async function gravarValidades(updates) {
         const certUpdates = {};
         certKeys.forEach(k => { certUpdates[k.slice('certificadosGerados/'.length)] = updates[k]; });
         await gravarLote('certificadosGerados', certUpdates);
+        // sem isto o vencimento recalculado não chega às outras telas/aparelhos
+        await WS_DATA.marcarAlterados('certificadosGerados', certKeys.map(k => k.slice(PREFIX_CERT.length).split('/')[0]));
         certKeys.forEach(k => {
             const p = k.slice(PREFIX_CERT.length).split('/');
             const alvo = certificadosGeradosData[p[0]];
@@ -3300,6 +3302,7 @@ async function gravarValidades(updates) {
         const histUpdates = {};
         histKeys.forEach(k => { histUpdates[k.slice('historico/'.length)] = updates[k]; });
         await gravarLote('historico', histUpdates);
+        await WS_DATA.marcarAlterados('historico', histKeys.map(k => k.split('/')[1]));
         await WS_DATA.advanceLocalMeta('historico');
     }
     return { certs: certKeys.length / 2, linhasHist: histKeys.length / 2 };
@@ -5400,7 +5403,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     // servidor avisa assim que o carimbo _meta muda, e só então baixa o nó.
     // 'certificadosGerados' também: excluído pelo histórico do index.html (em
     // outro aparelho) some daqui na hora.
-    WS_DATA.watchPaths(['alunos', 'funcionarios', 'certificadosGerados'], 30000, function (paths) {
+    WS_DATA.watchPaths(['alunos', 'funcionarios', 'certificadosGerados', 'cursos'], 30000, function (paths) {
         console.info('Colaboradores atualizados em:', paths.join(', '));
     });
     window.renderEmpresas = renderEmpresas;

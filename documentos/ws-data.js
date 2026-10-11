@@ -161,6 +161,14 @@
       // Devolve a promessa da gravação junto com a chave: antes ela era
       // descartada e uma gravação negada aparecia na tela como salva.
       push: function (p, v) { var r = compatDb.ref(p).push(v); return { key: r.key, done: r }; },
+      // Registro de alterações: as chaves do push já vêm em ordem de tempo,
+      // então orderByKey funciona sem .indexOn nas regras.
+      mudDesde: function (p, desde) {
+        var q = compatDb.ref(p).orderByKey();
+        if (desde) { q = q.startAt(desde); }
+        return q.once('value');
+      },
+      mudUltima: function (p) { return compatDb.ref(p).orderByKey().limitToLast(1).once('value'); },
       // Escuta em tempo real; devolve a função que para de escutar.
       on: function (p, cb) {
         var ref = compatDb.ref(p);
@@ -201,6 +209,55 @@
     }).then(function (j) {
       statDown(path + ':chaves', approxBytes(j), false);
       return j || {};
+    }).catch(function () { return null; });
+  }
+  /* ── registro de alterações dos nós incrementais ──
+     Nós sincronizados por 'ts' (historico, certificadosGerados, epiMov) só
+     traziam registros NOVOS: um certificado com o vencimento recalculado, ou
+     uma linha de histórico editada, nunca chegava às outras telas e voltava
+     ao valor antigo ao recarregar. Agora toda edição de registro existente
+     anota as chaves em '_mudancas/<nó>' e o sync baixa só esses registros. */
+  var NOS_MUDANCAS = { historico: 1, certificadosGerados: 1, epiMov: 1 };
+  function marcarAlterados(node, keys) {
+    if (!DB || !NOS_MUDANCAS[node]) { return Promise.resolve(); }
+    var lista = [];
+    (keys || []).forEach(function (k) { if (k && lista.indexOf(k) < 0) { lista.push(k); } });
+    if (!lista.length) { return Promise.resolve(); }
+    var prom = [];
+    for (var i = 0; i < lista.length; i += 400) {
+      var r = DB.push('_mudancas/' + node, { k: lista.slice(i, i + 400), t: TS });
+      prom.push(r && r.done ? Promise.resolve(r.done) : Promise.resolve());
+    }
+    return Promise.all(prom);
+  }
+  function ultimaMudanca(path) {
+    if (!DB || typeof DB.mudUltima !== 'function' || !NOS_MUDANCAS[path]) { return Promise.resolve(null); }
+    var q;try { q = DB.mudUltima('_mudancas/' + path); } catch (e) { return Promise.resolve(null); }
+    return q.then(function (snap) {
+      var v = snap.val() || {};
+      var ks = Object.keys(v).sort();
+      return ks.length ? ks[ks.length - 1] : '';
+    }).catch(function () { return null; });
+  }
+  // Aplica no mapa as alterações anotadas depois de 'desde'. Devolve
+  // {ultima, n} ou null quando não dá para consultar.
+  function aplicarMudancas(path, map, desde) {
+    if (!DB || typeof DB.mudDesde !== 'function' || !NOS_MUDANCAS[path]) { return Promise.resolve(null); }
+    var q;try { q = DB.mudDesde('_mudancas/' + path, desde || ''); } catch (e) { return Promise.resolve(null); }
+    return q.then(function (snap) {
+      var v = snap.val() || {};
+      var ks = Object.keys(v).sort().filter(function (k) { return k !== desde; });
+      if (!ks.length) { return { ultima: desde || '', n: 0 }; }
+      var chaves = {};
+      ks.forEach(function (k) { ((v[k] && v[k].k) || []).forEach(function (c) { chaves[c] = true; }); });
+      var lista = Object.keys(chaves);
+      return Promise.all(lista.map(function (c) {
+        return DB.once(path + '/' + c).then(function (s2) {
+          var val = s2.val();
+          if (val == null) { delete map[c]; } else { map[c] = normalizeVal(val, c); }
+          statDown(path + ':editados', approxBytes(val), false);
+        });
+      })).then(function () { return { ultima: ks[ks.length - 1], n: lista.length }; });
     }).catch(function () { return null; });
   }
   function bump(node) {
@@ -248,10 +305,14 @@
   function pullFull(path, entry) {
     var map = slotOf(entry);
     var metaTs = null;
+    var mudKey = null;
     // O carimbo é lido ANTES dos dados: uma gravação que chegue no meio fica
     // com carimbo maior e é baixada no próximo sync, em vez de se perder.
     return readMeta(path).then(function (m) {
       metaTs = m;
+      return ultimaMudanca(path);
+    }).then(function (mk) {
+      mudKey = mk;
       return DB.once(path);
     }).then(function (snap) {
       var norm = fromSnapshot(snap);
@@ -264,7 +325,8 @@
           metaTs: (metaTs != null) ? metaTs : 0,
           savedAt: Date.now(),
           tsKey: entry.tsKey || null,
-          tsValue: maxTs(map, (entry.tsKey || null))
+          tsValue: maxTs(map, (entry.tsKey || null)),
+          mudKey: mudKey
         };
         putCache(path, rec);
         return { downloaded: true, full: true };
@@ -290,6 +352,9 @@
       if (cacheInvalido(entry, cache)) { cache = null; }
       if (cache && cache.tsValue != null &&
           !(typeof cache.tsValue === 'number' && isFinite(cache.tsValue))) { cache = null; }
+      // Cache de antes do registro de alterações pode ter registros editados
+      // com valor velho (ex.: vencimento recalculado): renova uma vez.
+      if (cache && NOS_MUDANCAS[path] && typeof DB.mudDesde === 'function' && cache.mudKey === undefined) { cache = null; }
       if (!cache || !cache.data) { return pullFull(path, entry); }
 
       var since = (cache.tsValue != null) ? cache.tsValue : 0;
@@ -313,18 +378,25 @@
         // registro apagado continuava na tela para sempre. Só acontece quando
         // o _meta mudou, e baixa apenas as chaves.
         var rec0 = reconciliar ? shallowKeys(path) : Promise.resolve(null);
-        return rec0.then(function (chaves) {
+        var mud = null;
+        return aplicarMudancas(path, map, cache.mudKey).then(function (r) {
+          mud = r;
+          return rec0;
+        }).then(function (chaves) {
           var removidos = 0;
+          var alterados = (mud && mud.n) || 0;
+          var mudKey = mud ? mud.ultima : cache.mudKey;
           if (chaves && typeof chaves === 'object') {
             Object.keys(map).forEach(function (k) {
               if (!Object.prototype.hasOwnProperty.call(chaves, k)) { delete map[k]; removidos++; }
             });
           }
           // Nada novo é o caso NORMAL, não um sinal de cache quebrado.
-          if (n === 0 && removidos === 0) {
+          if (n === 0 && removidos === 0 && alterados === 0) {
             if (cache) {
               cache.savedAt = Date.now();
               if (metaLido != null && metaLido > (cache.metaTs || 0)) { cache.metaTs = metaLido; }
+              cache.mudKey = mudKey;
               putCache(path, cache);
             }
             return { downloaded: false, vazio: true };
@@ -334,10 +406,11 @@
             metaTs: (metaLido != null) ? metaLido : (cache ? cache.metaTs : 0),
             savedAt: Date.now(),
             tsKey: tsKey || null,
-            tsValue: maxTs(map, tsKey)
+            tsValue: maxTs(map, tsKey),
+            mudKey: mudKey
           };
           putCache(path, rec);
-          return { downloaded: true, incremental: true, novos: n };
+          return { downloaded: true, incremental: true, novos: n, alterados: alterados };
         });
       });
     });
@@ -470,6 +543,10 @@
     useDb: useDb,
     useAdapter: useAdapter,
     bump: bump,
+    // Para gravações feitas direto no db em registros que já existem num nó
+    // incremental (ex.: recálculo de vencimento): sem isso a edição não chega
+    // às outras telas.
+    marcarAlterados: marcarAlterados,
     /* Chamado depois de gravações feitas DIRETO no db (fora do WS_DATA), cujo
        conteúdo não está na memória. Antes, esta função marcava o cache local
        como "em dia" sem ter o dado novo: ao reabrir a página, o registro
@@ -539,6 +616,10 @@
       });
       statUp('lote', approxBytes(up));
       return DB.update('', up).then(function () {
+        var edit = {};
+        ops.forEach(function (o) { if (o.op === 'patch' || o.op === 'inc') { (edit[o.node] = edit[o.node] || []).push(o.key); } });
+        return Promise.all(Object.keys(edit).map(function (n) { return marcarAlterados(n, edit[n]); }));
+      }).then(function () {
         var porNo = {};
         ops.forEach(function (o) { (porNo[o.node] = porNo[o.node] || []).push(o); });
         return Promise.all(Object.keys(porNo).map(function (node) {
@@ -740,6 +821,9 @@
       var entry = REG[node];
       statUp(node, approxBytes(v));
       return DB.set(p, v).then(function () {
+        // pode ser regravação de um registro que já existe
+        return marcarAlterados(node, [key]);
+      }).then(function () {
         if (entry) { var map = slotOf(entry); map[key] = v; }
         return self._commitLocal(node, [{ op: 'set', key: key, val: v }]);
       }).then(function (r) { anunciar({ op: 'set', node: node, key: key, val: v }); return r; });
@@ -758,6 +842,8 @@
       var entry = REG[node];
       statUp(node, approxBytes(patch));
       return DB.update(node + '/' + key, patch).then(function () {
+        return marcarAlterados(node, [key]);
+      }).then(function () {
         var completo = false;
         if (entry && patch && typeof patch === 'object') {
           var map = slotOf(entry);
