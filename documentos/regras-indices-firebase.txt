@@ -1,11 +1,12 @@
 COMO APLICAR (2 minutos)
 Firebase Console -> Realtime Database -> aba "Regras".
 
-Dentro de "rules", ACRESCENTE as 2 linhas abaixo, mantendo o que já existe
+Dentro de "rules", ACRESCENTE as 3 linhas abaixo, mantendo o que já existe
 (".read", ".write" e qualquer outra regra que você já tenha):
 
     "historico":           { ".indexOn": ["ts"] },
     "certificadosGerados": { ".indexOn": ["ts", "curso/id"] },
+    "epiMov":              { ".indexOn": ["ts"] },
 
 Exemplo completo, SE hoje suas regras forem só leitura/escrita liberadas:
 
@@ -14,7 +15,8 @@ Exemplo completo, SE hoje suas regras forem só leitura/escrita liberadas:
     ".read": true,
     ".write": true,
     "historico":           { ".indexOn": ["ts"] },
-    "certificadosGerados": { ".indexOn": ["ts", "curso/id"] }
+    "certificadosGerados": { ".indexOn": ["ts", "curso/id"] },
+    "epiMov":              { ".indexOn": ["ts"] }
   }
 }
 

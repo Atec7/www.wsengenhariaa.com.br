@@ -440,6 +440,7 @@
         map[m.key] = Object.assign({}, prev, m.val);
       }
       else if (m.op === 'del') { delete map[m.key]; }
+      else if (m.op === 'inc') { aplicarOps(map, [m]); }
       else if (m.op === 'clear') { Object.keys(map).forEach(function (k) { delete map[k]; }); }
       // a memória desta página esquece o cache: o próximo acesso relê o disco,
       // que quem gravou já atualizou.
@@ -456,6 +457,11 @@
         map[o.key] = Object.assign({}, prev, o.val);
       }
       else if (o.op === 'del') { delete map[o.key]; }
+      else if (o.op === 'inc') {
+        var reg = (map[o.key] && typeof map[o.key] === 'object') ? Object.assign({}, map[o.key]) : {};
+        reg[o.field] = (Number(reg[o.field]) || 0) + (Number(o.n) || 0);
+        map[o.key] = reg;
+      }
     });
   }
 
@@ -527,6 +533,9 @@
         if (o.op === 'del') { up[base] = null; }
         else if (o.op === 'set') { up[base] = normalizeVal(Object.assign({}, o.val), o.key); }
         else if (o.op === 'patch') { Object.keys(o.val || {}).forEach(function (f) { up[base + '/' + f] = o.val[f]; }); }
+        // soma atômica no servidor (ex.: saldo de estoque): duas pessoas
+        // lançando ao mesmo tempo não se sobrescrevem.
+        else if (o.op === 'inc') { up[base + '/' + o.field] = firebase.database.ServerValue.increment(Number(o.n) || 0); }
       });
       statUp('lote', approxBytes(up));
       return DB.update('', up).then(function () {
@@ -539,7 +548,7 @@
         }));
       }).then(function () {
         ops.forEach(function (o) {
-          anunciar({ op: o.op, node: o.node, key: o.key, val: o.op === 'set' ? up[o.node + '/' + o.key] : o.val });
+          anunciar({ op: o.op, node: o.node, key: o.key, field: o.field, n: o.n, val: o.op === 'set' ? up[o.node + '/' + o.key] : o.val });
         });
       });
     },
