@@ -233,7 +233,7 @@ hr.dv{border:none;border-top:1px solid var(--bd);margin:18px 0}
           <hr class="dv" style="margin:14px 0">
           <div class="ct"><i class="fa-solid fa-helmet-safety"></i> Materiais EPI/EPC</div>
           <div class="g2">
-            <div class="fg"><label class="fl">Data da Entrega</label><input type="date" id="m-epi-data"></div>
+            <div class="fg"><label class="fl">Data da Entrega <small style="text-transform:none;font-weight:400">(vazio = data geral)</small></label><input type="date" id="m-epi-data"></div>
             <div class="fg"><label class="fl">Local</label><input id="m-epi-local" placeholder="Cidade/UF"></div>
           </div>
           <div class="fg"><label class="fl">Pesquisar Material</label><input id="m-epi-search" placeholder="Digite o nome ou C.A..." onkeyup="filterMassEpi()"></div>
@@ -289,7 +289,7 @@ const WS_EMPRESA={nome:"WS ENGENHARIA CONSULTORIA E TREINAMENTOS",cnpj:"41.467.5
 const RESP={nome:"WEDSON DE JESUS SANTOS",registro:"CREA 0516926055",funcao:"Eng. de Seguranca do Trabalho"};
 
 // ── STATE ───────────────────────────────────────────────────────
-let DATA={empresas:{},funcionarios:{},textos:{},materiais:{},config:{},historico:{},cargos:{}};
+let DATA={empresas:{},funcionarios:{},textos:{},materiais:{},config:{},historico:{},cargos:{},obras:{},materiaisAlias:{}};
 let massEpiCart=[];
 
 // ── LOGIN CHECK ─────────────────────────────────────────────────
@@ -335,12 +335,15 @@ function initListeners(){
       {path:'materiais',target:DATA,key:'materiais'},
       {path:'config',target:DATA,key:'config'},
       {path:'historico',target:DATA,key:'historico',tsKey:'ts'},
-      {path:'cargos',target:DATA,key:'cargos'}
+      {path:'cargos',target:DATA,key:'cargos'},
+      {path:'obras',target:DATA,key:'obras'},
+      // de-para de cadastros de EPI unificados (id antigo -> id que ficou)
+      {path:'materiaisAlias',target:DATA,key:'materiaisAlias'}
     ],
     onUpdated:function(){ if(window.renderAll)renderAll(); }
   });
   const hoje=new Date().toISOString().slice(0,10);
-  ['m-data','m-lista-data','m-epi-data'].forEach(id=>{const el=document.getElementById(id);if(el&&!el.value)el.value=hoje;});
+  ['m-data','m-lista-data'].forEach(id=>{const el=document.getElementById(id);if(el&&!el.value)el.value=hoje;});
 }
 
 function detectDocTypesFromTexts(textIds){
@@ -476,7 +479,7 @@ function renderAll(){populateSelects();populateMassEpiSel();fltMCargos();updateM
 function populateMassEpiSel(){
   const sel=document.getElementById('m-epi-sel');if(!sel)return;
   const cur=sel.value;
-  sel.innerHTML='<option value="">Selecione...</option>'+toArr(DATA.materiais).sort((a,b)=>(a.nome||'').localeCompare(b.nome||'')).map(m=>`<option value="${esc(m.id)}" data-un="${esc(m.unidade||'')}">${esc(m.nome)} (C.A.${m.ca||''})</option>`).join('');
+  sel.innerHTML='<option value="">Selecione...</option>'+toArr(DATA.materiais).sort((a,b)=>(a.nome||'').localeCompare(b.nome||'')||nomeEstoqueMat(a).localeCompare(nomeEstoqueMat(b))).map(m=>`<option value="${esc(m.id)}" data-un="${esc(m.unidade||'')}">${esc(m.nome)}${m.empresaId?' \u2014 '+esc(nomeEstoqueMat(m)):''} (C.A.${m.ca||''})</option>`).join('');
   if(cur)sel.value=cur;
 }
 
@@ -517,6 +520,22 @@ function cleanForPdf(str){
     .trim();
 }
 
+// Material pelo id, seguindo o de-para dos cadastros unificados: um cargo salvo
+// antes da unificação continua achando o EPI (antes ele sumia da ficha).
+function matPorId(id){
+  if(!id)return null;
+  let m=DATA.materiais[id];if(m)return m;
+  const alias=DATA.materiaisAlias||{};let k=id,n=0;
+  while(!m&&alias[k]&&n<5){k=alias[k];m=DATA.materiais[k];n++;}
+  return m||null;
+}
+let EPI_FALTANDO={};   // cargo -> nomes/ids de EPIs que não existem mais
+// Estoque do material (Central / empresa / obra), para diferenciar itens iguais
+function nomeEstoqueMat(m){
+  if(!m||!m.empresaId)return 'Central';
+  const e=((DATA.empresas||{})[m.empresaId]||{}).nome||'Empresa';
+  return m.obraId?e+' \u203a '+(((DATA.obras||{})[m.obraId]||{}).nome||'Obra'):e;
+}
 function resolveCargoEpis(cargoId){
   const cargo=resolveCargo(cargoId);
   if(!cargo||!cargo.epi)return [];
@@ -532,7 +551,8 @@ function resolveCargoEpis(cargoId){
     const id=typeof item==='object'?item.id:item;
     const qtd=typeof item==='object'?(item.qtd||1):1;
     const savedTipo=typeof item==='object'?item.tipo:null;
-    const mat=DATA.materiais[id]||toArr(DATA.materiais).find(m=>(m.nome||'').toLowerCase().includes(id.toLowerCase()));
+    const mat=matPorId(id)||toArr(DATA.materiais).find(m=>(m.nome||'').toLowerCase().includes(String(id).toLowerCase()));
+    if(!mat){(EPI_FALTANDO[cargo.nome||cargoId]=EPI_FALTANDO[cargo.nome||cargoId]||new Set()).add(String(id));return;}
     if(mat)items.push({id:mat.id,nome:mat.nome,ca:mat.ca||'',unidade:mat.unidade||'',tipo:savedTipo||mat.tipo||'EPI',qtd,vencimentoCa:mat.vencimentoCa||''});
   });
   return items;
@@ -1013,7 +1033,7 @@ async function massDrawEpiPage(doc,func,emp,dataFmt,items,showVencCa=true){
   doc.setDrawColor(...C.bdr);doc.setLineWidth(0.18);doc.rect(m,by,uw,bh,'S');
   const cw=uw/4;[1,2,3].forEach(i=>{doc.setDrawColor(...C.bdr);doc.line(m+cw*i,by,m+cw*i,by+bh);});
   const lcols=[m+3,m+cw+3,m+cw*2+3,m+cw*3+3];
-  const llbls=['COLABORADOR','FUNCAO / CBO','SETOR','DATA DE ENTREGA'];
+  const llbls=['COLABORADOR','FUN\u00C7\u00C3O / CBO','SETOR','DATA DE ENTREGA'];
   const lvals=[func.nome||'—',(resolveCargo(func.funcao)?.nome||func.funcao||'—')+' / '+(func.cbo||'—'),func.setor||'—',dataFmt];
   llbls.forEach((lbl,i)=>{
     doc.setFont('helvetica','normal');doc.setFontSize(6);doc.setTextColor(...C.sub);doc.text(lbl,lcols[i],by+5);
@@ -1247,7 +1267,7 @@ async function gerarDocs(func, emp, opts, onStep, results){
     if(finalItems && finalItems.length){
       massGenDetail={func:func.nome||'', docType:'Ficha EPI'};
       const doc = new jsPDF({orientation:'landscape',unit:'mm',format:'a4'});
-      await massDrawEpiPage(doc, func, emp, dataFmt, finalItems, opts.showVencCa);
+      await massDrawEpiPage(doc, func, emp, opts.dataEpiFmt||dataFmt, finalItems, opts.showVencCa);
       const filename = `${func.nome.replace(/\s+/g,'_')} - Ficha_EPI - ${safeDataAdm}.pdf`;
       const r=await saveSecurely(doc, filename, {funcionarioId: func.id}, true);
       if(r&&results)results.push(r);
@@ -1326,7 +1346,10 @@ async function massGen(){
   const stepCb=()=>{step++;const pct=Math.round(step/totalSteps*100);massProgress(pct<100?'Gerando documentos...':'Finalizado!',pct);};
  
   const showVencCa=document.getElementById('m-epi-show-venc').checked;
-  const opts={docOS,docLista,docAdm,docEpi,osTextIds,dataFmt,dataVal,local,treino,carga,conteudo,showVencCa};
+  const dataEpiVal=(document.getElementById('m-epi-data')||{}).value||'';
+  const dataEpiFmt=dataEpiVal?fmtData(dataEpiVal):dataFmt;
+  EPI_FALTANDO={};
+  const opts={docOS,docLista,docAdm,docEpi,osTextIds,dataFmt,dataVal,local,treino,carga,conteudo,showVencCa,dataEpiFmt};
  
   spin(true);
   const results=[];
@@ -1385,6 +1408,9 @@ async function massGen(){
       setTimeout(()=>{document.body.removeChild(a);URL.revokeObjectURL(url);},1000);
     }
     massProgress('Todos os documentos gerados com sucesso!',100);
+    const faltam=Object.keys(EPI_FALTANDO);
+    if(faltam.length)alert('Aten\u00e7\u00e3o: alguns EPIs cadastrados no cargo n\u00e3o existem mais no cadastro de materiais e ficaram de fora das fichas:\n\n'+
+      faltam.map(c=>'\u2022 Cargo '+c+': '+EPI_FALTANDO[c].size+' item(ns)').join('\n')+'\n\nAbra o cargo em Cargos e escolha o EPI de novo.');
     document.getElementById('mass-results').style.display='block';
     document.getElementById('mass-results').innerHTML=`<div class="res"><i class="fa-solid fa-check-circle"></i> ${results.length} documento(s) gerado(s) com sucesso para ${selected.length} colaborador(es)!</div>`;
   }catch(e){

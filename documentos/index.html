@@ -333,6 +333,22 @@ hr.dv{border:none;border-top:1px solid var(--bd);margin:18px 0}
 .epi-est-bar{display:flex;flex-direction:column;gap:4px;min-width:260px}
 .epi-est-bar label{font-size:10px;font-weight:700;color:var(--ts);text-transform:uppercase;letter-spacing:.5px}
 .epi-est-bar select{font-weight:600}
+/* Entrega manual de EPI */
+.ent-sug{border:1px solid var(--bd);border-radius:6px;margin-top:4px;max-height:220px;overflow:auto;display:none;background:var(--sf)}
+.ent-sug button{display:block;width:100%;text-align:left;padding:7px 10px;border:0;border-bottom:1px solid var(--bd);background:none;font:inherit;font-size:12px;cursor:pointer;color:var(--tp)}
+.ent-sug button:hover{background:var(--hl)}
+.ent-sug small{color:var(--ts)}
+.ent-card{border:1px solid var(--bd);border-radius:8px;padding:12px 14px;margin-bottom:12px;background:var(--hl)}
+.ent-card .ent-nome{font-weight:700;font-size:14px}
+.ent-card .ent-info{font-size:11px;color:var(--ts);margin-top:2px}
+.ent-card table{margin-top:8px}
+.ent-chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.ent-chips button{border:1px dashed var(--hi);background:var(--sf);border-radius:14px;padding:4px 10px;font:inherit;font-size:11px;cursor:pointer;color:var(--tp)}
+.ent-chips button:hover{background:var(--hl)}
+.ent-chips button[disabled]{opacity:.45;cursor:default;text-decoration:line-through}
+.ent-chips button.ok{opacity:.75;text-decoration:none;border-style:solid;border-color:#16a34a;color:#15803d}
+.ent-linha{display:grid;grid-template-columns:1fr 90px 34px;gap:8px;align-items:center;margin-bottom:6px}
+.ent-linha .epi-dica{grid-column:1/-1;margin:-2px 0 4px}
 /* Copiar EPIs entre estoques */
 .cp-modos{display:flex;flex-direction:column;gap:6px}
 .cp-modos label{display:flex;gap:10px;align-items:flex-start;padding:9px 11px;border:1px solid var(--bd);border-radius:6px;cursor:pointer;background:var(--sf)}
@@ -745,6 +761,8 @@ hr.dv{border:none;border-top:1px solid var(--bd);margin:18px 0}
         <div class="fg" style="margin:0;flex:1;min-width:170px"><label class="fl">Material</label><input id="pf-mat" placeholder="Nome ou C.A..." oninput="epiPainelFiltro()"></div>
         <div class="fg" style="margin:0"><label class="fl">Per&iacute;odo do consumo</label><select id="epi-periodo" onchange="epiPainelFiltro()"><option value="30">&Uacute;ltimos 30 dias</option><option value="90" selected>&Uacute;ltimos 90 dias</option><option value="180">&Uacute;ltimos 180 dias</option><option value="365">&Uacute;ltimos 12 meses</option></select></div>
         <button type="button" class="btn bg2" style="align-self:flex-end" onclick="epiPainelLimpar()"><i class="fa-solid fa-filter-circle-xmark"></i> Limpar</button>
+        <button type="button" class="btn bg2" style="align-self:flex-end" onclick="epiRelatorioPDF()"><i class="fa-solid fa-file-pdf"></i> Relat&oacute;rio PDF</button>
+        <button type="button" class="btn bw" style="align-self:flex-end" onclick="epiAbrirEntrega()"><i class="fa-solid fa-hand-holding"></i> Entregar EPI</button>
       </div>
       <div class="epi-dica" id="pf-dica" style="margin-top:8px"></div>
     </div>
@@ -768,7 +786,7 @@ hr.dv{border:none;border-top:1px solid var(--bd);margin:18px 0}
   <div id="tab-epi-1" class="tc">
     <div class="epi-kpis" id="epi-kpis"></div>
     <div class="card">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:8px;flex-wrap:wrap"><div class="ct" style="margin:0">Estoque de Materiais</div><div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn bs" onclick="epiNovaMov('entrada')"><i class="fa-solid fa-arrow-down"></i> Entrada</button><button class="btn bw" onclick="epiNovaMov('saida')"><i class="fa-solid fa-arrow-up"></i> Sa&iacute;da</button><button class="btn bg2" onclick="epiAbrirCopia()"><i class="fa-solid fa-copy"></i> Copiar EPIs</button><button class="btn bp" onclick="openM('mdl-m','new')"><i class="fa-solid fa-plus"></i> Cadastrar Material</button></div></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:8px;flex-wrap:wrap"><div class="ct" style="margin:0">Estoque de Materiais</div><div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn bs" onclick="epiNovaMov('entrada')"><i class="fa-solid fa-arrow-down"></i> Entrada</button><button class="btn bw" onclick="epiNovaMov('saida')"><i class="fa-solid fa-arrow-up"></i> Sa&iacute;da</button><button class="btn bw" onclick="epiAbrirEntrega()"><i class="fa-solid fa-hand-holding"></i> Entregar EPI</button><button class="btn bg2" onclick="epiAbrirCopia()"><i class="fa-solid fa-copy"></i> Copiar EPIs</button><button class="btn bp" onclick="openM('mdl-m','new')"><i class="fa-solid fa-plus"></i> Cadastrar Material</button></div></div>
       <div class="epi-filtros">
         <div class="sw" style="flex:1;min-width:200px;margin:0"><input type="text" id="filter-mat" placeholder="Buscar por nome ou C.A..." onkeyup="renderMats()"><i class="fa-solid fa-magnifying-glass"></i></div>
         <select id="filter-mat-sit" onchange="renderMats()"><option value="">Todas as situa&ccedil;&otilde;es</option><option value="baixo">Abaixo do m&iacute;nimo</option><option value="zerado">Sem estoque</option><option value="ca">C.A. vencido / vencendo</option><option value="validade">Produto vencido / vencendo</option></select>
@@ -832,8 +850,8 @@ hr.dv{border:none;border-top:1px solid var(--bd);margin:18px 0}
         <label for="epi-blank" style="font-size:12px;font-weight:600;color:var(--tp);cursor:pointer">Gerar em Branco <small style="font-weight:400">(preenchimento manual em caneta)</small></label>
       </div>
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;padding:9px 11px;background:var(--hl);border:1px solid var(--bd);border-radius:6px">
-        <input type="checkbox" id="epi-baixa" checked>
-        <label for="epi-baixa" style="font-size:12px;font-weight:600;color:var(--tp);cursor:pointer">Dar baixa no estoque ao gerar <small style="font-weight:400">(registra a entrega de cada item para cada colaborador em Movimenta&ccedil;&otilde;es)</small></label>
+        <input type="checkbox" id="epi-baixa">
+        <label for="epi-baixa" style="font-size:12px;font-weight:600;color:var(--tp);cursor:pointer">Dar baixa no estoque ao gerar <small style="font-weight:400">(desligado: a ficha s&oacute; &eacute; impressa. Para registrar o que foi entregue de fato, use <b>Entregar EPI</b>)</small></label>
       </div>
       <button class="btn bp bf" onclick="genEPI()"><i class="fa-solid fa-file-pdf"></i> GERAR FICHAS</button>
       <div id="epi-results" style="margin-top:10px;display:none"></div>
@@ -1015,7 +1033,7 @@ hr.dv{border:none;border-top:1px solid var(--bd);margin:18px 0}
   <input type="hidden" id="mid">
   <div class="fg"><label class="fl">Nome</label><input id="i-m-nm"></div>
   <div class="g2"><div class="fg"><label class="fl">C.A.</label><input id="i-m-ca"></div><div class="fg"><label class="fl">Tipo</label><select id="i-m-tp"><option value="EPI">EPI</option><option value="EPC">EPC</option><option value="UNIFORME">UNIFORME</option></select></div></div>
-  <div class="g2"><div class="fg"><label class="fl">Unidade</label><input id="i-m-un" placeholder="Par, Un, Cx..."></div><div class="fg"><label class="fl" id="i-m-es-lbl">Estoque inicial</label><input type="number" id="i-m-es" value="0" min="0"><div id="i-m-es-dica" class="epi-dica" style="display:none">O saldo muda pelas movimenta&ccedil;&otilde;es (entrada, sa&iacute;da, ajuste).</div></div></div>
+  <div class="g2"><div class="fg"><label class="fl">Unidade</label><input id="i-m-un" placeholder="Par, Un, Cx..."></div><div class="fg"><label class="fl" id="i-m-es-lbl">Estoque inicial</label><input type="number" id="i-m-es" value="0" min="0"><div id="i-m-es-dica" class="epi-dica" style="display:none">O saldo muda pelas movimenta&ccedil;&otilde;es. <button type="button" class="bxs bxn" style="margin-top:4px" onclick="epiAjustarDoCadastro()"><i class="fa-solid fa-scale-balanced"></i> Ajustar saldo</button></div></div></div>
   <div class="g2"><div class="fg"><label class="fl">Vencimento C.A.</label><input type="date" id="i-m-vc"></div><div class="fg"><label class="fl">Estoque m&iacute;nimo <small style="text-transform:none;font-weight:400">(alerta)</small></label><input type="number" id="i-m-min" min="0" placeholder="0"></div></div>
   <div class="g2"><div class="fg"><label class="fl">Validade do produto</label><input type="date" id="i-m-valprod"><div class="epi-dica">Data de validade do fabricante (lote em estoque).</div></div><div class="fg"><label class="fl">Vida &uacute;til de uso (dias)</label><input type="number" id="i-m-vida" min="0" placeholder="Ex.: 180"><div class="epi-dica">Prazo de uso ap&oacute;s a entrega ao colaborador (troca).</div></div></div>
   <div class="g2"><div class="fg"><label class="fl">Custo unit&aacute;rio (R$)</label><input type="text" inputmode="decimal" id="i-m-custo" placeholder="R$ 0,00" onblur="epiMoedaBlur(this)"></div></div>
@@ -1046,6 +1064,27 @@ hr.dv{border:none;border-top:1px solid var(--bd);margin:18px 0}
   <div id="mov-box-motivo" class="fg"><label class="fl">Motivo</label><select id="mov-motivo"><option value="">Selecione...</option><option>Perda</option><option>Dano / desgaste</option><option>Vencimento</option><option>Descarte</option><option>Roubo / extravio</option><option>Outro</option></select></div>
   <div class="fg"><label class="fl">Observa&ccedil;&atilde;o</label><input id="mov-obs" placeholder="Opcional"></div>
   <div class="ma"><button class="btn bp" id="mov-salvar" onclick="epiSalvarMov()"><i class="fa-solid fa-save"></i> Registrar</button><button class="btn bg2" onclick="cls()">Cancelar</button></div>
+</div></div>
+
+<div class="modal" id="mdl-entrega"><div class="mb" style="max-width:760px">
+  <div class="mt2"><i class="fa-solid fa-hand-holding"></i> Entregar EPI ao colaborador</div>
+  <div class="fg"><label class="fl">CPF ou nome do colaborador</label><input id="ent-busca" placeholder="Digite o CPF (s&oacute; n&uacute;meros ou com pontos) ou o nome..." oninput="epiEntBusca()" autocomplete="off">
+    <div id="ent-sugestoes" class="ent-sug"></div></div>
+  <div id="ent-corpo" style="display:none">
+    <div class="ent-card" id="ent-card"></div>
+    <div class="g2">
+      <div class="fg"><label class="fl">Sai do estoque</label><select id="ent-estoque" onchange="epiEntEstoque()"></select></div>
+      <div class="fg"><label class="fl">Data da entrega</label><input type="date" id="ent-data"></div>
+    </div>
+    <div class="fg"><label class="fl">EPIs entregues agora</label>
+      <div id="ent-sug-cargo"></div>
+      <div id="ent-itens"></div>
+      <button type="button" class="bxs bxn" onclick="epiEntAdd()"><i class="fa-solid fa-plus"></i> Adicionar item</button>
+    </div>
+    <div class="fg"><label class="fl">Observa&ccedil;&atilde;o</label><input id="ent-obs" placeholder="Opcional"></div>
+    <label style="display:flex;gap:8px;align-items:center;font-size:12px;font-weight:600;margin-bottom:12px;cursor:pointer"><input type="checkbox" id="ent-ficha" checked style="width:auto"> Gerar a ficha de entrega (PDF) com estes itens</label>
+  </div>
+  <div class="ma"><button class="btn bp" id="ent-ok" onclick="epiEntSalvar()" disabled><i class="fa-solid fa-check"></i> Registrar entrega</button><button class="btn bg2" onclick="cls()">Cancelar</button></div>
 </div></div>
 
 <div class="modal" id="mdl-copia"><div class="mb" style="max-width:680px">
@@ -1448,7 +1487,7 @@ function epiRenderEstoque(){
     const valp=m.validadeProduto?('<div class="epi-dica" style="margin:2px 0 0">Validade: '+fmtData(m.validadeProduto)+(dvp<0?' · <span class="epi-st st-zero">vencido</span>':dvp<=60?' · <span class="epi-st st-baixo">vence em '+dvp+'d</span>':'')+'</div>'):'';
     const u=ultimo[m.id];
     const ult=u?fmtData(u.data)+' · '+(EPI_TIPOS[u.tipo]?EPI_TIPOS[u.tipo].nome:u.tipo):'—';
-    const acoes=(pode?`<button class="btn bs" title="Entrada" onclick="epiNovaMov('entrada','${m.id}')"><i class="fa-solid fa-arrow-down"></i></button><button class="btn bw" title="Saída" onclick="epiNovaMov('saida','${m.id}')"><i class="fa-solid fa-arrow-up"></i></button>`:'')+
+    const acoes=(pode?`<button class="btn bs" title="Entrada" onclick="epiNovaMov('entrada','${m.id}')"><i class="fa-solid fa-arrow-down"></i></button><button class="btn bw" title="Saída" onclick="epiNovaMov('saida','${m.id}')"><i class="fa-solid fa-arrow-up"></i></button><button class="btn bg2" title="Ajustar saldo (contagem)" onclick="epiNovaMov('ajuste','${m.id}')"><i class="fa-solid fa-scale-balanced"></i></button>`:'')+
       `<button class="btn bg2" title="Histórico do item" onclick="epiHistoricoMat('${m.id}')"><i class="fa-solid fa-clock-rotate-left"></i></button>`+btnsEnt('epi','materiais','Mat',m);
     return `<tr><td><div style="font-weight:600">${esc(m.nome)} <span class="bdg">${esc(m.tipo||'EPI')}</span></div><div class="epi-dica" style="margin:2px 0 0">${ca}</div>${valp}</td>`+
       `<td class="n"><span class="epi-saldo">${epiNum(epiSaldo(m))}</span> ${esc(m.unidade||'')}</td>`+
@@ -1755,7 +1794,7 @@ function epiRenderColab(){
   const hist=epiMovs().filter(x=>x.funcionarioId===fid).sort((a,b)=>(b.data||'').localeCompare(a.data||'')||(b.ts||0)-(a.ts||0));
   const pode=epiPodeMov();
   let h=`<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin:6px 0 12px"><div style="font-weight:700;font-size:14px">${esc(f.nome||'')}${f.ativo===false?' <span class="bdg">Desligado</span>':''}</div>`+
-    (pode?`<div style="display:flex;gap:6px"><button class="btn bw" onclick="epiNovaMov('saida',null,'${fid}')"><i class="fa-solid fa-arrow-up"></i> Entregar</button><button class="btn bg2" onclick="epiNovaMov('devolucao',null,'${fid}')"><i class="fa-solid fa-rotate-left"></i> Devolu&ccedil;&atilde;o</button></div>`:'')+`</div>`;
+    (pode?`<div style="display:flex;gap:6px"><button class="btn bw" onclick="epiAbrirEntrega('${fid}')"><i class="fa-solid fa-hand-holding"></i> Entregar EPI</button><button class="btn bg2" onclick="epiNovaMov('devolucao',null,'${fid}')"><i class="fa-solid fa-rotate-left"></i> Devolu&ccedil;&atilde;o</button></div>`:'')+`</div>`;
   h+=emPosse.length?`<div class="epi-wrap"><table class="epi-tbl"><tr><th>Material</th><th style="text-align:right">Em posse</th><th>&Uacute;ltima entrega</th><th>Validade de uso</th><th></th></tr>`+emPosse.map(r=>{
       const m=DATA.materiais[r.mid]||{};const ui=epiUsoInfo(r);const prox=ui&&ui.data;const d=prox?epiDiasAte(prox):null;
       const st=d===null?'':d<0?`<span class="epi-st st-zero">Vencida há ${-d}d</span>`:d<=EPI_TROCA_AVISO_DIAS?`<span class="epi-st st-baixo">em ${d}d</span>`:'<span class="epi-st st-ok">OK</span>';
@@ -1993,6 +2032,211 @@ function epiRenderPainel(){
   document.addEventListener('click',esconde,true);
   document.addEventListener('scroll',esconde,true);
 })();
+
+// ── Ajustar saldo direto do cadastro do material ─────────────────────────
+function epiAjustarDoCadastro(){
+  const id=v('mid');const m=DATA.materiais[id];if(!m)return;
+  cls();epiIrEstoque(epiEstoqueDe(m));epiNovaMov('ajuste',id);
+}
+
+// ── Entrega manual de EPI ────────────────────────────────────────────────
+// Digita o CPF ou o nome, o sistema reconhece o colaborador, mostra o que ele
+// já tem e sugere os EPIs do cargo; registra só o que for entregue de fato
+// (a ficha gerada pelo cargo não dá mais baixa sozinha).
+let ENT_FUNC=null,ENT_ITENS=[];
+function epiSoDigitos(t){return String(t||'').replace(/\D/g,'');}
+function epiAbrirEntrega(fid){
+  if(!epiPodeMov()){alert('Voc\u00ea n\u00e3o tem permiss\u00e3o para movimentar o estoque.');return;}
+  ENT_FUNC=null;ENT_ITENS=[];
+  v('ent-busca','');v('ent-obs','');v('ent-data',epiHoje());document.getElementById('ent-ficha').checked=true;
+  document.getElementById('ent-sugestoes').style.display='none';
+  document.getElementById('ent-corpo').style.display='none';document.getElementById('ent-ok').disabled=true;
+  document.getElementById('mdl-entrega').style.display='flex';
+  if(fid)epiEntSelecionar(fid);else setTimeout(()=>{const b=document.getElementById('ent-busca');if(b)b.focus();},50);
+}
+function epiEntCandidatos(q){
+  const dig=epiSoDigitos(q),txt=String(q||'').trim().toLowerCase();if(!txt)return[];
+  const permit=new Set(epiEstoquesPermitidos().map(e=>epiPartes(e).empresaId).filter(Boolean));
+  const central=epiPodeCentral();
+  return toArr(DATA.funcionarios).filter(f=>f&&(f.nome||'').trim()&&f.ativo!==false&&(central||permit.has(String(f.empresaId||'')))&&(
+    (dig.length>=3&&epiSoDigitos(f.cpf).includes(dig))||(f.nome||'').toLowerCase().includes(txt))).sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));
+}
+function epiEntBusca(){
+  const q=v('ent-busca');const box=document.getElementById('ent-sugestoes');
+  const l=epiEntCandidatos(q);const dig=epiSoDigitos(q);
+  // CPF completo e único: reconhece direto
+  if(dig.length===11){const ex=l.filter(f=>epiSoDigitos(f.cpf)===dig);if(ex.length===1){box.style.display='none';epiEntSelecionar(ex[0].id);return;}}
+  if(!q.trim()){box.style.display='none';return;}
+  box.innerHTML=l.length?l.slice(0,10).map(f=>`<button type="button" onclick="epiEntSelecionar('${f.id}')"><b>${esc(f.nome)}</b> <small>${f.cpf?'CPF '+esc(f.cpf)+' \u00b7 ':''}${esc(epiNomeEmpresa(f.empresaId))}${f.obraId?' \u203a '+esc(epiNomeObra(f.obraId)):''}</small></button>`).join('')+(l.length>10?'<div class="epi-dica" style="padding:6px 10px">+'+(l.length-10)+' \u2014 digite mais para filtrar</div>':''):'<div class="epi-dica" style="padding:8px 10px">Nenhum colaborador ativo encontrado.</div>';
+  box.style.display='block';
+}
+// estoque de onde sai: obra do colaborador > geral da empresa > Central
+function epiEntEstoquesDoFunc(f){
+  const ok=new Set(epiEstoquesPermitidos());const l=[];
+  if(f.empresaId&&f.obraId&&ok.has(f.empresaId+'|'+f.obraId))l.push(f.empresaId+'|'+f.obraId);
+  if(f.empresaId&&ok.has(f.empresaId))l.push(f.empresaId);
+  if(f.empresaId){const e=(DATA.empresas||{})[f.empresaId];if(e)epiObrasDaEmpresa(e).forEach(o=>{const id=f.empresaId+'|'+o;if(ok.has(id)&&!l.includes(id))l.push(id);});}
+  if(ok.has(EPI_CENTRAL))l.push(EPI_CENTRAL);
+  return l;
+}
+function epiEntSelecionar(fid){
+  const f=DATA.funcionarios[fid];if(!f)return;
+  ENT_FUNC=fid;ENT_ITENS=[];
+  v('ent-busca',f.nome||'');document.getElementById('ent-sugestoes').style.display='none';
+  const ests=epiEntEstoquesDoFunc(f);
+  const sel=document.getElementById('ent-estoque');
+  sel.innerHTML=ests.map(e=>`<option value="${esc(e)}">${esc(epiNomeEstoque(e))}${epiMatsDe(e).length?'':' (sem itens)'}</option>`).join('');
+  // primeiro estoque que tem itens
+  const comItens=ests.find(e=>epiMatsDe(e).length);if(comItens)sel.value=comItens;
+  // o que ele já tem (todos os estoques)
+  const posse=epiPosse(epiMovsTodos().filter(x=>!x.estornado&&!x.estornoDe)).filter(r=>r.fid===fid&&r.qtd>0);
+  const cargo=resolveCargo(f.funcao);
+  document.getElementById('ent-card').innerHTML=
+    `<div class="ent-nome">${esc(f.nome)}</div><div class="ent-info">${f.cpf?'CPF '+esc(f.cpf)+' \u00b7 ':''}${esc(epiNomeEmpresa(f.empresaId))}${f.obraId?' \u203a Obra '+esc(epiNomeObra(f.obraId)):''}${cargo?' \u00b7 Cargo: '+esc(cargo.nome||''):''}</div>`+
+    (posse.length?`<table class="epi-tbl"><tr><th>J\u00e1 est\u00e1 com ele</th><th style="text-align:right">Qtd</th><th>Entregue em</th><th>Validade de uso</th></tr>`+posse.map(r=>{
+      const m=DATA.materiais[r.mid]||{};const ui=epiUsoInfo(r);const d=ui?epiDiasAte(ui.data):null;
+      const st=d===null?'\u2014':(fmtData(ui.data)+' '+(d<0?'<span class="epi-st st-zero">vencida</span>':d<=EPI_TROCA_AVISO_DIAS?'<span class="epi-st st-baixo">em '+d+'d</span>':'<span class="epi-st st-ok">OK</span>'));
+      return `<tr><td>${esc(m.nome||r.movs[0].materialNome||'')}</td><td class="n">${epiNum(r.qtd)}</td><td>${fmtData(r.ultima)}</td><td>${st}</td></tr>`;}).join('')+'</table>':'<div class="epi-dica" style="margin-top:6px">Nenhum EPI registrado com este colaborador ainda.</div>');
+  document.getElementById('ent-corpo').style.display='block';document.getElementById('ent-ok').disabled=false;
+  epiEntEstoque();
+}
+function epiEntEstoque(){
+  // ao trocar o estoque, os itens já escolhidos são procurados no novo estoque
+  const est=v('ent-estoque');
+  ENT_ITENS=ENT_ITENS.map(it=>{const m=DATA.materiais[it.mid];const eq=m&&(epiEstoqueDe(m)===est?m:epiEquivalente(m,est));return{mid:eq?eq.id:'',qtd:it.qtd};});
+  epiEntRender();
+}
+function epiEntSugestoesCargo(){
+  const f=DATA.funcionarios[ENT_FUNC];const cargo=f&&resolveCargo(f.funcao);const est=v('ent-estoque');
+  if(!cargo||!Array.isArray(cargo.epi)||!cargo.epi.length)return'';
+  const chips=cargo.epi.map(ce=>{const base=matPorId(ce&&ce.id);if(!base)return'';
+    const m=epiEstoqueDe(base)===est?base:epiEquivalente(base,est);
+    const ja=m&&ENT_ITENS.some(i=>i.mid===m.id);
+    return m?`<button type="button" ${ja?'disabled class="ok"':''} onclick="epiEntAdd('${m.id}',${Number(ce.qtd)||1})" title="Saldo ${epiNum(epiSaldo(m))}">${ja?'✓':'+'} ${esc(m.nome)}${(Number(ce.qtd)||1)>1?' x'+ce.qtd:''}</button>`:
+      `<button type="button" disabled title="N\u00e3o existe neste estoque">${esc(base.nome)} (n\u00e3o h\u00e1 neste estoque)</button>`;}).join('');
+  return chips?`<div class="epi-dica" style="margin:0 0 4px">EPIs do cargo \u2014 clique s\u00f3 no que estiver entregando:</div><div class="ent-chips">${chips}</div>`:'';
+}
+function epiEntAdd(mid,qtd){
+  if(mid&&ENT_ITENS.some(i=>i.mid===mid))return;
+  ENT_ITENS.push({mid:mid||'',qtd:qtd||1});epiEntRender();
+}
+function epiEntRem(i){ENT_ITENS.splice(i,1);epiEntRender();}
+function epiEntSet(i,campo,val){if(!ENT_ITENS[i])return;ENT_ITENS[i][campo]=campo==='qtd'?Math.max(1,Math.round(Number(val)||1)):val;epiEntRender(true);}
+function epiEntRender(soInfo){
+  const est=v('ent-estoque');const mats=epiMatsDe(est).sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));
+  document.getElementById('ent-sug-cargo').innerHTML=epiEntSugestoesCargo();
+  const hoje=v('ent-data')||epiHoje();
+  const html=ENT_ITENS.map((it,i)=>{
+    const m=DATA.materiais[it.mid];let info='';
+    if(m){const s=epiSaldo(m);info='Saldo '+epiNum(s)+' '+esc(m.unidade||'')+(s-it.qtd<0?' \u2014 <b style="color:#b91c1c">saldo insuficiente</b>':'')+
+      ((m.validadeProduto&&m.validadeProduto<hoje)?' \u00b7 <b style="color:#b91c1c">produto vencido</b>':'')+((m.vencimentoCa&&m.vencimentoCa<hoje)?' \u00b7 <b style="color:#b91c1c">C.A. vencido</b>':'');}
+    return `<div class="ent-linha"><select onchange="epiEntSet(${i},'mid',this.value)"><option value="">Selecione o EPI...</option>${mats.map(x=>`<option value="${x.id}" ${x.id===it.mid?'selected':''}>${esc(x.nome)}${x.ca?' (C.A. '+esc(x.ca)+')':''}</option>`).join('')}</select>`+
+      `<input type="number" min="1" value="${it.qtd}" onchange="epiEntSet(${i},'qtd',this.value)"><button type="button" class="btn bd2" style="padding:6px" onclick="epiEntRem(${i})" title="Remover"><i class="fa-solid fa-xmark"></i></button>`+
+      (info?`<div class="epi-dica">${info}</div>`:'')+`</div>`;
+  }).join('');
+  document.getElementById('ent-itens').innerHTML=html||'<div class="epi-dica" style="margin-bottom:8px">Nenhum item. Clique num EPI do cargo acima ou em "Adicionar item".</div>';
+}
+async function epiEntSalvar(){
+  const f=DATA.funcionarios[ENT_FUNC];if(!f){alert('Escolha o colaborador.');return;}
+  const data=v('ent-data');if(!data){alert('Informe a data da entrega.');return;}
+  const itens=ENT_ITENS.filter(i=>i.mid&&DATA.materiais[i.mid]);
+  if(!itens.length){alert('Escolha pelo menos um EPI entregue.');return;}
+  if(itens.length!==ENT_ITENS.length&&!confirm('H\u00e1 linhas sem EPI escolhido; elas ser\u00e3o ignoradas. Continuar?'))return;
+  // mesmo EPI em duas linhas soma
+  const soma={};itens.forEach(i=>{soma[i.mid]=(soma[i.mid]||0)+i.qtd;});
+  const avisos=[];
+  Object.keys(soma).forEach(id=>{const m=DATA.materiais[id];
+    if(epiSaldo(m)-soma[id]<0)avisos.push('\u2022 '+m.nome+': saldo '+epiNum(epiSaldo(m))+', entrega '+epiNum(soma[id])+' (ficar\u00e1 negativo)');
+    if(m.validadeProduto&&m.validadeProduto<data)avisos.push('\u2022 '+m.nome+': produto VENCIDO em '+fmtData(m.validadeProduto));
+    if(m.vencimentoCa&&m.vencimentoCa<data)avisos.push('\u2022 '+m.nome+': C.A. VENCIDO em '+fmtData(m.vencimentoCa));});
+  if(avisos.length&&!confirm('Aten\u00e7\u00e3o:\n\n'+avisos.join('\n')+'\n\nRegistrar a entrega mesmo assim?'))return;
+  const obs=v('ent-obs').trim();const ts=Date.now();const ops=[];let k=0;
+  Object.keys(soma).forEach(id=>{const m=DATA.materiais[id];const q=soma[id];
+    ops.push({op:'set',node:'epiMov',key:uid(),val:{ts:ts+(k++),data,tipo:'saida',materialId:id,materialNome:m.nome||'',ca:m.ca||'',unidade:m.unidade||'',qtd:q,delta:-q,saldoApos:epiSaldo(m)-q,
+      ...(m.validadeProduto?{validadeProduto:m.validadeProduto}:{}),...(m.custo?{custoUnit:m.custo}:{}),funcionarioId:f.id,funcionarioNome:f.nome||'',empresaId:f.empresaId||'',estoqueId:epiEstoqueDe(m),origem:'entrega',...(obs?{obs}:{}),...dadosGerador()}});
+    ops.push({op:'inc',node:'materiais',key:id,field:'estoque',n:-q});});
+  const b=document.getElementById('ent-ok');b.disabled=true;spin(true);
+  try{await WS_DATA.lote(ops);}catch(e){spin(false);b.disabled=false;alert('Erro ao registrar a entrega: '+(e&&e.message?e.message:e));return;}
+  let msg='Entrega registrada: '+Object.keys(soma).length+' EPI(s) para '+f.nome+'.';
+  if(document.getElementById('ent-ficha').checked){
+    try{
+      const items=Object.keys(soma).map(id=>{const m=DATA.materiais[id];return{id,nome:m.nome,ca:m.ca||'',unidade:m.unidade||'',tipo:m.tipo||'EPI',qtd:soma[id],vencimentoCa:m.vencimentoCa||''};});
+      const doc=new jsPDF({orientation:'landscape',unit:'mm',format:'a4'});
+      await drawEPI(doc,f,resolveEmp(f.empresaId),fmtData(data),items,true,0);
+      await saveSecurely(doc,'FICHA_EPI_'+(f.nome||'').replace(/\s+/g,'_')+'_'+fmtData(data).replace(/\//g,'-')+'.pdf',{empresaId:f.empresaId||'',funcionarioIds:[f.id]});
+      logHistory('Ficha EPI - entrega - '+(f.nome||''),{empresaId:f.empresaId||'',funcionarioIds:[f.id],data});
+      msg+='\nFicha de entrega gerada.';
+    }catch(e){console.error('Ficha da entrega:',e);msg+='\nA entrega foi registrada, mas a ficha n\u00e3o p\u00f4de ser gerada: '+(e&&e.message?e.message:e);}
+  }
+  spin(false);b.disabled=false;cls();epiRenderAll();alert(msg);
+}
+
+// ── Relatório geral de EPI em PDF (mesmos filtros do painel) ─────────────
+async function epiRelatorioPDF(){
+  const ctx=epiPainelCtx();const al=epiAlertas(ctx);
+  const dias=Number(v('epi-periodo'))||90;const desde=epiDesde(dias);
+  const per=ctx.movs.filter(x=>(x.data||'')>=desde);
+  const custoDe=x=>Number(x.custoUnit)||Number((DATA.materiais[x.materialId]||{}).custo)||0;
+  const todos=epiPainelEstoques();const central=todos[0]===EPI_CENTRAL;
+  const escopo=central?epiNomeEstoque(EPI_CENTRAL):epiNomeEmpresa(epiPartes(todos[0]).empresaId);
+  const filtros=[];
+  const so=document.getElementById('pf-obra');if(v('pf-obra'))filtros.push('Obra: '+so.selectedOptions[0].text);
+  const sc=document.getElementById('pf-cidade');if(v('pf-cidade'))filtros.push('Cidade: '+sc.selectedOptions[0].text);
+  if(v('pf-tipo'))filtros.push('Tipo: '+v('pf-tipo'));if(v('pf-mat'))filtros.push('Material: '+v('pf-mat'));
+  const perTxt=(document.getElementById('epi-periodo').selectedOptions[0]||{}).text||'';
+  const doc=new jsPDF({orientation:'landscape',unit:'mm',format:'a4'});
+  const W=PAG.LW,m=PAG.LM;const st=P_tableStyles(true);
+  doc.setFillColor(...C.h1);doc.rect(0,0,W,22,'F');
+  doc.setFont('helvetica','bold');doc.setFontSize(14);doc.setTextColor(...C.twh);doc.text('RELAT\u00d3RIO DE EPI / EPC',m,10);
+  doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(...C.tlt);
+  doc.text(escopo+(central?'':' \u2014 geral e obras'),m,16);
+  doc.text('Emitido em '+new Date().toLocaleString('pt-BR')+(epiNomeUsuario((USUARIO_ATUAL||{}).id)?' por '+epiNomeUsuario(USUARIO_ATUAL.id):''),W-m,16,{align:'right'});
+  let y=28;
+  doc.setFontSize(8.5);doc.setTextColor(...C.mid);
+  doc.text('Consumo: '+perTxt+(filtros.length?'   \u00b7   Filtros: '+filtros.join(' \u00b7 '):'   \u00b7   Sem filtros'),m,y);y+=4;
+  const qt=t=>per.filter(x=>x.tipo===t).reduce((s,x)=>s+(Number(x.qtd)||0),0);
+  const val=t=>per.filter(x=>x.tipo===t).reduce((s,x)=>s+(Number(x.qtd)||0)*custoDe(x),0);
+  const emEst=ctx.mats.reduce((t,mm)=>t+Math.max(epiSaldo(mm),0)*(Number(mm.custo)||0),0);
+  doc.autoTable(Object.assign({},st,{startY:y,head:[['Materiais','Valor em estoque','Itens entregues','Valor entregue','Colaboradores atendidos','Compras','Perdas / baixas','Alertas cr\u00edticos']],
+    body:[[epiNum(ctx.mats.length),epiMoeda(emEst),epiNum(qt('saida')),epiMoeda(val('saida')),epiNum(new Set(per.filter(x=>x.tipo==='saida'&&x.funcionarioId).map(x=>x.funcionarioId)).size),
+      epiMoeda(val('entrada'))+' ('+epiNum(qt('entrada'))+')',epiMoeda(val('baixa'))+' ('+epiNum(qt('baixa'))+')',epiNum(al.filter(a=>a.sev==='critico').length)]],
+    styles:Object.assign({},st.styles,{halign:'center',fontSize:9})}));
+  const titulo=(t)=>{let yy=doc.lastAutoTable.finalY+8;if(yy>PAG.LH-30){doc.addPage();yy=16;}doc.setFont('helvetica','bold');doc.setFontSize(10);doc.setTextColor(...C.h1);doc.text(t,m,yy);return yy+2;};
+  // estoque
+  const est=ctx.mats.slice().sort((a,b)=>epiNomeEstoque(epiEstoqueDe(a)).localeCompare(epiNomeEstoque(epiEstoqueDe(b)))||(a.nome||'').localeCompare(b.nome||''));
+  const sit=mm=>{const s=epiSituacao(mm);return s==='zero'?'Sem estoque':s==='baixo'?'Repor':'OK';};
+  doc.autoTable(Object.assign({},st,{startY:titulo('Estoque ('+est.length+' itens)'),
+    head:[[...(todos.length>1?['Estoque']:[]),'Material','C.A.','Tipo','Saldo','M\u00ednimo','Custo unit.','Valor','Venc. C.A.','Validade produto','Situa\u00e7\u00e3o']],
+    body:est.map(mm=>[...(todos.length>1?[epiPartes(epiEstoqueDe(mm)).obraId?'Obra '+epiNomeObra(epiPartes(epiEstoqueDe(mm)).obraId):(central?'Central':'Geral')]:[]),mm.nome||'',mm.ca||'\u2014',mm.tipo||'EPI',
+      epiNum(epiSaldo(mm))+' '+(mm.unidade||''),mm.estoqueMin?epiNum(mm.estoqueMin):'\u2014',mm.custo?epiMoeda(mm.custo):'\u2014',mm.custo&&epiSaldo(mm)>0?epiMoeda(epiSaldo(mm)*mm.custo):'\u2014',
+      mm.vencimentoCa?fmtData(mm.vencimentoCa):'\u2014',mm.validadeProduto?fmtData(mm.validadeProduto):'\u2014',sit(mm)])}));
+  // alertas
+  if(al.length){
+    doc.autoTable(Object.assign({},st,{startY:titulo('Alertas ('+al.length+')'),head:[['Severidade','Alerta','Item','Detalhe']],
+      body:al.slice(0,300).map(a=>[EPI_SEV[a.sev].nome,a.titulo,a.item,String(a.detalhe).replace(/<[^>]+>/g,'')]),columnStyles:{3:{cellWidth:110}}}));
+  }
+  // consumo por material e por colaborador
+  const agrupa=(lista,chave,nome)=>{const g={};lista.forEach(x=>{const k=chave(x);if(!k)return;const r=g[k]||(g[k]={nome:nome(x),q:0,rs:0});r.q+=Number(x.qtd)||0;r.rs+=(Number(x.qtd)||0)*custoDe(x);});return Object.values(g).sort((a,b)=>b.q-a.q);};
+  const saidas=per.filter(x=>x.tipo==='saida');
+  if(saidas.length){
+    const porMat=agrupa(saidas,x=>epiNorm((DATA.materiais[x.materialId]||{}).nome||x.materialNome)+'|'+(x.ca||''),x=>(DATA.materiais[x.materialId]||{}).nome||x.materialNome||'');
+    doc.autoTable(Object.assign({},st,{startY:titulo('Entregas por material \u2014 '+perTxt),head:[['Material','Quantidade','Valor']],body:porMat.map(r=>[r.nome,epiNum(r.q),epiMoeda(r.rs)])}));
+    const porCol=agrupa(saidas.filter(x=>x.funcionarioId),x=>x.funcionarioId,x=>epiNomeFunc(x.funcionarioId)||x.funcionarioNome||'');
+    doc.autoTable(Object.assign({},st,{startY:titulo('Entregas por colaborador \u2014 '+perTxt),head:[['Colaborador','Quantidade','Valor']],body:porCol.map(r=>[r.nome,epiNum(r.q),epiMoeda(r.rs)])}));
+  }
+  // movimentações do período
+  const movs=per.slice().sort((a,b)=>(b.data||'').localeCompare(a.data||'')||(b.ts||0)-(a.ts||0));
+  if(movs.length){
+    doc.autoTable(Object.assign({},st,{startY:titulo('Movimenta\u00e7\u00f5es \u2014 '+perTxt+' ('+movs.length+')'),
+      head:[['Data','Tipo','Material','Qtd','Valor','Colaborador / detalhe','Estoque']],
+      body:movs.slice(0,1000).map(x=>[fmtData(x.data),(EPI_TIPOS[x.tipo]||{}).nome||x.tipo,x.materialNome||'',(Number(x.delta)>0?'+':'')+epiNum(Number(x.delta)||0),
+        custoDe(x)?epiMoeda((Number(x.qtd)||0)*custoDe(x)):'\u2014',epiDetalheMov(x).replace(/<[^>]+>/g,'').replace(/\s+/g,' ').trim(),epiNomeEstoque(epiMovEstoque(x))])}));
+  }
+  const n=doc.getNumberOfPages();
+  for(let i=1;i<=n;i++){doc.setPage(i);doc.setFont('helvetica','normal');doc.setFontSize(7);doc.setTextColor(...C.sub);doc.text('P\u00e1gina '+i+' de '+n,W-m,PAG.LH-6,{align:'right'});doc.text('WS Documentos \u2014 Relat\u00f3rio de EPI',m,PAG.LH-6);}
+  doc.save('Relatorio_EPI_'+epiNorm(escopo).replace(/[^a-z0-9]+/g,'_').slice(0,40)+'_'+epiHoje()+'.pdf');
+}
+
 // ── Copiar EPIs entre estoques ───────────────────────────────────────────
 // Leva o catálogo (e, se pedido, as quantidades) do estoque atual para outro.
 // Item que o destino já tem (mesmo nome e C.A.) não é duplicado.
@@ -2115,7 +2359,7 @@ const RESP={nome:"WEDSON DE JESUS SANTOS",registro:"CREA 0516926055",funcao:"Eng
 const IMGBB_KEY="95bb16ee776d7e20f26857cec98bd372";
 
 // ── STATE ───────────────────────────────────────────────────────
-let DATA={empresas:{},funcionarios:{},textos:{},materiais:{},config:{},historico:{},cargos:{},pessoas:{},obras:{},cidades:{},filiais:{},usuarios:{},aprovacoes:{},epiMov:{}};
+let DATA={empresas:{},funcionarios:{},textos:{},materiais:{},config:{},historico:{},cargos:{},pessoas:{},obras:{},cidades:{},filiais:{},usuarios:{},aprovacoes:{},epiMov:{},materiaisAlias:{}};
 let CART=[],SEL_TEXTS=[],CARGO_EPI_CART=[];
 let PENDING_CAT_SEL=null;
 let _replaceHistoryKey=null;
@@ -2140,6 +2384,8 @@ function initListeners(){
       // movimentações de estoque de EPI: incremental por 'ts' (precisa do
       // .indexOn ts nas regras, como o historico)
       {path:'epiMov',target:DATA,key:'epiMov',tsKey:'ts'},
+      // de-para de cadastros de EPI unificados (id antigo -> id que ficou)
+      {path:'materiaisAlias',target:DATA,key:'materiaisAlias'},
       {path:'cargos',target:DATA,key:'cargos'},
       {path:'pessoas',target:DATA,key:'pessoas'},
       {path:'obras',target:DATA,key:'obras'},
@@ -2462,6 +2708,15 @@ function fmtDataExtenso(d){
 function fmtMoeda(n){return'R$ '+Number(n||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});}
 function stripCert(n){return String(n||'').replace(/^Certificado[s]?\s*-\s*/i,'');}
 function getExpirationDate(textId){const t=DATA.textos[textId];if(!t||!t.validade||t.validade==='none')return null;const d=new Date();const years=parseInt(t.validade);d.setFullYear(d.getFullYear()+years);return d.toISOString().slice(0,10);}
+// Material pelo id, seguindo o de-para dos cadastros unificados: cargo salvo
+// antes da unificação continua achando o EPI (antes ele sumia da ficha).
+function matPorId(id){
+  if(!id)return null;
+  let m=DATA.materiais[id];if(m)return m;
+  const alias=DATA.materiaisAlias||{};let k=id,n=0;
+  while(!m&&alias[k]&&n<5){k=alias[k];m=DATA.materiais[k];n++;}
+  return m||null;
+}
 function toArr(obj){if(!obj)return[];return Object.entries(obj).map(([k,v])=>(typeof v==='object'&&v!==null)?{...v,id:v.id||k}:v);}
 function isBlindagem(h){const n=(h.nome||'').toLowerCase();return n.includes('blindad')||n.startsWith('pdfs_blindados');}
 function spin(on){document.getElementById('loader').style.display=on?'flex':'none';}
@@ -4169,7 +4424,7 @@ document.addEventListener('click',e=>{if(!e.target.closest('.msd'))document.quer
 function addCat(col,inputId){const el=document.getElementById(inputId);const nome=(el.value||'').trim();if(!nome){alert('Informe um nome');return;}const k=uid();WS_DATA.write(col,k,{id:k,nome}).then(()=>{el.value='';refreshNode(col).then(()=>{if(window.renderAll)renderAll();});}).catch(e=>alert('Erro: '+e.message));}
 function delCat(col,id){if(!usuarioPodeExcluir('catalogos')){alert('Voc\u00ea n\u00e3o tem permiss\u00e3o para excluir.');return;}if(!confirm('Confirma a exclus\u00e3o?'))return;WS_DATA.remove(col,id).then(()=>{if(window.renderAll)renderAll();}).catch(e=>alert('Erro: '+e.message));}
 function addCatAndSel(col,inputId,prefix){const el=document.getElementById(inputId);const nome=(el.value||'').trim();if(!nome){alert('Informe um nome');return;}const k=uid();PENDING_CAT_SEL={col:col,id:k};WS_DATA.write(col,k,{id:k,nome}).then(()=>{el.value='';refreshNode(col).then(()=>{renderMsd();});}).catch(e=>{PENDING_CAT_SEL=null;alert('Erro: '+e.message);});}
-function renderCargos(){const q=(document.getElementById('filter-cargos').value||'').toLowerCase();const cargos=toArr(DATA.cargos).filter(c=>(c.nome||'').toLowerCase().includes(q)||(c.cbo||'').toLowerCase().includes(q)).sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));const resolveEpiNomes=c=>{if(!c.epi)return'';const list=Array.isArray(c.epi)?c.epi:typeof c.epi==='string'?c.epi.split(',').map(s=>s.trim()).filter(s=>s).map(id=>({id})):[];return list.map(item=>{const id=typeof item==='object'?item.id:item;const qtd=typeof item==='object'?(item.qtd||1):1;const m=DATA.materiais[id]||toArr(DATA.materiais).find(mm=>(mm.nome||'').toLowerCase().includes(id.toLowerCase()));return m?m.nome+(qtd>1?' x'+qtd:''):null;}).filter(Boolean).join(', ');};document.getElementById('lst-c').innerHTML=cargos.length?(WS_DATA.pag.slice(cargos,'cargos',120).map(c=>{const epiStr=resolveEpiNomes(c);return`<div class="tr2"><div><div class="rn">${esc(c.nome)}</div><div class="rs">CBO: ${esc(c.cbo||'—')}${epiStr?' | EPIs: '+esc(epiStr.substring(0,60)):''}</div></div><div class="ra">${btnsEnt('cargos','cargos','Cargo',c)}</div></div>`;}).join('')+WS_DATA.pagBtn(cargos.length,WS_DATA.pag.count(cargos,'cargos',120),'cargos',120,'renderCargos()')):'<div class="es">Nenhum cargo encontrado</div>';}
+function renderCargos(){const q=(document.getElementById('filter-cargos').value||'').toLowerCase();const cargos=toArr(DATA.cargos).filter(c=>(c.nome||'').toLowerCase().includes(q)||(c.cbo||'').toLowerCase().includes(q)).sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));const resolveEpiNomes=c=>{if(!c.epi)return'';const list=Array.isArray(c.epi)?c.epi:typeof c.epi==='string'?c.epi.split(',').map(s=>s.trim()).filter(s=>s).map(id=>({id})):[];return list.map(item=>{const id=typeof item==='object'?item.id:item;const qtd=typeof item==='object'?(item.qtd||1):1;const m=matPorId(id)||toArr(DATA.materiais).find(mm=>(mm.nome||'').toLowerCase().includes(id.toLowerCase()));return m?m.nome+(qtd>1?' x'+qtd:''):null;}).filter(Boolean).join(', ');};document.getElementById('lst-c').innerHTML=cargos.length?(WS_DATA.pag.slice(cargos,'cargos',120).map(c=>{const epiStr=resolveEpiNomes(c);return`<div class="tr2"><div><div class="rn">${esc(c.nome)}</div><div class="rs">CBO: ${esc(c.cbo||'—')}${epiStr?' | EPIs: '+esc(epiStr.substring(0,60)):''}</div></div><div class="ra">${btnsEnt('cargos','cargos','Cargo',c)}</div></div>`;}).join('')+WS_DATA.pagBtn(cargos.length,WS_DATA.pag.count(cargos,'cargos',120),'cargos',120,'renderCargos()')):'<div class="es">Nenhum cargo encontrado</div>';}
 function renderFuncs(){const q=(document.getElementById('filter-colaboradores').value||'').toLowerCase();const eSel=document.getElementById('filter-colaboradores-emp')?.value||'';const _semNome=f=>!!f&&!String(f.nome||'').trim()&&!String(f.cpf||'').trim();const brutos=toArr(DATA.funcionarios);const incomp=brutos.filter(_semNome);const aviso=document.getElementById('alert-incompletos');if(aviso){document.getElementById('alert-incompleto-txt').textContent=incomp.length+' registro(s) sem nome nesta base.';aviso.style.display=incomp.length?'flex':'none';}const funcs=toArr(DATA.funcionarios).filter(f=>!_semNome(f)&&(!eSel||String(f.empresaId||'').trim()===String(eSel).trim())&&((f.nome||'').toLowerCase().includes(q)||(f.funcao||'').toLowerCase().includes(q))).sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));const em={};toArr(DATA.empresas).forEach(e=>{em[String(e.id||'').trim()]=e.nome;});const cg={};toArr(DATA.cargos).forEach(c=>{cg[String(c.id||'').trim()]=c.nome;});const nameOf=(col,id)=>{if(!id)return'';const s=String(id||'').trim();const it=DATA[col]&&DATA[col][s]?DATA[col][s]:toArr(DATA[col]).find(c=>String(c.id||'').trim()===s);return it?(it.nome||''):'';};const now=new Date();const fmtAsoTipo=t=>{return{'ADMISSIONAL':'Admissional','DEMISSIONAL':'Demissional','PERIODICO':'Periódico','MUDANCA_FUNCAO':'Mudança Função','RETORNO_TRABALHO':'Retorno Trabalho'}[t]||t;};function asoStatus(f){if(!f.asoDate)return'';const d=new Date(f.asoDate+'T23:59:59');const days=Math.ceil((d-now)/(864e5));if(days<0)return'<span class="bdg" style="background:#fee2e2;color:#b91c1c">ASO Vencido</span>';if(days<=30)return'<span class="bdg" style="background:#ffedd5;color:#c2410c">ASO '+days+'d</span>';return'<span class="bdg" style="background:#dcfce7;color:#15803d">ASO OK</span>';}function situacaoBadge(f){if(f.ativo!==false)return'';const d=f.dataDemissao?new Date(f.dataDemissao+'T00:00:00').toLocaleDateString('pt-BR'):'';return' <span class="bdg" style="background:#f4f4f5;color:#52525b">Desligado'+(d?' em '+d:'')+'</span>';}function vinculoBadge(f){const ok=!!f.filialId&&!!f.obraId;if(ok)return'';return' <span class="bdg" style="background:#fee2e2;color:#b91c1c">Sem vínculo completo</span>';}document.getElementById('lst-f').innerHTML=funcs.length?(WS_DATA.pag.slice(funcs,'funcs',120).map(f=>{const fl=nameOf('filiais',f.filialId),ob=nameOf('obras',f.obraId),cd=nameOf('cidades',f.cidadeId);const vinculoTxt=(fl||ob||cd)?` · ${[fl,ob,cd].filter(Boolean).join(' / ')}`:'';return`<div class="tr2"><div><div class="rn">${esc(f.nome)} ${f.ativo===false?'':asoStatus(f)}${situacaoBadge(f)}${vinculoBadge(f)}</div><div class="rs">${esc(em[String(f.empresaId||'').trim()]||'?')} · ${esc(cg[String(f.funcao||'').trim()]||f.funcao||'—')}${vinculoTxt}${f.asoTipo?' · ASO: '+esc(fmtAsoTipo(f.asoTipo)):''}${f.asoDate?' · Vence: '+esc(f.asoDate):''}</div></div><div class="ra">${btnsEnt('funcs','funcionarios','Func',f)}</div></div>`;}).join('')+WS_DATA.pagBtn(funcs.length,WS_DATA.pag.count(funcs,'funcs',120),'funcs',120,'renderFuncs()')):'<div class="es">Nenhum colaborador encontrado</div>';}
 function renderPessoas(){const q=(document.getElementById('filter-pessoas').value||'').toLowerCase();const pessoas=toArr(DATA.pessoas).filter(p=>(p.nome||'').toLowerCase().includes(q)||(p.cpf||'').toLowerCase().includes(q)).sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));document.getElementById('lst-p').innerHTML=pessoas.length?(WS_DATA.pag.slice(pessoas,'pessoas',120).map(p=>`<div class="tr2"><div><div class="rn">${esc(p.nome)}</div><div class="rs">CPF: ${esc(p.cpf||'—')}${p.endereco?' | '+esc(p.endereco).substring(0,50):''}</div></div><div class="ra">${btnsEnt('pessoas','pessoas','Pessoa',p)}</div></div>`).join('')+WS_DATA.pagBtn(pessoas.length,WS_DATA.pag.count(pessoas,'pessoas',120),'pessoas',120,'renderPessoas()')):'<div class="es">Nenhuma pessoa encontrada</div>';}
 function renderTexts(){const q=(document.getElementById('filter-texts').value||'').toLowerCase();const texts=toArr(DATA.textos).filter(t=>(t.titulo||'').toLowerCase().includes(q)).sort((a,b)=>(a.titulo||'').localeCompare(b.titulo||''));document.getElementById('lst-t').innerHTML=texts.length?(WS_DATA.pag.slice(texts,'texts',120).map(t=>`<div class="tr2"><div><div class="rn">${esc(t.titulo)} <span class="bdg">${esc(t.categoria||'')}</span></div><div class="rs">${esc((t.conteudo||'').substring(0,80))}${(t.conteudo||'').length>80?'...':''}</div></div><div class="ra">${btnsEnt('texts','textos','Text',t)}</div></div>`).join('')+WS_DATA.pagBtn(texts.length,WS_DATA.pag.count(texts,'texts',120),'texts',120,'renderTexts()')):'<div class="es">Nenhum texto cadastrado</div>';}
@@ -4293,7 +4548,7 @@ function handleColabSelect(fid,name){
           const id=typeof item==='object'?item.id:item;
           const qtd=typeof item==='object'?(item.qtd||1):1;
           const savedTipo=typeof item==='object'?item.tipo:null;
-          const mat=DATA.materiais[id]||toArr(DATA.materiais).find(m=>(m.nome||'').toLowerCase().includes(id.toLowerCase()));
+          const mat=matPorId(id)||toArr(DATA.materiais).find(m=>(m.nome||'').toLowerCase().includes(String(id).toLowerCase()));
           return mat?{id:mat.id,nome:mat.nome,ca:mat.ca||'',unidade:mat.unidade||'',tipo:savedTipo||mat.tipo||'EPI',qtd,vencimentoCa:mat.vencimentoCa||''}:null;
         }).filter(Boolean);
         epiItems.forEach(item=>{
@@ -4518,7 +4773,7 @@ function editCargo(x){
       const id=typeof item==='object'?item.id:item;
       const qtd=typeof item==='object'?(item.qtd||1):1;
       const savedTipo=typeof item==='object'?item.tipo:null;
-      const mat=DATA.materiais[id]||toArr(DATA.materiais).find(m=>(m.nome||'').toLowerCase().includes(id.toLowerCase()));
+      const mat=matPorId(id)||toArr(DATA.materiais).find(m=>(m.nome||'').toLowerCase().includes(String(id).toLowerCase()));
       if(mat&&!CARGO_EPI_CART.find(c=>c.id===mat.id)){
         CARGO_EPI_CART.push({id:mat.id,nome:mat.nome,ca:mat.ca||'',unidade:mat.unidade||'',tipo:savedTipo||mat.tipo||'EPI',qtd,vencimentoCa:mat.vencimentoCa||''});
       }
@@ -5761,7 +6016,7 @@ async function genEPI(){
       if(cargo?.epi?.length){
         cargo.epi.forEach(cepi=>{
           if(!items.find(i=>i.id===cepi.id)){
-            const mat=DATA.materiais[cepi.id];
+            const mat=matPorId(cepi.id);
             if(mat)items.push({id:mat.id,nome:mat.nome,ca:mat.ca||'',unidade:mat.unidade||'',tipo:cepi.tipo||mat.tipo||'EPI',qtd:cepi.qtd||1,vencimentoCa:mat.vencimentoCa||''});
           }
         });

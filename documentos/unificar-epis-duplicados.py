@@ -77,6 +77,8 @@ def main():
         up[f"materiais/{fica}"] = novo
         for a in antigos:
             up[f"materiais/{a}"] = None
+            # de-para: telas e cargos com o id antigo continuam achando o item
+            up[f"materiaisAlias/{a}"] = fica
             troca[a] = fica
         relatorio.append((mats[fica].get("nome"), chave[2], len(ids), fica, sorted(set(preenchidos)), novo["estoque"]))
 
@@ -129,7 +131,7 @@ def main():
               open(nome, "w", encoding="utf-8"), ensure_ascii=False)
     print("backup:", nome)
     req("PATCH", "", up)
-    for no in ("materiais", "cargos"):
+    for no in ("materiais", "cargos", "materiaisAlias"):
         req("PUT", f"_meta/{no}", {".sv": "timestamp"})
     if movs_alt:
         req("POST", "_mudancas/epiMov", {"k": movs_alt, "t": {".sv": "timestamp"}})
