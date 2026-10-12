@@ -325,10 +325,25 @@ hr.dv{border:none;border-top:1px solid var(--bd);margin:18px 0}
 .epi-dica.alerta{color:#b91c1c;font-weight:600}
 .epi-resumo{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--ts);margin-bottom:10px}
 .epi-resumo b{color:var(--tp)}
+/* Filtros do painel */
+.epi-pfiltros{padding:14px 16px}
+.epi-pf-escopo{font-size:12px;font-weight:700;color:var(--tp);margin-bottom:10px}
+.epi-pf-escopo i{color:var(--ts);margin-right:5px}
 /* Estoque por empresa (centro de custo) */
 .epi-est-bar{display:flex;flex-direction:column;gap:4px;min-width:260px}
 .epi-est-bar label{font-size:10px;font-weight:700;color:var(--ts);text-transform:uppercase;letter-spacing:.5px}
 .epi-est-bar select{font-weight:600}
+/* Copiar EPIs entre estoques */
+.cp-modos{display:flex;flex-direction:column;gap:6px}
+.cp-modos label{display:flex;gap:10px;align-items:flex-start;padding:9px 11px;border:1px solid var(--bd);border-radius:6px;cursor:pointer;background:var(--sf)}
+.cp-modos label:has(input:checked){border-color:var(--hi);background:var(--hl)}
+.cp-modos input{margin-top:3px;width:auto}
+.cp-modos span{display:flex;flex-direction:column;gap:2px;font-size:12px;color:var(--tp)}
+.cp-modos small{font-size:11px;color:var(--ts)}
+.cp-item{display:flex;align-items:center;gap:8px;padding:5px 4px;font-size:12px;border-bottom:1px solid var(--bd)}
+.cp-item input{width:auto}
+.cp-item .cp-n{flex:1}
+.cp-item .cp-s{color:var(--ts);white-space:nowrap}
 /* Painel de alertas e consumo de EPI */
 .epi-tab-n{display:inline-block;min-width:18px;padding:1px 6px;border-radius:9px;background:#d03b3b;color:#fff;font-size:10px;font-weight:700;margin-left:4px;text-align:center}
 .epi-tab-n:empty{display:none}
@@ -721,6 +736,18 @@ hr.dv{border:none;border-top:1px solid var(--bd);margin:18px 0}
     <div class="epi-est-bar"><label for="epi-estoque"><i class="fa-solid fa-warehouse"></i> Estoque / centro de custo</label><select id="epi-estoque" onchange="epiTrocaEstoque(this.value)"></select></div></div>
   <div class="tb"><div class="tab active" onclick="tabSwitch('tab-epi-0',this);epiRenderPainel()">Painel <span class="epi-tab-n" id="epi-tab-alertas"></span></div><div class="tab" onclick="tabSwitch('tab-epi-1',this)">Estoque</div><div class="tab" onclick="tabSwitch('tab-epi-3',this);epiRenderMov()">Movimenta&ccedil;&otilde;es</div><div class="tab" onclick="tabSwitch('tab-epi-4',this);epiRenderColab()">Por Colaborador</div><div class="tab" onclick="tabSwitch('tab-epi-2',this)">Emitir Ficha</div></div>
   <div id="tab-epi-0" class="tc active">
+    <div class="card epi-pfiltros">
+      <div class="epi-pf-escopo" id="epi-pf-escopo"></div>
+      <div class="epi-filtros" style="margin:0">
+        <div class="fg" style="margin:0"><label class="fl">Obra</label><select id="pf-obra" onchange="epiPainelFiltro()"></select></div>
+        <div class="fg" style="margin:0"><label class="fl">Cidade</label><select id="pf-cidade" onchange="epiPainelFiltro()"></select></div>
+        <div class="fg" style="margin:0"><label class="fl">Tipo</label><select id="pf-tipo" onchange="epiPainelFiltro()"><option value="">Todos</option><option value="EPI">EPI</option><option value="EPC">EPC</option><option value="UNIFORME">Uniforme</option></select></div>
+        <div class="fg" style="margin:0;flex:1;min-width:170px"><label class="fl">Material</label><input id="pf-mat" placeholder="Nome ou C.A..." oninput="epiPainelFiltro()"></div>
+        <div class="fg" style="margin:0"><label class="fl">Per&iacute;odo do consumo</label><select id="epi-periodo" onchange="epiPainelFiltro()"><option value="30">&Uacute;ltimos 30 dias</option><option value="90" selected>&Uacute;ltimos 90 dias</option><option value="180">&Uacute;ltimos 180 dias</option><option value="365">&Uacute;ltimos 12 meses</option></select></div>
+        <button type="button" class="btn bg2" style="align-self:flex-end" onclick="epiPainelLimpar()"><i class="fa-solid fa-filter-circle-xmark"></i> Limpar</button>
+      </div>
+      <div class="epi-dica" id="pf-dica" style="margin-top:8px"></div>
+    </div>
     <div class="epi-alertas" id="epi-alertas-tiles"></div>
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px"><div class="ct" style="margin:0">Alertas</div>
@@ -728,8 +755,7 @@ hr.dv{border:none;border-top:1px solid var(--bd);margin:18px 0}
       <div id="epi-alertas-lista"></div>
     </div>
     <div class="card">
-      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:14px"><div class="ct" style="margin:0">Consumo</div>
-        <select id="epi-periodo" onchange="epiRenderPainel()" style="width:auto"><option value="30">&Uacute;ltimos 30 dias</option><option value="90" selected>&Uacute;ltimos 90 dias</option><option value="180">&Uacute;ltimos 180 dias</option><option value="365">&Uacute;ltimos 12 meses</option></select></div>
+      <div class="ct" id="epi-consumo-titulo">Consumo</div>
       <div class="epi-kpis" id="epi-consumo-kpis" style="margin-bottom:18px"></div>
       <div class="epi-graf-grid">
         <div><div class="epi-graf-t">Maiores sa&iacute;das por material</div><div id="epi-g-mat"></div></div>
@@ -742,7 +768,7 @@ hr.dv{border:none;border-top:1px solid var(--bd);margin:18px 0}
   <div id="tab-epi-1" class="tc">
     <div class="epi-kpis" id="epi-kpis"></div>
     <div class="card">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:8px;flex-wrap:wrap"><div class="ct" style="margin:0">Estoque de Materiais</div><div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn bs" onclick="epiNovaMov('entrada')"><i class="fa-solid fa-arrow-down"></i> Entrada</button><button class="btn bw" onclick="epiNovaMov('saida')"><i class="fa-solid fa-arrow-up"></i> Sa&iacute;da</button><button class="btn bp" onclick="openM('mdl-m','new')"><i class="fa-solid fa-plus"></i> Cadastrar Material</button></div></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:8px;flex-wrap:wrap"><div class="ct" style="margin:0">Estoque de Materiais</div><div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn bs" onclick="epiNovaMov('entrada')"><i class="fa-solid fa-arrow-down"></i> Entrada</button><button class="btn bw" onclick="epiNovaMov('saida')"><i class="fa-solid fa-arrow-up"></i> Sa&iacute;da</button><button class="btn bg2" onclick="epiAbrirCopia()"><i class="fa-solid fa-copy"></i> Copiar EPIs</button><button class="btn bp" onclick="openM('mdl-m','new')"><i class="fa-solid fa-plus"></i> Cadastrar Material</button></div></div>
       <div class="epi-filtros">
         <div class="sw" style="flex:1;min-width:200px;margin:0"><input type="text" id="filter-mat" placeholder="Buscar por nome ou C.A..." onkeyup="renderMats()"><i class="fa-solid fa-magnifying-glass"></i></div>
         <select id="filter-mat-sit" onchange="renderMats()"><option value="">Todas as situa&ccedil;&otilde;es</option><option value="baixo">Abaixo do m&iacute;nimo</option><option value="zerado">Sem estoque</option><option value="ca">C.A. vencido / vencendo</option><option value="validade">Produto vencido / vencendo</option></select>
@@ -992,7 +1018,7 @@ hr.dv{border:none;border-top:1px solid var(--bd);margin:18px 0}
   <div class="g2"><div class="fg"><label class="fl">Unidade</label><input id="i-m-un" placeholder="Par, Un, Cx..."></div><div class="fg"><label class="fl" id="i-m-es-lbl">Estoque inicial</label><input type="number" id="i-m-es" value="0" min="0"><div id="i-m-es-dica" class="epi-dica" style="display:none">O saldo muda pelas movimenta&ccedil;&otilde;es (entrada, sa&iacute;da, ajuste).</div></div></div>
   <div class="g2"><div class="fg"><label class="fl">Vencimento C.A.</label><input type="date" id="i-m-vc"></div><div class="fg"><label class="fl">Estoque m&iacute;nimo <small style="text-transform:none;font-weight:400">(alerta)</small></label><input type="number" id="i-m-min" min="0" placeholder="0"></div></div>
   <div class="g2"><div class="fg"><label class="fl">Validade do produto</label><input type="date" id="i-m-valprod"><div class="epi-dica">Data de validade do fabricante (lote em estoque).</div></div><div class="fg"><label class="fl">Vida &uacute;til de uso (dias)</label><input type="number" id="i-m-vida" min="0" placeholder="Ex.: 180"><div class="epi-dica">Prazo de uso ap&oacute;s a entrega ao colaborador (troca).</div></div></div>
-  <div class="g2"><div class="fg"><label class="fl">Custo unit&aacute;rio (R$)</label><input type="number" id="i-m-custo" min="0" step="0.01" placeholder="0,00"></div></div>
+  <div class="g2"><div class="fg"><label class="fl">Custo unit&aacute;rio (R$)</label><input type="text" inputmode="decimal" id="i-m-custo" placeholder="R$ 0,00" onblur="epiMoedaBlur(this)"></div></div>
   <div class="ma"><button class="btn bp" onclick="sv('material')"><i class="fa-solid fa-save"></i> Salvar</button><button class="btn bg2" onclick="cls()">Cancelar</button></div>
 </div></div>
 
@@ -1014,12 +1040,31 @@ hr.dv{border:none;border-top:1px solid var(--bd);margin:18px 0}
     <div class="fg"><label class="fl">Data</label><input type="date" id="mov-data"></div>
   </div>
   <div id="mov-box-colab" class="fg"><label class="fl">Colaborador</label><input id="mov-colab-q" placeholder="Buscar colaborador..." oninput="epiFiltraColabMov()"><select id="mov-colab" style="margin-top:6px"></select></div>
-  <div id="mov-box-entrada"><div class="g3" style="grid-template-columns:1fr 1.4fr 1fr"><div class="fg"><label class="fl">Nota fiscal</label><input id="mov-nf"></div><div class="fg"><label class="fl">Fornecedor</label><input id="mov-forn"></div><div class="fg"><label class="fl">Custo unit. (R$)</label><input type="number" id="mov-custo" min="0" step="0.01"></div></div>
+  <div id="mov-box-entrada"><div class="g3" style="grid-template-columns:1fr 1.4fr 1fr"><div class="fg"><label class="fl">Nota fiscal</label><input id="mov-nf"></div><div class="fg"><label class="fl">Fornecedor</label><input id="mov-forn"></div><div class="fg"><label class="fl">Custo unit. (R$)</label><input type="text" inputmode="decimal" id="mov-custo" placeholder="R$ 0,00" onblur="epiMoedaBlur(this)"></div></div>
     <div class="fg"><label class="fl">Validade do lote</label><input type="date" id="mov-validade" style="max-width:220px"><div class="epi-dica">Opcional. Atualiza a validade do produto no estoque (fica a mais pr&oacute;xima de vencer).</div></div></div>
   <div id="mov-box-destino" class="fg"><label class="fl">Estoque de destino</label><select id="mov-destino" onchange="epiMatMovInfo()"></select><div class="epi-dica">Se o destino ainda n&atilde;o tiver este material no cat&aacute;logo, ele &eacute; criado automaticamente (mesmo nome, C.A. e dados).</div></div>
   <div id="mov-box-motivo" class="fg"><label class="fl">Motivo</label><select id="mov-motivo"><option value="">Selecione...</option><option>Perda</option><option>Dano / desgaste</option><option>Vencimento</option><option>Descarte</option><option>Roubo / extravio</option><option>Outro</option></select></div>
   <div class="fg"><label class="fl">Observa&ccedil;&atilde;o</label><input id="mov-obs" placeholder="Opcional"></div>
   <div class="ma"><button class="btn bp" id="mov-salvar" onclick="epiSalvarMov()"><i class="fa-solid fa-save"></i> Registrar</button><button class="btn bg2" onclick="cls()">Cancelar</button></div>
+</div></div>
+
+<div class="modal" id="mdl-copia"><div class="mb" style="max-width:680px">
+  <div class="mt2">Copiar EPIs para outro estoque</div>
+  <div class="epi-dica" id="cp-origem" style="margin:-6px 0 10px;font-weight:600"></div>
+  <div class="fg"><label class="fl">Copiar para</label><select id="cp-destino" onchange="epiCopiaResumo()"></select></div>
+  <div class="fg"><label class="fl">O que copiar</label>
+    <div class="cp-modos">
+      <label><input type="radio" name="cp-modo" value="itens" checked onchange="epiCopiaResumo()"><span><b>S&oacute; os itens</b><small>Cria o cadastro (nome, C.A., validades, m&iacute;nimo, vida &uacute;til, custo) com saldo zero no destino.</small></span></label>
+      <label><input type="radio" name="cp-modo" value="copiar" onchange="epiCopiaResumo()"><span><b>Itens e quantidades</b><small>O destino recebe o mesmo saldo como estoque inicial. O saldo daqui n&atilde;o muda.</small></span></label>
+      <label><input type="radio" name="cp-modo" value="transferir" onchange="epiCopiaResumo()"><span><b>Itens e transferir as quantidades</b><small>O saldo sai daqui e entra no destino (transfer&ecirc;ncia).</small></span></label>
+    </div>
+  </div>
+  <div class="fg"><label class="fl">Itens</label>
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px;flex-wrap:wrap"><input id="cp-busca" placeholder="Filtrar..." oninput="epiCopiaLista()" style="flex:1;min-width:160px"><button type="button" class="bxs bxn" onclick="epiCopiaMarcar(true)">Todos</button><button type="button" class="bxs bxd" onclick="epiCopiaMarcar(false)">Nenhum</button></div>
+    <div id="cp-lista" class="cl" style="max-height:260px"></div>
+  </div>
+  <div class="epi-dica" id="cp-resumo" style="font-size:12px;margin-bottom:12px"></div>
+  <div class="ma"><button class="btn bp" id="cp-ok" onclick="epiExecutarCopia()"><i class="fa-solid fa-copy"></i> Copiar</button><button class="btn bg2" onclick="cls()">Cancelar</button></div>
 </div></div>
 
 <div class="modal" id="mdl-conf"><div class="mb" style="max-width:560px">
@@ -1231,6 +1276,834 @@ hr.dv{border:none;border-top:1px solid var(--bd);margin:18px 0}
 </div></div>
 
 <script src="ws-data.js"></script>
+<!-- Estoque de EPI: carregado ANTES do script principal. No fim da pagina,
+     o renderAll() podia rodar antes deste bloco existir (erro "epiMatsDe is
+     not defined" que aparecia e sumia). Aqui so ha funcoes e constantes. -->
+<script>
+// ══ CONTROLE DE ESTOQUE DE EPI/EPC ═══════════════════════════════════════
+// Cada entrada, saída, devolução, baixa ou ajuste vira um registro em
+// 'epiMov' (nunca apagado: erro se corrige com estorno) e o saldo do
+// material ('materiais/<id>/estoque') sobe/desce por soma atômica no
+// servidor, no mesmo lote. Assim o saldo não se perde com duas pessoas
+// lançando ao mesmo tempo e todo número tem a sua origem rastreável.
+const EPI_TIPOS={
+  entrada:{nome:'Entrada',sinal:1,icone:'fa-arrow-down'},
+  saida:{nome:'Saída / Entrega',sinal:-1,icone:'fa-arrow-up'},
+  devolucao:{nome:'Devolução',sinal:1,icone:'fa-rotate-left'},
+  baixa:{nome:'Baixa',sinal:-1,icone:'fa-trash-can'},
+  ajuste:{nome:'Ajuste',sinal:0,icone:'fa-scale-balanced'},
+  transferencia:{nome:'Transferência',sinal:-1,icone:'fa-right-left'}
+};
+const EPI_DICAS={
+  entrada:'Compra ou recebimento de material. Soma ao saldo.',
+  saida:'Entrega a um colaborador (ou consumo geral, sem colaborador). Subtrai do saldo.',
+  devolucao:'O colaborador devolveu o item em condição de uso. Soma ao saldo.',
+  baixa:'Perda, dano, vencimento ou descarte. Subtrai do saldo.',
+  ajuste:'Contagem física: informe quanto existe de fato. O sistema lança a diferença.',
+  transferencia:'Envia itens deste estoque para outro (ex.: do Central para uma empresa). Sai daqui e entra no destino.'
+};
+let EPI_MOV_TIPO='entrada';
+const EPI_TROCA_AVISO_DIAS=15;
+
+function epiHoje(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function epiNum(n){return(Number(n)||0).toLocaleString('pt-BR');}
+function epiMoeda(n){return(Number(n)||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});}
+function epiSaldo(m){return Number(m&&m.estoque)||0;}
+// Dinheiro digitado: aceita "25,90", "25.90", "1.234,56", "R$ 1.234,56".
+// O campo era type=number, que em alguns navegadores recusa a vírgula e grava
+// vazio — o custo ia para o banco como 0 e os valores apareciam R$ 0,00.
+function epiParseMoeda(t){
+  let x=String(t==null?'':t).replace(/[R$\s]/g,'');if(!x)return 0;
+  if(x.includes(','))x=x.replace(/\./g,'').replace(',','.');
+  else if(/^\d{1,3}(\.\d{3})+$/.test(x))x=x.replace(/\./g,'');
+  const n=parseFloat(x);return isFinite(n)&&n>0?Math.round(n*100)/100:0;
+}
+function epiFmtMoeda(n){return(Number(n)||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function epiMoedaBlur(el){const n=epiParseMoeda(el.value);el.value=n?epiFmtMoeda(n):'';}
+function epiPodeMov(){return typeof usuarioPodeEditar!=='function'||usuarioPodeEditar('epi');}
+function epiDiasAte(iso){if(!iso)return null;return Math.ceil((new Date(iso+'T23:59:59')-new Date())/864e5);}
+function epiSomaDias(iso,dias){const d=new Date(iso+'T12:00:00');d.setDate(d.getDate()+Number(dias||0));return d.toISOString().slice(0,10);}
+function epiSituacao(m){const s=epiSaldo(m),min=Number(m.estoqueMin)||0;if(s<=0)return'zero';if(min&&s<=min)return'baixo';return'ok';}
+// ── Estoque por empresa (centro de custo) ──
+// Cada material pertence a um estoque: o da empresa (empresaId) ou o Estoque
+// Central (sem empresaId — onde ficaram os saldos de antes desta mudança).
+// Cada movimentação guarda o estoque em que aconteceu (estoqueId).
+const EPI_CENTRAL='_central';
+let EPI_ESTOQUE=(()=>{try{return localStorage.getItem('epi_estoque')||EPI_CENTRAL;}catch(e){return EPI_CENTRAL;}})();
+// Estoque = Central, empresa (geral) ou obra da empresa ("empresaId|obraId").
+// Obra é o contrato: cada uma tem saldo, catálogo e movimentações próprios.
+function epiPartes(est){if(!est||est===EPI_CENTRAL)return{};const i=String(est).indexOf('|');return i<0?{empresaId:est}:{empresaId:est.slice(0,i),obraId:est.slice(i+1)};}
+function epiEstoqueDe(m){if(!m||!m.empresaId)return EPI_CENTRAL;return m.obraId?m.empresaId+'|'+m.obraId:m.empresaId;}
+function epiNomeEmpresa(id){return(((DATA.empresas||{})[id]||{}).nome)||'Empresa removida';}
+function epiNomeObra(id){return(((DATA.obras||{})[id]||{}).nome)||'Obra removida';}
+function epiNomeEstoque(id){
+  if(id===EPI_CENTRAL)return'Estoque Central (WS Engenharia)';
+  const p=epiPartes(id);
+  return p.obraId?epiNomeEmpresa(p.empresaId)+' \u203a Obra '+epiNomeObra(p.obraId):epiNomeEmpresa(p.empresaId)+' (geral)';
+}
+// grava no registro (material) a qual estoque ele pertence
+function epiAplicaEstoque(obj,est){const p=epiPartes(est);delete obj.empresaId;delete obj.obraId;if(p.empresaId)obj.empresaId=p.empresaId;if(p.obraId)obj.obraId=p.obraId;return obj;}
+// obras da empresa: as vinculadas no cadastro da empresa + as dos colaboradores dela
+function epiObrasDaEmpresa(e){
+  const ids=new Set();const ob=DATA.obras||{};
+  (Array.isArray(e.obras)?e.obras:[]).forEach(x=>{if(ob[x])ids.add(String(x));});
+  if(typeof e.obra==='string'){const t=e.obra.trim();if(ob[t])ids.add(t);else{const a=Object.values(ob).find(o=>(o.nome||'').trim()===t);if(a)ids.add(a.id);}}
+  toArr(DATA.funcionarios).forEach(f=>{if(String(f.empresaId||'')===String(e.id)&&f.obraId&&ob[f.obraId])ids.add(String(f.obraId));});
+  return [...ids].sort((a,b)=>epiNomeObra(a).localeCompare(epiNomeObra(b)));
+}
+// o colaborador pertence ao estoque? (obra: só os daquela obra; geral: todos da empresa)
+function epiFuncNoEstoque(f,est){
+  if(!f)return false;if(est===EPI_CENTRAL)return true;
+  const p=epiPartes(est);
+  if(String(f.empresaId||'')!==String(p.empresaId))return false;
+  return !p.obraId||String(f.obraId||'')===String(p.obraId);
+}
+function epiPodeCentral(){return typeof USUARIO_ATUAL==='undefined'||!USUARIO_ATUAL||!!USUARIO_ATUAL.mestre;}
+function epiEstoquesPermitidos(){
+  const l=[];if(epiPodeCentral())l.push(EPI_CENTRAL);
+  toArr(DATA.empresas).filter(e=>e&&e.id&&(typeof empresaPermitida!=='function'||empresaPermitida(e.id))).sort((a,b)=>(a.nome||'').localeCompare(b.nome||'')).forEach(e=>{
+    l.push(e.id);epiObrasDaEmpresa(e).forEach(o=>l.push(e.id+'|'+o));
+  });
+  return l;
+}
+function epiEstoqueAtual(){
+  const ok=epiEstoquesPermitidos();
+  if(!ok.includes(EPI_ESTOQUE)&&ok.length)EPI_ESTOQUE=ok[0];
+  return EPI_ESTOQUE;
+}
+function epiTrocaEstoque(id){
+  EPI_ESTOQUE=id;try{localStorage.setItem('epi_estoque',id);}catch(e){}
+  WS_DATA.pag.first('mov');WS_DATA.pag.first('alertas');
+  const s=document.getElementById('epi-colab-sel');if(s)s.innerHTML='';
+  epiRenderAll();
+}
+function epiMatsDe(est){return toArr(DATA.materiais).filter(m=>epiEstoqueDe(m)===est);}
+function epiMats(){return epiMatsDe(epiEstoqueAtual());}
+function epiNorm(t){return String(t||'').trim().toLowerCase().replace(/\s+/g,' ');}
+// o mesmo item (nome + C.A.) no catálogo de outro estoque
+function epiEquivalente(m,est){return epiMatsDe(est).find(x=>epiNorm(x.nome)===epiNorm(m.nome)&&String(x.ca||'').trim()===String(m.ca||'').trim())||null;}
+function epiMovEstoque(x){return x.estoqueId||epiEstoqueDe((DATA.materiais||{})[x.materialId]);}
+function epiMovsTodos(){return toArr(DATA.epiMov||{});}
+function epiMovs(){const e=epiEstoqueAtual();return epiMovsTodos().filter(x=>epiMovEstoque(x)===e);}
+function epiRenderSeletorEstoque(){
+  const sel=document.getElementById('epi-estoque');if(!sel)return;
+  const ids=epiEstoquesPermitidos();const atual=epiEstoqueAtual();
+  let html='';let grupo=null;
+  ids.forEach(id=>{
+    if(id===EPI_CENTRAL){html+=`<option value="${esc(id)}">${esc(epiNomeEstoque(id))}</option>`;return;}
+    const p=epiPartes(id);
+    if(p.empresaId!==grupo){if(grupo!==null)html+='</optgroup>';grupo=p.empresaId;html+=`<optgroup label="${esc(epiNomeEmpresa(p.empresaId))}">`;}
+    html+=`<option value="${esc(id)}">${p.obraId?'Obra: '+esc(epiNomeObra(p.obraId)):'Geral da empresa'}</option>`;
+  });
+  if(grupo!==null)html+='</optgroup>';
+  if(!html)html='<option value="">Nenhuma empresa liberada</option>';
+  if(sel.innerHTML!==html)sel.innerHTML=html;
+  sel.value=atual;
+}
+function epiValidos(){return epiMovs().filter(x=>!x.estornado&&!x.estornoDe);}
+function epiNomeFunc(id){const f=DATA.funcionarios&&DATA.funcionarios[id];return f?(f.nome||''):'';}
+function epiNomeUsuario(id){return typeof guNomeUsuario==='function'?guNomeUsuario(id):'';}
+
+// ── Aba Estoque ──────────────────────────────────────────────────────────
+function epiRenderEstoque(){
+  const lst=document.getElementById('lst-m');if(!lst)return;
+  const mats=epiMats();
+  const ultimo={};
+  epiMovs().forEach(x=>{if(x.materialId&&(!ultimo[x.materialId]||x.ts>ultimo[x.materialId].ts))ultimo[x.materialId]=x;});
+  // indicadores
+  const repor=mats.filter(m=>epiSituacao(m)==='baixo').length;
+  const zerados=mats.filter(m=>epiSituacao(m)==='zero').length;
+  const caAlerta=mats.filter(m=>{const d=epiDiasAte(m.vencimentoCa);return d!==null&&d<=60;}).length;
+  const valAlerta=mats.filter(m=>{const d=epiDiasAte(m.validadeProduto);return d!==null&&d<=60&&epiSaldo(m)>0;}).length;
+  const valor=mats.reduce((t,m)=>t+Math.max(epiSaldo(m),0)*(Number(m.custo)||0),0);
+  const k=document.getElementById('epi-kpis');
+  if(k)k.innerHTML=
+    `<div class="epi-kpi"><div class="k-v">${epiNum(mats.length)}</div><div class="k-l">Materiais cadastrados</div></div>`+
+    `<div class="epi-kpi ${repor?'k-wn':''}" onclick="epiFiltroSit('baixo')" title="Ver os itens"><div class="k-v">${epiNum(repor)}</div><div class="k-l">Repor (no m&iacute;nimo)</div></div>`+
+    `<div class="epi-kpi ${zerados?'k-dn':''}" onclick="epiFiltroSit('zerado')" title="Ver os itens"><div class="k-v">${epiNum(zerados)}</div><div class="k-l">Sem estoque</div></div>`+
+    `<div class="epi-kpi ${caAlerta?'k-dn':''}" onclick="epiFiltroSit('ca')" title="Ver os itens"><div class="k-v">${epiNum(caAlerta)}</div><div class="k-l">C.A. vencido / vence em 60 dias</div></div>`+
+    `<div class="epi-kpi ${valAlerta?'k-dn':''}" onclick="epiFiltroSit('validade')" title="Ver os itens"><div class="k-v">${epiNum(valAlerta)}</div><div class="k-l">Produto vencido / vence em 60 dias</div></div>`+
+    `<div class="epi-kpi"><div class="k-v">${epiMoeda(valor)}</div><div class="k-l">Valor em estoque</div></div>`;
+  // filtros
+  const q=(document.getElementById('filter-mat').value||'').toLowerCase();
+  const sit=(document.getElementById('filter-mat-sit')||{}).value||'';
+  const tipo=(document.getElementById('filter-mat-tipo')||{}).value||'';
+  const lista=mats.filter(m=>{
+    if(q&&!((m.nome||'').toLowerCase().includes(q)||(m.ca||'').toLowerCase().includes(q)))return false;
+    if(tipo&&(m.tipo||'EPI')!==tipo)return false;
+    if(sit==='baixo'&&epiSituacao(m)!=='baixo')return false;
+    if(sit==='zerado'&&epiSituacao(m)!=='zero')return false;
+    if(sit==='ca'){const d=epiDiasAte(m.vencimentoCa);if(d===null||d>60)return false;}
+    if(sit==='validade'){const d=epiDiasAte(m.validadeProduto);if(d===null||d>60||epiSaldo(m)<=0)return false;}
+    return true;
+  }).sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));
+  if(!lista.length){lst.innerHTML='<div class="es">Nenhum material encontrado</div>';return;}
+  const pode=epiPodeMov();
+  const linhas=WS_DATA.pag.slice(lista,'mats',120).map(m=>{
+    const s=epiSituacao(m);
+    const st=s==='zero'?'<span class="epi-st st-zero">Sem estoque</span>':s==='baixo'?'<span class="epi-st st-baixo">Repor</span>':'<span class="epi-st st-ok">OK</span>';
+    const dca=epiDiasAte(m.vencimentoCa);
+    const ca=m.ca?('C.A. '+esc(m.ca)+(dca===null?'':dca<0?' · <span class="epi-st st-zero">C.A. vencido</span>':dca<=60?' · <span class="epi-st st-baixo">C.A. vence em '+dca+'d</span>':'')):'Sem C.A.';
+    const dvp=epiDiasAte(m.validadeProduto);
+    const valp=m.validadeProduto?('<div class="epi-dica" style="margin:2px 0 0">Validade: '+fmtData(m.validadeProduto)+(dvp<0?' · <span class="epi-st st-zero">vencido</span>':dvp<=60?' · <span class="epi-st st-baixo">vence em '+dvp+'d</span>':'')+'</div>'):'';
+    const u=ultimo[m.id];
+    const ult=u?fmtData(u.data)+' · '+(EPI_TIPOS[u.tipo]?EPI_TIPOS[u.tipo].nome:u.tipo):'—';
+    const acoes=(pode?`<button class="btn bs" title="Entrada" onclick="epiNovaMov('entrada','${m.id}')"><i class="fa-solid fa-arrow-down"></i></button><button class="btn bw" title="Saída" onclick="epiNovaMov('saida','${m.id}')"><i class="fa-solid fa-arrow-up"></i></button>`:'')+
+      `<button class="btn bg2" title="Histórico do item" onclick="epiHistoricoMat('${m.id}')"><i class="fa-solid fa-clock-rotate-left"></i></button>`+btnsEnt('epi','materiais','Mat',m);
+    return `<tr><td><div style="font-weight:600">${esc(m.nome)} <span class="bdg">${esc(m.tipo||'EPI')}</span></div><div class="epi-dica" style="margin:2px 0 0">${ca}</div>${valp}</td>`+
+      `<td class="n"><span class="epi-saldo">${epiNum(epiSaldo(m))}</span> ${esc(m.unidade||'')}</td>`+
+      `<td class="n">${m.estoqueMin?epiNum(m.estoqueMin):'—'}</td>`+
+      `<td class="n">${m.custo?epiMoeda(m.custo):'—'}</td><td class="n">${m.custo&&epiSaldo(m)>0?epiMoeda(epiSaldo(m)*m.custo):'—'}</td><td>${st}</td>`+
+      `<td style="color:var(--ts);white-space:nowrap">${ult}</td><td class="acoes">${acoes}</td></tr>`;
+  }).join('');
+  lst.innerHTML=`<div class="epi-wrap"><table class="epi-tbl"><tr><th>Material</th><th style="text-align:right">Saldo</th><th style="text-align:right">M&iacute;nimo</th><th style="text-align:right">Custo unit.</th><th style="text-align:right">Valor</th><th>Situa&ccedil;&atilde;o</th><th>&Uacute;ltima movimenta&ccedil;&atilde;o</th><th></th></tr>${linhas}</table></div>`+
+    WS_DATA.pagBtn(lista.length,WS_DATA.pag.count(lista,'mats',120),'mats',120,'renderMats()');
+}
+function epiFiltroSit(v){const s=document.getElementById('filter-mat-sit');if(s){s.value=v;renderMats();}}
+function epiHistoricoMat(id){
+  const m=DATA.materiais[id];if(!m)return;
+  const tab=[...document.querySelectorAll('#epi .tab')].find(t=>/Movimenta/.test(t.textContent));
+  document.getElementById('mov-f-q').value=m.nome||'';
+  if(tab)tabSwitch('tab-epi-3',tab);
+  epiRenderMov();
+}
+
+// ── Modal de movimentação ────────────────────────────────────────────────
+function epiNovaMov(tipo,matId,funcId){
+  if(!epiPodeMov()){alert('Você não tem permissão para movimentar o estoque.');return;}
+  ['mov-mat-q','mov-colab-q','mov-nf','mov-forn','mov-custo','mov-obs','mov-validade'].forEach(i=>v(i,''));
+  v('mov-qtd','1');v('mov-data',epiHoje());document.getElementById('mov-motivo').value='';
+  document.getElementById('mov-mat').value='';document.getElementById('mov-colab').value='';
+  EPI_MOV_TIPO=tipo||'entrada';
+  epiFiltraMatMov();epiFiltraColabMov();
+  document.getElementById('mov-mat').value=matId||'';
+  document.getElementById('mov-colab').value=funcId||'';
+  document.getElementById('mov-estoque-info').innerHTML='<i class="fa-solid fa-warehouse"></i> '+esc(epiNomeEstoque(epiEstoqueAtual()));
+  const dst=document.getElementById('mov-destino');
+  dst.innerHTML='<option value="">Selecione...</option>'+epiEstoquesPermitidos().filter(id=>id!==epiEstoqueAtual()).map(id=>`<option value="${esc(id)}">${esc(epiNomeEstoque(id))}</option>`).join('');
+  epiTipoMov(tipo||'entrada');
+  document.getElementById('mdl-mov').style.display='flex';
+}
+function epiTipoMov(t){
+  EPI_MOV_TIPO=t;
+  document.querySelectorAll('#mov-tipos button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));
+  document.getElementById('mov-dica').textContent=EPI_DICAS[t]||'';
+  document.getElementById('mov-box-colab').style.display=(t==='saida'||t==='devolucao')?'':'none';
+  document.getElementById('mov-box-entrada').style.display=t==='entrada'?'':'none';
+  document.getElementById('mov-box-motivo').style.display=t==='baixa'?'':'none';
+  document.getElementById('mov-box-destino').style.display=t==='transferencia'?'':'none';
+  document.getElementById('mov-qtd-lbl').textContent=t==='ajuste'?'Saldo contado (físico)':'Quantidade';
+  document.getElementById('mov-qtd').min=t==='ajuste'?'0':'1';
+  if(t==='ajuste'){const m=DATA.materiais[document.getElementById('mov-mat').value];if(m)v('mov-qtd',String(Math.max(epiSaldo(m),0)));}
+  if(t==='entrada'){const m=DATA.materiais[document.getElementById('mov-mat').value];if(m&&m.custo&&!v('mov-custo'))v('mov-custo',epiFmtMoeda(m.custo));}
+  epiMatMovInfo();
+}
+function epiFiltraMatMov(){
+  const q=(v('mov-mat-q')||'').toLowerCase();
+  const sel=document.getElementById('mov-mat');const atual=sel.value;
+  const mats=epiMats().filter(m=>!q||(m.nome||'').toLowerCase().includes(q)||(m.ca||'').toLowerCase().includes(q)).sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));
+  sel.innerHTML='<option value="">Selecione...</option>'+mats.map(m=>`<option value="${m.id}">${esc(m.nome)}${m.ca?' (C.A. '+esc(m.ca)+')':''} — saldo ${epiNum(epiSaldo(m))}</option>`).join('');
+  if(atual&&mats.some(m=>m.id===atual))sel.value=atual;else if(q&&mats.length===1)sel.value=mats[0].id;
+  epiMatMovInfo();
+}
+function epiFiltraColabMov(){
+  const q=(v('mov-colab-q')||'').toLowerCase();
+  const sel=document.getElementById('mov-colab');const atual=sel.value;
+  const emp={};toArr(DATA.empresas).forEach(e=>emp[e.id]=e.nome);
+  const est=epiEstoqueAtual();
+  const fs=toArr(DATA.funcionarios).filter(f=>f&&(f.nome||'').trim()&&f.ativo!==false&&epiFuncNoEstoque(f,est)&&(!q||(f.nome||'').toLowerCase().includes(q)||(f.cpf||'').includes(q))).sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));
+  sel.innerHTML='<option value="">'+(EPI_MOV_TIPO==='saida'?'Sem colaborador (consumo geral)':'Selecione...')+'</option>'+fs.slice(0,300).map(f=>`<option value="${f.id}">${esc(f.nome)}${emp[f.empresaId]?' — '+esc(emp[f.empresaId]):''}</option>`).join('');
+  if(atual&&fs.some(f=>f.id===atual))sel.value=atual;else if(q&&fs.length===1)sel.value=fs[0].id;
+}
+function epiMatMovInfo(){
+  const box=document.getElementById('mov-mat-info');if(!box)return;
+  const m=DATA.materiais[document.getElementById('mov-mat').value];
+  if(!m){box.textContent='';box.className='epi-dica';return;}
+  const s=epiSaldo(m),q=Number(v('mov-qtd'))||0,un=m.unidade||'';
+  let txt='Saldo atual: '+epiNum(s)+' '+un+(m.estoqueMin?' · Mínimo: '+epiNum(m.estoqueMin):'');
+  let alerta=false;
+  if(EPI_MOV_TIPO==='ajuste'){const d=q-s;txt+=' · Diferença a lançar: '+(d>0?'+':'')+epiNum(d);}
+  else if(EPI_TIPOS[EPI_MOV_TIPO].sinal<0){const r=s-q;txt+=' · Após: '+epiNum(r);if(r<0){alerta=true;txt+=' — saldo insuficiente, ficará negativo';}}
+  else txt+=' · Após: '+epiNum(s+q);
+  box.textContent=txt;box.className='epi-dica'+(alerta?' alerta':'');
+}
+function epiSalvarMov(){
+  const t=EPI_MOV_TIPO;const matId=document.getElementById('mov-mat').value;const m=DATA.materiais[matId];
+  if(!m){alert('Selecione o material.');return;}
+  const q=Number(v('mov-qtd'));const data=v('mov-data');
+  if(!data){alert('Informe a data.');return;}
+  if(t==='ajuste'){if(!(q>=0)||!Number.isInteger(q)){alert('Informe o saldo contado (número inteiro, zero ou mais).');return;}}
+  else if(!(q>0)||!Number.isInteger(q)){alert('Informe uma quantidade inteira maior que zero.');return;}
+  // colaborador só vale em saída/devolução (nos outros tipos o campo fica
+  // oculto e poderia guardar a escolha de um lançamento anterior)
+  const fid=(t==='saida'||t==='devolucao')?document.getElementById('mov-colab').value:'';
+  if(t==='devolucao'&&!fid){alert('Informe o colaborador que devolveu.');return;}
+  const motivo=document.getElementById('mov-motivo').value;
+  if(t==='baixa'&&!motivo){alert('Informe o motivo da baixa.');return;}
+  if(t==='transferencia')return epiSalvarTransferencia(m,q,data);
+  const saldo=epiSaldo(m);
+  const delta=t==='ajuste'?(q-saldo):EPI_TIPOS[t].sinal*q;
+  if(t==='ajuste'&&delta===0&&!confirm('O saldo contado é igual ao do sistema. Registrar a conferência mesmo assim?'))return;
+  if(t==='saida'&&m.validadeProduto&&m.validadeProduto<data&&!confirm('ATENÇÃO: este produto está VENCIDO (validade '+fmtData(m.validadeProduto)+').\n\nEntregar produto vencido ao colaborador?'))return;
+  if(t==='saida'&&m.vencimentoCa&&m.vencimentoCa<data&&!confirm('ATENÇÃO: o C.A. deste material está VENCIDO ('+fmtData(m.vencimentoCa)+').\n\nEntregar mesmo assim?'))return;
+  if(delta<0&&saldo+delta<0&&!confirm('Saldo insuficiente: há '+epiNum(saldo)+' '+(m.unidade||'')+' e a saída é de '+epiNum(-delta)+'.\n\nRegistrar mesmo assim? O saldo ficará negativo.'))return;
+  const mov={ts:Date.now(),data,tipo:t,materialId:matId,materialNome:m.nome||'',ca:m.ca||'',unidade:m.unidade||'',
+    qtd:t==='ajuste'?Math.abs(delta):q,delta,saldoApos:saldo+delta,origem:'manual',estoqueId:epiEstoqueDe(m),...dadosGerador()};
+  if(t==='ajuste')mov.saldoContado=q;
+  if(fid){mov.funcionarioId=fid;mov.funcionarioNome=epiNomeFunc(fid);const f=DATA.funcionarios[fid];if(f&&f.empresaId)mov.empresaId=f.empresaId;}
+  if(t==='entrada'){mov.nf=v('mov-nf').trim();mov.fornecedor=v('mov-forn').trim();const c=epiParseMoeda(v('mov-custo'));if(c>0)mov.custoUnit=c;const vl=v('mov-validade');if(vl)mov.validadeLote=vl;}
+  // a entrega guarda a validade do produto que saiu: é ela que vale para o
+  // colaborador, mesmo que o estoque receba depois um lote com outra validade
+  if(t==='saida'&&m.validadeProduto)mov.validadeProduto=m.validadeProduto;
+  if(t==='baixa')mov.motivo=motivo;
+  const obs=v('mov-obs').trim();if(obs)mov.obs=obs;
+  const ops=[{op:'set',node:'epiMov',key:uid(),val:mov}];
+  if(delta)ops.push({op:'inc',node:'materiais',key:matId,field:'estoque',n:delta});
+  if(t==='entrada'&&mov.custoUnit)ops.push({op:'patch',node:'materiais',key:matId,val:{custo:mov.custoUnit}});
+  if(t==='entrada'&&mov.validadeLote){
+    // Validade do estoque = a mais próxima de vencer entre os lotes. Se o
+    // estoque estava zerado, o lote antigo acabou: vale só a do lote novo.
+    const atual=m.validadeProduto;
+    const nova=(saldo<=0||!atual||mov.validadeLote<atual)?mov.validadeLote:atual;
+    if(nova!==atual)ops.push({op:'patch',node:'materiais',key:matId,val:{validadeProduto:nova}});
+  }
+  const b=document.getElementById('mov-salvar');b.disabled=true;spin(true);
+  WS_DATA.lote(ops).then(()=>{spin(false);b.disabled=false;cls();epiRenderAll();})
+    .catch(e=>{spin(false);b.disabled=false;alert('Erro ao registrar: '+(e&&e.message?e.message:e));});
+}
+
+// Transferência entre estoques: uma saída na origem e uma entrada no destino,
+// ligadas por transfId, num lote só (ou as duas, ou nenhuma). Se o destino não
+// tem o item no catálogo, ele é criado com os mesmos dados.
+function epiSalvarTransferencia(m,q,data){
+  const destino=document.getElementById('mov-destino').value;
+  if(!destino){alert('Escolha o estoque de destino.');return;}
+  const origem=epiEstoqueDe(m);
+  if(destino===origem){alert('O destino precisa ser outro estoque.');return;}
+  const saldo=epiSaldo(m);
+  if(saldo-q<0&&!confirm('Saldo insuficiente: h\u00e1 '+epiNum(saldo)+' '+(m.unidade||'')+' e a transfer\u00eancia \u00e9 de '+epiNum(q)+'.\n\nTransferir mesmo assim? O saldo da origem ficar\u00e1 negativo.'))return;
+  const eq=epiEquivalente(m,destino);
+  const ops=[];const transfId=uid();const ts=Date.now();const obs=v('mov-obs').trim();
+  let destId=eq&&eq.id;let saldoDest=eq?epiSaldo(eq):0;
+  if(!eq){
+    destId=uid();
+    const novo={id:destId,nome:m.nome||'',ca:m.ca||'',tipo:m.tipo||'EPI',unidade:m.unidade||'',vencimentoCa:m.vencimentoCa||'',validadeProduto:m.validadeProduto||'',
+      vidaUtilDias:m.vidaUtilDias||0,custo:m.custo||0,estoqueMin:0,estoque:q};
+    epiAplicaEstoque(novo,destino);
+    ops.push({op:'set',node:'materiais',key:destId,val:novo});
+  }else{
+    ops.push({op:'inc',node:'materiais',key:destId,field:'estoque',n:q});
+    // validade do lote que chega: fica a mais próxima de vencer
+    if(m.validadeProduto&&(saldoDest<=0||!eq.validadeProduto||m.validadeProduto<eq.validadeProduto))ops.push({op:'patch',node:'materiais',key:destId,val:{validadeProduto:m.validadeProduto}});
+  }
+  ops.push({op:'inc',node:'materiais',key:m.id,field:'estoque',n:-q});
+  const base={data,tipo:'transferencia',ca:m.ca||'',unidade:m.unidade||'',materialNome:m.nome||'',qtd:q,transfId,origem:'manual',...(obs?{obs}:{}),...(m.custo?{custoUnit:m.custo}:{}),...dadosGerador()};
+  ops.push({op:'set',node:'epiMov',key:uid(),val:Object.assign({},base,{ts,materialId:m.id,estoqueId:origem,destinoId:destino,delta:-q,saldoApos:saldo-q})});
+  ops.push({op:'set',node:'epiMov',key:uid(),val:Object.assign({},base,{ts:ts+1,materialId:destId,estoqueId:destino,origemId:origem,delta:q,saldoApos:saldoDest+q,...(m.validadeProduto?{validadeLote:m.validadeProduto}:{})})});
+  const b=document.getElementById('mov-salvar');b.disabled=true;spin(true);
+  WS_DATA.lote(ops).then(()=>{spin(false);b.disabled=false;cls();epiRenderAll();
+    alert('Transfer\u00eancia registrada: '+epiNum(q)+' '+(m.unidade||'')+' de "'+(m.nome||'')+'" para '+epiNomeEstoque(destino)+'.'+(eq?'':'\n\nO item foi criado no cat\u00e1logo do destino.'));})
+    .catch(e=>{spin(false);b.disabled=false;alert('Erro ao transferir: '+(e&&e.message?e.message:e));});
+}
+
+// ── Aba Movimentações ────────────────────────────────────────────────────
+function epiMovFiltradas(){
+  const de=v('mov-f-de'),ate=v('mov-f-ate'),tipo=v('mov-f-tipo'),q=(v('mov-f-q')||'').toLowerCase();
+  return epiMovs().filter(x=>{
+    if(de&&(x.data||'')<de)return false;
+    if(ate&&(x.data||'')>ate)return false;
+    if(tipo&&x.tipo!==tipo)return false;
+    if(q){const hay=[x.materialNome,x.ca,x.funcionarioNome,x.nf,x.fornecedor,x.motivo,x.obs].join(' ').toLowerCase();if(!hay.includes(q))return false;}
+    return true;
+  }).sort((a,b)=>(b.data||'').localeCompare(a.data||'')||(b.ts||0)-(a.ts||0));
+}
+function epiDetalheMov(x){
+  const p=[];
+  if(x.funcionarioId||x.funcionarioNome)p.push('<i class="fa-solid fa-user" style="opacity:.6"></i> '+esc(epiNomeFunc(x.funcionarioId)||x.funcionarioNome||''));
+  if(x.nf)p.push('NF '+esc(x.nf));
+  if(x.fornecedor)p.push(esc(x.fornecedor));
+  if(x.custoUnit)p.push(epiMoeda(x.custoUnit)+'/un');
+  if(x.motivo)p.push(esc(x.motivo));
+  if(x.tipo==='ajuste'&&x.saldoContado!=null)p.push('contado: '+epiNum(x.saldoContado));
+  if(x.tipo==='transferencia'&&!x.estornoDe&&(x.destinoId||x.origemId))p.push(x.destinoId?'para <b>'+esc(epiNomeEstoque(x.destinoId))+'</b>':'de <b>'+esc(epiNomeEstoque(x.origemId))+'</b>');
+  if(x.origem==='ficha')p.push('<span class="bdg">Ficha de EPI</span>');
+  if(x.obs)p.push('<i>'+esc(x.obs)+'</i>');
+  return p.join(' · ');
+}
+function epiRenderMov(){
+  const lst=document.getElementById('lst-mov');if(!lst)return;
+  const todas=epiMovFiltradas();
+  const val=todas.filter(x=>!x.estornado&&!x.estornoDe);
+  const soma=t=>val.filter(x=>x.tipo===t).reduce((s,x)=>s+(Number(x.qtd)||0),0);
+  const custo=val.filter(x=>x.tipo==='entrada').reduce((s,x)=>s+(Number(x.qtd)||0)*(Number(x.custoUnit)||0),0);
+  const r=document.getElementById('epi-mov-resumo');
+  if(r)r.innerHTML=`<span>${epiNum(todas.length)} lan&ccedil;amento(s)</span><span class="mv-entrada">Entradas: <b>${epiNum(soma('entrada'))}</b></span><span class="mv-saida">Sa&iacute;das: <b>${epiNum(soma('saida'))}</b></span><span class="mv-devolucao">Devolu&ccedil;&otilde;es: <b>${epiNum(soma('devolucao'))}</b></span><span class="mv-baixa">Baixas: <b>${epiNum(soma('baixa'))}</b></span>${custo?`<span>Compras: <b>${epiMoeda(custo)}</b></span>`:''}`;
+  if(!todas.length){lst.innerHTML='<div class="es">Nenhuma movimenta&ccedil;&atilde;o encontrada</div>';return;}
+  const info=WS_DATA.pag.page(todas,'mov',50);
+  const pode=epiPodeMov();
+  const linhas=info.slice.map(x=>{
+    const tp=EPI_TIPOS[x.tipo]||{nome:x.tipo,icone:'fa-circle'};
+    const d=Number(x.delta)||0;
+    const rot=x.estornoDe?'Estorno':tp.nome;
+    const acao=(pode&&!x.estornado&&!x.estornoDe)?`<button class="btn bg2" title="Estornar (desfaz o lançamento)" onclick="epiEstornar('${x.id}')"><i class="fa-solid fa-rotate-left"></i> Estornar</button>`:(x.estornado?'<span class="epi-dica">estornado</span>':'');
+    return `<tr class="${x.estornado?'est':''}"><td style="white-space:nowrap">${fmtData(x.data)}</td>`+
+      `<td class="mv-${x.tipo}" style="white-space:nowrap;font-weight:700"><i class="fa-solid ${x.estornoDe?'fa-rotate-left':tp.icone}"></i> ${rot}</td>`+
+      `<td><div style="font-weight:600">${esc(x.materialNome||'')}</div>${x.ca?'<div class="epi-dica" style="margin:0">C.A. '+esc(x.ca)+'</div>':''}</td>`+
+      `<td class="n mv-${x.tipo}" style="font-weight:700">${d>0?'+':''}${epiNum(d)}</td>`+
+      `<td class="n">${x.saldoApos!=null?epiNum(x.saldoApos):'—'}</td>`+
+      `<td style="font-size:11px">${epiDetalheMov(x)}</td>`+
+      `<td style="font-size:11px;color:var(--ts);white-space:nowrap">${esc(epiNomeUsuario(x.usuarioId))}</td><td class="acoes">${acao}</td></tr>`;
+  }).join('');
+  lst.innerHTML=`<div class="epi-wrap"><table class="epi-tbl"><tr><th>Data</th><th>Tipo</th><th>Material</th><th style="text-align:right">Qtd</th><th style="text-align:right">Saldo ap&oacute;s</th><th>Detalhes</th><th>Usu&aacute;rio</th><th></th></tr>${linhas}</table></div>`+
+    WS_DATA.pag.nav(info,'mov','epiRenderMov()');
+}
+function epiEstornar(id){
+  if(!epiPodeMov()){alert('Você não tem permissão para movimentar o estoque.');return;}
+  const x=DATA.epiMov&&DATA.epiMov[id];if(!x||x.estornado||x.estornoDe)return;
+  const d=Number(x.delta)||0;
+  if(!confirm('Estornar este lançamento?\n\n'+(EPI_TIPOS[x.tipo]?EPI_TIPOS[x.tipo].nome:x.tipo)+' de '+epiNum(Math.abs(d))+' '+(x.unidade||'')+' — '+(x.materialNome||'')+'\n\nO saldo volta '+(d>0?'-':'+')+epiNum(Math.abs(d))+'. O lançamento original fica no histórico, riscado.'))return;
+  const m=DATA.materiais[x.materialId];
+  const est={ts:Date.now(),data:epiHoje(),tipo:x.tipo,materialId:x.materialId,materialNome:x.materialNome||'',ca:x.ca||'',unidade:x.unidade||'',
+    qtd:Number(x.qtd)||0,delta:-d,saldoApos:m?epiSaldo(m)-d:null,origem:'estorno',estornoDe:id,obs:'Estorno do lançamento de '+fmtData(x.data),...dadosGerador()};
+  if(x.funcionarioId){est.funcionarioId=x.funcionarioId;est.funcionarioNome=x.funcionarioNome||'';}
+  est.estoqueId=epiMovEstoque(x);
+  const ops=[{op:'set',node:'epiMov',key:uid(),val:est},{op:'patch',node:'epiMov',key:id,val:{estornado:true,estornadoEm:Date.now()}}];
+  if(d&&m)ops.push({op:'inc',node:'materiais',key:x.materialId,field:'estoque',n:-d});
+  // transferência: a outra ponta (no outro estoque) é estornada junto
+  if(x.transfId){
+    const par=epiMovsTodos().find(y=>y.transfId===x.transfId&&y.id!==id&&!y.estornado&&!y.estornoDe);
+    if(par){
+      const dp=Number(par.delta)||0;const mp=DATA.materiais[par.materialId];
+      ops.push({op:'set',node:'epiMov',key:uid(),val:{ts:Date.now()+1,data:epiHoje(),tipo:par.tipo,materialId:par.materialId,materialNome:par.materialNome||'',ca:par.ca||'',unidade:par.unidade||'',
+        qtd:Number(par.qtd)||0,delta:-dp,saldoApos:mp?epiSaldo(mp)-dp:null,origem:'estorno',estornoDe:par.id,estoqueId:epiMovEstoque(par),obs:'Estorno da transfer\u00eancia de '+fmtData(par.data),...dadosGerador()}});
+      ops.push({op:'patch',node:'epiMov',key:par.id,val:{estornado:true,estornadoEm:Date.now()}});
+      if(dp&&mp)ops.push({op:'inc',node:'materiais',key:par.materialId,field:'estoque',n:-dp});
+    }
+  }
+  spin(true);
+  WS_DATA.lote(ops).then(()=>{spin(false);epiRenderAll();}).catch(e=>{spin(false);alert('Erro ao estornar: '+(e&&e.message?e.message:e));});
+}
+function epiExportarCSV(){
+  const linhas=epiMovFiltradas();
+  if(!linhas.length){alert('Nenhuma movimentação no filtro atual.');return;}
+  const c=s=>'"'+String(s==null?'':s).replace(/"/g,'""')+'"';
+  const cab=['Estoque','Data','Tipo','Material','C.A.','Unidade','Quantidade','Saldo após','Colaborador','NF','Fornecedor','Custo unit.','Motivo','Observação','Origem','Situação','Usuário'];
+  const out=[cab.map(c).join(';')].concat(linhas.map(x=>[epiNomeEstoque(epiMovEstoque(x)),fmtData(x.data),x.estornoDe?'Estorno':(EPI_TIPOS[x.tipo]?EPI_TIPOS[x.tipo].nome:x.tipo),x.materialNome,x.ca,x.unidade,
+    String(Number(x.delta)||0),x.saldoApos,epiNomeFunc(x.funcionarioId)||x.funcionarioNome,x.nf,x.fornecedor,x.custoUnit?epiFmtMoeda(x.custoUnit):'',x.motivo,x.obs,
+    x.origem==='ficha'?'Ficha de EPI':x.origem==='estorno'?'Estorno':'Manual',x.estornado?'Estornado':'',epiNomeUsuario(x.usuarioId)].map(c).join(';')));
+  const blob=new Blob(['﻿'+out.join('\r\n')],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='movimentacoes-epi-'+epiNorm(epiNomeEstoque(epiEstoqueAtual())).replace(/[^a-z0-9]+/g,'-').slice(0,40)+'-'+epiHoje()+'.csv';
+  document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+}
+
+// ── Aba Por Colaborador ──────────────────────────────────────────────────
+// Em posse = entregas - devoluções (sem contar estornos). A próxima troca sai
+// da última entrega + vida útil do material.
+function epiPosse(lista){
+  const p={};
+  (lista||epiValidos()).forEach(x=>{
+    if(!x.funcionarioId||!x.materialId||(x.tipo!=='saida'&&x.tipo!=='devolucao'))return;
+    const k=x.funcionarioId+'|'+x.materialId;
+    const r=p[k]||(p[k]={fid:x.funcionarioId,mid:x.materialId,qtd:0,ultima:'',movs:[]});
+    r.qtd+=x.tipo==='saida'?(Number(x.qtd)||0):-(Number(x.qtd)||0);
+    if(x.tipo==='saida'&&(x.data||'')>=r.ultima){r.ultima=x.data;r.validadeProduto=x.validadeProduto||'';}
+    r.movs.push(x);
+  });
+  return Object.values(p);
+}
+// Validade de uso do item com o colaborador: o que vencer primeiro entre a
+// vida útil de uso (entrega + dias) e a validade do produto entregue.
+function epiUsoInfo(r){
+  const m=DATA.materiais[r.mid]||{};
+  const porVida=(Number(m.vidaUtilDias)&&r.ultima)?epiSomaDias(r.ultima,m.vidaUtilDias):'';
+  const porProd=r.validadeProduto||'';
+  if(!porVida&&!porProd)return null;
+  if(porVida&&(!porProd||porVida<=porProd))return{data:porVida,motivo:'vida \u00fatil de uso'};
+  return{data:porProd,motivo:'validade do produto'};
+}
+function epiProxTroca(r){const i=epiUsoInfo(r);return i?i.data:null;}
+function epiFiltraColab(){
+  const q=(v('epi-colab-q')||'').toLowerCase();
+  const sel=document.getElementById('epi-colab-sel');if(!sel)return;const atual=sel.value;
+  const emp={};toArr(DATA.empresas).forEach(e=>emp[e.id]=e.nome);
+  const est=epiEstoqueAtual();
+  const fs=toArr(DATA.funcionarios).filter(f=>f&&(f.nome||'').trim()&&epiFuncNoEstoque(f,est)&&(!q||(f.nome||'').toLowerCase().includes(q)||(f.cpf||'').includes(q))).sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));
+  sel.innerHTML=fs.slice(0,300).map(f=>`<option value="${f.id}">${esc(f.nome)}${emp[f.empresaId]?' — '+esc(emp[f.empresaId]):''}${f.ativo===false?' (desligado)':''}</option>`).join('');
+  if(atual&&fs.some(f=>f.id===atual))sel.value=atual;else if(fs.length===1)sel.value=fs[0].id;
+  epiRenderColab();
+}
+function epiRenderColab(){
+  const sel=document.getElementById('epi-colab-sel');
+  if(sel&&!sel.options.length&&!v('epi-colab-q'))epiFiltraColab();
+  const posse=epiPosse();
+  // trocas vencidas / próximas, de todo mundo ativo
+  const tr=document.getElementById('epi-trocas');
+  if(tr){
+    const itens=posse.filter(r=>r.qtd>0&&(DATA.funcionarios[r.fid]||{}).ativo!==false).map(r=>({r,prox:epiProxTroca(r)})).filter(o=>o.prox&&epiDiasAte(o.prox)<=EPI_TROCA_AVISO_DIAS).sort((a,b)=>a.prox.localeCompare(b.prox));
+    tr.innerHTML=itens.length?`<div class="epi-wrap"><table class="epi-tbl"><tr><th>Colaborador</th><th>Material</th><th>Entregue em</th><th>Troca em</th><th></th><th></th></tr>`+itens.slice(0,200).map(({r,prox})=>{
+      const d=epiDiasAte(prox);const m=DATA.materiais[r.mid]||{};
+      const st=d<0?`<span class="epi-st st-zero">Vencida há ${-d}d</span>`:d===0?'<span class="epi-st st-zero">Vence hoje</span>':`<span class="epi-st st-baixo">em ${d}d</span>`;
+      return `<tr><td>${esc(epiNomeFunc(r.fid))}</td><td>${esc(m.nome||'')}</td><td>${fmtData(r.ultima)}</td><td>${fmtData(prox)}</td><td>${st}</td><td class="acoes">${epiPodeMov()?`<button class="btn bw" onclick="epiNovaMov('saida','${r.mid}','${r.fid}')"><i class="fa-solid fa-arrow-up"></i> Registrar entrega</button>`:''}</td></tr>`;
+    }).join('')+'</table></div>':'<div class="es">Nenhuma troca vencida ou pr&oacute;xima. (A troca &eacute; calculada para materiais com "Vida &uacute;til de uso" ou "Validade do produto" preenchida.)</div>';
+  }
+  const det=document.getElementById('epi-colab-det');if(!det)return;
+  const fid=sel&&sel.value;
+  if(!fid){det.innerHTML='<div class="es">Selecione um colaborador</div>';return;}
+  const f=DATA.funcionarios[fid]||{};
+  const meus=posse.filter(r=>r.fid===fid);
+  const emPosse=meus.filter(r=>r.qtd>0);
+  const hist=epiMovs().filter(x=>x.funcionarioId===fid).sort((a,b)=>(b.data||'').localeCompare(a.data||'')||(b.ts||0)-(a.ts||0));
+  const pode=epiPodeMov();
+  let h=`<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin:6px 0 12px"><div style="font-weight:700;font-size:14px">${esc(f.nome||'')}${f.ativo===false?' <span class="bdg">Desligado</span>':''}</div>`+
+    (pode?`<div style="display:flex;gap:6px"><button class="btn bw" onclick="epiNovaMov('saida',null,'${fid}')"><i class="fa-solid fa-arrow-up"></i> Entregar</button><button class="btn bg2" onclick="epiNovaMov('devolucao',null,'${fid}')"><i class="fa-solid fa-rotate-left"></i> Devolu&ccedil;&atilde;o</button></div>`:'')+`</div>`;
+  h+=emPosse.length?`<div class="epi-wrap"><table class="epi-tbl"><tr><th>Material</th><th style="text-align:right">Em posse</th><th>&Uacute;ltima entrega</th><th>Validade de uso</th><th></th></tr>`+emPosse.map(r=>{
+      const m=DATA.materiais[r.mid]||{};const ui=epiUsoInfo(r);const prox=ui&&ui.data;const d=prox?epiDiasAte(prox):null;
+      const st=d===null?'':d<0?`<span class="epi-st st-zero">Vencida há ${-d}d</span>`:d<=EPI_TROCA_AVISO_DIAS?`<span class="epi-st st-baixo">em ${d}d</span>`:'<span class="epi-st st-ok">OK</span>';
+      return `<tr><td>${esc(m.nome||r.movs[0].materialNome||'')}</td><td class="n">${epiNum(r.qtd)} ${esc(m.unidade||'')}</td><td>${fmtData(r.ultima)}</td><td>${prox?fmtData(prox):'—'} ${st}${ui?'<div class="epi-dica" style="margin:2px 0 0">por '+ui.motivo+'</div>':''}</td><td class="acoes">${pode?`<button class="btn bg2" title="Devolução" onclick="epiNovaMov('devolucao','${r.mid}','${fid}')"><i class="fa-solid fa-rotate-left"></i></button>`:''}</td></tr>`;
+    }).join('')+'</table></div>':'<div class="es" style="padding:14px">Nenhum EPI em posse registrado.</div>';
+  if(hist.length){
+    h+=`<div class="ct" style="margin:18px 0 8px">Hist&oacute;rico de entregas e devolu&ccedil;&otilde;es</div><div class="epi-wrap"><table class="epi-tbl"><tr><th>Data</th><th>Tipo</th><th>Material</th><th style="text-align:right">Qtd</th><th>Detalhes</th></tr>`+
+      hist.slice(0,200).map(x=>`<tr class="${x.estornado?'est':''}"><td>${fmtData(x.data)}</td><td class="mv-${x.tipo}" style="font-weight:700">${x.estornoDe?'Estorno':(EPI_TIPOS[x.tipo]||{}).nome||x.tipo}</td><td>${esc(x.materialNome||'')}</td><td class="n">${epiNum(Math.abs(Number(x.delta)||0))}</td><td style="font-size:11px">${x.origem==='ficha'?'<span class="bdg">Ficha de EPI</span> ':''}${esc(x.obs||'')}</td></tr>`).join('')+'</table></div>';
+  }
+  det.innerHTML=h;
+}
+
+// ── Baixa automática ao emitir a Ficha de EPI ────────────────────────────
+// entregas: [{func, items:[{id,qtd,...}]}]. Uma saída por colaborador por
+// item, com origem 'ficha', e o saldo de cada material cai pelo total.
+async function epiBaixaFicha(entregas,dataIso,empresaId){
+  const linhas=[];const total={};const doCentral=new Set();
+  entregas.forEach(e=>{
+    if(!e.func)return;
+    // A baixa sai do estoque da empresa da ficha. Se a empresa não tem o item
+    // (mesmo nome e C.A.) no catálogo dela, sai do estoque onde o item está.
+    const emp=e.func.empresaId||empresaId||'';
+    // ordem: estoque da obra do colaborador, depois o geral da empresa
+    const alvos=[];if(emp&&e.func.obraId)alvos.push(emp+'|'+e.func.obraId);if(emp)alvos.push(emp);
+    (e.items||[]).forEach(it=>{
+      let m=DATA.materiais[it.id];const q=Math.round(Number(it.qtd)||0);
+      if(!m||q<=0)return;
+      if(!alvos.includes(epiEstoqueDe(m))){
+        let achou=null;for(const a of alvos){achou=epiEquivalente(m,a);if(achou)break;}
+        if(achou)m=achou;else doCentral.add(m.nome+' ('+epiNomeEstoque(epiEstoqueDe(m))+')');
+      }
+      linhas.push({f:e.func,m,q});total[m.id]=(total[m.id]||0)+q;
+    });
+  });
+  if(!linhas.length)return{ok:true,n:0};
+  if(doCentral.size&&!confirm('A obra/empresa n\u00e3o tem no estoque dela:\n\n\u2022 '+[...doCentral].join('\n\u2022 ')+'\n\nOK = dar baixa no estoque indicado entre par\u00eanteses\nCancelar = n\u00e3o dar baixa desta ficha'))return{ok:false,n:0,pulado:true};
+  // produto ou C.A. vencido na data da entrega
+  const dia=dataIso||epiHoje();
+  const vencidos=Object.keys(total).map(id=>DATA.materiais[id]).filter(m=>(m.validadeProduto&&m.validadeProduto<dia)||(m.vencimentoCa&&m.vencimentoCa<dia));
+  if(vencidos.length){
+    const txt=vencidos.map(m=>'• '+m.nome+((m.validadeProduto&&m.validadeProduto<dia)?' — produto vencido em '+fmtData(m.validadeProduto):'')+((m.vencimentoCa&&m.vencimentoCa<dia)?' — C.A. vencido em '+fmtData(m.vencimentoCa):'')).join('\n');
+    if(!confirm('ATENÇÃO: itens VENCIDOS nesta ficha:\n\n'+txt+'\n\nOK = registrar a entrega mesmo assim\nCancelar = não dar baixa desta ficha'))return{ok:false,n:0,pulado:true};
+  }
+  const falta=Object.keys(total).filter(id=>epiSaldo(DATA.materiais[id])<total[id]);
+  if(falta.length){
+    const txt=falta.map(id=>{const m=DATA.materiais[id];return'• '+m.nome+': saldo '+epiNum(epiSaldo(m))+', entrega '+epiNum(total[id]);}).join('\n');
+    if(!confirm('Estoque insuficiente para:\n\n'+txt+'\n\nOK = registrar a baixa mesmo assim (o saldo ficará negativo)\nCancelar = não dar baixa desta ficha'))return{ok:false,n:0,pulado:true};
+  }
+  const ts=Date.now();const corrente={};const ops=[];
+  linhas.forEach((l,i)=>{
+    const base=corrente[l.m.id]!=null?corrente[l.m.id]:epiSaldo(l.m);
+    corrente[l.m.id]=base-l.q;
+    ops.push({op:'set',node:'epiMov',key:uid(),val:{ts:ts+i,data:dataIso||epiHoje(),tipo:'saida',materialId:l.m.id,materialNome:l.m.nome||'',ca:l.m.ca||'',unidade:l.m.unidade||'',
+      qtd:l.q,delta:-l.q,saldoApos:corrente[l.m.id],...(l.m.validadeProduto?{validadeProduto:l.m.validadeProduto}:{}),funcionarioId:l.f.id,funcionarioNome:l.f.nome||'',empresaId:l.f.empresaId||'',estoqueId:epiEstoqueDe(l.m),origem:'ficha',...dadosGerador()}});
+  });
+  Object.keys(total).forEach(id=>ops.push({op:'inc',node:'materiais',key:id,field:'estoque',n:-total[id]}));
+  await WS_DATA.lote(ops);
+  return{ok:true,n:linhas.length};
+}
+
+
+// ── Painel: alertas e consumo ────────────────────────────────────────────
+const EPI_SEV={critico:{nome:'Cr\u00edtico',icone:'fa-circle-exclamation',ord:0},serio:{nome:'Aten\u00e7\u00e3o',icone:'fa-triangle-exclamation',ord:1},aviso:{nome:'Aviso',icone:'fa-clock',ord:2}};
+function epiDesde(dias){const d=new Date();d.setDate(d.getDate()-dias);return d.toISOString().slice(0,10);}
+// consumo médio diário (saídas dos últimos 90 dias) por material
+function epiConsumoMedio(lista){
+  const desde=epiDesde(90);const c={};
+  (lista||epiValidos()).forEach(x=>{if(x.tipo==='saida'&&(x.data||'')>=desde)c[x.materialId]=(c[x.materialId]||0)+(Number(x.qtd)||0);});
+  Object.keys(c).forEach(k=>c[k]=c[k]/90);
+  return c;
+}
+// ── Escopo e filtros do painel ──
+// O painel mostra a EMPRESA do estoque selecionado inteira (geral + obras),
+// ou o Estoque Central. Filtros: obra, cidade (do colaborador), tipo,
+// material e período.
+function epiPainelEstoques(){
+  const atual=epiEstoqueAtual();
+  if(atual===EPI_CENTRAL)return[EPI_CENTRAL];
+  const emp=epiPartes(atual).empresaId;const e=(DATA.empresas||{})[emp];
+  return[emp].concat(e?epiObrasDaEmpresa(e).map(o=>emp+'|'+o):[]);
+}
+function epiPainelCtx(){
+  const todos=epiPainelEstoques();
+  const fo=v('pf-obra'),fc=v('pf-cidade'),ft=v('pf-tipo'),fm=(v('pf-mat')||'').toLowerCase();
+  const ests=new Set(todos.filter(est=>!fo||(fo==='_geral'?!epiPartes(est).obraId:epiPartes(est).obraId===fo)));
+  const matOk=m=>m&&(!ft||(m.tipo||'EPI')===ft)&&(!fm||(m.nome||'').toLowerCase().includes(fm)||(m.ca||'').toLowerCase().includes(fm));
+  const mats=toArr(DATA.materiais).filter(m=>ests.has(epiEstoqueDe(m))&&matOk(m));
+  const funcOk=id=>{if(!fc)return true;const f=(DATA.funcionarios||{})[id];return!!f&&String(f.cidadeId||'')===fc;};
+  const movs=epiMovsTodos().filter(x=>!x.estornado&&!x.estornoDe&&ests.has(epiMovEstoque(x))&&
+    matOk(DATA.materiais[x.materialId]||{nome:x.materialNome,ca:x.ca,tipo:'EPI'})&&(!fc||(x.funcionarioId&&funcOk(x.funcionarioId))));
+  return{ests,mats,movs,funcOk,filtrando:!!(fo||fc||ft||fm)};
+}
+function epiPainelOpcoes(){
+  const so=document.getElementById('pf-obra'),sc=document.getElementById('pf-cidade');if(!so)return;
+  const todos=epiPainelEstoques();const central=todos[0]===EPI_CENTRAL;
+  const curO=so.value,curC=sc.value;
+  so.disabled=central;
+  so.innerHTML=central?'<option value="">\u2014</option>':'<option value="">Todas (empresa inteira)</option><option value="_geral">Geral da empresa</option>'+
+    todos.filter(e=>epiPartes(e).obraId).map(e=>`<option value="${esc(epiPartes(e).obraId)}">${esc(epiNomeObra(epiPartes(e).obraId))}</option>`).join('');
+  if([...so.options].some(o=>o.value===curO))so.value=curO;
+  // cidades dos colaboradores do escopo
+  const emp=central?null:epiPartes(todos[0]).empresaId;const cid=new Set();
+  toArr(DATA.funcionarios).forEach(f=>{if(f.cidadeId&&(central||String(f.empresaId||'')===String(emp)))cid.add(String(f.cidadeId));});
+  const cs=[...cid].filter(id=>(DATA.cidades||{})[id]).sort((a,b)=>(DATA.cidades[a].nome||'').localeCompare(DATA.cidades[b].nome||''));
+  sc.innerHTML='<option value="">Todas</option>'+cs.map(id=>`<option value="${esc(id)}">${esc(DATA.cidades[id].nome||'')}</option>`).join('');
+  if([...sc.options].some(o=>o.value===curC))sc.value=curC;
+  document.getElementById('epi-pf-escopo').innerHTML='<i class="fa-solid fa-chart-line"></i>Painel de '+esc(central?epiNomeEstoque(EPI_CENTRAL):epiNomeEmpresa(emp))+(central?'':' \u2014 geral e todas as obras');
+}
+function epiPainelFiltro(){WS_DATA.pag.first('alertas');epiRenderPainel();}
+function epiPainelLimpar(){['pf-obra','pf-cidade','pf-tipo','pf-mat'].forEach(i=>v(i,''));v('epi-periodo','90');epiPainelFiltro();}
+// abre a ação do alerta no estoque certo (o painel junta vários estoques)
+function epiIrEstoque(est){if(est&&est!==epiEstoqueAtual()){EPI_ESTOQUE=est;try{localStorage.setItem('epi_estoque',est);}catch(e){}epiRenderSeletorEstoque();}}
+
+function epiAlertas(ctx){
+  ctx=ctx||epiPainelCtx();
+  const out=[];const mats=ctx.mats;const cons=epiConsumoMedio(ctx.movs);
+  const varios=ctx.ests.size>1;
+  const add=(sev,cat,titulo,item,detalhe,data,acao,est)=>out.push({sev,cat,titulo,item:item+(varios&&est?' \u00b7 '+(epiPartes(est).obraId?'Obra '+epiNomeObra(epiPartes(est).obraId):'Geral'):''),detalhe,data:data||'',acao:acao?('epiIrEstoque(\''+est+'\');'+acao):acao});
+  mats.forEach(m=>{
+    const est=epiEstoqueDe(m);
+    const s=epiSaldo(m),nome=m.nome||'';
+    const dv=epiDiasAte(m.validadeProduto);
+    if(dv!==null&&s>0){
+      if(dv<0)add('critico','validade','Produto vencido em estoque',nome,epiNum(s)+' '+(m.unidade||'')+' venceram em '+fmtData(m.validadeProduto),m.validadeProduto,`epiNovaMov('baixa','${m.id}')|Dar baixa`,est);
+      else if(dv<=60)add('aviso','validade','Produto vence em '+dv+' dia(s)',nome,epiNum(s)+' '+(m.unidade||'')+' com validade '+fmtData(m.validadeProduto),m.validadeProduto,null,est);
+    }
+    const dc=epiDiasAte(m.vencimentoCa);
+    if(dc!==null){
+      if(dc<0)add('critico','ca','C.A. vencido',nome,'C.A. '+esc(m.ca||'')+' venceu em '+fmtData(m.vencimentoCa)+(s>0?' · '+epiNum(s)+' em estoque':''),m.vencimentoCa,`editMat(DATA.materiais['${m.id}'])|Atualizar C.A.`,est);
+      else if(dc<=60)add('aviso','ca','C.A. vence em '+dc+' dia(s)',nome,'C.A. '+esc(m.ca||'')+' vence em '+fmtData(m.vencimentoCa),m.vencimentoCa,`editMat(DATA.materiais['${m.id}'])|Atualizar C.A.`,est);
+    }
+    const min=Number(m.estoqueMin)||0,cm=cons[m.id]||0;
+    if(s<=0&&(min>0||cm>0))add('critico','estoque','Sem estoque',nome,'Saldo '+epiNum(s)+(min?' · m\u00ednimo '+epiNum(min):''),'',`epiNovaMov('entrada','${m.id}')|Registrar entrada`,est);
+    else if(s>0&&min&&s<=min)add('serio','estoque','Repor estoque',nome,'Saldo '+epiNum(s)+' · m\u00ednimo '+epiNum(min),'',`epiNovaMov('entrada','${m.id}')|Registrar entrada`,est);
+    else if(s>0&&cm>0&&s/cm<=30)add('serio','estoque','Estoque acaba em ~'+Math.max(1,Math.round(s/cm))+' dia(s)',nome,'Consumo m\u00e9dio de '+(cm*30).toLocaleString('pt-BR',{maximumFractionDigits:1})+' '+(m.unidade||'')+'/m\u00eas (\u00faltimos 90 dias) · saldo '+epiNum(s),'',`epiNovaMov('entrada','${m.id}')|Registrar entrada`,est);
+  });
+  epiPosse(ctx.movs).forEach(r=>{
+    if(r.qtd<=0)return;
+    const f=DATA.funcionarios[r.fid];if(!f||f.ativo===false||!ctx.funcOk(r.fid))return;
+    const est=epiEstoqueDe(DATA.materiais[r.mid]);
+    const ui=epiUsoInfo(r);if(!ui)return;const d=epiDiasAte(ui.data);
+    const m=DATA.materiais[r.mid]||{};
+    const det=esc(f.nome||'')+' · entregue em '+fmtData(r.ultima)+' · por '+ui.motivo;
+    if(d<0)add('critico','uso','Uso vencido \u2014 trocar',m.nome||'',det,ui.data,`epiNovaMov('saida','${r.mid}','${r.fid}')|Registrar entrega`,est);
+    else if(d<=EPI_TROCA_AVISO_DIAS)add('aviso','uso','Troca em '+d+' dia(s)',m.nome||'',det,ui.data,`epiNovaMov('saida','${r.mid}','${r.fid}')|Registrar entrega`,est);
+  });
+  return out.sort((a,b)=>EPI_SEV[a.sev].ord-EPI_SEV[b.sev].ord||(a.data||'9').localeCompare(b.data||'9'));
+}
+function epiSevHtml(sev){const s=EPI_SEV[sev];return `<span class="epi-sev sv-${sev}"><i class="fa-solid ${s.icone}"></i>${s.nome}</span>`;}
+function epiAlertaFiltro(cat){const s=document.getElementById('epi-alerta-f');if(s){s.value=cat;WS_DATA.pag.first('alertas');epiRenderPainel();}}
+function epiBarras(lista,unidade){
+  if(!lista.length)return '<div class="es" style="padding:14px">Sem dados no per\u00edodo</div>';
+  const max=Math.max(...lista.map(x=>x.v))||1;
+  return lista.map(x=>`<div class="epi-hb" data-tip="${esc('<b>'+esc(x.nome)+'</b><br>'+epiNum(x.v)+' '+(unidade||'')+(typeof x.extra==='string'&&x.extra?'<br>'+x.extra:''))}"><div class="epi-hb-n">${esc(x.nome)}</div><div class="epi-hb-tr"><div class="epi-hb-bar" style="width:${Math.max(1,x.v/max*82)}%"></div><span class="epi-hb-v">${epiNum(x.v)}</span></div></div>`).join('');
+}
+function epiRenderPainel(){
+  const tiles=document.getElementById('epi-alertas-tiles');if(!tiles)return;
+  epiPainelOpcoes();
+  const ctx=epiPainelCtx();
+  const al=epiAlertas(ctx);
+  const dicaF=document.getElementById('pf-dica');
+  if(dicaF)dicaF.textContent=ctx.filtrando?('Filtrando: '+ctx.mats.length+' material(is) em '+ctx.ests.size+' estoque(s)'+(v('pf-cidade')?' · cidade considera o colaborador das entregas':'')):'';
+  const crit=al.filter(a=>a.sev==='critico').length;
+  const n=document.getElementById('epi-tab-alertas');if(n)n.textContent=crit?String(crit):'';
+  const cats=[['validade','Validade do produto','fa-calendar-xmark'],['ca','C.A.','fa-id-card'],['uso','Uso / troca','fa-user-clock'],['estoque','Estoque','fa-boxes-stacked']];
+  tiles.innerHTML=cats.map(([c,nome,ic])=>{
+    const l=al.filter(a=>a.cat===c);const cr=l.filter(a=>a.sev==='critico').length,se=l.filter(a=>a.sev==='serio').length,av=l.filter(a=>a.sev==='aviso').length;
+    const sev=cr?'critico':se?'serio':av?'aviso':'ok';
+    const sub=l.length?[cr?cr+' cr\u00edtico(s)':'',se?se+' aten\u00e7\u00e3o':'',av?av+' aviso(s)':''].filter(Boolean).join(' · '):'Tudo em dia';
+    return `<button type="button" class="epi-al sv-${sev}" onclick="epiAlertaFiltro('${c}')"><div class="a-top"><i class="fa-solid ${sev==='ok'?'fa-circle-check':ic}"></i>${nome}</div><div class="a-v">${l.length}</div><div class="a-s">${sub}</div></button>`;
+  }).join('');
+  // lista
+  const f=(document.getElementById('epi-alerta-f')||{}).value||'';
+  const lst=al.filter(a=>!f||(f==='critico'?a.sev==='critico':a.cat===f));
+  const box=document.getElementById('epi-alertas-lista');
+  if(!lst.length)box.innerHTML='<div class="es">Nenhum alerta'+(f?' neste filtro':'')+'. <i class="fa-solid fa-circle-check" style="color:#0ca30c"></i></div>';
+  else{
+    const info=WS_DATA.pag.page(lst,'alertas',25);const pode=epiPodeMov();
+    box.innerHTML=`<div class="epi-wrap"><table class="epi-tbl"><tr><th>Severidade</th><th>Alerta</th><th>Item</th><th>Detalhe</th><th></th></tr>`+info.slice.map(a=>{
+      let acao='';if(a.acao&&(pode||a.acao.includes('editMat('))){const i=a.acao.lastIndexOf('|');const fn=a.acao.slice(0,i),rot=a.acao.slice(i+1);acao=`<button class="btn bg2" onclick="${fn}">${rot}</button>`;}
+      return `<tr><td>${epiSevHtml(a.sev)}</td><td style="font-weight:600">${a.titulo}</td><td>${esc(a.item)}</td><td style="font-size:11px;color:var(--ts)">${a.detalhe}</td><td class="acoes">${acao}</td></tr>`;
+    }).join('')+'</table></div>'+WS_DATA.pag.nav(info,'alertas','epiRenderPainel()');
+  }
+  // consumo no período
+  const dias=Number((document.getElementById('epi-periodo')||{}).value)||90;const desde=epiDesde(dias);
+  const per=ctx.movs.filter(x=>(x.data||'')>=desde);
+  const qt=t=>per.filter(x=>x.tipo===t).reduce((s,x)=>s+(Number(x.qtd)||0),0);
+  // valor de um lançamento: custo gravado nele ou, se não tiver, o custo atual do material
+  const custoDe=x=>Number(x.custoUnit)||Number((DATA.materiais[x.materialId]||{}).custo)||0;
+  const valor=t=>per.filter(x=>x.tipo===t).reduce((s,x)=>s+(Number(x.qtd)||0)*custoDe(x),0);
+  const atendidos=new Set(per.filter(x=>x.tipo==='saida'&&x.funcionarioId).map(x=>x.funcionarioId)).size;
+  const emEstoque=ctx.mats.reduce((t,m)=>t+Math.max(epiSaldo(m),0)*(Number(m.custo)||0),0);
+  const tit=document.getElementById('epi-consumo-titulo');if(tit)tit.textContent='Consumo — '+((document.getElementById('epi-periodo')||{}).selectedOptions||[{}])[0].text;
+  document.getElementById('epi-consumo-kpis').innerHTML=
+    `<div class="epi-kpi"><div class="k-v">${epiNum(qt('saida'))}</div><div class="k-l">Itens entregues</div></div>`+
+    `<div class="epi-kpi"><div class="k-v">${epiMoeda(valor('saida'))}</div><div class="k-l">Valor entregue</div></div>`+
+    `<div class="epi-kpi"><div class="k-v">${epiNum(atendidos)}</div><div class="k-l">Colaboradores atendidos</div></div>`+
+    `<div class="epi-kpi"><div class="k-v">${epiMoeda(valor('entrada'))}</div><div class="k-l">Compras (${epiNum(qt('entrada'))} itens)</div></div>`+
+    `<div class="epi-kpi ${qt('baixa')?'k-wn':''}"><div class="k-v">${epiMoeda(valor('baixa'))}</div><div class="k-l">Perdas (${epiNum(qt('baixa'))} itens)</div></div>`+
+    `<div class="epi-kpi"><div class="k-v">${epiMoeda(emEstoque)}</div><div class="k-l">Valor em estoque hoje</div></div>`;
+  // rankings
+  const agrupa=(lista,chave,nome)=>{const g={};lista.forEach(x=>{const k=chave(x);if(!k)return;const r=g[k]||(g[k]={nome:nome(x),v:0,rs:0,extra:{}});r.v+=Number(x.qtd)||0;r.rs+=(Number(x.qtd)||0)*custoDe(x);if(x.motivo)r.extra[x.motivo]=(r.extra[x.motivo]||0)+(Number(x.qtd)||0);});
+    return Object.values(g).sort((a,b)=>b.v-a.v);};
+  const saidas=per.filter(x=>x.tipo==='saida');
+  const comRs=l=>l.map(r=>Object.assign(r,{extra:(r.rs?epiMoeda(r.rs):'')}));
+  // o mesmo item em estoques diferentes (geral/obras) soma numa barra só
+  const chaveMat=x=>{const m=DATA.materiais[x.materialId];return epiNorm(m?m.nome:x.materialNome)+'|'+String((m?m.ca:x.ca)||'').trim();};
+  document.getElementById('epi-g-mat').innerHTML=epiBarras(comRs(agrupa(saidas,chaveMat,x=>(DATA.materiais[x.materialId]||{}).nome||x.materialNome||'').slice(0,8)),'');
+  document.getElementById('epi-g-colab').innerHTML=epiBarras(comRs(agrupa(saidas.filter(x=>x.funcionarioId),x=>x.funcionarioId,x=>epiNomeFunc(x.funcionarioId)||x.funcionarioNome||'').slice(0,8)),'itens');
+  const bx=agrupa(per.filter(x=>x.tipo==='baixa'),chaveMat,x=>(DATA.materiais[x.materialId]||{}).nome||x.materialNome||'').slice(0,5)
+    .map(r=>Object.assign(r,{extra:[r.rs?epiMoeda(r.rs):''].concat(Object.keys(r.extra).map(k=>esc(k)+': '+epiNum(r.extra[k]))).filter(Boolean).join('<br>')}));
+  document.getElementById('epi-g-baixa').innerHTML=epiBarras(bx,'');
+  // saídas por mês (6 meses)
+  const meses=[];const hoje=new Date();
+  for(let i=5;i>=0;i--){const d=new Date(hoje.getFullYear(),hoje.getMonth()-i,1);meses.push({k:d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'),rot:d.toLocaleDateString('pt-BR',{month:'short'}).replace('.',''),ano:d.getFullYear(),v:0});}
+  ctx.movs.forEach(x=>{if(x.tipo!=='saida')return;const mm=meses.find(m=>(x.data||'').startsWith(m.k));if(mm){mm.v+=Number(x.qtd)||0;mm.rs=(mm.rs||0)+(Number(x.qtd)||0)*custoDe(x);}});
+  const mx=Math.max(...meses.map(m=>m.v))||1;const iMax=meses.reduce((b,m,i)=>m.v>meses[b].v?i:b,0);
+  document.getElementById('epi-g-mes').innerHTML=meses.every(m=>!m.v)?'<div class="es" style="padding:14px">Sem sa\u00eddas nos \u00faltimos 6 meses</div>':
+    `<div class="epi-cols">${meses.map((m,i)=>`<div class="epi-col" data-tip="${esc('<b>'+m.rot+'/'+m.ano+'</b><br>'+epiNum(m.v)+' itens entregues'+(m.rs?'<br>'+epiMoeda(m.rs):''))}"><div class="epi-col-v">${(i===5||i===iMax)&&m.v?epiNum(m.v):''}</div><div class="epi-col-bar" style="height:${m.v?Math.max(2,m.v/mx*80):0}%"></div></div>`).join('')}</div><div class="epi-cols-x">${meses.map(m=>`<span>${m.rot}</span>`).join('')}</div>`;
+}
+// dica (tooltip) dos gráficos: um único balão, seguindo o mouse
+(function(){
+  let tip=null;
+  document.addEventListener('mousemove',e=>{
+    const el=e.target.closest&&e.target.closest('[data-tip]');
+    if(!el){if(tip)tip.style.display='none';return;}
+    if(!tip){tip=document.createElement('div');tip.className='epi-tip';document.body.appendChild(tip);}
+    tip.innerHTML=el.getAttribute('data-tip');tip.style.display='block';
+    const w=tip.offsetWidth,h=tip.offsetHeight;
+    tip.style.left=Math.min(e.clientX+14,window.innerWidth-w-8)+'px';
+    tip.style.top=Math.max(8,e.clientY-h-12)+'px';
+  });
+  // some ao clicar/rolar (ex.: trocar de aba sem mexer o mouse)
+  const esconde=()=>{if(tip)tip.style.display='none';};
+  document.addEventListener('click',esconde,true);
+  document.addEventListener('scroll',esconde,true);
+})();
+// ── Copiar EPIs entre estoques ───────────────────────────────────────────
+// Leva o catálogo (e, se pedido, as quantidades) do estoque atual para outro.
+// Item que o destino já tem (mesmo nome e C.A.) não é duplicado.
+let CP_MARCADOS=new Set();
+function epiAbrirCopia(){
+  if(!epiPodeMov()){alert('Voc\u00ea n\u00e3o tem permiss\u00e3o para movimentar o estoque.');return;}
+  const origem=epiEstoqueAtual();
+  const destinos=epiEstoquesPermitidos().filter(id=>id!==origem);
+  if(!destinos.length){alert('N\u00e3o h\u00e1 outro estoque liberado para voc\u00ea copiar.');return;}
+  if(!epiMats().length){alert('Este estoque n\u00e3o tem itens para copiar.');return;}
+  document.getElementById('cp-origem').innerHTML='<i class="fa-solid fa-warehouse"></i> De: '+esc(epiNomeEstoque(origem));
+  document.getElementById('cp-destino').innerHTML='<option value="">Selecione o estoque de destino...</option>'+destinos.map(id=>`<option value="${esc(id)}">${esc(epiNomeEstoque(id))}</option>`).join('');
+  document.querySelector('input[name="cp-modo"][value="itens"]').checked=true;
+  v('cp-busca','');CP_MARCADOS=new Set(epiMats().map(m=>m.id));
+  epiCopiaLista();
+  document.getElementById('mdl-copia').style.display='flex';
+}
+function epiCopiaModo(){const r=document.querySelector('input[name="cp-modo"]:checked');return r?r.value:'itens';}
+function epiCopiaLista(){
+  const q=(v('cp-busca')||'').toLowerCase();const dest=v('cp-destino');
+  const mats=epiMats().filter(m=>!q||(m.nome||'').toLowerCase().includes(q)||(m.ca||'').toLowerCase().includes(q)).sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));
+  document.getElementById('cp-lista').innerHTML=mats.map(m=>{
+    const ja=dest&&epiEquivalente(m,dest);
+    return `<label class="cp-item"><input type="checkbox" ${CP_MARCADOS.has(m.id)?'checked':''} onchange="epiCopiaToggle('${m.id}',this.checked)"><span class="cp-n">${esc(m.nome)}${m.ca?' <span class="epi-dica" style="display:inline">C.A. '+esc(m.ca)+'</span>':''}${ja?' <span class="bdg">j\u00e1 existe no destino</span>':''}</span><span class="cp-s">saldo ${epiNum(epiSaldo(m))} ${esc(m.unidade||'')}</span></label>`;
+  }).join('')||'<div class="es" style="padding:12px">Nenhum item</div>';
+  epiCopiaResumo();
+}
+function epiCopiaToggle(id,on){if(on)CP_MARCADOS.add(id);else CP_MARCADOS.delete(id);epiCopiaResumo();}
+function epiCopiaMarcar(on){
+  const q=(v('cp-busca')||'').toLowerCase();
+  epiMats().filter(m=>!q||(m.nome||'').toLowerCase().includes(q)||(m.ca||'').toLowerCase().includes(q)).forEach(m=>{if(on)CP_MARCADOS.add(m.id);else CP_MARCADOS.delete(m.id);});
+  epiCopiaLista();
+}
+// o que vai acontecer com a seleção atual
+function epiCopiaPlano(){
+  const dest=v('cp-destino');const modo=epiCopiaModo();
+  const sel=epiMats().filter(m=>CP_MARCADOS.has(m.id));
+  const novos=[],existentes=[],comSaldo=[];
+  sel.forEach(m=>{const eq=dest?epiEquivalente(m,dest):null;if(eq)existentes.push({m,eq});else novos.push(m);if(epiSaldo(m)>0)comSaldo.push(m);});
+  return{dest,modo,sel,novos,existentes,comSaldo,unidades:comSaldo.reduce((t,m)=>t+epiSaldo(m),0)};
+}
+function epiCopiaResumo(){
+  const box=document.getElementById('cp-resumo');if(!box)return;
+  const pl=epiCopiaPlano();
+  if(document.getElementById('cp-lista').dataset.dest!==pl.dest){document.getElementById('cp-lista').dataset.dest=pl.dest;epiCopiaLista();return;}
+  if(!pl.dest){box.innerHTML='Escolha o estoque de destino.';return;}
+  if(!pl.sel.length){box.innerHTML='Nenhum item marcado.';return;}
+  let t='<b>'+pl.sel.length+'</b> item(ns) marcado(s): <b>'+pl.novos.length+'</b> novo(s) no destino'+(pl.existentes.length?', <b>'+pl.existentes.length+'</b> j\u00e1 existe(m) l\u00e1':'')+'.';
+  if(pl.modo==='itens')t+=pl.existentes.length?' Os que j\u00e1 existem ficam como est\u00e3o.':'';
+  else if(pl.modo==='copiar')t+=' O destino recebe <b>'+epiNum(pl.unidades)+'</b> unidade(s) como estoque inicial ('+pl.comSaldo.length+' item(ns) com saldo). O saldo daqui n\u00e3o muda.';
+  else t+=' Ser\u00e3o transferidas <b>'+epiNum(pl.unidades)+'</b> unidade(s) ('+pl.comSaldo.length+' item(ns) com saldo): saem daqui e entram no destino.';
+  box.innerHTML=t;
+}
+function epiExecutarCopia(){
+  const pl=epiCopiaPlano();
+  if(!pl.dest){alert('Escolha o estoque de destino.');return;}
+  if(!pl.sel.length){alert('Marque pelo menos um item.');return;}
+  if(pl.modo==='itens'&&!pl.novos.length){alert('Nada a fazer: os itens marcados já existem no destino.');return;}
+  if(pl.modo!=='itens'&&!pl.comSaldo.length&&!pl.novos.length){alert('Os itens marcados j\u00e1 existem no destino e n\u00e3o t\u00eam saldo para copiar.');return;}
+  const nomeD=epiNomeEstoque(pl.dest),origem=epiEstoqueAtual(),nomeO=epiNomeEstoque(origem);
+  const txt=pl.modo==='itens'?'Copiar '+pl.novos.length+' item(ns) para "'+nomeD+'" com saldo zero?'
+    :pl.modo==='copiar'?'Copiar '+pl.sel.length+' item(ns) para "'+nomeD+'" COM as quantidades?\n\nO destino recebe '+epiNum(pl.unidades)+' unidade(s) como estoque inicial.\nO saldo de "'+nomeO+'" N\u00c3O muda.'
+    :'Transferir '+epiNum(pl.unidades)+' unidade(s) de '+pl.comSaldo.length+' item(ns) para "'+nomeD+'"?\n\nO saldo SAI de "'+nomeO+'" e entra no destino.';
+  if(!confirm(txt))return;
+  const ops=[];const ts=Date.now();let i=0;let criados=0,lancados=0;
+  const destDe={};
+  pl.sel.forEach(m=>{
+    const eq=epiEquivalente(m,pl.dest);
+    let id=eq&&eq.id,saldoDest=eq?epiSaldo(eq):0;
+    const q=pl.modo==='itens'?0:Math.max(epiSaldo(m),0);
+    if(!eq){
+      id=uid();criados++;
+      const novo={id,nome:m.nome||'',ca:m.ca||'',tipo:m.tipo||'EPI',unidade:m.unidade||'',vencimentoCa:m.vencimentoCa||'',validadeProduto:m.validadeProduto||'',
+        vidaUtilDias:m.vidaUtilDias||0,custo:m.custo||0,estoqueMin:m.estoqueMin||0,estoque:q};
+      epiAplicaEstoque(novo,pl.dest);
+      ops.push({op:'set',node:'materiais',key:id,val:novo});
+    }else if(q){
+      ops.push({op:'inc',node:'materiais',key:id,field:'estoque',n:q});
+    }
+    if(!q)return;
+    lancados++;
+    const base={data:epiHoje(),materialNome:m.nome||'',ca:m.ca||'',unidade:m.unidade||'',qtd:q,...(m.custo?{custoUnit:m.custo}:{}),...dadosGerador()};
+    if(pl.modo==='copiar'){
+      ops.push({op:'set',node:'epiMov',key:uid(),val:Object.assign({},base,{ts:ts+(i++),tipo:'entrada',materialId:id,estoqueId:pl.dest,delta:q,saldoApos:saldoDest+q,origem:'copia',obs:'Estoque inicial copiado de '+nomeO,...(m.validadeProduto?{validadeLote:m.validadeProduto}:{})})});
+    }else{
+      const transfId=uid();
+      ops.push({op:'inc',node:'materiais',key:m.id,field:'estoque',n:-q});
+      ops.push({op:'set',node:'epiMov',key:uid(),val:Object.assign({},base,{ts:ts+(i++),tipo:'transferencia',transfId,origem:'manual',materialId:m.id,estoqueId:origem,destinoId:pl.dest,delta:-q,saldoApos:epiSaldo(m)-q})});
+      ops.push({op:'set',node:'epiMov',key:uid(),val:Object.assign({},base,{ts:ts+(i++),tipo:'transferencia',transfId,origem:'manual',materialId:id,estoqueId:pl.dest,origemId:origem,delta:q,saldoApos:saldoDest+q,...(m.validadeProduto?{validadeLote:m.validadeProduto}:{})})});
+    }
+  });
+  if(!ops.length){alert('Nada a fazer: os itens marcados j\u00e1 existem no destino.');return;}
+  const b=document.getElementById('cp-ok');b.disabled=true;spin(true);
+  WS_DATA.lote(ops).then(()=>{
+    spin(false);b.disabled=false;cls();epiRenderAll();
+    alert('Pronto: '+criados+' item(ns) criado(s) em "'+nomeD+'"'+(pl.existentes.length?' ('+pl.existentes.length+' j\u00e1 existia(m))':'')+
+      (pl.modo==='copiar'?'; '+lancados+' entrada(s) de estoque inicial registradas.':pl.modo==='transferir'?'; '+lancados+' transfer\u00eancia(s) registradas.':'.'));
+  }).catch(e=>{spin(false);b.disabled=false;alert('Erro ao copiar: '+(e&&e.message?e.message:e));});
+}
+
+function epiRenderAll(){
+  if(!document.getElementById('epi'))return;
+  epiRenderSeletorEstoque();
+  renderMats();
+  epiRenderPainel();
+  if(document.getElementById('tab-epi-3').classList.contains('active'))epiRenderMov();
+  if(document.getElementById('tab-epi-4').classList.contains('active'))epiRenderColab();
+  const mm=document.getElementById('mdl-mov');
+  if(mm&&mm.style.display==='flex')epiMatMovInfo();
+}
+</script>
 <script>
 // ── FIREBASE ────────────────────────────────────────────────────
 const FIREBASE_CONFIG={apiKey:"AIzaSyBehqlRiCiDniyPi3bjHtkH7q2-Px-KoZc",authDomain:"cadastr-produtos-clevir.firebaseapp.com",databaseURL:"https://cadastr-produtos-clevir-default-rtdb.firebaseio.com",projectId:"cadastr-produtos-clevir",storageBucket:"cadastr-produtos-clevir.firebasestorage.app",messagingSenderId:"1028296092810",appId:"1:1028296092810:web:86859328b19c1fdf511173"};
@@ -3312,7 +4185,7 @@ function filterCargoEpiMat(){
   const q=document.getElementById('c-epi-search').value.toLowerCase();
   const mats=toArr(DATA.materiais).filter(m=>(m.nome||'').toLowerCase().includes(q)||(m.ca||'').toLowerCase().includes(q)).sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));
   const sel=document.getElementById('c-epi-sel');
-  if(sel){const cur=sel.value;sel.innerHTML='<option value="">Selecione...</option>'+mats.map(m=>`<option value="${esc(m.id)}">${esc(m.nome)} (C.A.${m.ca||''})${m.empresaId?' \u2014 '+esc(epiNomeEstoque(m.empresaId)):''}</option>`).join('');if(cur)sel.value=cur;}
+  if(sel){const cur=sel.value;sel.innerHTML='<option value="">Selecione...</option>'+mats.map(m=>`<option value="${esc(m.id)}">${esc(m.nome)} (C.A.${m.ca||''})${m.empresaId?' \u2014 '+esc(epiNomeEstoque(epiEstoqueDe(m))):''}</option>`).join('');if(cur)sel.value=cur;}
 }
 function addCargoEpi(){
   const sel=document.getElementById('c-epi-sel');
@@ -3344,7 +4217,8 @@ function epiOpcoesFicha(q){
   const ord=(a,b)=>(a.nome||'').localeCompare(b.nome||'');
   const op=m=>`<option value="${esc(m.id)}" data-un="${esc(m.unidade||'')}">${esc(m.nome)} (C.A.${esc(m.ca||'')}) \u2014 saldo ${epiNum(epiSaldo(m))}</option>`;
   let h='<option value="">Selecione...</option>';
-  if(eid){const l=epiMatsDe(eid).filter(da).sort(ord);if(l.length)h+=`<optgroup label="${esc(epiNomeEstoque(eid))}">`+l.map(op).join('')+'</optgroup>';}
+  if(eid){const e=(DATA.empresas||{})[eid];const ests=[eid].concat(e?epiObrasDaEmpresa(e).map(o=>eid+'|'+o):[]);
+    ests.forEach(est=>{const l=epiMatsDe(est).filter(da).sort(ord);if(l.length)h+=`<optgroup label="${esc(epiNomeEstoque(est))}">`+l.map(op).join('')+'</optgroup>';});}
   const c=epiMatsDe(EPI_CENTRAL).filter(da).sort(ord);if(c.length)h+=`<optgroup label="${esc(epiNomeEstoque(EPI_CENTRAL))}">`+c.map(op).join('')+'</optgroup>';
   return h;
 }
@@ -3579,10 +4453,16 @@ function saveMaterial(d){
   const erro=e=>{spin(false);alert('Erro: '+(e&&e.message?e.message:e));};
   if(d.id&&DATA.materiais[d.id]){
     const patch=Object.assign({},d);delete patch.id;delete patch.estoque;
+    const estE=epiEstoqueDe(DATA.materiais[d.id]);
+    const outro=epiMatsDe(estE).find(x=>x.id!==d.id&&epiNorm(x.nome)===epiNorm(d.nome)&&String(x.ca||'').trim()===String(d.ca||'').trim());
+    if(outro){spin(false);alert('J\u00e1 existe outro cadastro "'+outro.nome+'"'+(outro.ca?' (C.A. '+outro.ca+')':'')+' neste estoque. Use um nome ou C.A. diferente.');return;}
     return WS_DATA.update('materiais',d.id,patch).then(fim).catch(erro);
   }
   const id=d.id||uid();d.id=id;const ini=Number(d.estoque)||0;
-  const est=epiEstoqueAtual();if(est!==EPI_CENTRAL)d.empresaId=est;
+  const est=epiEstoqueAtual();epiAplicaEstoque(d,est);
+  // um cadastro só por item em cada estoque (mesmo nome + mesmo C.A.)
+  const dup=epiEquivalente(d,est);
+  if(dup){spin(false);alert('J\u00e1 existe "'+dup.nome+'"'+(dup.ca?' (C.A. '+dup.ca+')':'')+' em '+epiNomeEstoque(est)+'.\n\nPara mudar quantidade use Entrada/Ajuste; para mudar dados, edite o cadastro existente.');return;}
   const ops=[{op:'set',node:'materiais',key:id,val:d}];
   if(ini>0)ops.push({op:'set',node:'epiMov',key:uid(),val:{ts:Date.now(),data:epiHoje(),tipo:'entrada',materialId:id,materialNome:d.nome||'',ca:d.ca||'',unidade:d.unidade||'',qtd:ini,delta:ini,saldoApos:ini,origem:'manual',estoqueId:est,obs:'Estoque inicial do cadastro',...(d.custo?{custoUnit:d.custo}:{}),...dadosGerador()}});
   return WS_DATA.lote(ops).then(fim).catch(erro);
@@ -3623,7 +4503,7 @@ function getFormData(t){
     return{id:idAtual,empresaId,filialId,obraId,cidadeId,nome:v('i-f-nm'),cpf:v('i-f-cp'),funcao:v('i-f-fn'),cbo:v('i-f-cb'),setor:v('i-f-st'),matricula:v('i-f-mat'),dataAdm:v('i-f-dt'),asoEmissao,asoDate,asoTipo,ativo,dataDemissao};
   }
   if(t==='texto'){const cargos=getChecked('tCgChk');return{id:v('tid'),titulo:v('i-t-ti'),conteudo:v('i-t-co'),categoria:getTxtCategoria(),cargosVinculados:cargos,validade:v('i-t-val')};}
-  if(t==='material'){if(!v('i-m-nm').trim()){alert('Informe o nome do material.');return null;}const num=(id,dec)=>{const n=dec?parseFloat(v(id)):parseInt(v(id));return n>0?n:0;};const r={id:v('mid'),nome:v('i-m-nm'),ca:v('i-m-ca'),tipo:document.getElementById('i-m-tp').value,unidade:v('i-m-un'),vencimentoCa:v('i-m-vc'),estoqueMin:num('i-m-min'),vidaUtilDias:num('i-m-vida'),custo:num('i-m-custo',true),validadeProduto:v('i-m-valprod')};if(!r.id)r.estoque=num('i-m-es');return r;}
+  if(t==='material'){if(!v('i-m-nm').trim()){alert('Informe o nome do material.');return null;}const num=(id,dec)=>{const n=dec?parseFloat(v(id)):parseInt(v(id));return n>0?n:0;};const r={id:v('mid'),nome:v('i-m-nm'),ca:v('i-m-ca'),tipo:document.getElementById('i-m-tp').value,unidade:v('i-m-un'),vencimentoCa:v('i-m-vc'),estoqueMin:num('i-m-min'),vidaUtilDias:num('i-m-vida'),custo:epiParseMoeda(v('i-m-custo')),validadeProduto:v('i-m-valprod')};if(!r.id)r.estoque=num('i-m-es');return r;}
   if(t==='cargo'){const epiData=CARGO_EPI_CART.map(c=>({id:c.id,qtd:c.qtd||1,tipo:c.tipo||'EPI'}));return{id:v('cid'),nome:v('i-c-nm'),cbo:v('i-c-cb'),epi:epiData};}
   if(t==='pessoa'){const cpfRaw=v('i-p-cp').replace(/\D/g,'');const idAtual=v('pid');const existente=toArr(DATA.pessoas).find(p=>p.id!==idAtual&&(p.cpf||'').replace(/\D/g,'')===cpfRaw);if(existente){alert('CPF j\u00e1 cadastrado para: '+existente.nome);return null;}return{id:idAtual,nome:v('i-p-nm'),cpf:v('i-p-cp'),endereco:v('i-p-ender')};}
   return null;
@@ -4025,7 +4905,7 @@ function editText(x){
   ids.forEach(id=>{const cb=document.getElementById('ck_tCg_'+id);if(cb)cb.checked=true;});
   openM('mdl-t');
 }
-function editMat(x){v('mid',x.id);v('i-m-nm',x.nome||'');v('i-m-ca',x.ca||'');document.getElementById('i-m-tp').value=x.tipo||'EPI';v('i-m-un',x.unidade||'');v('i-m-es',x.estoque||0);v('i-m-vc',x.vencimentoCa||'');v('i-m-min',x.estoqueMin||'');v('i-m-vida',x.vidaUtilDias||'');v('i-m-custo',x.custo||'');v('i-m-valprod',x.validadeProduto||'');matEstoqueCampo(false);openM('mdl-m');}
+function editMat(x){v('mid',x.id);v('i-m-nm',x.nome||'');v('i-m-ca',x.ca||'');document.getElementById('i-m-tp').value=x.tipo||'EPI';v('i-m-un',x.unidade||'');v('i-m-es',x.estoque||0);v('i-m-vc',x.vencimentoCa||'');v('i-m-min',x.estoqueMin||'');v('i-m-vida',x.vidaUtilDias||'');v('i-m-custo',x.custo?epiFmtMoeda(x.custo):'');v('i-m-valprod',x.validadeProduto||'');matEstoqueCampo(false);openM('mdl-m');}
 // No cadastro novo o campo é o estoque inicial (vira uma entrada). Depois, o
 // saldo só muda por movimentação: editar o número à mão apagava o histórico
 // e sobrescrevia lançamentos feitos ao mesmo tempo por outra pessoa.
@@ -5878,620 +6758,7 @@ async function addVerificationOverlay(pdfBytes, docId, validationUrl) {
 // sozinho gastava download a cada troca de aba.
 document.addEventListener('DOMContentLoaded',()=>{initListeners();fixOldCertHistory();WS_DATA.injectRefreshButton({label:'Atualizar dados'});});
 </script>
-<script>
-// ══ CONTROLE DE ESTOQUE DE EPI/EPC ═══════════════════════════════════════
-// Cada entrada, saída, devolução, baixa ou ajuste vira um registro em
-// 'epiMov' (nunca apagado: erro se corrige com estorno) e o saldo do
-// material ('materiais/<id>/estoque') sobe/desce por soma atômica no
-// servidor, no mesmo lote. Assim o saldo não se perde com duas pessoas
-// lançando ao mesmo tempo e todo número tem a sua origem rastreável.
-const EPI_TIPOS={
-  entrada:{nome:'Entrada',sinal:1,icone:'fa-arrow-down'},
-  saida:{nome:'Saída / Entrega',sinal:-1,icone:'fa-arrow-up'},
-  devolucao:{nome:'Devolução',sinal:1,icone:'fa-rotate-left'},
-  baixa:{nome:'Baixa',sinal:-1,icone:'fa-trash-can'},
-  ajuste:{nome:'Ajuste',sinal:0,icone:'fa-scale-balanced'},
-  transferencia:{nome:'Transferência',sinal:-1,icone:'fa-right-left'}
-};
-const EPI_DICAS={
-  entrada:'Compra ou recebimento de material. Soma ao saldo.',
-  saida:'Entrega a um colaborador (ou consumo geral, sem colaborador). Subtrai do saldo.',
-  devolucao:'O colaborador devolveu o item em condição de uso. Soma ao saldo.',
-  baixa:'Perda, dano, vencimento ou descarte. Subtrai do saldo.',
-  ajuste:'Contagem física: informe quanto existe de fato. O sistema lança a diferença.',
-  transferencia:'Envia itens deste estoque para outro (ex.: do Central para uma empresa). Sai daqui e entra no destino.'
-};
-let EPI_MOV_TIPO='entrada';
-const EPI_TROCA_AVISO_DIAS=15;
 
-function epiHoje(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
-function epiNum(n){return(Number(n)||0).toLocaleString('pt-BR');}
-function epiMoeda(n){return(Number(n)||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});}
-function epiSaldo(m){return Number(m&&m.estoque)||0;}
-function epiPodeMov(){return typeof usuarioPodeEditar!=='function'||usuarioPodeEditar('epi');}
-function epiDiasAte(iso){if(!iso)return null;return Math.ceil((new Date(iso+'T23:59:59')-new Date())/864e5);}
-function epiSomaDias(iso,dias){const d=new Date(iso+'T12:00:00');d.setDate(d.getDate()+Number(dias||0));return d.toISOString().slice(0,10);}
-function epiSituacao(m){const s=epiSaldo(m),min=Number(m.estoqueMin)||0;if(s<=0)return'zero';if(min&&s<=min)return'baixo';return'ok';}
-// ── Estoque por empresa (centro de custo) ──
-// Cada material pertence a um estoque: o da empresa (empresaId) ou o Estoque
-// Central (sem empresaId — onde ficaram os saldos de antes desta mudança).
-// Cada movimentação guarda o estoque em que aconteceu (estoqueId).
-const EPI_CENTRAL='_central';
-let EPI_ESTOQUE=(()=>{try{return localStorage.getItem('epi_estoque')||EPI_CENTRAL;}catch(e){return EPI_CENTRAL;}})();
-function epiEstoqueDe(m){return(m&&m.empresaId)||EPI_CENTRAL;}
-function epiNomeEstoque(id){return id===EPI_CENTRAL?'Estoque Central (WS Engenharia)':(((DATA.empresas||{})[id]||{}).nome||'Empresa removida');}
-function epiPodeCentral(){return typeof USUARIO_ATUAL==='undefined'||!USUARIO_ATUAL||!!USUARIO_ATUAL.mestre;}
-function epiEstoquesPermitidos(){
-  const l=[];if(epiPodeCentral())l.push(EPI_CENTRAL);
-  toArr(DATA.empresas).filter(e=>e&&e.id&&(typeof empresaPermitida!=='function'||empresaPermitida(e.id))).sort((a,b)=>(a.nome||'').localeCompare(b.nome||'')).forEach(e=>l.push(e.id));
-  return l;
-}
-function epiEstoqueAtual(){
-  const ok=epiEstoquesPermitidos();
-  if(!ok.includes(EPI_ESTOQUE)&&ok.length)EPI_ESTOQUE=ok[0];
-  return EPI_ESTOQUE;
-}
-function epiTrocaEstoque(id){
-  EPI_ESTOQUE=id;try{localStorage.setItem('epi_estoque',id);}catch(e){}
-  WS_DATA.pag.first('mov');WS_DATA.pag.first('alertas');
-  const s=document.getElementById('epi-colab-sel');if(s)s.innerHTML='';
-  epiRenderAll();
-}
-function epiMatsDe(est){return toArr(DATA.materiais).filter(m=>epiEstoqueDe(m)===est);}
-function epiMats(){return epiMatsDe(epiEstoqueAtual());}
-function epiNorm(t){return String(t||'').trim().toLowerCase().replace(/\s+/g,' ');}
-// o mesmo item (nome + C.A.) no catálogo de outro estoque
-function epiEquivalente(m,est){return epiMatsDe(est).find(x=>epiNorm(x.nome)===epiNorm(m.nome)&&String(x.ca||'').trim()===String(m.ca||'').trim())||null;}
-function epiMovEstoque(x){return x.estoqueId||epiEstoqueDe((DATA.materiais||{})[x.materialId]);}
-function epiMovsTodos(){return toArr(DATA.epiMov||{});}
-function epiMovs(){const e=epiEstoqueAtual();return epiMovsTodos().filter(x=>epiMovEstoque(x)===e);}
-function epiRenderSeletorEstoque(){
-  const sel=document.getElementById('epi-estoque');if(!sel)return;
-  const ids=epiEstoquesPermitidos();const atual=epiEstoqueAtual();
-  const html=ids.map(id=>`<option value="${esc(id)}">${esc(epiNomeEstoque(id))}</option>`).join('')||'<option value="">Nenhuma empresa liberada</option>';
-  if(sel.innerHTML!==html)sel.innerHTML=html;
-  sel.value=atual;
-}
-function epiValidos(){return epiMovs().filter(x=>!x.estornado&&!x.estornoDe);}
-function epiNomeFunc(id){const f=DATA.funcionarios&&DATA.funcionarios[id];return f?(f.nome||''):'';}
-function epiNomeUsuario(id){return typeof guNomeUsuario==='function'?guNomeUsuario(id):'';}
-
-// ── Aba Estoque ──────────────────────────────────────────────────────────
-function epiRenderEstoque(){
-  const lst=document.getElementById('lst-m');if(!lst)return;
-  const mats=epiMats();
-  const ultimo={};
-  epiMovs().forEach(x=>{if(x.materialId&&(!ultimo[x.materialId]||x.ts>ultimo[x.materialId].ts))ultimo[x.materialId]=x;});
-  // indicadores
-  const repor=mats.filter(m=>epiSituacao(m)==='baixo').length;
-  const zerados=mats.filter(m=>epiSituacao(m)==='zero').length;
-  const caAlerta=mats.filter(m=>{const d=epiDiasAte(m.vencimentoCa);return d!==null&&d<=60;}).length;
-  const valAlerta=mats.filter(m=>{const d=epiDiasAte(m.validadeProduto);return d!==null&&d<=60&&epiSaldo(m)>0;}).length;
-  const valor=mats.reduce((t,m)=>t+Math.max(epiSaldo(m),0)*(Number(m.custo)||0),0);
-  const k=document.getElementById('epi-kpis');
-  if(k)k.innerHTML=
-    `<div class="epi-kpi"><div class="k-v">${epiNum(mats.length)}</div><div class="k-l">Materiais cadastrados</div></div>`+
-    `<div class="epi-kpi ${repor?'k-wn':''}" onclick="epiFiltroSit('baixo')" title="Ver os itens"><div class="k-v">${epiNum(repor)}</div><div class="k-l">Repor (no m&iacute;nimo)</div></div>`+
-    `<div class="epi-kpi ${zerados?'k-dn':''}" onclick="epiFiltroSit('zerado')" title="Ver os itens"><div class="k-v">${epiNum(zerados)}</div><div class="k-l">Sem estoque</div></div>`+
-    `<div class="epi-kpi ${caAlerta?'k-dn':''}" onclick="epiFiltroSit('ca')" title="Ver os itens"><div class="k-v">${epiNum(caAlerta)}</div><div class="k-l">C.A. vencido / vence em 60 dias</div></div>`+
-    `<div class="epi-kpi ${valAlerta?'k-dn':''}" onclick="epiFiltroSit('validade')" title="Ver os itens"><div class="k-v">${epiNum(valAlerta)}</div><div class="k-l">Produto vencido / vence em 60 dias</div></div>`+
-    `<div class="epi-kpi"><div class="k-v">${epiMoeda(valor)}</div><div class="k-l">Valor em estoque</div></div>`;
-  // filtros
-  const q=(document.getElementById('filter-mat').value||'').toLowerCase();
-  const sit=(document.getElementById('filter-mat-sit')||{}).value||'';
-  const tipo=(document.getElementById('filter-mat-tipo')||{}).value||'';
-  const lista=mats.filter(m=>{
-    if(q&&!((m.nome||'').toLowerCase().includes(q)||(m.ca||'').toLowerCase().includes(q)))return false;
-    if(tipo&&(m.tipo||'EPI')!==tipo)return false;
-    if(sit==='baixo'&&epiSituacao(m)!=='baixo')return false;
-    if(sit==='zerado'&&epiSituacao(m)!=='zero')return false;
-    if(sit==='ca'){const d=epiDiasAte(m.vencimentoCa);if(d===null||d>60)return false;}
-    if(sit==='validade'){const d=epiDiasAte(m.validadeProduto);if(d===null||d>60||epiSaldo(m)<=0)return false;}
-    return true;
-  }).sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));
-  if(!lista.length){lst.innerHTML='<div class="es">Nenhum material encontrado</div>';return;}
-  const pode=epiPodeMov();
-  const linhas=WS_DATA.pag.slice(lista,'mats',120).map(m=>{
-    const s=epiSituacao(m);
-    const st=s==='zero'?'<span class="epi-st st-zero">Sem estoque</span>':s==='baixo'?'<span class="epi-st st-baixo">Repor</span>':'<span class="epi-st st-ok">OK</span>';
-    const dca=epiDiasAte(m.vencimentoCa);
-    const ca=m.ca?('C.A. '+esc(m.ca)+(dca===null?'':dca<0?' · <span class="epi-st st-zero">C.A. vencido</span>':dca<=60?' · <span class="epi-st st-baixo">C.A. vence em '+dca+'d</span>':'')):'Sem C.A.';
-    const dvp=epiDiasAte(m.validadeProduto);
-    const valp=m.validadeProduto?('<div class="epi-dica" style="margin:2px 0 0">Validade: '+fmtData(m.validadeProduto)+(dvp<0?' · <span class="epi-st st-zero">vencido</span>':dvp<=60?' · <span class="epi-st st-baixo">vence em '+dvp+'d</span>':'')+'</div>'):'';
-    const u=ultimo[m.id];
-    const ult=u?fmtData(u.data)+' · '+(EPI_TIPOS[u.tipo]?EPI_TIPOS[u.tipo].nome:u.tipo):'—';
-    const acoes=(pode?`<button class="btn bs" title="Entrada" onclick="epiNovaMov('entrada','${m.id}')"><i class="fa-solid fa-arrow-down"></i></button><button class="btn bw" title="Saída" onclick="epiNovaMov('saida','${m.id}')"><i class="fa-solid fa-arrow-up"></i></button>`:'')+
-      `<button class="btn bg2" title="Histórico do item" onclick="epiHistoricoMat('${m.id}')"><i class="fa-solid fa-clock-rotate-left"></i></button>`+btnsEnt('epi','materiais','Mat',m);
-    return `<tr><td><div style="font-weight:600">${esc(m.nome)} <span class="bdg">${esc(m.tipo||'EPI')}</span></div><div class="epi-dica" style="margin:2px 0 0">${ca}</div>${valp}</td>`+
-      `<td class="n"><span class="epi-saldo">${epiNum(epiSaldo(m))}</span> ${esc(m.unidade||'')}</td>`+
-      `<td class="n">${m.estoqueMin?epiNum(m.estoqueMin):'—'}</td><td>${st}</td>`+
-      `<td style="color:var(--ts);white-space:nowrap">${ult}</td><td class="acoes">${acoes}</td></tr>`;
-  }).join('');
-  lst.innerHTML=`<div class="epi-wrap"><table class="epi-tbl"><tr><th>Material</th><th style="text-align:right">Saldo</th><th style="text-align:right">M&iacute;nimo</th><th>Situa&ccedil;&atilde;o</th><th>&Uacute;ltima movimenta&ccedil;&atilde;o</th><th></th></tr>${linhas}</table></div>`+
-    WS_DATA.pagBtn(lista.length,WS_DATA.pag.count(lista,'mats',120),'mats',120,'renderMats()');
-}
-function epiFiltroSit(v){const s=document.getElementById('filter-mat-sit');if(s){s.value=v;renderMats();}}
-function epiHistoricoMat(id){
-  const m=DATA.materiais[id];if(!m)return;
-  const tab=[...document.querySelectorAll('#epi .tab')].find(t=>/Movimenta/.test(t.textContent));
-  document.getElementById('mov-f-q').value=m.nome||'';
-  if(tab)tabSwitch('tab-epi-3',tab);
-  epiRenderMov();
-}
-
-// ── Modal de movimentação ────────────────────────────────────────────────
-function epiNovaMov(tipo,matId,funcId){
-  if(!epiPodeMov()){alert('Você não tem permissão para movimentar o estoque.');return;}
-  ['mov-mat-q','mov-colab-q','mov-nf','mov-forn','mov-custo','mov-obs','mov-validade'].forEach(i=>v(i,''));
-  v('mov-qtd','1');v('mov-data',epiHoje());document.getElementById('mov-motivo').value='';
-  document.getElementById('mov-mat').value='';document.getElementById('mov-colab').value='';
-  EPI_MOV_TIPO=tipo||'entrada';
-  epiFiltraMatMov();epiFiltraColabMov();
-  document.getElementById('mov-mat').value=matId||'';
-  document.getElementById('mov-colab').value=funcId||'';
-  document.getElementById('mov-estoque-info').innerHTML='<i class="fa-solid fa-warehouse"></i> '+esc(epiNomeEstoque(epiEstoqueAtual()));
-  const dst=document.getElementById('mov-destino');
-  dst.innerHTML='<option value="">Selecione...</option>'+epiEstoquesPermitidos().filter(id=>id!==epiEstoqueAtual()).map(id=>`<option value="${esc(id)}">${esc(epiNomeEstoque(id))}</option>`).join('');
-  epiTipoMov(tipo||'entrada');
-  document.getElementById('mdl-mov').style.display='flex';
-}
-function epiTipoMov(t){
-  EPI_MOV_TIPO=t;
-  document.querySelectorAll('#mov-tipos button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));
-  document.getElementById('mov-dica').textContent=EPI_DICAS[t]||'';
-  document.getElementById('mov-box-colab').style.display=(t==='saida'||t==='devolucao')?'':'none';
-  document.getElementById('mov-box-entrada').style.display=t==='entrada'?'':'none';
-  document.getElementById('mov-box-motivo').style.display=t==='baixa'?'':'none';
-  document.getElementById('mov-box-destino').style.display=t==='transferencia'?'':'none';
-  document.getElementById('mov-qtd-lbl').textContent=t==='ajuste'?'Saldo contado (físico)':'Quantidade';
-  document.getElementById('mov-qtd').min=t==='ajuste'?'0':'1';
-  if(t==='ajuste'){const m=DATA.materiais[document.getElementById('mov-mat').value];if(m)v('mov-qtd',String(Math.max(epiSaldo(m),0)));}
-  if(t==='entrada'){const m=DATA.materiais[document.getElementById('mov-mat').value];if(m&&m.custo&&!v('mov-custo'))v('mov-custo',String(m.custo));}
-  epiMatMovInfo();
-}
-function epiFiltraMatMov(){
-  const q=(v('mov-mat-q')||'').toLowerCase();
-  const sel=document.getElementById('mov-mat');const atual=sel.value;
-  const mats=epiMats().filter(m=>!q||(m.nome||'').toLowerCase().includes(q)||(m.ca||'').toLowerCase().includes(q)).sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));
-  sel.innerHTML='<option value="">Selecione...</option>'+mats.map(m=>`<option value="${m.id}">${esc(m.nome)}${m.ca?' (C.A. '+esc(m.ca)+')':''} — saldo ${epiNum(epiSaldo(m))}</option>`).join('');
-  if(atual&&mats.some(m=>m.id===atual))sel.value=atual;else if(q&&mats.length===1)sel.value=mats[0].id;
-  epiMatMovInfo();
-}
-function epiFiltraColabMov(){
-  const q=(v('mov-colab-q')||'').toLowerCase();
-  const sel=document.getElementById('mov-colab');const atual=sel.value;
-  const emp={};toArr(DATA.empresas).forEach(e=>emp[e.id]=e.nome);
-  const est=epiEstoqueAtual();
-  const fs=toArr(DATA.funcionarios).filter(f=>f&&(f.nome||'').trim()&&f.ativo!==false&&(est===EPI_CENTRAL||String(f.empresaId||'')===String(est))&&(!q||(f.nome||'').toLowerCase().includes(q)||(f.cpf||'').includes(q))).sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));
-  sel.innerHTML='<option value="">'+(EPI_MOV_TIPO==='saida'?'Sem colaborador (consumo geral)':'Selecione...')+'</option>'+fs.slice(0,300).map(f=>`<option value="${f.id}">${esc(f.nome)}${emp[f.empresaId]?' — '+esc(emp[f.empresaId]):''}</option>`).join('');
-  if(atual&&fs.some(f=>f.id===atual))sel.value=atual;else if(q&&fs.length===1)sel.value=fs[0].id;
-}
-function epiMatMovInfo(){
-  const box=document.getElementById('mov-mat-info');if(!box)return;
-  const m=DATA.materiais[document.getElementById('mov-mat').value];
-  if(!m){box.textContent='';box.className='epi-dica';return;}
-  const s=epiSaldo(m),q=Number(v('mov-qtd'))||0,un=m.unidade||'';
-  let txt='Saldo atual: '+epiNum(s)+' '+un+(m.estoqueMin?' · Mínimo: '+epiNum(m.estoqueMin):'');
-  let alerta=false;
-  if(EPI_MOV_TIPO==='ajuste'){const d=q-s;txt+=' · Diferença a lançar: '+(d>0?'+':'')+epiNum(d);}
-  else if(EPI_TIPOS[EPI_MOV_TIPO].sinal<0){const r=s-q;txt+=' · Após: '+epiNum(r);if(r<0){alerta=true;txt+=' — saldo insuficiente, ficará negativo';}}
-  else txt+=' · Após: '+epiNum(s+q);
-  box.textContent=txt;box.className='epi-dica'+(alerta?' alerta':'');
-}
-function epiSalvarMov(){
-  const t=EPI_MOV_TIPO;const matId=document.getElementById('mov-mat').value;const m=DATA.materiais[matId];
-  if(!m){alert('Selecione o material.');return;}
-  const q=Number(v('mov-qtd'));const data=v('mov-data');
-  if(!data){alert('Informe a data.');return;}
-  if(t==='ajuste'){if(!(q>=0)||!Number.isInteger(q)){alert('Informe o saldo contado (número inteiro, zero ou mais).');return;}}
-  else if(!(q>0)||!Number.isInteger(q)){alert('Informe uma quantidade inteira maior que zero.');return;}
-  // colaborador só vale em saída/devolução (nos outros tipos o campo fica
-  // oculto e poderia guardar a escolha de um lançamento anterior)
-  const fid=(t==='saida'||t==='devolucao')?document.getElementById('mov-colab').value:'';
-  if(t==='devolucao'&&!fid){alert('Informe o colaborador que devolveu.');return;}
-  const motivo=document.getElementById('mov-motivo').value;
-  if(t==='baixa'&&!motivo){alert('Informe o motivo da baixa.');return;}
-  if(t==='transferencia')return epiSalvarTransferencia(m,q,data);
-  const saldo=epiSaldo(m);
-  const delta=t==='ajuste'?(q-saldo):EPI_TIPOS[t].sinal*q;
-  if(t==='ajuste'&&delta===0&&!confirm('O saldo contado é igual ao do sistema. Registrar a conferência mesmo assim?'))return;
-  if(t==='saida'&&m.validadeProduto&&m.validadeProduto<data&&!confirm('ATENÇÃO: este produto está VENCIDO (validade '+fmtData(m.validadeProduto)+').\n\nEntregar produto vencido ao colaborador?'))return;
-  if(t==='saida'&&m.vencimentoCa&&m.vencimentoCa<data&&!confirm('ATENÇÃO: o C.A. deste material está VENCIDO ('+fmtData(m.vencimentoCa)+').\n\nEntregar mesmo assim?'))return;
-  if(delta<0&&saldo+delta<0&&!confirm('Saldo insuficiente: há '+epiNum(saldo)+' '+(m.unidade||'')+' e a saída é de '+epiNum(-delta)+'.\n\nRegistrar mesmo assim? O saldo ficará negativo.'))return;
-  const mov={ts:Date.now(),data,tipo:t,materialId:matId,materialNome:m.nome||'',ca:m.ca||'',unidade:m.unidade||'',
-    qtd:t==='ajuste'?Math.abs(delta):q,delta,saldoApos:saldo+delta,origem:'manual',estoqueId:epiEstoqueDe(m),...dadosGerador()};
-  if(t==='ajuste')mov.saldoContado=q;
-  if(fid){mov.funcionarioId=fid;mov.funcionarioNome=epiNomeFunc(fid);const f=DATA.funcionarios[fid];if(f&&f.empresaId)mov.empresaId=f.empresaId;}
-  if(t==='entrada'){mov.nf=v('mov-nf').trim();mov.fornecedor=v('mov-forn').trim();const c=Number(v('mov-custo'));if(c>0)mov.custoUnit=c;const vl=v('mov-validade');if(vl)mov.validadeLote=vl;}
-  // a entrega guarda a validade do produto que saiu: é ela que vale para o
-  // colaborador, mesmo que o estoque receba depois um lote com outra validade
-  if(t==='saida'&&m.validadeProduto)mov.validadeProduto=m.validadeProduto;
-  if(t==='baixa')mov.motivo=motivo;
-  const obs=v('mov-obs').trim();if(obs)mov.obs=obs;
-  const ops=[{op:'set',node:'epiMov',key:uid(),val:mov}];
-  if(delta)ops.push({op:'inc',node:'materiais',key:matId,field:'estoque',n:delta});
-  if(t==='entrada'&&mov.custoUnit)ops.push({op:'patch',node:'materiais',key:matId,val:{custo:mov.custoUnit}});
-  if(t==='entrada'&&mov.validadeLote){
-    // Validade do estoque = a mais próxima de vencer entre os lotes. Se o
-    // estoque estava zerado, o lote antigo acabou: vale só a do lote novo.
-    const atual=m.validadeProduto;
-    const nova=(saldo<=0||!atual||mov.validadeLote<atual)?mov.validadeLote:atual;
-    if(nova!==atual)ops.push({op:'patch',node:'materiais',key:matId,val:{validadeProduto:nova}});
-  }
-  const b=document.getElementById('mov-salvar');b.disabled=true;spin(true);
-  WS_DATA.lote(ops).then(()=>{spin(false);b.disabled=false;cls();epiRenderAll();})
-    .catch(e=>{spin(false);b.disabled=false;alert('Erro ao registrar: '+(e&&e.message?e.message:e));});
-}
-
-// Transferência entre estoques: uma saída na origem e uma entrada no destino,
-// ligadas por transfId, num lote só (ou as duas, ou nenhuma). Se o destino não
-// tem o item no catálogo, ele é criado com os mesmos dados.
-function epiSalvarTransferencia(m,q,data){
-  const destino=document.getElementById('mov-destino').value;
-  if(!destino){alert('Escolha o estoque de destino.');return;}
-  const origem=epiEstoqueDe(m);
-  if(destino===origem){alert('O destino precisa ser outro estoque.');return;}
-  const saldo=epiSaldo(m);
-  if(saldo-q<0&&!confirm('Saldo insuficiente: h\u00e1 '+epiNum(saldo)+' '+(m.unidade||'')+' e a transfer\u00eancia \u00e9 de '+epiNum(q)+'.\n\nTransferir mesmo assim? O saldo da origem ficar\u00e1 negativo.'))return;
-  const eq=epiEquivalente(m,destino);
-  const ops=[];const transfId=uid();const ts=Date.now();const obs=v('mov-obs').trim();
-  let destId=eq&&eq.id;let saldoDest=eq?epiSaldo(eq):0;
-  if(!eq){
-    destId=uid();
-    const novo={id:destId,nome:m.nome||'',ca:m.ca||'',tipo:m.tipo||'EPI',unidade:m.unidade||'',vencimentoCa:m.vencimentoCa||'',validadeProduto:m.validadeProduto||'',
-      vidaUtilDias:m.vidaUtilDias||0,custo:m.custo||0,estoqueMin:0,estoque:q};
-    if(destino!==EPI_CENTRAL)novo.empresaId=destino;
-    ops.push({op:'set',node:'materiais',key:destId,val:novo});
-  }else{
-    ops.push({op:'inc',node:'materiais',key:destId,field:'estoque',n:q});
-    // validade do lote que chega: fica a mais próxima de vencer
-    if(m.validadeProduto&&(saldoDest<=0||!eq.validadeProduto||m.validadeProduto<eq.validadeProduto))ops.push({op:'patch',node:'materiais',key:destId,val:{validadeProduto:m.validadeProduto}});
-  }
-  ops.push({op:'inc',node:'materiais',key:m.id,field:'estoque',n:-q});
-  const base={data,tipo:'transferencia',ca:m.ca||'',unidade:m.unidade||'',materialNome:m.nome||'',qtd:q,transfId,origem:'manual',...(obs?{obs}:{}),...(m.custo?{custoUnit:m.custo}:{}),...dadosGerador()};
-  ops.push({op:'set',node:'epiMov',key:uid(),val:Object.assign({},base,{ts,materialId:m.id,estoqueId:origem,destinoId:destino,delta:-q,saldoApos:saldo-q})});
-  ops.push({op:'set',node:'epiMov',key:uid(),val:Object.assign({},base,{ts:ts+1,materialId:destId,estoqueId:destino,origemId:origem,delta:q,saldoApos:saldoDest+q,...(m.validadeProduto?{validadeLote:m.validadeProduto}:{})})});
-  const b=document.getElementById('mov-salvar');b.disabled=true;spin(true);
-  WS_DATA.lote(ops).then(()=>{spin(false);b.disabled=false;cls();epiRenderAll();
-    alert('Transfer\u00eancia registrada: '+epiNum(q)+' '+(m.unidade||'')+' de "'+(m.nome||'')+'" para '+epiNomeEstoque(destino)+'.'+(eq?'':'\n\nO item foi criado no cat\u00e1logo do destino.'));})
-    .catch(e=>{spin(false);b.disabled=false;alert('Erro ao transferir: '+(e&&e.message?e.message:e));});
-}
-
-// ── Aba Movimentações ────────────────────────────────────────────────────
-function epiMovFiltradas(){
-  const de=v('mov-f-de'),ate=v('mov-f-ate'),tipo=v('mov-f-tipo'),q=(v('mov-f-q')||'').toLowerCase();
-  return epiMovs().filter(x=>{
-    if(de&&(x.data||'')<de)return false;
-    if(ate&&(x.data||'')>ate)return false;
-    if(tipo&&x.tipo!==tipo)return false;
-    if(q){const hay=[x.materialNome,x.ca,x.funcionarioNome,x.nf,x.fornecedor,x.motivo,x.obs].join(' ').toLowerCase();if(!hay.includes(q))return false;}
-    return true;
-  }).sort((a,b)=>(b.data||'').localeCompare(a.data||'')||(b.ts||0)-(a.ts||0));
-}
-function epiDetalheMov(x){
-  const p=[];
-  if(x.funcionarioId||x.funcionarioNome)p.push('<i class="fa-solid fa-user" style="opacity:.6"></i> '+esc(epiNomeFunc(x.funcionarioId)||x.funcionarioNome||''));
-  if(x.nf)p.push('NF '+esc(x.nf));
-  if(x.fornecedor)p.push(esc(x.fornecedor));
-  if(x.custoUnit)p.push(epiMoeda(x.custoUnit)+'/un');
-  if(x.motivo)p.push(esc(x.motivo));
-  if(x.tipo==='ajuste'&&x.saldoContado!=null)p.push('contado: '+epiNum(x.saldoContado));
-  if(x.tipo==='transferencia'&&!x.estornoDe&&(x.destinoId||x.origemId))p.push(x.destinoId?'para <b>'+esc(epiNomeEstoque(x.destinoId))+'</b>':'de <b>'+esc(epiNomeEstoque(x.origemId))+'</b>');
-  if(x.origem==='ficha')p.push('<span class="bdg">Ficha de EPI</span>');
-  if(x.obs)p.push('<i>'+esc(x.obs)+'</i>');
-  return p.join(' · ');
-}
-function epiRenderMov(){
-  const lst=document.getElementById('lst-mov');if(!lst)return;
-  const todas=epiMovFiltradas();
-  const val=todas.filter(x=>!x.estornado&&!x.estornoDe);
-  const soma=t=>val.filter(x=>x.tipo===t).reduce((s,x)=>s+(Number(x.qtd)||0),0);
-  const custo=val.filter(x=>x.tipo==='entrada').reduce((s,x)=>s+(Number(x.qtd)||0)*(Number(x.custoUnit)||0),0);
-  const r=document.getElementById('epi-mov-resumo');
-  if(r)r.innerHTML=`<span>${epiNum(todas.length)} lan&ccedil;amento(s)</span><span class="mv-entrada">Entradas: <b>${epiNum(soma('entrada'))}</b></span><span class="mv-saida">Sa&iacute;das: <b>${epiNum(soma('saida'))}</b></span><span class="mv-devolucao">Devolu&ccedil;&otilde;es: <b>${epiNum(soma('devolucao'))}</b></span><span class="mv-baixa">Baixas: <b>${epiNum(soma('baixa'))}</b></span>${custo?`<span>Compras: <b>${epiMoeda(custo)}</b></span>`:''}`;
-  if(!todas.length){lst.innerHTML='<div class="es">Nenhuma movimenta&ccedil;&atilde;o encontrada</div>';return;}
-  const info=WS_DATA.pag.page(todas,'mov',50);
-  const pode=epiPodeMov();
-  const linhas=info.slice.map(x=>{
-    const tp=EPI_TIPOS[x.tipo]||{nome:x.tipo,icone:'fa-circle'};
-    const d=Number(x.delta)||0;
-    const rot=x.estornoDe?'Estorno':tp.nome;
-    const acao=(pode&&!x.estornado&&!x.estornoDe)?`<button class="btn bg2" title="Estornar (desfaz o lançamento)" onclick="epiEstornar('${x.id}')"><i class="fa-solid fa-rotate-left"></i> Estornar</button>`:(x.estornado?'<span class="epi-dica">estornado</span>':'');
-    return `<tr class="${x.estornado?'est':''}"><td style="white-space:nowrap">${fmtData(x.data)}</td>`+
-      `<td class="mv-${x.tipo}" style="white-space:nowrap;font-weight:700"><i class="fa-solid ${x.estornoDe?'fa-rotate-left':tp.icone}"></i> ${rot}</td>`+
-      `<td><div style="font-weight:600">${esc(x.materialNome||'')}</div>${x.ca?'<div class="epi-dica" style="margin:0">C.A. '+esc(x.ca)+'</div>':''}</td>`+
-      `<td class="n mv-${x.tipo}" style="font-weight:700">${d>0?'+':''}${epiNum(d)}</td>`+
-      `<td class="n">${x.saldoApos!=null?epiNum(x.saldoApos):'—'}</td>`+
-      `<td style="font-size:11px">${epiDetalheMov(x)}</td>`+
-      `<td style="font-size:11px;color:var(--ts);white-space:nowrap">${esc(epiNomeUsuario(x.usuarioId))}</td><td class="acoes">${acao}</td></tr>`;
-  }).join('');
-  lst.innerHTML=`<div class="epi-wrap"><table class="epi-tbl"><tr><th>Data</th><th>Tipo</th><th>Material</th><th style="text-align:right">Qtd</th><th style="text-align:right">Saldo ap&oacute;s</th><th>Detalhes</th><th>Usu&aacute;rio</th><th></th></tr>${linhas}</table></div>`+
-    WS_DATA.pag.nav(info,'mov','epiRenderMov()');
-}
-function epiEstornar(id){
-  if(!epiPodeMov()){alert('Você não tem permissão para movimentar o estoque.');return;}
-  const x=DATA.epiMov&&DATA.epiMov[id];if(!x||x.estornado||x.estornoDe)return;
-  const d=Number(x.delta)||0;
-  if(!confirm('Estornar este lançamento?\n\n'+(EPI_TIPOS[x.tipo]?EPI_TIPOS[x.tipo].nome:x.tipo)+' de '+epiNum(Math.abs(d))+' '+(x.unidade||'')+' — '+(x.materialNome||'')+'\n\nO saldo volta '+(d>0?'-':'+')+epiNum(Math.abs(d))+'. O lançamento original fica no histórico, riscado.'))return;
-  const m=DATA.materiais[x.materialId];
-  const est={ts:Date.now(),data:epiHoje(),tipo:x.tipo,materialId:x.materialId,materialNome:x.materialNome||'',ca:x.ca||'',unidade:x.unidade||'',
-    qtd:Number(x.qtd)||0,delta:-d,saldoApos:m?epiSaldo(m)-d:null,origem:'estorno',estornoDe:id,obs:'Estorno do lançamento de '+fmtData(x.data),...dadosGerador()};
-  if(x.funcionarioId){est.funcionarioId=x.funcionarioId;est.funcionarioNome=x.funcionarioNome||'';}
-  est.estoqueId=epiMovEstoque(x);
-  const ops=[{op:'set',node:'epiMov',key:uid(),val:est},{op:'patch',node:'epiMov',key:id,val:{estornado:true,estornadoEm:Date.now()}}];
-  if(d&&m)ops.push({op:'inc',node:'materiais',key:x.materialId,field:'estoque',n:-d});
-  // transferência: a outra ponta (no outro estoque) é estornada junto
-  if(x.transfId){
-    const par=epiMovsTodos().find(y=>y.transfId===x.transfId&&y.id!==id&&!y.estornado&&!y.estornoDe);
-    if(par){
-      const dp=Number(par.delta)||0;const mp=DATA.materiais[par.materialId];
-      ops.push({op:'set',node:'epiMov',key:uid(),val:{ts:Date.now()+1,data:epiHoje(),tipo:par.tipo,materialId:par.materialId,materialNome:par.materialNome||'',ca:par.ca||'',unidade:par.unidade||'',
-        qtd:Number(par.qtd)||0,delta:-dp,saldoApos:mp?epiSaldo(mp)-dp:null,origem:'estorno',estornoDe:par.id,estoqueId:epiMovEstoque(par),obs:'Estorno da transfer\u00eancia de '+fmtData(par.data),...dadosGerador()}});
-      ops.push({op:'patch',node:'epiMov',key:par.id,val:{estornado:true,estornadoEm:Date.now()}});
-      if(dp&&mp)ops.push({op:'inc',node:'materiais',key:par.materialId,field:'estoque',n:-dp});
-    }
-  }
-  spin(true);
-  WS_DATA.lote(ops).then(()=>{spin(false);epiRenderAll();}).catch(e=>{spin(false);alert('Erro ao estornar: '+(e&&e.message?e.message:e));});
-}
-function epiExportarCSV(){
-  const linhas=epiMovFiltradas();
-  if(!linhas.length){alert('Nenhuma movimentação no filtro atual.');return;}
-  const c=s=>'"'+String(s==null?'':s).replace(/"/g,'""')+'"';
-  const cab=['Estoque','Data','Tipo','Material','C.A.','Unidade','Quantidade','Saldo após','Colaborador','NF','Fornecedor','Custo unit.','Motivo','Observação','Origem','Situação','Usuário'];
-  const out=[cab.map(c).join(';')].concat(linhas.map(x=>[epiNomeEstoque(epiMovEstoque(x)),fmtData(x.data),x.estornoDe?'Estorno':(EPI_TIPOS[x.tipo]?EPI_TIPOS[x.tipo].nome:x.tipo),x.materialNome,x.ca,x.unidade,
-    String(Number(x.delta)||0),x.saldoApos,epiNomeFunc(x.funcionarioId)||x.funcionarioNome,x.nf,x.fornecedor,x.custoUnit?String(x.custoUnit).replace('.',','):'',x.motivo,x.obs,
-    x.origem==='ficha'?'Ficha de EPI':x.origem==='estorno'?'Estorno':'Manual',x.estornado?'Estornado':'',epiNomeUsuario(x.usuarioId)].map(c).join(';')));
-  const blob=new Blob(['﻿'+out.join('\r\n')],{type:'text/csv;charset=utf-8'});
-  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='movimentacoes-epi-'+epiNorm(epiNomeEstoque(epiEstoqueAtual())).replace(/[^a-z0-9]+/g,'-').slice(0,40)+'-'+epiHoje()+'.csv';
-  document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),2000);
-}
-
-// ── Aba Por Colaborador ──────────────────────────────────────────────────
-// Em posse = entregas - devoluções (sem contar estornos). A próxima troca sai
-// da última entrega + vida útil do material.
-function epiPosse(){
-  const p={};
-  epiValidos().forEach(x=>{
-    if(!x.funcionarioId||!x.materialId||(x.tipo!=='saida'&&x.tipo!=='devolucao'))return;
-    const k=x.funcionarioId+'|'+x.materialId;
-    const r=p[k]||(p[k]={fid:x.funcionarioId,mid:x.materialId,qtd:0,ultima:'',movs:[]});
-    r.qtd+=x.tipo==='saida'?(Number(x.qtd)||0):-(Number(x.qtd)||0);
-    if(x.tipo==='saida'&&(x.data||'')>=r.ultima){r.ultima=x.data;r.validadeProduto=x.validadeProduto||'';}
-    r.movs.push(x);
-  });
-  return Object.values(p);
-}
-// Validade de uso do item com o colaborador: o que vencer primeiro entre a
-// vida útil de uso (entrega + dias) e a validade do produto entregue.
-function epiUsoInfo(r){
-  const m=DATA.materiais[r.mid]||{};
-  const porVida=(Number(m.vidaUtilDias)&&r.ultima)?epiSomaDias(r.ultima,m.vidaUtilDias):'';
-  const porProd=r.validadeProduto||'';
-  if(!porVida&&!porProd)return null;
-  if(porVida&&(!porProd||porVida<=porProd))return{data:porVida,motivo:'vida \u00fatil de uso'};
-  return{data:porProd,motivo:'validade do produto'};
-}
-function epiProxTroca(r){const i=epiUsoInfo(r);return i?i.data:null;}
-function epiFiltraColab(){
-  const q=(v('epi-colab-q')||'').toLowerCase();
-  const sel=document.getElementById('epi-colab-sel');if(!sel)return;const atual=sel.value;
-  const emp={};toArr(DATA.empresas).forEach(e=>emp[e.id]=e.nome);
-  const est=epiEstoqueAtual();
-  const fs=toArr(DATA.funcionarios).filter(f=>f&&(f.nome||'').trim()&&(est===EPI_CENTRAL||String(f.empresaId||'')===String(est))&&(!q||(f.nome||'').toLowerCase().includes(q)||(f.cpf||'').includes(q))).sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));
-  sel.innerHTML=fs.slice(0,300).map(f=>`<option value="${f.id}">${esc(f.nome)}${emp[f.empresaId]?' — '+esc(emp[f.empresaId]):''}${f.ativo===false?' (desligado)':''}</option>`).join('');
-  if(atual&&fs.some(f=>f.id===atual))sel.value=atual;else if(fs.length===1)sel.value=fs[0].id;
-  epiRenderColab();
-}
-function epiRenderColab(){
-  const sel=document.getElementById('epi-colab-sel');
-  if(sel&&!sel.options.length&&!v('epi-colab-q'))epiFiltraColab();
-  const posse=epiPosse();
-  // trocas vencidas / próximas, de todo mundo ativo
-  const tr=document.getElementById('epi-trocas');
-  if(tr){
-    const itens=posse.filter(r=>r.qtd>0&&(DATA.funcionarios[r.fid]||{}).ativo!==false).map(r=>({r,prox:epiProxTroca(r)})).filter(o=>o.prox&&epiDiasAte(o.prox)<=EPI_TROCA_AVISO_DIAS).sort((a,b)=>a.prox.localeCompare(b.prox));
-    tr.innerHTML=itens.length?`<div class="epi-wrap"><table class="epi-tbl"><tr><th>Colaborador</th><th>Material</th><th>Entregue em</th><th>Troca em</th><th></th><th></th></tr>`+itens.slice(0,200).map(({r,prox})=>{
-      const d=epiDiasAte(prox);const m=DATA.materiais[r.mid]||{};
-      const st=d<0?`<span class="epi-st st-zero">Vencida há ${-d}d</span>`:d===0?'<span class="epi-st st-zero">Vence hoje</span>':`<span class="epi-st st-baixo">em ${d}d</span>`;
-      return `<tr><td>${esc(epiNomeFunc(r.fid))}</td><td>${esc(m.nome||'')}</td><td>${fmtData(r.ultima)}</td><td>${fmtData(prox)}</td><td>${st}</td><td class="acoes">${epiPodeMov()?`<button class="btn bw" onclick="epiNovaMov('saida','${r.mid}','${r.fid}')"><i class="fa-solid fa-arrow-up"></i> Registrar entrega</button>`:''}</td></tr>`;
-    }).join('')+'</table></div>':'<div class="es">Nenhuma troca vencida ou pr&oacute;xima. (A troca &eacute; calculada para materiais com "Vida &uacute;til de uso" ou "Validade do produto" preenchida.)</div>';
-  }
-  const det=document.getElementById('epi-colab-det');if(!det)return;
-  const fid=sel&&sel.value;
-  if(!fid){det.innerHTML='<div class="es">Selecione um colaborador</div>';return;}
-  const f=DATA.funcionarios[fid]||{};
-  const meus=posse.filter(r=>r.fid===fid);
-  const emPosse=meus.filter(r=>r.qtd>0);
-  const hist=epiMovs().filter(x=>x.funcionarioId===fid).sort((a,b)=>(b.data||'').localeCompare(a.data||'')||(b.ts||0)-(a.ts||0));
-  const pode=epiPodeMov();
-  let h=`<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin:6px 0 12px"><div style="font-weight:700;font-size:14px">${esc(f.nome||'')}${f.ativo===false?' <span class="bdg">Desligado</span>':''}</div>`+
-    (pode?`<div style="display:flex;gap:6px"><button class="btn bw" onclick="epiNovaMov('saida',null,'${fid}')"><i class="fa-solid fa-arrow-up"></i> Entregar</button><button class="btn bg2" onclick="epiNovaMov('devolucao',null,'${fid}')"><i class="fa-solid fa-rotate-left"></i> Devolu&ccedil;&atilde;o</button></div>`:'')+`</div>`;
-  h+=emPosse.length?`<div class="epi-wrap"><table class="epi-tbl"><tr><th>Material</th><th style="text-align:right">Em posse</th><th>&Uacute;ltima entrega</th><th>Validade de uso</th><th></th></tr>`+emPosse.map(r=>{
-      const m=DATA.materiais[r.mid]||{};const ui=epiUsoInfo(r);const prox=ui&&ui.data;const d=prox?epiDiasAte(prox):null;
-      const st=d===null?'':d<0?`<span class="epi-st st-zero">Vencida há ${-d}d</span>`:d<=EPI_TROCA_AVISO_DIAS?`<span class="epi-st st-baixo">em ${d}d</span>`:'<span class="epi-st st-ok">OK</span>';
-      return `<tr><td>${esc(m.nome||r.movs[0].materialNome||'')}</td><td class="n">${epiNum(r.qtd)} ${esc(m.unidade||'')}</td><td>${fmtData(r.ultima)}</td><td>${prox?fmtData(prox):'—'} ${st}${ui?'<div class="epi-dica" style="margin:2px 0 0">por '+ui.motivo+'</div>':''}</td><td class="acoes">${pode?`<button class="btn bg2" title="Devolução" onclick="epiNovaMov('devolucao','${r.mid}','${fid}')"><i class="fa-solid fa-rotate-left"></i></button>`:''}</td></tr>`;
-    }).join('')+'</table></div>':'<div class="es" style="padding:14px">Nenhum EPI em posse registrado.</div>';
-  if(hist.length){
-    h+=`<div class="ct" style="margin:18px 0 8px">Hist&oacute;rico de entregas e devolu&ccedil;&otilde;es</div><div class="epi-wrap"><table class="epi-tbl"><tr><th>Data</th><th>Tipo</th><th>Material</th><th style="text-align:right">Qtd</th><th>Detalhes</th></tr>`+
-      hist.slice(0,200).map(x=>`<tr class="${x.estornado?'est':''}"><td>${fmtData(x.data)}</td><td class="mv-${x.tipo}" style="font-weight:700">${x.estornoDe?'Estorno':(EPI_TIPOS[x.tipo]||{}).nome||x.tipo}</td><td>${esc(x.materialNome||'')}</td><td class="n">${epiNum(Math.abs(Number(x.delta)||0))}</td><td style="font-size:11px">${x.origem==='ficha'?'<span class="bdg">Ficha de EPI</span> ':''}${esc(x.obs||'')}</td></tr>`).join('')+'</table></div>';
-  }
-  det.innerHTML=h;
-}
-
-// ── Baixa automática ao emitir a Ficha de EPI ────────────────────────────
-// entregas: [{func, items:[{id,qtd,...}]}]. Uma saída por colaborador por
-// item, com origem 'ficha', e o saldo de cada material cai pelo total.
-async function epiBaixaFicha(entregas,dataIso,empresaId){
-  const linhas=[];const total={};const doCentral=new Set();
-  entregas.forEach(e=>{
-    if(!e.func)return;
-    // A baixa sai do estoque da empresa da ficha. Se a empresa não tem o item
-    // (mesmo nome e C.A.) no catálogo dela, sai do estoque onde o item está.
-    const est=empresaId||e.func.empresaId||EPI_CENTRAL;
-    (e.items||[]).forEach(it=>{
-      let m=DATA.materiais[it.id];const q=Math.round(Number(it.qtd)||0);
-      if(!m||q<=0)return;
-      if(epiEstoqueDe(m)!==est){const eq=epiEquivalente(m,est);if(eq)m=eq;else doCentral.add(m.nome+' ('+epiNomeEstoque(epiEstoqueDe(m))+')');}
-      linhas.push({f:e.func,m,q});total[m.id]=(total[m.id]||0)+q;
-    });
-  });
-  if(!linhas.length)return{ok:true,n:0};
-  if(doCentral.size&&!confirm('A empresa n\u00e3o tem no estoque dela:\n\n\u2022 '+[...doCentral].join('\n\u2022 ')+'\n\nOK = dar baixa no estoque indicado entre par\u00eanteses\nCancelar = n\u00e3o dar baixa desta ficha'))return{ok:false,n:0,pulado:true};
-  // produto ou C.A. vencido na data da entrega
-  const dia=dataIso||epiHoje();
-  const vencidos=Object.keys(total).map(id=>DATA.materiais[id]).filter(m=>(m.validadeProduto&&m.validadeProduto<dia)||(m.vencimentoCa&&m.vencimentoCa<dia));
-  if(vencidos.length){
-    const txt=vencidos.map(m=>'• '+m.nome+((m.validadeProduto&&m.validadeProduto<dia)?' — produto vencido em '+fmtData(m.validadeProduto):'')+((m.vencimentoCa&&m.vencimentoCa<dia)?' — C.A. vencido em '+fmtData(m.vencimentoCa):'')).join('\n');
-    if(!confirm('ATENÇÃO: itens VENCIDOS nesta ficha:\n\n'+txt+'\n\nOK = registrar a entrega mesmo assim\nCancelar = não dar baixa desta ficha'))return{ok:false,n:0,pulado:true};
-  }
-  const falta=Object.keys(total).filter(id=>epiSaldo(DATA.materiais[id])<total[id]);
-  if(falta.length){
-    const txt=falta.map(id=>{const m=DATA.materiais[id];return'• '+m.nome+': saldo '+epiNum(epiSaldo(m))+', entrega '+epiNum(total[id]);}).join('\n');
-    if(!confirm('Estoque insuficiente para:\n\n'+txt+'\n\nOK = registrar a baixa mesmo assim (o saldo ficará negativo)\nCancelar = não dar baixa desta ficha'))return{ok:false,n:0,pulado:true};
-  }
-  const ts=Date.now();const corrente={};const ops=[];
-  linhas.forEach((l,i)=>{
-    const base=corrente[l.m.id]!=null?corrente[l.m.id]:epiSaldo(l.m);
-    corrente[l.m.id]=base-l.q;
-    ops.push({op:'set',node:'epiMov',key:uid(),val:{ts:ts+i,data:dataIso||epiHoje(),tipo:'saida',materialId:l.m.id,materialNome:l.m.nome||'',ca:l.m.ca||'',unidade:l.m.unidade||'',
-      qtd:l.q,delta:-l.q,saldoApos:corrente[l.m.id],...(l.m.validadeProduto?{validadeProduto:l.m.validadeProduto}:{}),funcionarioId:l.f.id,funcionarioNome:l.f.nome||'',empresaId:l.f.empresaId||'',estoqueId:epiEstoqueDe(l.m),origem:'ficha',...dadosGerador()}});
-  });
-  Object.keys(total).forEach(id=>ops.push({op:'inc',node:'materiais',key:id,field:'estoque',n:-total[id]}));
-  await WS_DATA.lote(ops);
-  return{ok:true,n:linhas.length};
-}
-
-
-// ── Painel: alertas e consumo ────────────────────────────────────────────
-const EPI_SEV={critico:{nome:'Cr\u00edtico',icone:'fa-circle-exclamation',ord:0},serio:{nome:'Aten\u00e7\u00e3o',icone:'fa-triangle-exclamation',ord:1},aviso:{nome:'Aviso',icone:'fa-clock',ord:2}};
-function epiDesde(dias){const d=new Date();d.setDate(d.getDate()-dias);return d.toISOString().slice(0,10);}
-// consumo médio diário (saídas dos últimos 90 dias) por material
-function epiConsumoMedio(){
-  const desde=epiDesde(90);const c={};
-  epiValidos().forEach(x=>{if(x.tipo==='saida'&&(x.data||'')>=desde)c[x.materialId]=(c[x.materialId]||0)+(Number(x.qtd)||0);});
-  Object.keys(c).forEach(k=>c[k]=c[k]/90);
-  return c;
-}
-function epiAlertas(){
-  const out=[];const mats=epiMats();const cons=epiConsumoMedio();
-  const add=(sev,cat,titulo,item,detalhe,data,acao)=>out.push({sev,cat,titulo,item,detalhe,data:data||'',acao});
-  mats.forEach(m=>{
-    const s=epiSaldo(m),nome=m.nome||'';
-    const dv=epiDiasAte(m.validadeProduto);
-    if(dv!==null&&s>0){
-      if(dv<0)add('critico','validade','Produto vencido em estoque',nome,epiNum(s)+' '+(m.unidade||'')+' venceram em '+fmtData(m.validadeProduto),m.validadeProduto,`epiNovaMov('baixa','${m.id}')|Dar baixa`);
-      else if(dv<=60)add('aviso','validade','Produto vence em '+dv+' dia(s)',nome,epiNum(s)+' '+(m.unidade||'')+' com validade '+fmtData(m.validadeProduto),m.validadeProduto);
-    }
-    const dc=epiDiasAte(m.vencimentoCa);
-    if(dc!==null){
-      if(dc<0)add('critico','ca','C.A. vencido',nome,'C.A. '+esc(m.ca||'')+' venceu em '+fmtData(m.vencimentoCa)+(s>0?' · '+epiNum(s)+' em estoque':''),m.vencimentoCa,`editMat(DATA.materiais['${m.id}'])|Atualizar C.A.`);
-      else if(dc<=60)add('aviso','ca','C.A. vence em '+dc+' dia(s)',nome,'C.A. '+esc(m.ca||'')+' vence em '+fmtData(m.vencimentoCa),m.vencimentoCa,`editMat(DATA.materiais['${m.id}'])|Atualizar C.A.`);
-    }
-    const min=Number(m.estoqueMin)||0,cm=cons[m.id]||0;
-    if(s<=0&&(min>0||cm>0))add('critico','estoque','Sem estoque',nome,'Saldo '+epiNum(s)+(min?' · m\u00ednimo '+epiNum(min):''),'',`epiNovaMov('entrada','${m.id}')|Registrar entrada`);
-    else if(s>0&&min&&s<=min)add('serio','estoque','Repor estoque',nome,'Saldo '+epiNum(s)+' · m\u00ednimo '+epiNum(min),'',`epiNovaMov('entrada','${m.id}')|Registrar entrada`);
-    else if(s>0&&cm>0&&s/cm<=30)add('serio','estoque','Estoque acaba em ~'+Math.max(1,Math.round(s/cm))+' dia(s)',nome,'Consumo m\u00e9dio de '+(cm*30).toLocaleString('pt-BR',{maximumFractionDigits:1})+' '+(m.unidade||'')+'/m\u00eas (\u00faltimos 90 dias) · saldo '+epiNum(s),'',`epiNovaMov('entrada','${m.id}')|Registrar entrada`);
-  });
-  epiPosse().forEach(r=>{
-    if(r.qtd<=0)return;
-    const f=DATA.funcionarios[r.fid];if(!f||f.ativo===false)return;
-    const ui=epiUsoInfo(r);if(!ui)return;const d=epiDiasAte(ui.data);
-    const m=DATA.materiais[r.mid]||{};
-    const det=esc(f.nome||'')+' · entregue em '+fmtData(r.ultima)+' · por '+ui.motivo;
-    if(d<0)add('critico','uso','Uso vencido \u2014 trocar',m.nome||'',det,ui.data,`epiNovaMov('saida','${r.mid}','${r.fid}')|Registrar entrega`);
-    else if(d<=EPI_TROCA_AVISO_DIAS)add('aviso','uso','Troca em '+d+' dia(s)',m.nome||'',det,ui.data,`epiNovaMov('saida','${r.mid}','${r.fid}')|Registrar entrega`);
-  });
-  return out.sort((a,b)=>EPI_SEV[a.sev].ord-EPI_SEV[b.sev].ord||(a.data||'9').localeCompare(b.data||'9'));
-}
-function epiSevHtml(sev){const s=EPI_SEV[sev];return `<span class="epi-sev sv-${sev}"><i class="fa-solid ${s.icone}"></i>${s.nome}</span>`;}
-function epiAlertaFiltro(cat){const s=document.getElementById('epi-alerta-f');if(s){s.value=cat;WS_DATA.pag.first('alertas');epiRenderPainel();}}
-function epiBarras(lista,unidade){
-  if(!lista.length)return '<div class="es" style="padding:14px">Sem dados no per\u00edodo</div>';
-  const max=Math.max(...lista.map(x=>x.v))||1;
-  return lista.map(x=>`<div class="epi-hb" data-tip="${esc('<b>'+esc(x.nome)+'</b><br>'+epiNum(x.v)+' '+(unidade||'')+(typeof x.extra==='string'&&x.extra?'<br>'+x.extra:''))}"><div class="epi-hb-n">${esc(x.nome)}</div><div class="epi-hb-tr"><div class="epi-hb-bar" style="width:${Math.max(1,x.v/max*82)}%"></div><span class="epi-hb-v">${epiNum(x.v)}</span></div></div>`).join('');
-}
-function epiRenderPainel(){
-  const tiles=document.getElementById('epi-alertas-tiles');if(!tiles)return;
-  const al=epiAlertas();
-  const crit=al.filter(a=>a.sev==='critico').length;
-  const n=document.getElementById('epi-tab-alertas');if(n)n.textContent=crit?String(crit):'';
-  const cats=[['validade','Validade do produto','fa-calendar-xmark'],['ca','C.A.','fa-id-card'],['uso','Uso / troca','fa-user-clock'],['estoque','Estoque','fa-boxes-stacked']];
-  tiles.innerHTML=cats.map(([c,nome,ic])=>{
-    const l=al.filter(a=>a.cat===c);const cr=l.filter(a=>a.sev==='critico').length,se=l.filter(a=>a.sev==='serio').length,av=l.filter(a=>a.sev==='aviso').length;
-    const sev=cr?'critico':se?'serio':av?'aviso':'ok';
-    const sub=l.length?[cr?cr+' cr\u00edtico(s)':'',se?se+' aten\u00e7\u00e3o':'',av?av+' aviso(s)':''].filter(Boolean).join(' · '):'Tudo em dia';
-    return `<button type="button" class="epi-al sv-${sev}" onclick="epiAlertaFiltro('${c}')"><div class="a-top"><i class="fa-solid ${sev==='ok'?'fa-circle-check':ic}"></i>${nome}</div><div class="a-v">${l.length}</div><div class="a-s">${sub}</div></button>`;
-  }).join('');
-  // lista
-  const f=(document.getElementById('epi-alerta-f')||{}).value||'';
-  const lst=al.filter(a=>!f||(f==='critico'?a.sev==='critico':a.cat===f));
-  const box=document.getElementById('epi-alertas-lista');
-  if(!lst.length)box.innerHTML='<div class="es">Nenhum alerta'+(f?' neste filtro':'')+'. <i class="fa-solid fa-circle-check" style="color:#0ca30c"></i></div>';
-  else{
-    const info=WS_DATA.pag.page(lst,'alertas',25);const pode=epiPodeMov();
-    box.innerHTML=`<div class="epi-wrap"><table class="epi-tbl"><tr><th>Severidade</th><th>Alerta</th><th>Item</th><th>Detalhe</th><th></th></tr>`+info.slice.map(a=>{
-      let acao='';if(a.acao&&(pode||a.acao.startsWith('editMat'))){const [fn,rot]=a.acao.split('|');acao=`<button class="btn bg2" onclick="${fn}">${rot}</button>`;}
-      return `<tr><td>${epiSevHtml(a.sev)}</td><td style="font-weight:600">${a.titulo}</td><td>${esc(a.item)}</td><td style="font-size:11px;color:var(--ts)">${a.detalhe}</td><td class="acoes">${acao}</td></tr>`;
-    }).join('')+'</table></div>'+WS_DATA.pag.nav(info,'alertas','epiRenderPainel()');
-  }
-  // consumo no período
-  const dias=Number((document.getElementById('epi-periodo')||{}).value)||90;const desde=epiDesde(dias);
-  const per=epiValidos().filter(x=>(x.data||'')>=desde);
-  const qt=t=>per.filter(x=>x.tipo===t).reduce((s,x)=>s+(Number(x.qtd)||0),0);
-  const compras=per.filter(x=>x.tipo==='entrada').reduce((s,x)=>s+(Number(x.qtd)||0)*(Number(x.custoUnit)||0),0);
-  const atendidos=new Set(per.filter(x=>x.tipo==='saida'&&x.funcionarioId).map(x=>x.funcionarioId)).size;
-  document.getElementById('epi-consumo-kpis').innerHTML=
-    `<div class="epi-kpi"><div class="k-v">${epiNum(qt('saida'))}</div><div class="k-l">Itens entregues</div></div>`+
-    `<div class="epi-kpi"><div class="k-v">${epiNum(atendidos)}</div><div class="k-l">Colaboradores atendidos</div></div>`+
-    `<div class="epi-kpi"><div class="k-v">${epiNum(qt('entrada'))}</div><div class="k-l">Itens recebidos</div></div>`+
-    `<div class="epi-kpi"><div class="k-v">${epiMoeda(compras)}</div><div class="k-l">Compras</div></div>`+
-    `<div class="epi-kpi ${qt('baixa')?'k-wn':''}"><div class="k-v">${epiNum(qt('baixa'))}</div><div class="k-l">Perdas / baixas</div></div>`;
-  // rankings
-  const agrupa=(lista,chave,nome)=>{const g={};lista.forEach(x=>{const k=chave(x);if(!k)return;const r=g[k]||(g[k]={nome:nome(x),v:0,extra:{}});r.v+=Number(x.qtd)||0;if(x.motivo)r.extra[x.motivo]=(r.extra[x.motivo]||0)+(Number(x.qtd)||0);});
-    return Object.values(g).sort((a,b)=>b.v-a.v);};
-  const saidas=per.filter(x=>x.tipo==='saida');
-  document.getElementById('epi-g-mat').innerHTML=epiBarras(agrupa(saidas,x=>x.materialId,x=>(DATA.materiais[x.materialId]||{}).nome||x.materialNome||'').slice(0,8),'');
-  document.getElementById('epi-g-colab').innerHTML=epiBarras(agrupa(saidas.filter(x=>x.funcionarioId),x=>x.funcionarioId,x=>epiNomeFunc(x.funcionarioId)||x.funcionarioNome||'').slice(0,8),'itens');
-  const bx=agrupa(per.filter(x=>x.tipo==='baixa'),x=>x.materialId,x=>(DATA.materiais[x.materialId]||{}).nome||x.materialNome||'').slice(0,5)
-    .map(r=>Object.assign(r,{extra:Object.keys(r.extra).map(k=>esc(k)+': '+epiNum(r.extra[k])).join('<br>')}));
-  document.getElementById('epi-g-baixa').innerHTML=epiBarras(bx,'');
-  // saídas por mês (6 meses)
-  const meses=[];const hoje=new Date();
-  for(let i=5;i>=0;i--){const d=new Date(hoje.getFullYear(),hoje.getMonth()-i,1);meses.push({k:d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'),rot:d.toLocaleDateString('pt-BR',{month:'short'}).replace('.',''),ano:d.getFullYear(),v:0});}
-  epiValidos().forEach(x=>{if(x.tipo!=='saida')return;const mm=meses.find(m=>(x.data||'').startsWith(m.k));if(mm)mm.v+=Number(x.qtd)||0;});
-  const mx=Math.max(...meses.map(m=>m.v))||1;const iMax=meses.reduce((b,m,i)=>m.v>meses[b].v?i:b,0);
-  document.getElementById('epi-g-mes').innerHTML=meses.every(m=>!m.v)?'<div class="es" style="padding:14px">Sem sa\u00eddas nos \u00faltimos 6 meses</div>':
-    `<div class="epi-cols">${meses.map((m,i)=>`<div class="epi-col" data-tip="${esc('<b>'+m.rot+'/'+m.ano+'</b><br>'+epiNum(m.v)+' itens entregues')}"><div class="epi-col-v">${(i===5||i===iMax)&&m.v?epiNum(m.v):''}</div><div class="epi-col-bar" style="height:${m.v?Math.max(2,m.v/mx*80):0}%"></div></div>`).join('')}</div><div class="epi-cols-x">${meses.map(m=>`<span>${m.rot}</span>`).join('')}</div>`;
-}
-// dica (tooltip) dos gráficos: um único balão, seguindo o mouse
-(function(){
-  let tip=null;
-  document.addEventListener('mousemove',e=>{
-    const el=e.target.closest&&e.target.closest('[data-tip]');
-    if(!el){if(tip)tip.style.display='none';return;}
-    if(!tip){tip=document.createElement('div');tip.className='epi-tip';document.body.appendChild(tip);}
-    tip.innerHTML=el.getAttribute('data-tip');tip.style.display='block';
-    const w=tip.offsetWidth,h=tip.offsetHeight;
-    tip.style.left=Math.min(e.clientX+14,window.innerWidth-w-8)+'px';
-    tip.style.top=Math.max(8,e.clientY-h-12)+'px';
-  });
-  // some ao clicar/rolar (ex.: trocar de aba sem mexer o mouse)
-  const esconde=()=>{if(tip)tip.style.display='none';};
-  document.addEventListener('click',esconde,true);
-  document.addEventListener('scroll',esconde,true);
-})();
-function epiRenderAll(){
-  if(!document.getElementById('epi'))return;
-  epiRenderSeletorEstoque();
-  renderMats();
-  epiRenderPainel();
-  if(document.getElementById('tab-epi-3').classList.contains('active'))epiRenderMov();
-  if(document.getElementById('tab-epi-4').classList.contains('active'))epiRenderColab();
-  const mm=document.getElementById('mdl-mov');
-  if(mm&&mm.style.display==='flex')epiMatMovInfo();
-}
-</script>
 
 </body>
 </html>

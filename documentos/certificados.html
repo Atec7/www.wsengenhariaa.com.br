@@ -2931,6 +2931,11 @@ window.saveEditCurso = async (id) => {
     const cursoAtual = cursosData[id] || {};
     const validadeNova = el('modal_cursoValidade').value;
     const houveMudancaValidade = (cursoAtual.validade || 'none') !== validadeNova;
+    // Certificados já emitidos com vencimento que NÃO bate com a validade do
+    // curso (gerados com regra antiga, cache velho, erro de fuso). Antes eles
+    // só eram corrigidos quando a validade MUDAVA: salvar o curso com a mesma
+    // validade não ajustava nada — era o "a correção não funciona".
+    const divergentes = certsDivergentes(id, validadeNova);
 
     try {
         const patch = {
@@ -2947,6 +2952,12 @@ window.saveEditCurso = async (id) => {
             if (url) patch.logoCurso = url;
         }
 
+        if (!houveMudancaValidade && divergentes > 0) {
+            const resultado = await recalcularValidadeCurso(id, { bulk: true });
+            if (resultado && Object.keys(resultado.updates).length) {
+                await salvarRecalculo(id, resultado, false, cursoAtual.validade || 'none', divergentes);
+            }
+        }
         if (houveMudancaValidade) {
             // A nova validade so passa a valer se o usuario confirmar o
             // recalculo; se ele recusar, o curso e salvo com a validade antiga
@@ -3337,7 +3348,13 @@ async function repararValidadesPendentes() {
     }
 }
 
-async function salvarRecalculo(cursoId, resultado, alterarValidade, validadeAntiga) {
+// Quantos certificados do curso estão com vencimento diferente da regra.
+function certsDivergentes(cursoId, validade) {
+    const v = validade || 'none';
+    return getArrayFromData(certificadosGeradosData).filter(c => c && c.curso && c.curso.id === cursoId &&
+        (((c.curso.validade || 'none') !== v) || ((c.expiracao || null) !== calcExpiracao(c.dataFim, v)))).length;
+}
+async function salvarRecalculo(cursoId, resultado, alterarValidade, validadeAntiga, divergentes) {
     const { updates, afetados, cursoNome, validadeNova } = resultado;
     const temCerts = Object.keys(updates).some(k => k.startsWith(PREFIX_CERT));
     if (!temCerts) {
@@ -3347,7 +3364,12 @@ async function salvarRecalculo(cursoId, resultado, alterarValidade, validadeAnti
     const linhasHist = Object.keys(updates).filter(k => k.startsWith('historico/') && k.endsWith('/expiracao')).length;
     // O alerta completo ja apareceu ao trocar a opcao no select; aqui fica so a
     // confirmacao final, porque e este passo que grava de fato no banco.
-    const ok = confirm(
+    const mesmaValidade = (validadeAntiga || 'none') === (validadeNova || 'none');
+    const ok = mesmaValidade ? confirm(
+        'Há ' + divergentes + ' certificado(s) de "' + cursoNome + '" com vencimento diferente da validade do curso (' + rotuloValidade(validadeNova) + ').\n\n' +
+        'Ajustar o vencimento de todos os ' + afetados + ' certificado(s) emitidos para "' + rotuloValidade(validadeNova) + '" a partir da data de fim?' +
+        (linhasHist ? '\n' + linhasHist + ' registro(s) do histórico também serão ajustados.' : '')
+    ) : confirm(
         'Confirmar o recálculo em massa?\n\n' +
         afetados + ' certificado(s) de "' + cursoNome + '": ' +
         rotuloValidade(validadeAntiga) + '  ->  ' + rotuloValidade(validadeNova) +
@@ -3366,7 +3388,7 @@ async function salvarRecalculo(cursoId, resultado, alterarValidade, validadeAnti
         if (alterarValidade) {
             await WS_DATA.update('cursos', cursoId, { validade: validadeNova });
         }
-        alert('Validade do curso atualizada para "' + rotuloValidade(validadeNova) + '".\n\n' +
+        alert((mesmaValidade ? 'Vencimentos ajustados para "' : 'Validade do curso atualizada para "') + rotuloValidade(validadeNova) + '".\n\n' +
             afetados + ' certificado(s) recalculado(s)' +
             (gravado.linhasHist ? ' e ' + gravado.linhasHist + ' registro(s) de historico.' : '.'));
         return true;

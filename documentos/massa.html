@@ -1364,7 +1364,7 @@ async function massGen(){
       const tipos=[];
       if(docOS)tipos.push('OS');
       if(docAdm)tipos.push('Admissional');
-      if(docEPI)tipos.push('EPI');
+      if(docEpi)tipos.push('EPI');
       if(docLista)tipos.push('Lista de Presença');
       const empresas=Object.keys(grouped).filter(k=>k!=='unknown');
       const resumo=tipos.join(' + ')+' · '+selected.length+' colaborador(es)';
