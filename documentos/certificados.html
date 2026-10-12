@@ -2785,9 +2785,11 @@ function contarCertificadosDoCurso(cursoId) {
 function avisarMudancaValidadeCurso(cursoId, selectEl, validadeOriginal) {
     if (!selectEl) return;
     const aviso = el('avisoValidadeCurso');
-    const certs = contarCertificadosDoCurso(cursoId);
 
     selectEl.addEventListener('change', () => {
+        // conta na hora: ao abrir o cadastro os certificados podiam ainda não
+        // ter carregado, e o aviso dizia que não havia nenhum
+        const certs = contarCertificadosDoCurso(cursoId);
         const nova = selectEl.value;
         if (nova === validadeOriginal) {
             if (aviso) aviso.innerHTML = '';
@@ -2928,6 +2930,9 @@ window.saveEditCurso = async (id) => {
     btn.textContent = "Salvando...";
     btn.disabled = true;
 
+    // Os certificados precisam estar carregados: sem isso o curso "não tinha
+    // certificados", o recálculo não achava nada e a validade nova era descartada.
+    try { if (window.__certSync) await window.__certSync; } catch (e) {}
     const cursoAtual = cursosData[id] || {};
     const validadeNova = el('modal_cursoValidade').value;
     const houveMudancaValidade = (cursoAtual.validade || 'none') !== validadeNova;
@@ -2958,34 +2963,54 @@ window.saveEditCurso = async (id) => {
                 await salvarRecalculo(id, resultado, false, cursoAtual.validade || 'none', divergentes);
             }
         }
+        let msgFinal = '';
         if (houveMudancaValidade) {
-            // A nova validade so passa a valer se o usuario confirmar o
-            // recalculo; se ele recusar, o curso e salvo com a validade antiga
-            // para nao existir divergencia entre curso e certificados.
-            const cursoComNovaValidade = Object.assign({}, cursoAtual, patch);
-            cursosData[id] = cursoComNovaValidade;
-            const resultado = await recalcularValidadeCurso(id, { bulk: true });
-            if (resultado && Object.keys(resultado.updates).length) {
-                const aplicou = await salvarRecalculo(id, resultado, true, cursoAtual.validade || 'none');
-                if (aplicou) {
-                    window.closeModal();
-                    return;
+            const nCerts = contarCertificadosDoCurso(id);
+            if (nCerts === 0) {
+                // Sem certificados emitidos não há o que recalcular: a validade
+                // nova é salva direto. (Antes ela era descartada em silêncio.)
+                msgFinal = 'Validade do curso alterada para "' + rotuloValidade(validadeNova) + '".\n\n' +
+                    'Nenhum certificado deste curso foi emitido ainda: os próximos já sairão com a validade nova.';
+            } else {
+                const cursoComNovaValidade = Object.assign({}, cursoAtual, patch);
+                cursosData[id] = cursoComNovaValidade;
+                const resultado = await recalcularValidadeCurso(id, { bulk: true });
+                if (resultado && Object.keys(resultado.updates).length) {
+                    const aplicou = await salvarRecalculo(id, resultado, true, cursoAtual.validade || 'none');
+                    if (aplicou) {
+                        // salvarRecalculo já gravou a validade e os certificados;
+                        // grava também os outros campos do cadastro
+                        const resto = Object.assign({}, patch); delete resto.validade;
+                        await WS_DATA.update('cursos', id, resto);
+                        rerenderCert();
+                        window.closeModal();
+                        return;
+                    }
                 }
+                cursosData[id] = cursoAtual;
+                // Recusou o recálculo: a escolha do usuário é respeitada, mas
+                // ele decide explicitamente o que acontece com a validade.
+                const soProximos = confirm(
+                    'Os ' + nCerts + ' certificado(s) já emitido(s) NÃO foram recalculados.\n\n' +
+                    'OK = salvar a nova validade ("' + rotuloValidade(validadeNova) + '") só para os PRÓXIMOS certificados\n' +
+                    'Cancelar = não salvar nada (continua editando)'
+                );
+                if (!soProximos) return;
+                msgFinal = 'Validade do curso alterada para "' + rotuloValidade(validadeNova) + '".\n\n' +
+                    'Os ' + nCerts + ' certificado(s) já emitido(s) mantêm o vencimento que tinham. ' +
+                    'Para ajustá-los depois, abra o curso e salve de novo.';
             }
-            cursosData[id] = cursoAtual;
-            patch.validade = cursoAtual.validade || 'none';
-            const recusou = confirm(
-                'ATENÇÃO\n\n' +
-                'O curso continuará com a validade anterior ("' + rotuloValidade(cursoAtual.validade) +
-                '"), e os ' + (resultado ? resultado.afetados : 0) + ' certificado(s) já emitido(s) ' +
-                'ficarão com o vencimento que já têm.\n\n' +
-                'Salvar as outras alterações do curso mesmo assim?'
-            );
-            if (!recusou) return;
         }
 
-        await updateItem("cursos", id, patch);
-        window.closeModal();
+        if (msgFinal) {
+            await WS_DATA.update('cursos', id, patch);
+            rerenderCert();
+            window.closeModal();
+            alert(msgFinal);
+        } else {
+            await updateItem("cursos", id, patch);
+            window.closeModal();
+        }
     } catch (e) {
         console.error(e);
         alert("Erro ao atualizar curso.");
@@ -5397,7 +5422,7 @@ window.addEventListener('DOMContentLoaded', async () => {
         }
         return false;
     };
-    WS_DATA.init({
+    window.__certSync = WS_DATA.init({
         entries: [
             { path: 'empresas', target: empresasData, key: null },
             { path: 'alunos', target: alunosData, key: null },
