@@ -1680,7 +1680,7 @@ label.secondary:hover { background: var(--surface-2); border-color: #A9B7C8; }
                     <button id="btnSalvarCurso">Salvar curso</button>
                     <button class="secondary" id="btnLimparCurso">Limpar formulário</button>
                 </div>
-                <div class="zona-risco">
+                <div class="zona-risco" id="zona-apagar-cursos" style="display:none">
                     <div class="zona-risco-txt">
                         <strong>Apagar todos os cursos</strong>
                         <span>Remove a base inteira de cursos. Não é possível desfazer.</span>
@@ -5010,6 +5010,7 @@ window.clearCursoForm = () => {
     el("cursoValidade").value = "none";
 }
 window.clearAllCursos = async () => {
+    if (!ehArnaldoCert()) { alert("Apenas o Arnaldo pode apagar todos os cursos."); return; }
     if (!confirm("Tem certeza que deseja apagar TODOS os cursos?")) return;
     try { await WS_DATA.removeAll('cursos'); alert("Todos os cursos foram removidos."); } catch(e) { console.error("Erro:", e); alert("Erro ao apagar cursos."); }
 }
@@ -5104,7 +5105,8 @@ function ehArnaldoCert(){
 
 function aplicarNavArnaldo(){
     const ehArnaldo = ehArnaldoCert();
-    ['nav-secao-gerados', 'nav-grupo-sistema', 'nav-secao-backup'].forEach(id => {
+    // "Apagar todos os cursos" também é só do Arnaldo
+    ['nav-secao-gerados', 'nav-grupo-sistema', 'nav-secao-backup', 'zona-apagar-cursos'].forEach(id => {
         const n = document.getElementById(id);
         if (n) n.style.display = ehArnaldo ? '' : 'none';
     });
