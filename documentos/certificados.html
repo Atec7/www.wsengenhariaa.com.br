@@ -1965,10 +1965,31 @@ function certPessoaDeFuncionario(f) {
         funcao: f.funcao || ''
     };
 }
+// Usuário restrito a obra/cidade/filial (ex.: Robert = obra FBDM) vê só os
+// alunos daquela obra — antes só a empresa era verificada aqui e ele via os
+// colaboradores de todas as obras da empresa. Mesma regra do index.html.
+function alunoVisivelCert(a) {
+    const u = usuarioAtualCert;
+    if (!u || u.mestre) return true;
+    if (!empresaPermitidaCert(a.empresaVinculoId)) return false;
+    const ob = (u.obras || []).map(String), cd = (u.cidades || []).map(String), fl = (u.filiais || []).map(String);
+    if (ob.length && !ob.includes(String(a.obraId || ''))) return false;
+    if (cd.length && !cd.includes(String(a.cidadeId || ''))) return false;
+    if (fl.length && a.filialId && !fl.includes(String(a.filialId))) return false;
+    return true;
+}
 function certAlunos() {
     const mapa = new Map();
     getArrayFromData(alunosData).forEach(a => {
-        if (a && a.id !== undefined && (a.nome || a.cpf)) mapa.set(String(a.id), a);
+        if (!(a && a.id !== undefined && (a.nome || a.cpf))) return;
+        // o espelho em 'alunos' às vezes não tem obra/cidade/filial; o cadastro
+        // de colaboradores (index.html) é a fonte desses vínculos
+        const f = funcionariosData[String(a.id)];
+        const ext = f ? {
+            obraId: a.obraId || f.obraId || '', cidadeId: a.cidadeId || f.cidadeId || '', filialId: a.filialId || f.filialId || '',
+            empresaVinculoId: a.empresaVinculoId || f.empresaId || ''
+        } : {};
+        mapa.set(String(a.id), Object.assign({}, a, ext));
     });
     getArrayFromData(funcionariosData).forEach(f => {
         if (!f || f.id === undefined) return;
@@ -1977,7 +1998,7 @@ function certAlunos() {
         const pessoa = certPessoaDeFuncionario(f);
         if (pessoa && (pessoa.nome || pessoa.cpf)) mapa.set(id, pessoa);
     });
-    return [...mapa.values()];
+    return [...mapa.values()].filter(alunoVisivelCert);
 }
 function certAlunoPorId(id) {
     if (id === undefined || id === null || id === '') return null;

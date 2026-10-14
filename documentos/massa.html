@@ -156,6 +156,14 @@ hr.dv{border:none;border-top:1px solid var(--bd);margin:18px 0}
             <input id="m-c-src" class="fis" placeholder="Pesquisar cargo..." onkeyup="filterCheckList('m-c-list','m-c-src')">
             <div id="m-c-list" class="cl" style="max-height:120px"><div class="es">Nenhum cargo</div></div>
           </div>
+          <div class="fg">
+            <label class="fl">Obra / contrato <span style="font-weight:400;color:var(--tm)">(filtro)</span></label>
+            <select id="m-obra" onchange="fltM()"><option value="">Todas</option></select>
+          </div>
+          <div class="fg">
+            <label class="fl">Cidade <span style="font-weight:400;color:var(--tm)">(filtro)</span></label>
+            <select id="m-cidade" onchange="fltM()"><option value="">Todas</option></select>
+          </div>
           <div class="fg col-full">
             <label class="fl">Colaboradores <span style="font-weight:400;color:var(--tm)">(marque quem deseja gerar)</span></label>
             <div style="display:flex;gap:4px;margin-bottom:5px">
@@ -289,7 +297,7 @@ const WS_EMPRESA={nome:"WS ENGENHARIA CONSULTORIA E TREINAMENTOS",cnpj:"41.467.5
 const RESP={nome:"WEDSON DE JESUS SANTOS",registro:"CREA 0516926055",funcao:"Eng. de Seguranca do Trabalho"};
 
 // ── STATE ───────────────────────────────────────────────────────
-let DATA={empresas:{},funcionarios:{},textos:{},materiais:{},config:{},historico:{},cargos:{},obras:{},materiaisAlias:{}};
+let DATA={empresas:{},funcionarios:{},textos:{},materiais:{},config:{},historico:{},cargos:{},obras:{},materiaisAlias:{},cidades:{},filiais:{},usuarios:{}};
 let massEpiCart=[];
 
 // ── LOGIN CHECK ─────────────────────────────────────────────────
@@ -338,7 +346,11 @@ function initListeners(){
       {path:'cargos',target:DATA,key:'cargos'},
       {path:'obras',target:DATA,key:'obras'},
       // de-para de cadastros de EPI unificados (id antigo -> id que ficou)
-      {path:'materiaisAlias',target:DATA,key:'materiaisAlias'}
+      {path:'materiaisAlias',target:DATA,key:'materiaisAlias'},
+      {path:'cidades',target:DATA,key:'cidades'},
+      {path:'filiais',target:DATA,key:'filiais'},
+      // usuário logado: restrição por empresa / obra / cidade / filial
+      {path:'usuarios',target:DATA,key:'usuarios'}
     ],
     onUpdated:function(){ if(window.renderAll)renderAll(); }
   });
@@ -468,7 +480,7 @@ function getSelectedFuncs(){
   const cargoIds=getCheckedCargos();
   const hasEmpFilter=empIds.length>0&&empIds[0]!=='';
   const hasCargoFilter=cargoIds.length>0&&cargoIds[0]!=='';
-  let funcs=toArr(DATA.funcionarios);
+  let funcs=toArr(DATA.funcionarios).filter(funcVisivelMassa);
   if(hasEmpFilter)funcs=funcs.filter(f=>empIds.includes(String(f.empresaId||'').trim()));
   if(hasCargoFilter)funcs=funcs.filter(f=>cargoIds.includes(String(f.funcao||'').trim()));
   const checkedIds=getChecked('mChk');
@@ -566,6 +578,39 @@ function filterCheckList(listId,srcId){
   });
 }
 
+// ── Usuário logado e o que ele pode ver ─────────────────────────────────
+// Esta página não aplicava nenhuma restrição: um usuário restrito à obra FBDM
+// gerava documentos de qualquer empresa/obra. Mesma regra do index.html.
+function usuarioMassa(){
+  let id='',nome='';
+  try{id=sessionStorage.getItem('ws_user_id')||localStorage.getItem('ws_user_id')||'';nome=sessionStorage.getItem('ws_user_nome')||localStorage.getItem('ws_user_nome')||'';}catch(_){}
+  const U=DATA.usuarios||{};
+  const u=(id&&U[id])||Object.values(U).find(x=>x&&x.nome===nome)||null;
+  return u&&!u.mestre?u:null;      // mestres (e quem não está em usuarios) não têm restrição
+}
+function empresaPermitidaMassa(eid){
+  const u=usuarioMassa();if(!u)return true;
+  if(!u.empresas||!u.empresas.length)return false;
+  return u.empresas.map(String).includes(String(eid));
+}
+function funcVisivelMassa(f){
+  if(!f)return false;const u=usuarioMassa();if(!u)return true;
+  if(!empresaPermitidaMassa(f.empresaId||''))return false;
+  const ob=(u.obras||[]).map(String),cd=(u.cidades||[]).map(String),fl=(u.filiais||[]).map(String);
+  if(ob.length&&!ob.includes(String(f.obraId||'')))return false;
+  if(cd.length&&!cd.includes(String(f.cidadeId||'')))return false;
+  if(fl.length&&f.filialId&&!fl.includes(String(f.filialId)))return false;
+  return true;
+}
+// opções de obra/cidade: as dos colaboradores visíveis das empresas marcadas
+function popMassLoc(funcs){
+  [['m-obra','obraId','obras'],['m-cidade','cidadeId','cidades']].forEach(([id,field,col])=>{
+    const sel=document.getElementById(id);if(!sel)return;const cur=sel.value;
+    const ids=[...new Set(funcs.map(f=>String(f[field]||'')).filter(x=>x&&(DATA[col]||{})[x]))].sort((a,b)=>(DATA[col][a].nome||'').localeCompare(DATA[col][b].nome||''));
+    sel.innerHTML='<option value="">Todas</option>'+ids.map(x=>`<option value="${esc(x)}">${esc(DATA[col][x].nome||'')}</option>`).join('');
+    if(ids.includes(cur))sel.value=cur;
+  });
+}
 function getCheckedEmpresas(){
   const ids=getChecked('mEChk');
   if(!ids.length)ids.push('');
@@ -573,7 +618,7 @@ function getCheckedEmpresas(){
 }
 
 function populateSelects(){
-  const emps=toArr(DATA.empresas).sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));
+  const emps=toArr(DATA.empresas).filter(e=>empresaPermitidaMassa(e.id)).sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));
   const el=document.getElementById('m-e-list');
   if(!emps.length){el.innerHTML='<div class="es">Nenhuma empresa</div>';return;}
   el.innerHTML=emps.map(e=>`<div class="ci"><input type="checkbox" name="mEChk" value="${esc(e.id)}" id="ck_mEChk_${e.id}" onchange="fltMCargos()"><label for="ck_mEChk_${e.id}">${esc(e.nome)}</label></div>`).join('');
@@ -587,7 +632,7 @@ function fltMCargos(){
   const el=document.getElementById('m-c-list');
   let filtered=cargos;
   if(hasEmpFilter){
-    const funcs=toArr(DATA.funcionarios).filter(f=>empIds.includes(String(f.empresaId||'').trim()));
+    const funcs=toArr(DATA.funcionarios).filter(f=>funcVisivelMassa(f)&&empIds.includes(String(f.empresaId||'').trim()));
     const cargoIds=new Set();
     funcs.forEach(f=>{if(f.funcao)cargoIds.add(String(f.funcao).trim());});
     filtered=cargos.filter(c=>cargoIds.has(String(c.id).trim()));
@@ -609,9 +654,13 @@ function fltM(){
   const el=document.getElementById('m-f-list');
   const hasEmpFilter=empIds.length>0&&empIds[0]!=='';
   const hasCgFilter=cargoIds.length>0&&cargoIds[0]!=='';
-  let funcs=toArr(DATA.funcionarios);
+  let funcs=toArr(DATA.funcionarios).filter(funcVisivelMassa);
   if(hasEmpFilter)funcs=funcs.filter(f=>empIds.includes(String(f.empresaId||'').trim()));
   if(hasCgFilter)funcs=funcs.filter(f=>cargoIds.includes(String(f.funcao||'').trim()));
+  popMassLoc(funcs);
+  const obSel=(document.getElementById('m-obra')||{}).value||'',cdSel=(document.getElementById('m-cidade')||{}).value||'';
+  if(obSel)funcs=funcs.filter(f=>String(f.obraId||'')===obSel);
+  if(cdSel)funcs=funcs.filter(f=>String(f.cidadeId||'')===cdSel);
   funcs.sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));
   el.innerHTML=funcs.length?funcs.map(f=>`<div class="ci"><input type="checkbox" name="mChk" value="${f.id}" id="ck_mChk_${f.id}" onchange="updateMassSummary()"><label for="ck_mChk_${f.id}">${esc(f.nome)} <span>(${esc(resolveCargo(f.funcao)?.nome||f.funcao||'')})</span></label></div>`).join(''):'<div class="es">Nenhum colaborador encontrado</div>';
   document.getElementById('m-f-src').value='';
@@ -1284,7 +1333,7 @@ async function massGen(){
   const hasEmpFilter=empIds.length>0&&empIds[0]!=='';
   const hasCargoFilter=cargoIds.length>0&&cargoIds[0]!=='';
   if(!hasEmpFilter&&!hasCargoFilter){alert('Selecione uma empresa ou um cargo');return;}
-  let funcs=toArr(DATA.funcionarios);
+  let funcs=toArr(DATA.funcionarios).filter(funcVisivelMassa);
   if(hasEmpFilter)funcs=funcs.filter(f=>empIds.includes(String(f.empresaId||'').trim()));
   if(hasCargoFilter)funcs=funcs.filter(f=>cargoIds.includes(String(f.funcao||'').trim()));
   const checkedIds=getChecked('mChk');
