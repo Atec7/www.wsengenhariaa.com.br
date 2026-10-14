@@ -3614,7 +3614,11 @@ async function gerarCertificados(){
             jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
 
-        const blobPresenca = await html2pdf().from(tempContainerPresenca).set(optionsPresenca).output('blob');
+        // uma parte por curso (a lista de cada curso pode ocupar várias páginas)
+        const listas = Array.from(tempContainerPresenca.children).filter(e => e.tagName === 'SECTION');
+        const blobPresenca = listas.length > 1
+            ? await pdfPorPartes(listas, optionsPresenca)
+            : await html2pdf().from(tempContainerPresenca).set(optionsPresenca).output('blob');
         await saveSecurely(blobPresenca, 'listas_presenca.pdf', { empresaId: empresa.id });
     }
 
@@ -4777,6 +4781,24 @@ async function saveSecurely(pdfBlob, filename, metadata = {}, onProgress) {
     }
 }
 
+// PDF montado PARTE POR PARTE. O html2pdf desenhava todas as páginas numa só
+// imagem; com muitos certificados (ex.: 40 alunos = 80 páginas) a imagem passava
+// do tamanho máximo do navegador e o PDF saía TODO EM BRANCO, sem erro.
+// Agora cada parte (uma página do certificado, ou a lista de um curso) vira a
+// sua própria imagem e todas entram no mesmo PDF, sem limite de quantidade.
+async function pdfPorPartes(partes, options, onParte) {
+    if (!partes.length) throw new Error('Nada para converter em PDF.');
+    const jp = options.jsPDF || {};
+    let worker = html2pdf().set(options).from(partes[0]).toPdf();
+    for (let i = 1; i < partes.length; i++) {
+        const parte = partes[i];
+        worker = worker.get('pdf').then(pdf => {
+            if (onParte) onParte(i, partes.length);
+            pdf.addPage(jp.format || 'a4', jp.orientation || 'portrait');
+        }).from(parte).toContainer().toCanvas().toPdf();
+    }
+    return worker.output('blob');
+}
 async function downloadPDF(targetElement, filename = 'certificados_gerados.pdf') {
     if (targetElement.innerHTML.trim() === "") {
         return alert("Nenhum conteúdo carregado para baixar.");
@@ -4810,7 +4832,21 @@ async function downloadPDF(targetElement, filename = 'certificados_gerados.pdf')
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
     };
 
-    const blob = await html2pdf().from(tempContainer).set(options).output('blob');
+    // Blocos de 20 páginas (10 alunos x 2 páginas): cada bloco vira uma imagem
+    // bem abaixo do limite do navegador (em testes, 40 páginas numa imagem só
+    // funcionavam e 80 saíam em branco). Uma imagem por página também funciona,
+    // mas era ~5x mais lento.
+    const paginas = Array.from(tempContainer.querySelectorAll('.cert-page, .cert-page2'));
+    const POR_BLOCO = 20;
+    const blocos = [];
+    for (let i = 0; i < paginas.length; i += POR_BLOCO) {
+        const bloco = document.createElement('div');
+        paginas.slice(i, i + POR_BLOCO).forEach(pg => bloco.appendChild(pg));
+        blocos.push(bloco);
+    }
+    const blob = blocos.length
+        ? await pdfPorPartes(blocos, options, (i, n) => reportProgress(72 + Math.round(6 * i / n), 'Convertendo parte ' + (i + 1) + ' de ' + n + '...'))
+        : await html2pdf().from(tempContainer).set(options).output('blob');
     reportProgress(78,'PDF gerado. Autenticando e blindando...');
     await saveSecurely(blob, filename, {}, (p,l)=>reportProgress(p,l));
 }
