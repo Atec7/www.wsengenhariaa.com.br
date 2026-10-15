@@ -1739,10 +1739,15 @@ label.secondary:hover { background: var(--surface-2); border-color: #A9B7C8; }
                         <label>Filial</label>
                         <select id="selFilial"><option value="">Todas</option></select>
                     </div>
+                    <div class="col-4">
+                        <label>Contrato</label>
+                        <select id="selContrato"><option value="">Todos</option></select>
+                    </div>
                 </div>
                 <label>Selecione alunos</label>
                 <input id="selAlunoBusca" placeholder="Pesquisar aluno por nome ou matrícula">
                 <div id="listaAlunosCheckbox" class="checklist">Nenhum aluno carregado. Selecione a empresa acima.</div>
+                <div id="alunosSelInfo" style="font-size:12px;margin:6px 0 10px;color:#52525b"></div>
 
                 <label>Selecione cursos</label>
                 <input id="selCursoBusca" placeholder="Pesquisar curso por nome ou carga">
@@ -1882,6 +1887,7 @@ let empresasData = {};
 let obrasData = {};
 let cidadesData = {};
 let filiaisData = {};
+let contratosData = {};
 
 let usuarioAtualCert = null;
 async function carregarUsuarioCert(){
@@ -1960,6 +1966,7 @@ function certPessoaDeFuncionario(f) {
         matriculaNumero: f.matriculaNumero || f.matricula || '',
         empresaVinculoId: f.empresaVinculoId !== undefined ? f.empresaVinculoId : (f.empresaId || ''),
         filialId: f.filialId || '',
+        contratoId: f.contratoId || '',
         obraId: f.obraId || '',
         cidadeId: f.cidadeId || '',
         funcao: f.funcao || ''
@@ -1976,6 +1983,8 @@ function alunoVisivelCert(a) {
     if (ob.length && !ob.includes(String(a.obraId || ''))) return false;
     if (cd.length && !cd.includes(String(a.cidadeId || ''))) return false;
     if (fl.length && a.filialId && !fl.includes(String(a.filialId))) return false;
+    const ct = (u.contratos || []).map(String);
+    if (ct.length && !ct.includes(String(a.contratoId || ''))) return false;
     return true;
 }
 function certAlunos() {
@@ -1987,7 +1996,8 @@ function certAlunos() {
         const f = funcionariosData[String(a.id)];
         const ext = f ? {
             obraId: a.obraId || f.obraId || '', cidadeId: a.cidadeId || f.cidadeId || '', filialId: a.filialId || f.filialId || '',
-            empresaVinculoId: a.empresaVinculoId || f.empresaId || ''
+            empresaVinculoId: a.empresaVinculoId || f.empresaId || '',
+            contratoId: a.contratoId || f.contratoId || ''
         } : {};
         mapa.set(String(a.id), Object.assign({}, a, ext));
     });
@@ -2193,16 +2203,9 @@ function renderAlunos(){
 
     // A re-renderização periódica não pode apagar os alunos que o usuário
     // já marcou na geração de certificados.
-    const alunosMarcadosAnt = Array.from(el("listaAlunosCheckbox").querySelectorAll("input[type=checkbox]:checked")).map(i => i.value);
-
+    // (a seleção fica em ALUNOS_GERACAO e é reaplicada pelo próprio render)
     popSelLocCert();
     renderAlunosCheckboxForGeracao();
-
-    if (alunosMarcadosAnt.length) {
-        el("listaAlunosCheckbox").querySelectorAll("input[type=checkbox]").forEach(i => {
-            if (alunosMarcadosAnt.includes(i.value)) i.checked = true;
-        });
-    }
 }
 
 // Popula os seletores de Obra/Cidade/Filial em cascata, conforme a empresa selecionada.
@@ -2211,11 +2214,11 @@ function esc(s){return String(s||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&l
 function popSelLocCert(){
     const eid = el("selEmpresa").value;
     const alunosEmp = eid ? certAlunos().filter(a => a.empresaVinculoId === eid) : [];
-    [['selObra','obraId','obras','obra'],['selCidade','cidadeId','cidades','cidade'],['selFilial','filialId','filiais','filial']].forEach(([selId,field,col,leg]) => {
+    [['selObra','obraId','obras','obra'],['selCidade','cidadeId','cidades','cidade'],['selFilial','filialId','filiais','filial'],['selContrato','contratoId','contratos','contrato']].forEach(([selId,field,col,leg]) => {
         const sel = el(selId);
         if (!sel) return;
         const cur = sel.value;
-        const map = col==='obras'?obrasData:col==='cidades'?cidadesData:filiaisData;
+        const map = col==='obras'?obrasData:col==='cidades'?cidadesData:col==='contratos'?contratosData:filiaisData;
         const set = new Set();
         alunosEmp.forEach(a => {
             const v = a[field];
@@ -2227,17 +2230,53 @@ function popSelLocCert(){
             else set.add(s + '|' + label);
         });
         const list = [...set].map(k => { const i = k.indexOf('|'); return {id:k.slice(0,i), nome:k.slice(i+1)}; }).sort((a,b)=>a.nome.localeCompare(b.nome, 'pt-BR'));
-        sel.innerHTML = '<option value="">Todas</option>' + list.map(o => `<option value="${esc(o.id)}">${esc(o.nome)}</option>`).join('');
+        sel.innerHTML = '<option value="">' + (col==='contratos'?'Todos':'Todas') + '</option>' + list.map(o => `<option value="${esc(o.id)}">${esc(o.nome)}</option>`).join('');
         if (list.some(o => String(o.id) === String(cur))) sel.value = cur; else sel.value = '';
     });
 }
 
+// Alunos marcados para a geração. A lista é redesenhada a cada busca/filtro e
+// antes a marcação vivia só nos checkboxes: quem saía da tela pela busca era
+// desmarcado ao voltar, e a geração ignorava quem estava marcado mas oculto.
+// Agora a seleção fica aqui, independente do que está visível.
+const ALUNOS_GERACAO = new Set();
+let ALUNOS_GERACAO_EMP = '';
+// guarda o estado dos checkboxes visíveis (marcados entram, desmarcados saem)
+function syncAlunosGeracao() {
+    const lista = el("listaAlunosCheckbox");
+    if (!lista) return;
+    lista.querySelectorAll("input[type=checkbox]").forEach(i => {
+        if (i.checked) ALUNOS_GERACAO.add(i.value); else ALUNOS_GERACAO.delete(i.value);
+    });
+}
+function alunosGeracaoSelecionados() { syncAlunosGeracao(); return [...ALUNOS_GERACAO]; }
+function limparSelecaoAlunos() {
+    ALUNOS_GERACAO.clear();
+    const lista = el("listaAlunosCheckbox");
+    if (lista) lista.querySelectorAll("input[type=checkbox]").forEach(i => { i.checked = false; });
+    atualizarInfoSelecaoAlunos();
+}
+function atualizarInfoSelecaoAlunos() {
+    const info = el("alunosSelInfo");
+    if (!info) return;
+    const n = ALUNOS_GERACAO.size;
+    if (!n) { info.innerHTML = ''; return; }
+    const visiveis = new Set(Array.from(el("listaAlunosCheckbox").querySelectorAll("input[type=checkbox]")).map(i => i.value));
+    const ocultos = [...ALUNOS_GERACAO].filter(id => !visiveis.has(id)).length;
+    info.innerHTML = '<b>' + n + '</b> aluno(s) selecionado(s)' +
+        (ocultos ? ' <span style="color:#b45309">(' + ocultos + ' fora da lista por causa da busca/filtro — continuam selecionados)</span>' : '') +
+        ' · <a href="#" onclick="limparSelecaoAlunos();return false;">Limpar seleção</a>';
+}
 function renderAlunosCheckboxForGeracao(){
     const empresaIdSelecionada = el("selEmpresa").value;
     const listaAlunosCheckbox = el("listaAlunosCheckbox");
+    // guarda o que está marcado antes de redesenhar; trocar de empresa zera
+    if (empresaIdSelecionada !== ALUNOS_GERACAO_EMP) { ALUNOS_GERACAO.clear(); ALUNOS_GERACAO_EMP = empresaIdSelecionada; }
+    else syncAlunosGeracao();
     
     if (!empresaIdSelecionada) {
         listaAlunosCheckbox.innerHTML = 'Nenhum aluno carregado. Selecione a empresa acima.';
+        atualizarInfoSelecaoAlunos();
         return;
     }
 
@@ -2245,12 +2284,14 @@ function renderAlunosCheckboxForGeracao(){
     const obSel = el("selObra")?.value || "";
     const cdSel = el("selCidade")?.value || "";
     const flSel = el("selFilial")?.value || "";
+    const ctSel = el("selContrato")?.value || "";
 
     const alunosFiltrados = certAlunos().filter(a => {
         if (a.empresaVinculoId !== empresaIdSelecionada) return false;
         if (obSel && String(a.obraId||'').trim() !== String(obSel).trim()) return false;
         if (cdSel && String(a.cidadeId||'').trim() !== String(cdSel).trim()) return false;
         if (flSel && String(a.filialId||'').trim() !== String(flSel).trim()) return false;
+        if (ctSel && String(a.contratoId||'').trim() !== String(ctSel).trim()) return false;
         if (termoBusca) {
             const nome = (a.nome || "").toLowerCase();
             const matricula = (a.matricula || "").toLowerCase();
@@ -2260,11 +2301,17 @@ function renderAlunosCheckboxForGeracao(){
     }).sort((a,b)=>(a.nome||'').localeCompare(b.nome||'', 'pt-BR'));
 
     if (alunosFiltrados.length === 0) {
-        listaAlunosCheckbox.innerHTML = (obSel || cdSel || flSel) ? 'Nenhum aluno para esta empresa/obra/cidade/filial.' : 'Nenhum aluno encontrado para esta empresa.';
+        listaAlunosCheckbox.innerHTML = (obSel || cdSel || flSel || ctSel || termoBusca) ? 'Nenhum aluno para esta busca/obra/cidade/filial/contrato.' : 'Nenhum aluno encontrado para esta empresa.';
+        atualizarInfoSelecaoAlunos();
         return;
     }
 
-    listaAlunosCheckbox.innerHTML = alunosFiltrados.map(a=>`<label><input type="checkbox" value="${a.id}"> <span>${a.nome} — Mat.: ${a.matricula}</span></label>`).join("");
+    listaAlunosCheckbox.innerHTML = alunosFiltrados.map(a=>`<label><input type="checkbox" value="${a.id}"${ALUNOS_GERACAO.has(String(a.id)) ? ' checked' : ''}> <span>${a.nome} — Mat.: ${a.matricula}</span></label>`).join("");
+    listaAlunosCheckbox.querySelectorAll("input[type=checkbox]").forEach(i => i.addEventListener('change', () => {
+        if (i.checked) ALUNOS_GERACAO.add(i.value); else ALUNOS_GERACAO.delete(i.value);
+        atualizarInfoSelecaoAlunos();
+    }));
+    atualizarInfoSelecaoAlunos();
 }
 
 function atualizarEmpresaPin(){
@@ -3485,7 +3532,7 @@ async function gerarCertificados(){
     if(!empresa) return alert("Empresa inválida.");
 
     const alunosFiltrados = certAlunos().filter(a => a.empresaVinculoId === empresaId);
-    const selAlunoIds = Array.from(el("listaAlunosCheckbox").querySelectorAll("input[type=checkbox]:checked")).map(i => i.value);
+    const selAlunoIds = alunosGeracaoSelecionados();
     const selCursoElements = el("courseDatesContainer").querySelectorAll(".course-date-selector");
     const selecionadosAlunos = alunosFiltrados.filter(a => selAlunoIds.includes(a.id));
 
@@ -4354,8 +4401,8 @@ window.openCertManualModal = () => {
     // entram em todos os cursos marcados, e cada curso ajusta os seus.
     let empresaId = el('selEmpresa').value || '';
     if (!empresaId || !empresaPermitidaCert(empresaId) || !empresasData[empresaId]) empresaId = empresas[0].id;
-    const alunosDaTela = marcadosDaTela('listaAlunosCheckbox', 'input[type=checkbox]',
-        certManualAlunosDaEmpresa(empresaId).map(a => a.id));
+    const validosManual = certManualAlunosDaEmpresa(empresaId).map(a => a.id);
+    const alunosDaTela = alunosGeracaoSelecionados().filter(v => validosManual.indexOf(v) !== -1);
     certManualCursoIds = marcadosDaTela('listaCursosCheckbox', '.course-checkbox', Object.keys(cursosData));
     certManualAlunosPorCurso = {};
     certManualAlunosPorCurso[CERT_MANUAL_NOVO] = alunosDaTela.slice();
@@ -5488,6 +5535,7 @@ window.addEventListener('DOMContentLoaded', async () => {
             { path: 'obras', target: obrasData, key: null },
             { path: 'cidades', target: cidadesData, key: null },
             { path: 'filiais', target: filiaisData, key: null },
+            { path: 'contratos', target: contratosData, key: null },
             { path: 'certificadosGerados', target: certificadosGeradosData, key: null, tsKey: 'ts', invalidar: certCacheAntigo }
         ],
         onUpdated: function () {
@@ -5525,6 +5573,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     el("selObra").addEventListener('change', renderAlunosCheckboxForGeracao);
     el("selCidade").addEventListener('change', renderAlunosCheckboxForGeracao);
     el("selFilial").addEventListener('change', renderAlunosCheckboxForGeracao);
+    el("selContrato").addEventListener('change', renderAlunosCheckboxForGeracao);
     el("btnSalvarEmpresa").onclick=window.saveEmpresa;
     el("btnLimparEmpresa").onclick=window.clearEmpresaForm;
     el("btnSalvarAluno").onclick=window.saveAluno;

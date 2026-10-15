@@ -164,6 +164,10 @@ hr.dv{border:none;border-top:1px solid var(--bd);margin:18px 0}
             <label class="fl">Cidade <span style="font-weight:400;color:var(--tm)">(filtro)</span></label>
             <select id="m-cidade" onchange="fltM()"><option value="">Todas</option></select>
           </div>
+          <div class="fg">
+            <label class="fl">Contrato <span style="font-weight:400;color:var(--tm)">(filtro)</span></label>
+            <select id="m-contrato" onchange="fltM()"><option value="">Todos</option></select>
+          </div>
           <div class="fg col-full">
             <label class="fl">Colaboradores <span style="font-weight:400;color:var(--tm)">(marque quem deseja gerar)</span></label>
             <div style="display:flex;gap:4px;margin-bottom:5px">
@@ -297,7 +301,7 @@ const WS_EMPRESA={nome:"WS ENGENHARIA CONSULTORIA E TREINAMENTOS",cnpj:"41.467.5
 const RESP={nome:"WEDSON DE JESUS SANTOS",registro:"CREA 0516926055",funcao:"Eng. de Seguranca do Trabalho"};
 
 // ── STATE ───────────────────────────────────────────────────────
-let DATA={empresas:{},funcionarios:{},textos:{},materiais:{},config:{},historico:{},cargos:{},obras:{},materiaisAlias:{},cidades:{},filiais:{},usuarios:{}};
+let DATA={empresas:{},funcionarios:{},textos:{},materiais:{},config:{},historico:{},cargos:{},obras:{},materiaisAlias:{},cidades:{},filiais:{},contratos:{},usuarios:{}};
 let massEpiCart=[];
 
 // ── LOGIN CHECK ─────────────────────────────────────────────────
@@ -349,6 +353,7 @@ function initListeners(){
       {path:'materiaisAlias',target:DATA,key:'materiaisAlias'},
       {path:'cidades',target:DATA,key:'cidades'},
       {path:'filiais',target:DATA,key:'filiais'},
+      {path:'contratos',target:DATA,key:'contratos'},
       // usuário logado: restrição por empresa / obra / cidade / filial
       {path:'usuarios',target:DATA,key:'usuarios'}
     ],
@@ -600,14 +605,16 @@ function funcVisivelMassa(f){
   if(ob.length&&!ob.includes(String(f.obraId||'')))return false;
   if(cd.length&&!cd.includes(String(f.cidadeId||'')))return false;
   if(fl.length&&f.filialId&&!fl.includes(String(f.filialId)))return false;
+  const ct=(u.contratos||[]).map(String);
+  if(ct.length&&!ct.includes(String(f.contratoId||'')))return false;
   return true;
 }
 // opções de obra/cidade: as dos colaboradores visíveis das empresas marcadas
 function popMassLoc(funcs){
-  [['m-obra','obraId','obras'],['m-cidade','cidadeId','cidades']].forEach(([id,field,col])=>{
+  [['m-obra','obraId','obras'],['m-cidade','cidadeId','cidades'],['m-contrato','contratoId','contratos']].forEach(([id,field,col])=>{
     const sel=document.getElementById(id);if(!sel)return;const cur=sel.value;
     const ids=[...new Set(funcs.map(f=>String(f[field]||'')).filter(x=>x&&(DATA[col]||{})[x]))].sort((a,b)=>(DATA[col][a].nome||'').localeCompare(DATA[col][b].nome||''));
-    sel.innerHTML='<option value="">Todas</option>'+ids.map(x=>`<option value="${esc(x)}">${esc(DATA[col][x].nome||'')}</option>`).join('');
+    sel.innerHTML='<option value="">'+(col==='contratos'?'Todos':'Todas')+'</option>'+ids.map(x=>`<option value="${esc(x)}">${esc(DATA[col][x].nome||'')}</option>`).join('');
     if(ids.includes(cur))sel.value=cur;
   });
 }
@@ -658,9 +665,10 @@ function fltM(){
   if(hasEmpFilter)funcs=funcs.filter(f=>empIds.includes(String(f.empresaId||'').trim()));
   if(hasCgFilter)funcs=funcs.filter(f=>cargoIds.includes(String(f.funcao||'').trim()));
   popMassLoc(funcs);
-  const obSel=(document.getElementById('m-obra')||{}).value||'',cdSel=(document.getElementById('m-cidade')||{}).value||'';
+  const obSel=(document.getElementById('m-obra')||{}).value||'',cdSel=(document.getElementById('m-cidade')||{}).value||'',ctSel=(document.getElementById('m-contrato')||{}).value||'';
   if(obSel)funcs=funcs.filter(f=>String(f.obraId||'')===obSel);
   if(cdSel)funcs=funcs.filter(f=>String(f.cidadeId||'')===cdSel);
+  if(ctSel)funcs=funcs.filter(f=>String(f.contratoId||'')===ctSel);
   funcs.sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));
   el.innerHTML=funcs.length?funcs.map(f=>`<div class="ci"><input type="checkbox" name="mChk" value="${f.id}" id="ck_mChk_${f.id}" onchange="updateMassSummary()"><label for="ck_mChk_${f.id}">${esc(f.nome)} <span>(${esc(resolveCargo(f.funcao)?.nome||f.funcao||'')})</span></label></div>`).join(''):'<div class="es">Nenhum colaborador encontrado</div>';
   document.getElementById('m-f-src').value='';
