@@ -837,7 +837,7 @@ hr.dv{border:none;border-top:1px solid var(--bd);margin:18px 0}
           <div class="fg"><label class="fl">Cidade</label><select id="e-e-cidade" onchange="fltEpi()"><option value="">Todas</option></select></div>
           <div class="fg"><label class="fl">Filial</label><select id="e-e-filial" onchange="fltEpi()"><option value="">Todas</option></select></div><div class="fg"><label class="fl">Contrato</label><select id="e-e-contrato" onchange="fltEpi()"><option value="">Todos</option></select></div>
         </div>
-        <div class="fg"><label class="fl">Colaboradores</label><div class="sbar"><button class="bxs bxn" onclick="selAll('eChk',true)">Todos</button><button class="bxs bxd" onclick="selAll('eChk',false)">Nenhum</button></div><div id="e-f-list" class="cl"><div class="es">Selecione uma empresa</div></div></div>
+        <div class="fg"><label class="fl">Colaboradores</label><div class="sbar"><button class="bxs bxn" onclick="selAll('eChk',true);epiFichaPreview()">Todos</button><button class="bxs bxd" onclick="selAll('eChk',false);epiFichaPreview()">Nenhum</button></div><div id="e-f-list" class="cl"><div class="es">Selecione uma empresa</div></div><div id="epi-ficha-prev" class="epi-dica" style="margin-top:6px"></div></div>
       </div>
       <div class="fg"><label class="fl">Data da Entrega</label><input type="date" id="e-data"></div>
       <hr class="dv">
@@ -850,7 +850,7 @@ hr.dv{border:none;border-top:1px solid var(--bd);margin:18px 0}
         <button class="btn bs" onclick="addToCart()"><i class="fa-solid fa-plus"></i></button>
       </div>
       <div class="rmbar"><input type="checkbox" id="chk-lembrar-epi"><label for="chk-lembrar-epi">Lembrar itens para pr&oacute;ximas emiss&otilde;es <small>&mdash; salvo localmente</small></label><button class="bxs bxd" onclick="limparEpiSalvo()"><i class="fa-solid fa-trash"></i> Limpar</button></div>
-      <div class="fg"><label class="fl">Itens a Entregar</label><div id="epi-cart" style="min-height:46px;border:1px dashed var(--bd);padding:9px;border-radius:6px"><div class="es" style="padding:6px">Nenhum item adicionado</div></div></div>
+      <div class="fg"><label class="fl">Itens adicionais <small style="text-transform:none;font-weight:400">(opcional &mdash; entram na ficha de todos os selecionados; os EPIs do cargo de cada colaborador j&aacute; entram na ficha dele)</small></label><div id="epi-cart" style="min-height:46px;border:1px dashed var(--bd);padding:9px;border-radius:6px"><div class="es" style="padding:6px">Nenhum item adicionado</div></div></div>
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap">
         <input type="checkbox" id="epi-show-venc" checked>
         <label for="epi-show-venc" style="font-size:12px;font-weight:600;color:var(--tp);cursor:pointer">Mostrar coluna Vencimento CA</label>
@@ -2552,6 +2552,9 @@ function initListeners(){
         .then(()=>{if(window.renderAll)renderAll();});
     });
   }).catch(e=>console.warn('Espelho alunos->colaboradores:',e));
+  // O carrinho salvo antes desta correção pode ter os EPIs de vários cargos
+  // somados (bug do "marcar colaborador"): descarta uma única vez.
+  try{if(!localStorage.getItem('epi_cart_v2')){localStorage.removeItem('epi_cart_memory');localStorage.setItem('epi_cart_v2','1');}}catch(e){}
   const sc=localStorage.getItem('epi_cart_memory');
   if(sc){try{CART=JSON.parse(sc);}catch(e){}}
   const to=localStorage.getItem('orc_intro_padrao');
@@ -2570,7 +2573,13 @@ function renderAll(){
 // `pag.page`/`pag.nav` já ajustam a página quando a lista encolhe.
 // A sessao precisa estar montada ANTES de renderizar: a aba de geracoes limita
 // a lista ao proprio usuario, e `usuarios` chega do servidor depois do login.
-if(sessionStorage.getItem('ws_logado')==='1'&&(!USUARIO_ATUAL||!USUARIO_ATUAL.mestre)){const usuarios=DATA.usuarios||{};const nomeSalvo=sessionStorage.getItem('ws_user_nome')||'';const fresh=Object.values(usuarios).find(u=>u.nome===nomeSalvo);if(fresh)aplicarPermissoes(fresh);}updateDashboard();renderEmps();renderCargos();renderFuncs();renderPessoas();renderTexts();renderMats();renderHistory();populateSelects();renderPool();renderCart();renderCats();renderMsd();if(USUARIO_ATUAL&&document.getElementById('usuarios-lista'))renderUsuariosLista();if(telaAtiva('aprov'))renderGeracoes();if(window.epiRenderAll)epiRenderAll();}
+if(sessionStorage.getItem('ws_logado')==='1'&&(!USUARIO_ATUAL||!USUARIO_ATUAL.mestre)){const usuarios=DATA.usuarios||{};const nomeSalvo=sessionStorage.getItem('ws_user_nome')||'';const fresh=Object.values(usuarios).find(u=>u.nome===nomeSalvo);if(fresh)aplicarPermissoes(fresh);}
+// Cada parte é desenhada isolada: antes, um erro em QUALQUER uma (ex.: no
+// painel) interrompia todas as seguintes e a tela ficava sem empresas,
+// colaboradores, obras/cidades/filiais etc. O erro vai para o console.
+const _parte=(nome,fn)=>{try{fn();}catch(e){console.error('Erro ao desenhar '+nome+':',e);}};
+_parte('painel',updateDashboard);_parte('empresas',renderEmps);_parte('cargos',renderCargos);_parte('colaboradores',renderFuncs);_parte('pessoas',renderPessoas);_parte('textos',renderTexts);_parte('materiais',renderMats);_parte('historico',renderHistory);_parte('selecoes',populateSelects);_parte('pool',renderPool);_parte('carrinho',renderCart);_parte('obras-cidades-filiais',renderCats);_parte('seletores-empresa',renderMsd);
+if(USUARIO_ATUAL&&document.getElementById('usuarios-lista'))_parte('usuarios',renderUsuariosLista);if(telaAtiva('aprov'))_parte('geracoes',renderGeracoes);if(window.epiRenderAll)_parte('epi',epiRenderAll);}
 // Os certificados NAO sao mais sincronizados na home. O node
 // 'certificadosGerados' carrega a empresa inteira dentro de cada certificado
 // (logo1/logo2/logoCurso em base64) e chegou a GB; baixa-lo em todo
@@ -2824,8 +2833,13 @@ function openM(id,mode){
 }
 function cls(){document.querySelectorAll('.modal').forEach(e=>e.style.display='none');}
 function previewImg(input,pid){const p=document.getElementById(pid);if(input.files&&input.files[0]){const r=new FileReader();r.onload=e=>{p.src=e.target.result;p.style.display='block';};r.readAsDataURL(input.files[0]);}}
-function selAll(name,check){document.getElementsByName(name).forEach(cb=>cb.checked=check);}
-function getChecked(name){return Array.from(document.getElementsByName(name)).filter(c=>c.checked).map(c=>c.value);}
+// Seleção dos colaboradores nos geradores (OS, lista, admissional, ficha EPI):
+// fica guardada aqui, não só nos checkboxes visíveis — assim quem sai da tela
+// por causa de um filtro (obra/cidade/filial/contrato) continua marcado.
+const SEL_COLAB={};
+function selColabSync(name){const st=SEL_COLAB[name];if(!st)return;document.getElementsByName(name).forEach(cb=>{if(cb.checked)st.add(cb.value);else st.delete(cb.value);});}
+function selAll(name,check){document.getElementsByName(name).forEach(cb=>cb.checked=check);if(SEL_COLAB[name]){if(!check)SEL_COLAB[name].clear();else selColabSync(name);}}
+function getChecked(name){if(SEL_COLAB[name]){selColabSync(name);return [...SEL_COLAB[name]];}return Array.from(document.getElementsByName(name)).filter(c=>c.checked).map(c=>c.value);}
 function resolveEmp(id){if(!id)return null;const s=String(id).trim();if(DATA.empresas[s])return DATA.empresas[s];return toArr(DATA.empresas).find(e=>String(e.id||'').trim()===s)||null;}
 function resolveCargo(id){if(!id)return null;const s=String(id).trim();if(DATA.cargos[s])return DATA.cargos[s];return toArr(DATA.cargos).find(c=>String(c.id||'').trim()===s)||null;}
 function safeJSON(o){return JSON.stringify(o).replace(/'/g,"&#39;").replace(/"/g,'&quot;');}
@@ -4487,7 +4501,7 @@ function renderPool(){const q=(document.getElementById('g-search').value||'').to
 function renderSel(){document.getElementById('g-sel').innerHTML=SEL_TEXTS.map(id=>{const t=DATA.textos[id];return t?`<div class="ti"><span>${esc(t.titulo)}${t.categoria?' <small style="color:var(--tm)">['+esc(t.categoria)+']</small>':''}</span><i class="fa-solid fa-xmark" style="color:var(--dn);cursor:pointer;font-size:11px" onclick="remText('${id}')"></i></div>`:''}).join('')||'<div class="es" style="padding:10px">Nenhum selecionado</div>';}
 function addText(id){if(!SEL_TEXTS.includes(id)){SEL_TEXTS.push(id);renderPool();}}
 function remText(id){SEL_TEXTS=SEL_TEXTS.filter(i=>i!==id);renderPool();}
-function renderCart(){const el=document.getElementById('epi-cart');el.innerHTML=CART.length?CART.map((c,i)=>`<div class="cait"><span><strong>${esc(c.nome)}</strong> | C.A.: ${esc(c.ca)} | Qtd: ${c.qtd} ${esc(c.unidade)}</span><button class="bxs bxd" onclick="remCart(${i})"><i class="fa-solid fa-xmark"></i></button></div>`).join(''):'<div class="es" style="padding:6px">Nenhum item adicionado</div>';}
+function renderCart(){setTimeout(()=>{if(typeof epiFichaPreview==='function')epiFichaPreview();},0);const el=document.getElementById('epi-cart');el.innerHTML=CART.length?CART.map((c,i)=>`<div class="cait"><span><strong>${esc(c.nome)}</strong> | C.A.: ${esc(c.ca)} | Qtd: ${c.qtd} ${esc(c.unidade)}</span><button class="bxs bxd" onclick="remCart(${i})"><i class="fa-solid fa-xmark"></i></button></div>`).join(''):'<div class="es" style="padding:6px">Nenhum item adicionado</div>';}
 function remCart(i){CART.splice(i,1);renderCart();if(document.getElementById('chk-lembrar-epi').checked)localStorage.setItem('epi_cart_memory',JSON.stringify(CART));}
 function limparEpiSalvo(){CART=[];localStorage.removeItem('epi_cart_memory');renderCart();}
 function filterCargoEpiMat(){
@@ -4582,38 +4596,54 @@ function popGenLoc(empSelId){
 function renderFuncList(selId,cId,name){
   const eid=document.getElementById(selId).value;
   const el=document.getElementById(cId);
+  // marcações guardadas (não se perdem ao trocar filtro); trocar empresa zera
+  if(!SEL_COLAB[name])SEL_COLAB[name]=new Set();
+  if(el.dataset.emp===eid)selColabSync(name);else SEL_COLAB[name].clear();
+  const marcadosAnt=[...SEL_COLAB[name]];
+  el.dataset.emp=eid||'';
   if(!eid){el.innerHTML='<div class="es">Selecione uma empresa primeiro</div>';return;}
   const gOb=document.getElementById(selId+'-obra'),gCd=document.getElementById(selId+'-cidade'),gFl=document.getElementById(selId+'-filial'),gCt=document.getElementById(selId+'-contrato');
   const f={obra:gOb?gOb.value:'',cidade:gCd?gCd.value:'',filial:gFl?gFl.value:'',contrato:gCt?gCt.value:''};
   const funcs=toArr(DATA.funcionarios).filter(fn=>String(fn.empresaId||'').trim()===String(eid||'').trim()).filter(funcVisivel).filter(fn=>colLocMatch(fn,f)).sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));
-  el.innerHTML=funcs.length?funcs.map(f=>`<div class="ci"><input type="checkbox" name="${name}" value="${f.id}" id="ck_${name}_${f.id}" onchange="handleColabSelect('${f.id}','${name}')"><label for="ck_${name}_${f.id}">${esc(f.nome)} <span>(${esc(resolveCargo(f.funcao)?.nome||f.funcao||'')})</span></label></div>`).join(''):'<div class="es">Nenhum colaborador nesta empresa/obra/cidade/filial</div>';
+  el.innerHTML=funcs.length?funcs.map(f=>`<div class="ci"><input type="checkbox" name="${name}" value="${f.id}" id="ck_${name}_${f.id}" onchange="handleColabSelect('${f.id}','${name}')"${marcadosAnt.includes(String(f.id))?' checked':''}><label for="ck_${name}_${f.id}">${esc(f.nome)} <span>(${esc(resolveCargo(f.funcao)?.nome||f.funcao||'')})</span></label></div>`).join(''):'<div class="es">Nenhum colaborador nesta empresa/obra/cidade/filial/contrato</div>';
+  if(name==='eChk')epiFichaPreview();
 }
 function handleColabSelect(fid,name){
-  if(name==='eChk'){
-    const cb=document.getElementById('ck_'+name+'_'+fid);
-    if(cb.checked){
-      const f=DATA.funcionarios[fid];
-      const cargo=resolveCargo(f?.funcao);
-      if(cargo && cargo.epi){
-        let epiItems=[];
-        const raw=cargo.epi;
-        const list=Array.isArray(raw)?raw:typeof raw==='string'?raw.split(',').map(s=>s.trim()).filter(s=>s).map(id=>({id})):[];
-        epiItems=list.map(item=>{
-          const id=typeof item==='object'?item.id:item;
-          const qtd=typeof item==='object'?(item.qtd||1):1;
-          const savedTipo=typeof item==='object'?item.tipo:null;
-          const mat=matPorId(id)||toArr(DATA.materiais).find(m=>(m.nome||'').toLowerCase().includes(String(id).toLowerCase()));
-          return mat?{id:mat.id,nome:mat.nome,ca:mat.ca||'',unidade:mat.unidade||'',tipo:savedTipo||mat.tipo||'EPI',qtd,vencimentoCa:mat.vencimentoCa||''}:null;
-        }).filter(Boolean);
-        epiItems.forEach(item=>{
-          const ex=CART.find(c=>c.id===item.id);
-          if(ex){ex.qtd+=1;}else{CART.push(item);}
-        });
-        renderCart();
-        if(document.getElementById('chk-lembrar-epi').checked)localStorage.setItem('epi_cart_memory',JSON.stringify(CART));
-      }
-    }
-  }
+  selColabSync(name);
+  // Antes: marcar um colaborador jogava os EPIs do cargo dele no carrinho
+  // COMUM, somando quantidades — a ficha de cada pessoa saía com os EPIs de
+  // todos os marcados (ex.: 3 colaboradores = 21 itens cada, óculos x3).
+  // Agora cada ficha leva os EPIs do cargo do próprio colaborador (genEPI) e o
+  // carrinho é só para itens adicionais. Aqui só atualiza a prévia.
+  if(name==='eChk')epiFichaPreview();
+}
+// EPIs do cargo de um colaborador (com a quantidade do cargo)
+function epiItensDoCargo(func){
+  const cargo=func?resolveCargo(func.funcao):null;
+  const raw=cargo&&cargo.epi;
+  const list=Array.isArray(raw)?raw:typeof raw==='string'?raw.split(',').map(x=>x.trim()).filter(Boolean).map(id=>({id})):[];
+  const out=[];
+  list.forEach(item=>{
+    const id=typeof item==='object'?item.id:item;
+    const mat=matPorId(id);if(!mat||out.some(o=>o.id===mat.id))return;
+    out.push({id:mat.id,nome:mat.nome,ca:mat.ca||'',unidade:mat.unidade||'',tipo:(typeof item==='object'&&item.tipo)||mat.tipo||'EPI',qtd:(typeof item==='object'&&item.qtd)||1,vencimentoCa:mat.vencimentoCa||''});
+  });
+  return out;
+}
+// itens da ficha de UM colaborador: os do cargo dele + os adicionais do carrinho
+function epiItensDaFicha(func,cartItems){
+  const items=(cartItems||[]).map(c=>({...c}));
+  epiItensDoCargo(func).forEach(it=>{if(!items.some(i=>i.id===it.id))items.push(it);});
+  return items;
+}
+function epiFichaPreview(){
+  const box=document.getElementById('epi-ficha-prev');if(!box)return;
+  const ids=getChecked('eChk');
+  if(!ids.length){box.innerHTML='';return;}
+  const extras=CART.length;
+  const linhas=ids.map(id=>{const f=DATA.funcionarios[id];if(!f)return'';const n=epiItensDaFicha(f,CART).length;const doCargo=epiItensDoCargo(f).length;
+    return '<div>'+esc(f.nome)+' &mdash; <b>'+n+'</b> item(ns)'+(doCargo?' ('+doCargo+' do cargo'+(extras?' + adicionais':'')+')':' <span style="color:#b45309">(cargo sem EPI cadastrado'+(extras?'; s\u00f3 os adicionais':'')+')</span>')+'</div>';}).join('');
+  box.innerHTML='<b>'+ids.length+' colaborador(es) selecionado(s):</b>'+linhas;
 }
 function addOrcItem(){const tr=document.createElement('tr');tr.innerHTML=`<td><input class="oi o-desc" placeholder="Descri\u00e7\u00e3o do servi\u00e7o" oninput="calcTotal()"></td><td><input class="oi o-qtd" type="number" value="1" min="1" oninput="calcTotal()"></td><td><input class="oi o-val" type="number" value="0" min="0" step="0.01" oninput="calcTotal()"></td><td><button class="btn bd2" style="padding:4px 7px" onclick="this.closest('tr').remove();calcTotal()"><i class="fa-solid fa-trash"></i></button></td>`;document.getElementById('orc-body').appendChild(tr);}
 function calcTotal(){let t=0;document.querySelectorAll('#orc-body tr').forEach(tr=>{const q=parseFloat(tr.querySelector('.o-qtd')?.value)||0;const u=parseFloat(tr.querySelector('.o-val')?.value)||0;t+=q*u;});document.getElementById('orc-total-display').textContent=t.toLocaleString('pt-BR',{minimumFractionDigits:2});}
@@ -6133,7 +6163,13 @@ async function genEPI(){
   const dataFmt=dataVal?fmtData(dataVal):'';
   const showVencCa=document.getElementById('epi-show-venc').checked;
   const cartItems=CART.map(c=>({...c}));
-  if(!blankMode&&!cartItems.length){alert('Adicione pelo menos um item ao carrinho');spin(false);return;}
+  if(!blankMode){
+    // cada colaborador precisa de pelo menos 1 item (do cargo ou adicional)
+    const semItens=fIds.map(id=>DATA.funcionarios[id]).filter(f=>f&&!epiItensDaFicha(f,cartItems).length);
+    if(semItens.length===fIds.length){alert('Nenhum dos colaboradores selecionados tem EPI cadastrado no cargo.\n\nAdicione os itens em "Itens adicionais" ou cadastre os EPIs no cargo.');spin(false);return;}
+    if(semItens.length&&!confirm(semItens.length+' colaborador(es) sem EPI no cargo e sem itens adicionais:\n\n'+semItens.slice(0,10).map(f=>'\u2022 '+f.nome).join('\n')+'\n\nOK = gerar as fichas dos demais (esses ficam de fora)\nCancelar = voltar'))
+      {spin(false);return;}
+  }
   let funcs=fIds.map(fid=>DATA.funcionarios[fid]).filter(Boolean);
   if(!funcs.length)funcs=[null];
   const firstFunc=DATA.funcionarios[fIds[0]];
@@ -6144,16 +6180,8 @@ async function genEPI(){
   for(const func of funcs){
     let items=[];
     if(!blankMode){
-      items=[...cartItems];
-      const cargo=func?resolveCargo(func.funcao):null;
-      if(cargo?.epi?.length){
-        cargo.epi.forEach(cepi=>{
-          if(!items.find(i=>i.id===cepi.id)){
-            const mat=matPorId(cepi.id);
-            if(mat)items.push({id:mat.id,nome:mat.nome,ca:mat.ca||'',unidade:mat.unidade||'',tipo:cepi.tipo||mat.tipo||'EPI',qtd:cepi.qtd||1,vencimentoCa:mat.vencimentoCa||''});
-          }
-        });
-      }
+      items=epiItensDaFicha(func,cartItems);
+      if(!items.length)continue;   // sem item: fica de fora (avisado acima)
     }
     if(!first)doc.addPage();first=false;
     entregas.push({func,items});
