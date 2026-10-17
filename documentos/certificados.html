@@ -5441,20 +5441,18 @@ window.buildPage2 = ({curso,empresa}) => {
                 line-height: 1.6; 
             }
             .program-list-container li {
-                padding-left: 10mm;
-                margin-bottom: 4mm; 
-                position: relative;
-                break-inside: avoid; 
+                padding-left: 5mm;
+                text-indent: -5mm;
+                margin-bottom: 4mm;
+                break-inside: avoid;
             }
             .program-list-container li::before {
                 content: "•";
                 color: #333;
                 font-weight: bold;
                 display: inline-block;
-                width: 5mm; 
-                margin-left: -5mm; 
-                position: absolute;
-                left: 0;
+                width: 5mm;
+                text-indent: 0;
             }
         </style>
         <div class="program-list-container">
@@ -5471,12 +5469,10 @@ window.buildPage2 = ({curso,empresa}) => {
       <section class="cert-page2" style="${pageStyle}">
         <div style="border:1px solid #aaa;padding:10mm;height:100%;display:flex;flex-direction:column;position:relative;">
                     <header style="margin-bottom:10mm;">
-            <div style="display:flex;justify-content:space-between;align-items:center;height:15mm;">
-                ${empresa.logo1 ? `<img src="${empresa.logo1}" alt="Logo 1" style="max-height:15mm;max-width:20%;object-fit:contain;">` : '<div style="width:20%;"></div>'}
-                <div style="flex-grow:1;text-align:center;">
-                    <h2 style="font-size:20pt;margin:0;color:#333;">CONTEÚDO PROGRAMÁTICO</h2>
-                </div>
-                ${empresa.logo2 ? `<img src="${empresa.logo2}" alt="Logo 2" style="max-height:15mm;max-width:20%;object-fit:contain;">` : '<div style="width:20%;"></div>'}
+            <div style="display:grid;grid-template-columns:20% 1fr 20%;align-items:center;height:15mm;">
+                <div style="display:flex;justify-content:flex-start;align-items:center;height:15mm;">${empresa.logo1 ? `<img src="${empresa.logo1}" alt="Logo 1" style="max-height:15mm;max-width:100%;object-fit:contain;">` : ''}</div>
+                <h2 style="display:block;text-align:center;font-size:20pt;margin:0;padding:0;border:none;color:#333;">CONTEÚDO PROGRAMÁTICO</h2>
+                <div style="display:flex;justify-content:flex-end;align-items:center;height:15mm;">${empresa.logo2 ? `<img src="${empresa.logo2}" alt="Logo 2" style="max-height:15mm;max-width:100%;object-fit:contain;">` : ''}</div>
             </div>
             <div style="text-align:center;margin-top:6px;">
                 <p style="font-size:12pt;margin:0;">${curso.nome}</p>
@@ -5505,10 +5501,10 @@ const LP_PAG_ALTURA = '277mm';   // A4 (297mm) menos as margens do PDF (10+10)
 const LP_PAG_LARGURA = '190mm';  // A4 (210mm) menos as margens do PDF (10+10)
 function lpCabecalho(curso, empresa, tituloData) {
     return `
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; padding-bottom:12px; border-bottom:3px solid #000;">
-            ${empresa.logo1 ? `<img src="${empresa.logo1}" style="height:40px; max-width:120px; object-fit:contain;">` : '<div style="width:120px;"></div>'}
-            <div style="text-align:center; flex-grow:1;">
-                <h2 style="margin:0 0 6px 0; font-size:20pt; font-weight:bold; text-transform:uppercase; color:#333;">LISTA DE PRESENÇA</h2>
+        <div style="display:grid; grid-template-columns:120px 1fr 120px; align-items:center; margin-bottom:15px; padding-bottom:12px; border-bottom:3px solid #000;">
+            <div style="display:flex; justify-content:flex-start; align-items:center;">${empresa.logo1 ? `<img src="${empresa.logo1}" style="height:40px; max-width:120px; object-fit:contain;">` : ''}</div>
+            <div style="text-align:center;">
+                <h2 style="display:block; text-align:center; margin:0 0 6px 0; padding:0; border:none; font-size:20pt; font-weight:bold; text-transform:uppercase; color:#333;">LISTA DE PRESENÇA</h2>
                 <p style="margin:2px 0; font-size:10pt;"><strong>Empresa:</strong> ${empresa.nome}</p>
                 <p style="margin:2px 0; font-size:10pt;"><strong>Curso:</strong> ${curso.nome} (${curso.carga})</p>
                 <p style="margin:2px 0; font-size:10pt;"><strong>${tituloData}</strong></p>
