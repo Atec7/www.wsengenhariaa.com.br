@@ -5411,10 +5411,7 @@ window.buildPage1 = ({aluno, curso, empresa, dataInicioBR, dataFimBR, dataFim, e
           <div style="font-size:14pt; line-height:1.7; text-align:justify; text-align-last:center;">
             ${mensagem.replaceAll('**', '<strong>').replaceAll('\n\n', '<br><br>')}
           </div>
-          ${vencBR ? `
-          <div style="font-size:12pt; margin-top:9mm; text-align:center;">
-            Vencimento: <strong>${vencBR}</strong>
-          </div>` : ''}
+          <!-- o vencimento não é impresso no certificado (continua no sistema) -->
         </main>
 
         <footer style="width:100%; margin-top:5mm;">
