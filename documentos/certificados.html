@@ -1765,7 +1765,7 @@ label.secondary:hover { background: var(--surface-2); border-color: #A9B7C8; }
                     <div id="regWsEmpWrap" style="margin-top:8px;display:none">
                         <select id="regWsEmp" style="max-width:520px"></select>
                     </div>
-                    <div style="font-size:12px;color:var(--muted);margin-top:6px">A emiss&atilde;o fica cadastrada na empresa de origem <b>e</b> na WS Engenharia (hist&oacute;rico e certificados gerados). O PDF &eacute; o mesmo.</div>
+                    <div style="font-size:12px;color:var(--muted);margin-top:6px">O certificado &eacute; <b>emitido pela WS Engenharia</b> (logo, dados e assinaturas da WS no PDF e na lista de presen&ccedil;a) e o registro da emiss&atilde;o fica <b>na empresa de origem do colaborador e na WS</b>.</div>
                 </div>
 
                 <div class="actions">
@@ -2736,7 +2736,7 @@ function renderCertificadosGerados(){
             const expClass = vence && vence < hoje ? 'vencido' : '';
             return `<tr>
             <td>${c.aluno.matricula || c.aluno.id} - ${c.aluno.nome}</td>
-            <td>${c.curso.nome} (${c.curso.carga})${c.registroDe ? `<br><small style="color:#b45309">registro WS &mdash; emitido p/ ${esc(c.registroDeNome || (empresasData[c.registroDe] && empresasData[c.registroDe].nome) || '')}</small>` : ''}</td>
+            <td>${c.curso.nome} (${c.curso.carga})${c.registroDe ? `<br><small style="color:#b45309">registro WS &mdash; colaborador de ${esc(c.registroDeNome || (empresasData[c.registroDe] && empresasData[c.registroDe].nome) || '')}</small>` : c.emitidoPor ? `<br><small style="color:#b45309">emitido pela WS Engenharia</small>` : ''}</td>
             <td>${c.dataInicioBR} a ${c.dataFimBR}</td>
             <td>${fmtDateBR(c.dataGeracao)}</td>
             <td class="${expClass}">${exp}</td>
@@ -3543,7 +3543,9 @@ function fecharReplayProgresso(){
 // Marcada, a geração grava a emissão na empresa de origem E numa empresa WS
 // Engenharia: uma linha de histórico própria da WS e um registro de
 // certificado próprio (cópia, ligado à linha da WS). Assim excluir de um lado
-// não apaga o do outro. O PDF da cópia usa a empresa de origem (empresaPdfId).
+// não apaga o do outro. O certificado é EMITIDO pela WS: PDF e lista de
+// presença saem com a empresa WS; o registro da origem guarda empresaPdfId=WS
+// para que o "Baixar PDF" dele também saia pela WS.
 const REG_WS_LS = 'cert_reg_ws_emp';
 function empresasWs() {
     return getArrayFromData(empresasData).filter(e => e && /^\s*WS\s+ENGENHARIA/i.test(e.nome || ''));
@@ -3643,6 +3645,8 @@ async function gerarCertificados(){
     const wsEmpresa = wsId ? empresasData[wsId] : null;
     const wsHistKeyPorCurso = wsId ? selectedCoursesWithDates.map(() => db.ref('historico').push().key) : [];
     const wsCertIdsPorCurso = selectedCoursesWithDates.map(() => []);
+    // quem EMITE o certificado (PDF, lista de presença): a WS, se marcado
+    const emissora = wsEmpresa || empresa;
 
     selecionadosAlunos.forEach(aluno => {
         selectedCoursesWithDates.forEach((courseDateItem, iCurso) => {
@@ -3665,7 +3669,7 @@ async function gerarCertificados(){
                     conteudo: curso.conteudo
                 },
                 empresaId: empresaId,
-                empresa: (empresa && empresa.id) ? { id: empresa.id, nome: empresa.nome, cidade: empresa.cidade, cnpj: empresa.cnpj } : null,
+                empresa: (emissora && emissora.id) ? { id: emissora.id, nome: emissora.nome, cidade: emissora.cidade, cnpj: emissora.cnpj } : null,
                 dataInicio: dataInicio, dataFim: dataFim,
                 dataInicioBR: dataInicioBR, dataFimBR: dataFimBR,
                 dataGeracao: new Date().toISOString().slice(0, 10),
@@ -3673,10 +3677,11 @@ async function gerarCertificados(){
                 expiracao: calcExpiracao(dataFim, curso.validade),
                 histKey: histKeyPorCurso[iCurso]
             };
+            if (wsId) { certData.empresaPdfId = wsId; certData.emitidoPor = wsId; }
 
             // O que vai para o PDF leva as logos de verdade.
             const certParaImprimir = Object.assign({}, certData, {
-                empresa: empresa,
+                empresa: emissora,
                 curso: Object.assign({}, certData.curso, { logoCurso: curso.logoCurso })
             });
 
@@ -3691,8 +3696,8 @@ async function gerarCertificados(){
                 const wsKey = db.ref('certificadosGerados').push().key;
                 updates[`certificadosGerados/${wsKey}`] = Object.assign({}, certData, {
                     empresaId: wsId,
-                    empresaPdfId: empresaId,      // PDF = o da empresa de origem
-                    registroDe: empresaId,        // empresa onde foi emitido
+                    empresaPdfId: wsId,           // emitido pela WS
+                    registroDe: empresaId,        // empresa de origem do colaborador
                     registroDeNome: empresa.nome || '',
                     histKey: wsHistKeyPorCurso[iCurso]
                 });
@@ -3706,7 +3711,7 @@ async function gerarCertificados(){
     selectedCoursesWithDates.forEach(item => {
         printAreaPresencas.innerHTML += window.buildListaPresenca({
             curso: item.curso,
-            empresa,
+            empresa: emissora,
             dataInicioBR: item.dataInicioBR,
             dataFimBR: item.dataFimBR,
             alunos: selecionadosAlunos
@@ -3771,8 +3776,10 @@ async function gerarCertificados(){
                 ...dadosGeradorCert()
             };
             if (wsId) {
+                histUpdates['historico/' + histKeyPorCurso[iCurso]].nome += ' (emitido pela WS)';
+                histUpdates['historico/' + histKeyPorCurso[iCurso]].emitidoPor = wsId;
                 histUpdates['historico/' + wsHistKeyPorCurso[iCurso]] = Object.assign({}, histUpdates['historico/' + histKeyPorCurso[iCurso]], {
-                    nome: `Certificado - ${courseDateItem.curso.nome} (emitido p/ ${empresa.nome || ''})`,
+                    nome: `Certificado - ${courseDateItem.curso.nome} (colaborador de ${empresa.nome || ''})`,
                     empresaId: wsId,
                     certIds: wsCertIdsPorCurso[iCurso],
                     registroDe: empresaId
