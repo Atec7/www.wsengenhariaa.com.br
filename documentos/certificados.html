@@ -5495,36 +5495,18 @@ window.buildPage2 = ({curso,empresa}) => {
     `;
 };
 
-window.buildListaPresenca = ({curso, empresa, dataInicioBR, dataFimBR, alunos}) => {
-    const tituloData = dataInicioBR === dataFimBR
-        ? `Data: ${dataInicioBR}`
-        : `Período: ${dataInicioBR} a ${dataFimBR}`;
-
-    const lines = (curso.conteudo || "").split("\n").map(l=>l.trim()).filter(Boolean);
-    
-    const conteudoHTML = lines.length > 0
-        ? `<div style="margin:15px 0; padding:12px; background:#f9f9f9; border:1px solid #ddd; border-radius:6px;">
-            <h4 style="margin:0 0 8px 0; font-size:11pt; font-weight:bold;">Conteúdo Programático:</h4>
-            <ul style="margin:0; padding-left:20px; font-size:9pt; line-height:1.5;">
-                ${lines.map(l=>`<li style="margin-bottom:4px;">${l}</li>`).join("")}
-            </ul>
-        </div>`
-        : '';
-
-    const linhas = alunos.map((a, idx) => `
-        <tr style="border-bottom:1px solid #ccc;">
-            <td style="padding:12px 8px; text-align:center; font-size:10pt; border-right:1px solid #ccc;">${idx+1}</td>
-            <td style="padding:12px 8px; font-size:10pt; border-right:1px solid #ccc;">${a.nome}</td>
-            <td style="padding:12px 8px; text-align:center; font-size:10pt; border-right:1px solid #ccc;">${formatCPF(a.cpf)}</td>
-            <td style="padding:12px 8px;"></td>
-        </tr>
-    `).join("");
-
+// Lista de presença paginada: cada folha A4 é uma <section> com o cabeçalho
+// (logos, empresa, curso, data) e o cabeçalho da tabela repetidos. Antes era
+// uma tabela só, que o PDF cortava no meio: da 2ª página em diante não havia
+// cabeçalho e linhas saíam partidas. O conteúdo programático fica só na 1ª
+// folha; a declaração e a assinatura, na última. As linhas que cabem em cada
+// folha são medidas de verdade (na mesma largura que o PDF usa).
+const LP_PAG_ALTURA = '277mm';   // A4 (297mm) menos as margens do PDF (10+10)
+const LP_PAG_LARGURA = '190mm';  // A4 (210mm) menos as margens do PDF (10+10)
+function lpCabecalho(curso, empresa, tituloData) {
     return `
-      <section style="width:100%; max-width:210mm; margin:0 auto; padding:15mm; background:#fff; font-family:Arial,sans-serif; page-break-after:always;">
-        
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; padding-bottom:12px; border-bottom:3px solid #000;">
-            ${empresa.logo1 ? `<img src="${empresa.logo1}" style="max-height:40px; max-width:120px; object-fit:contain;">` : '<div style="width:120px;"></div>'}
+            ${empresa.logo1 ? `<img src="${empresa.logo1}" style="height:40px; max-width:120px; object-fit:contain;">` : '<div style="width:120px;"></div>'}
             <div style="text-align:center; flex-grow:1;">
                 <h2 style="margin:0 0 6px 0; font-size:20pt; font-weight:bold; text-transform:uppercase; color:#333;">LISTA DE PRESENÇA</h2>
                 <p style="margin:2px 0; font-size:10pt;"><strong>Empresa:</strong> ${empresa.nome}</p>
@@ -5532,30 +5514,25 @@ window.buildListaPresenca = ({curso, empresa, dataInicioBR, dataFimBR, alunos}) 
                 <p style="margin:2px 0; font-size:10pt;"><strong>${tituloData}</strong></p>
             </div>
             <div style="display:flex; flex-direction:column; align-items:flex-end; gap:4px; min-width:120px;">
-                ${empresa.logo2 ? `<img src="${empresa.logo2}" style="max-height:26px; max-width:120px; object-fit:contain;">` : ''}
-                ${curso.logoCurso ? `<img src="${curso.logoCurso}" style="max-height:26px; max-width:120px; object-fit:contain;">` : ''}
+                ${empresa.logo2 ? `<img src="${empresa.logo2}" style="height:26px; max-width:120px; object-fit:contain;">` : ''}
+                ${curso.logoCurso ? `<img src="${curso.logoCurso}" style="height:26px; max-width:120px; object-fit:contain;">` : ''}
             </div>
-        </div>
-
-        ${conteudoHTML}
-
-        <table style="width:100%; border-collapse:collapse; border:1px solid #000; margin-top:15px;">
-            <thead>
-                <tr style="background:#f0f0f0; border-bottom:2px solid #000;">
-                    <th style="padding:10px 8px; text-align:center; font-size:11pt; font-weight:bold; width:50px; border-right:1px solid #000;">#</th>
-                    <th style="padding:10px 8px; text-align:left; font-size:11pt; font-weight:bold; border-right:1px solid #000;">Nome do Participante</th>
-                    <th style="padding:10px 8px; text-align:center; font-size:11pt; font-weight:bold; width:130px; border-right:1px solid #000;">CPF</th>
-                    <th style="padding:10px 8px; text-align:center; font-size:11pt; font-weight:bold; width:250px;">Assinatura</th>
-                </tr>
-            </thead>
-            <tbody>
-                ${linhas}
-            </tbody>
-        </table>
-
+        </div>`;
+}
+function lpLinha(a, n) {
+    return `
+        <tr style="border-bottom:1px solid #ccc; page-break-inside:avoid;">
+            <td style="padding:12px 8px; text-align:center; font-size:10pt; border-right:1px solid #ccc;">${n}</td>
+            <td style="padding:12px 8px; font-size:10pt; border-right:1px solid #ccc;">${a.nome}</td>
+            <td style="padding:12px 8px; text-align:center; font-size:10pt; border-right:1px solid #ccc;">${formatCPF(a.cpf)}</td>
+            <td style="padding:12px 8px;"></td>
+        </tr>`;
+}
+function lpRodape(empresa) {
+    return `
         <p style="margin-top:18px; font-size:9pt; text-align:justify; line-height:1.4;">
-            &#x261E; Declaro ter recebido instruções sobre o assunto acima descrito, 
-            comprometendo-me a segui-las e obedecê-las durante a execução de todas as 
+            &#x261E; Declaro ter recebido instruções sobre o assunto acima descrito,
+            comprometendo-me a segui-las e obedecê-las durante a execução de todas as
             minhas atividades na empresa.
         </p>
 
@@ -5582,10 +5559,99 @@ window.buildListaPresenca = ({curso, empresa, dataInicioBR, dataFimBR, alunos}) 
                     </div>
                 </div>
             </div>
-        </div>
+        </div>`;
+}
+function lpFolha({cab, conteudoHTML, linhasHTML, rodapeHTML, pag, total}) {
+    return `
+      <section class="lista-presenca-folha" style="width:100%; max-width:210mm; margin:0 auto; padding:15mm; box-sizing:border-box; background:#fff; font-family:Arial,sans-serif; position:relative; min-height:0;">
+        ${cab}
+        ${conteudoHTML || ''}
+        <table style="width:100%; border-collapse:collapse; border:1px solid #000; margin-top:15px;">
+            <thead>
+                <tr style="background:#f0f0f0; border-bottom:2px solid #000;">
+                    <th style="padding:10px 8px; text-align:center; font-size:11pt; font-weight:bold; width:50px; border-right:1px solid #000;">#</th>
+                    <th style="padding:10px 8px; text-align:left; font-size:11pt; font-weight:bold; border-right:1px solid #000;">Nome do Participante</th>
+                    <th style="padding:10px 8px; text-align:center; font-size:11pt; font-weight:bold; width:130px; border-right:1px solid #000;">CPF</th>
+                    <th style="padding:10px 8px; text-align:center; font-size:11pt; font-weight:bold; width:250px;">Assinatura</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${linhasHTML}
+            </tbody>
+        </table>
+        ${rodapeHTML || ''}
+        <div style="margin-top:10px; text-align:right; font-size:8pt; color:#555;">Página ${pag} de ${total}</div>
+      </section>`;
+}
+window.buildListaPresenca = ({curso, empresa, dataInicioBR, dataFimBR, alunos}) => {
+    const tituloData = dataInicioBR === dataFimBR
+        ? `Data: ${dataInicioBR}`
+        : `Período: ${dataInicioBR} a ${dataFimBR}`;
 
-      </section>
-    `;
+    const lines = (curso.conteudo || "").split("\n").map(l=>l.trim()).filter(Boolean);
+
+    const conteudoHTML = lines.length > 0
+        ? `<div style="margin:15px 0; padding:12px; background:#f9f9f9; border:1px solid #ddd; border-radius:6px;">
+            <h4 style="margin:0 0 8px 0; font-size:11pt; font-weight:bold;">Conteúdo Programático:</h4>
+            <ul style="margin:0; padding-left:20px; font-size:9pt; line-height:1.5;">
+                ${lines.map(l=>`<li style="margin-bottom:4px;">${l}</li>`).join("")}
+            </ul>
+        </div>`
+        : '';
+
+    const cab = lpCabecalho(curso, empresa, tituloData);
+    const rodape = lpRodape(empresa);
+    const linhas = alunos.map((a, idx) => lpLinha(a, idx + 1));
+
+    // mede as folhas numa área com a largura/altura úteis do PDF
+    const medidor = document.createElement('div');
+    medidor.style.cssText = 'position:absolute; left:-10000px; top:0; visibility:hidden; width:' + LP_PAG_LARGURA + ';';
+    document.body.appendChild(medidor);
+    const ref = document.createElement('div'); ref.style.height = LP_PAG_ALTURA; medidor.appendChild(ref);
+    const limite = ref.getBoundingClientRect().height - 12;   // folga de segurança
+    medidor.removeChild(ref);
+    const cabe = folha => {
+        medidor.innerHTML = lpFolha(Object.assign({ pag: 99, total: 99 }, folha));
+        return medidor.firstElementChild.getBoundingClientRect().height <= limite;
+    };
+
+    const folhas = [];   // [{ini, fim}] fatias de 'linhas'
+    try {
+        let i = 0;
+        while (i < linhas.length || !folhas.length) {
+            const primeira = !folhas.length;
+            const base = { cab, conteudoHTML: primeira ? conteudoHTML : '' };
+            let fim = i + 1;   // ao menos 1 linha por folha
+            while (fim < linhas.length && cabe(Object.assign({}, base, { linhasHTML: linhas.slice(i, fim + 1).join('') }))) fim++;
+            folhas.push({ ini: i, fim: Math.min(fim, linhas.length), primeira });
+            i = fim;
+        }
+        // a última folha precisa caber também a declaração e a assinatura;
+        // se não couber, as últimas linhas vão para uma folha nova com elas
+        let ult = folhas[folhas.length - 1];
+        const cabeComRodape = f => cabe({ cab, conteudoHTML: f.primeira ? conteudoHTML : '', linhasHTML: linhas.slice(f.ini, f.fim).join(''), rodapeHTML: rodape });
+        if (!cabeComRodape(ult)) {
+            const nova = { ini: ult.fim, fim: ult.fim, primeira: false };
+            // leva até 3 linhas junto com a assinatura (a folha anterior
+            // nunca fica sem linhas)
+            while (ult.fim - ult.ini > 1 && nova.fim - nova.ini < 3) {
+                ult.fim--; nova.ini--;
+                if (!cabeComRodape(nova)) { ult.fim++; nova.ini++; break; }
+            }
+            folhas.push(nova);
+        }
+    } finally {
+        medidor.remove();
+    }
+
+    return folhas.map((f, k) => lpFolha({
+        cab,
+        conteudoHTML: f.primeira ? conteudoHTML : '',
+        linhasHTML: linhas.slice(f.ini, f.fim).join(''),
+        rodapeHTML: k === folhas.length - 1 ? rodape : '',
+        pag: k + 1,
+        total: folhas.length
+    })).join('');
 };
 
 window.addEventListener('DOMContentLoaded', async () => {
