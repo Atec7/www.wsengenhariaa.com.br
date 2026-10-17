@@ -1757,6 +1757,17 @@ label.secondary:hover { background: var(--surface-2); border-color: #A9B7C8; }
                 <p style="color:var(--muted)">Defina as datas para cada curso selecionado. Se apenas um curso for selecionado, você só verá um campo.</p>
                 <div id="courseDatesContainer"></div>
 
+                <div id="regWsBox" style="display:none;margin:12px 0;padding:10px 12px;border:1px dashed #a1a1aa;border-radius:8px">
+                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:600;margin:0">
+                        <input type="checkbox" id="regWsChk" style="width:auto;margin:0">
+                        REGISTRAR TAMB&Eacute;M NA WS ENGENHARIA
+                    </label>
+                    <div id="regWsEmpWrap" style="margin-top:8px;display:none">
+                        <select id="regWsEmp" style="max-width:520px"></select>
+                    </div>
+                    <div style="font-size:12px;color:var(--muted);margin-top:6px">A emiss&atilde;o fica cadastrada na empresa de origem <b>e</b> na WS Engenharia (hist&oacute;rico e certificados gerados). O PDF &eacute; o mesmo.</div>
+                </div>
+
                 <div class="actions">
                     <button id="btnGerar">Gerar e salvar certificados</button>
                     <button class="secondary" id="btnImprimir">Baixar certificado em PDF</button>
@@ -2206,6 +2217,7 @@ function renderAlunos(){
     // (a seleção fica em ALUNOS_GERACAO e é reaplicada pelo próprio render)
     popSelLocCert();
     renderAlunosCheckboxForGeracao();
+    if (typeof atualizarRegWs === 'function') atualizarRegWs();
 }
 
 // Popula os seletores de Obra/Cidade/Filial em cascata, conforme a empresa selecionada.
@@ -2724,7 +2736,7 @@ function renderCertificadosGerados(){
             const expClass = vence && vence < hoje ? 'vencido' : '';
             return `<tr>
             <td>${c.aluno.matricula || c.aluno.id} - ${c.aluno.nome}</td>
-            <td>${c.curso.nome} (${c.curso.carga})</td>
+            <td>${c.curso.nome} (${c.curso.carga})${c.registroDe ? `<br><small style="color:#b45309">registro WS &mdash; emitido p/ ${esc(c.registroDeNome || (empresasData[c.registroDe] && empresasData[c.registroDe].nome) || '')}</small>` : ''}</td>
             <td>${c.dataInicioBR} a ${c.dataFimBR}</td>
             <td>${fmtDateBR(c.dataGeracao)}</td>
             <td class="${expClass}">${exp}</td>
@@ -3244,7 +3256,9 @@ function inferirValidade(dataFim, expiracao){
 function empresaDoCert(cert){
     if (!cert) return {};
     const retrato = cert.empresa || null;
-    const atual = (cert.empresaId && empresasData[cert.empresaId]) || null;
+    // cópia registrada na WS: o certificado é o da empresa de origem
+    const idPdf = cert.empresaPdfId || cert.empresaId;
+    const atual = (idPdf && empresasData[idPdf]) || null;
     if (!atual) return retrato || {};
     return Object.assign({}, atual, retrato || {});
 }
@@ -3525,6 +3539,40 @@ function fecharReplayProgresso(){
     if(p&&typeof p.fecharProgresso==='function')p.fecharProgresso();
   }catch(_){}
 }
+// ── "REGISTRAR TAMBÉM NA WS ENGENHARIA" ──
+// Marcada, a geração grava a emissão na empresa de origem E numa empresa WS
+// Engenharia: uma linha de histórico própria da WS e um registro de
+// certificado próprio (cópia, ligado à linha da WS). Assim excluir de um lado
+// não apaga o do outro. O PDF da cópia usa a empresa de origem (empresaPdfId).
+const REG_WS_LS = 'cert_reg_ws_emp';
+function empresasWs() {
+    return getArrayFromData(empresasData).filter(e => e && /^\s*WS\s+ENGENHARIA/i.test(e.nome || ''));
+}
+function atualizarRegWs() {
+    const box = el('regWsBox'); if (!box) return;
+    const origem = el('selEmpresa').value;
+    const opcoes = empresasWs().filter(e => e.id !== origem);
+    if (!origem || !opcoes.length) { box.style.display = 'none'; el('regWsChk').checked = false; return; }
+    box.style.display = '';
+    // mais de uma empresa com o nome WS ENGENHARIA: o usuário escolhe; padrão =
+    // a última escolhida, senão a que tem mais alunos
+    const nAlunos = {};
+    certAlunos().forEach(a => { nAlunos[a.empresaVinculoId] = (nAlunos[a.empresaVinculoId] || 0) + 1; });
+    opcoes.sort((a, b) => (nAlunos[b.id] || 0) - (nAlunos[a.id] || 0));
+    let salvo = ''; try { salvo = localStorage.getItem(REG_WS_LS) || ''; } catch (e) { }
+    const sel = el('regWsEmp');
+    const atual = sel.value || salvo;
+    sel.innerHTML = opcoes.map(e => `<option value="${esc(e.id)}">${esc(e.nome)}${e.cnpj ? ' — CNPJ ' + esc(e.cnpj) : ''}${e.cidade ? ' — ' + esc(e.cidade) : ''} (${nAlunos[e.id] || 0} aluno(s))</option>`).join('');
+    if (opcoes.some(e => e.id === atual)) sel.value = atual;
+    el('regWsEmpWrap').style.display = (opcoes.length > 1 && el('regWsChk').checked) ? '' : 'none';
+}
+function regWsDestino() {
+    const chk = el('regWsChk');
+    if (!chk || !chk.checked || el('regWsBox').style.display === 'none') return '';
+    const id = el('regWsEmp').value;
+    return (id && empresasData[id] && id !== el('selEmpresa').value) ? id : '';
+}
+
 async function gerarCertificados(){
     const empresaId = el("selEmpresa").value;
     if(!empresaId) return alert("Selecione a empresa.");
@@ -3590,6 +3638,11 @@ async function gerarCertificados(){
     // permite excluir de um lado e sumir do outro.
     const histKeyPorCurso = selectedCoursesWithDates.map(() => db.ref('historico').push().key);
     const certIdsPorCurso = selectedCoursesWithDates.map(() => []);
+    // "Registrar também na WS Engenharia": linha e certificados próprios da WS
+    const wsId = regWsDestino();
+    const wsEmpresa = wsId ? empresasData[wsId] : null;
+    const wsHistKeyPorCurso = wsId ? selectedCoursesWithDates.map(() => db.ref('historico').push().key) : [];
+    const wsCertIdsPorCurso = selectedCoursesWithDates.map(() => []);
 
     selecionadosAlunos.forEach(aluno => {
         selectedCoursesWithDates.forEach((courseDateItem, iCurso) => {
@@ -3634,6 +3687,17 @@ async function gerarCertificados(){
             updates[`certificadosGerados/${newKey}`] = certData;
             certIdsPorCurso[iCurso].push(newKey);
             certCount++;
+            if (wsId) {
+                const wsKey = db.ref('certificadosGerados').push().key;
+                updates[`certificadosGerados/${wsKey}`] = Object.assign({}, certData, {
+                    empresaId: wsId,
+                    empresaPdfId: empresaId,      // PDF = o da empresa de origem
+                    registroDe: empresaId,        // empresa onde foi emitido
+                    registroDeNome: empresa.nome || '',
+                    histKey: wsHistKeyPorCurso[iCurso]
+                });
+                wsCertIdsPorCurso[iCurso].push(wsKey);
+            }
         });
     });
 
@@ -3706,14 +3770,23 @@ async function gerarCertificados(){
                 certIds: certIdsPorCurso[iCurso],
                 ...dadosGeradorCert()
             };
+            if (wsId) {
+                histUpdates['historico/' + wsHistKeyPorCurso[iCurso]] = Object.assign({}, histUpdates['historico/' + histKeyPorCurso[iCurso]], {
+                    nome: `Certificado - ${courseDateItem.curso.nome} (emitido p/ ${empresa.nome || ''})`,
+                    empresaId: wsId,
+                    certIds: wsCertIdsPorCurso[iCurso],
+                    registroDe: empresaId
+                });
+            }
         });
         await db.ref().update(histUpdates);
+        if (wsId) { try { localStorage.setItem(REG_WS_LS, wsId); } catch (e) { } }
 
         await WS_DATA.advanceLocalMeta('historico');
 
         await repararValidadesPendentes();
 
-        if(!REPLAY_MODE) alert(`clique em "OK" Para liberar a visualização de ${certCount} certificado(s). Clique em "Baixar PDF".`);
+        if(!REPLAY_MODE) alert(`clique em "OK" Para liberar a visualização de ${certCount} certificado(s). Clique em "Baixar PDF".` + (wsId ? `\n\nRegistrado também em: ${wsEmpresa.nome}${wsEmpresa.cnpj ? ' (CNPJ ' + wsEmpresa.cnpj + ')' : ''}.` : ''));
         printArea.style.display="flex";
     } catch (e) {
         console.error("Erro ao salvar certificados gerados:", e);
@@ -5569,7 +5642,9 @@ window.addEventListener('DOMContentLoaded', async () => {
     aplicarNavArnaldo();
     setupMobileNav();
 
-    el("selEmpresa").addEventListener('change', () => { popSelLocCert(); renderAlunosCheckboxForGeracao(); atualizarEmpresaPin(); });
+    el("selEmpresa").addEventListener('change', () => { popSelLocCert(); renderAlunosCheckboxForGeracao(); atualizarEmpresaPin(); atualizarRegWs(); });
+    el("regWsChk").addEventListener('change', atualizarRegWs);
+    el("regWsEmp").addEventListener('change', () => { try { localStorage.setItem(REG_WS_LS, el('regWsEmp').value); } catch (e) { } });
     el("selObra").addEventListener('change', renderAlunosCheckboxForGeracao);
     el("selCidade").addEventListener('change', renderAlunosCheckboxForGeracao);
     el("selFilial").addEventListener('change', renderAlunosCheckboxForGeracao);
@@ -5621,6 +5696,7 @@ window.addEventListener('DOMContentLoaded', async () => {
         popSelLocCert();
         renderAlunosCheckboxForGeracao();
         atualizarEmpresaPin();
+        atualizarRegWs();
         const topo = el("secaoGeracao");
         if (topo) topo.scrollIntoView({ behavior: "smooth", block: "start" });
     });
