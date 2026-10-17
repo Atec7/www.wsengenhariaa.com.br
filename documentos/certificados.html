@@ -1768,6 +1768,12 @@ label.secondary:hover { background: var(--surface-2); border-color: #A9B7C8; }
                     <div style="font-size:12px;color:var(--muted);margin-top:6px">O certificado &eacute; <b>emitido pela WS Engenharia</b> (logo, dados e assinaturas da WS no PDF e na lista de presen&ccedil;a) e o registro da emiss&atilde;o fica <b>na empresa de origem do colaborador e na WS</b>.</div>
                 </div>
 
+                <div id="assinBox" style="display:none;margin:12px 0;padding:10px 12px;border:1px dashed #a1a1aa;border-radius:8px">
+                    <div style="font-weight:600;margin-bottom:6px">ASSINATURAS QUE V&Atilde;O CONSTAR NO CERTIFICADO</div>
+                    <div id="assinLista" style="display:flex;flex-wrap:wrap;gap:6px 18px"></div>
+                    <div style="font-size:12px;color:var(--muted);margin-top:6px">Assinaturas cadastradas em &ldquo;Cadastrar Empresa Certificadora&rdquo; da empresa que emite o certificado. Desmarque as que n&atilde;o devem sair.</div>
+                </div>
+
                 <div class="actions">
                     <button id="btnGerar">Gerar e salvar certificados</button>
                     <button class="secondary" id="btnImprimir">Baixar certificado em PDF</button>
@@ -3539,6 +3545,48 @@ function fecharReplayProgresso(){
     if(p&&typeof p.fecharProgresso==='function')p.fecharProgresso();
   }catch(_){}
 }
+// ── assinaturas do certificado ──
+// As cadastradas na empresa certificadora (mesma regra de sempre: entra a que
+// tem nome ou imagem; instrutor e aluno sempre existem com o nome padrão).
+function assinaturasDaEmpresa(empresa) {
+    empresa = empresa || {};
+    return [
+        { k: 'cert', nome: empresa.certificadorNome || 'Certificador', img: empresa.assinaturaCert },
+        { k: '2', nome: empresa.assinaturaNome2, img: empresa.assinaturaImg2 },
+        { k: '3', nome: empresa.assinaturaNome3, img: empresa.assinaturaImg3 },
+        { k: 'aluno', nome: empresa.assinaturaNomeAluno || 'Aluno(a) Certificado(a)', img: empresa.assinaturaImgAluno }
+    ].filter(s => s.nome || s.img);
+}
+let ASSIN_EMP = '';          // empresa cujas caixinhas estão na tela
+let ASSIN_DESMARCADAS = {};  // chaves desmarcadas pelo usuário (por empresa emissora)
+function empresaEmissoraAtual() {
+    const ws = (typeof regWsDestino === 'function') ? regWsDestino() : '';
+    return ws || el('selEmpresa').value || '';
+}
+function atualizarAssinaturas() {
+    const box = el('assinBox'); if (!box) return;
+    const id = empresaEmissoraAtual();
+    const emp = id ? empresasData[id] : null;
+    if (!emp) { box.style.display = 'none'; ASSIN_EMP = ''; return; }
+    if (id !== ASSIN_EMP) { ASSIN_EMP = id; ASSIN_DESMARCADAS = {}; }
+    const lista = assinaturasDaEmpresa(emp);
+    box.style.display = '';
+    el('assinLista').innerHTML = lista.map(a => `<label style="display:flex;align-items:center;gap:6px;cursor:pointer;margin:0;font-weight:400">
+        <input type="checkbox" class="assinChk" value="${esc(a.k)}" style="width:auto;margin:0"${ASSIN_DESMARCADAS[a.k] ? '' : ' checked'}>
+        ${esc(a.nome || 'Assinatura')}${a.img ? '' : ' <small style="color:#b45309">(sem imagem)</small>'}</label>`).join('');
+    el('assinLista').querySelectorAll('.assinChk').forEach(c => c.addEventListener('change', () => {
+        if (c.checked) delete ASSIN_DESMARCADAS[c.value]; else ASSIN_DESMARCADAS[c.value] = true;
+    }));
+}
+// null = todas (padrão; não grava nada no certificado); senão as chaves marcadas
+function assinaturasEscolhidas() {
+    const box = el('assinBox');
+    if (!box || box.style.display === 'none') return null;
+    const cks = Array.from(el('assinLista').querySelectorAll('.assinChk'));
+    if (!cks.length || cks.every(c => c.checked)) return null;
+    return cks.filter(c => c.checked).map(c => c.value);
+}
+
 // ── "REGISTRAR TAMBÉM NA WS ENGENHARIA" ──
 // Marcada, a geração grava a emissão na empresa de origem E numa empresa WS
 // Engenharia: uma linha de histórico própria da WS e um registro de
@@ -3554,7 +3602,7 @@ function atualizarRegWs() {
     const box = el('regWsBox'); if (!box) return;
     const origem = el('selEmpresa').value;
     const opcoes = empresasWs().filter(e => e.id !== origem);
-    if (!origem || !opcoes.length) { box.style.display = 'none'; el('regWsChk').checked = false; return; }
+    if (!origem || !opcoes.length) { box.style.display = 'none'; el('regWsChk').checked = false; atualizarAssinaturas(); return; }
     box.style.display = '';
     // mais de uma empresa com o nome WS ENGENHARIA: o usuário escolhe; padrão =
     // a última escolhida, senão a que tem mais alunos
@@ -3567,6 +3615,7 @@ function atualizarRegWs() {
     sel.innerHTML = opcoes.map(e => `<option value="${esc(e.id)}">${esc(e.nome)}${e.cnpj ? ' — CNPJ ' + esc(e.cnpj) : ''}${e.cidade ? ' — ' + esc(e.cidade) : ''} (${nAlunos[e.id] || 0} aluno(s))</option>`).join('');
     if (opcoes.some(e => e.id === atual)) sel.value = atual;
     el('regWsEmpWrap').style.display = (opcoes.length > 1 && el('regWsChk').checked) ? '' : 'none';
+    atualizarAssinaturas();
 }
 function regWsDestino() {
     const chk = el('regWsChk');
@@ -3647,6 +3696,8 @@ async function gerarCertificados(){
     const wsCertIdsPorCurso = selectedCoursesWithDates.map(() => []);
     // quem EMITE o certificado (PDF, lista de presença): a WS, se marcado
     const emissora = wsEmpresa || empresa;
+    const assinSel = assinaturasEscolhidas();
+    if (assinSel && !assinSel.length && !confirm('Nenhuma assinatura marcada: o certificado sairá sem assinaturas. Continuar?')) return;
 
     selecionadosAlunos.forEach(aluno => {
         selectedCoursesWithDates.forEach((courseDateItem, iCurso) => {
@@ -3678,6 +3729,7 @@ async function gerarCertificados(){
                 histKey: histKeyPorCurso[iCurso]
             };
             if (wsId) { certData.empresaPdfId = wsId; certData.emitidoPor = wsId; }
+            if (assinSel) certData.assinaturas = assinSel;
 
             // O que vai para o PDF leva as logos de verdade.
             const certParaImprimir = Object.assign({}, certData, {
@@ -5342,19 +5394,17 @@ window.setupMobileNav = () => {
     window.closeNav = closeNav;
 };
 
-window.buildPage1 = ({aluno, curso, empresa, dataInicioBR, dataFimBR, dataFim, expiracao}) => {
+window.buildPage1 = ({aluno, curso, empresa, dataInicioBR, dataFimBR, dataFim, expiracao, assinaturas}) => {
     const mensagem = buildMensagemCurso(curso, aluno, dataInicioBR, dataFimBR, empresa);
     // O vencimento e' lido do proprio certificado; se o registro antigo nao
     // tiver o campo, recalcula pela data de fim + validade do curso.
     const vencISO = expiracao || (dataFim ? calcExpiracao(dataFim, curso.validade) : null);
     const vencBR = vencISO ? fmtDateBR(vencISO) : null;
     
-    const signatures = [
-        { nome: empresa.certificadorNome || 'Certificador', img: empresa.assinaturaCert },
-        { nome: empresa.assinaturaNome2, img: empresa.assinaturaImg2 },
-        { nome: empresa.assinaturaNome3, img: empresa.assinaturaImg3 }, 
-        { nome: empresa.assinaturaNomeAluno || 'Aluno(a) Certificado(a)', img: empresa.assinaturaImgAluno } 
-    ].filter(s => s.nome || s.img); 
+    // 'assinaturas' = chaves escolhidas na geração; sem o campo (padrão e
+    // certificados antigos) saem todas as cadastradas, como sempre foi
+    const signatures = assinaturasDaEmpresa(empresa)
+        .filter(s => !Array.isArray(assinaturas) || assinaturas.indexOf(s.k) !== -1);
 
     const signatureWidth = signatures.length > 0 ? (100 / signatures.length) + '%' : '100%';
 
@@ -5710,7 +5760,7 @@ window.addEventListener('DOMContentLoaded', async () => {
 
     el("selEmpresa").addEventListener('change', () => { popSelLocCert(); renderAlunosCheckboxForGeracao(); atualizarEmpresaPin(); atualizarRegWs(); });
     el("regWsChk").addEventListener('change', atualizarRegWs);
-    el("regWsEmp").addEventListener('change', () => { try { localStorage.setItem(REG_WS_LS, el('regWsEmp').value); } catch (e) { } });
+    el("regWsEmp").addEventListener('change', () => { try { localStorage.setItem(REG_WS_LS, el('regWsEmp').value); } catch (e) { } atualizarAssinaturas(); });
     el("selObra").addEventListener('change', renderAlunosCheckboxForGeracao);
     el("selCidade").addEventListener('change', renderAlunosCheckboxForGeracao);
     el("selFilial").addEventListener('change', renderAlunosCheckboxForGeracao);
