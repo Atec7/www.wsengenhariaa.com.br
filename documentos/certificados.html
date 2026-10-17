@@ -1512,6 +1512,7 @@ label.secondary:hover { background: var(--surface-2); border-color: #A9B7C8; }
                     <div class="col-6">
                         <label>Imagem assinatura</label>
                         <input type="file" id="assinaturaCertificador" accept="image/*">
+                        <div id="aj_novo_assinaturaCertificador"></div>
                     </div>
 
                     <div class="col-6">
@@ -1521,6 +1522,7 @@ label.secondary:hover { background: var(--surface-2); border-color: #A9B7C8; }
                     <div class="col-6">
                         <label>Imagem assinatura</label>
                         <input type="file" id="assinaturaImg2" accept="image/*">
+                        <div id="aj_novo_assinaturaImg2"></div>
                     </div>
 
                     <div class="col-6">
@@ -1530,6 +1532,7 @@ label.secondary:hover { background: var(--surface-2); border-color: #A9B7C8; }
                     <div class="col-6">
                         <label>Imagem assinatura</label>
                         <input type="file" id="assinaturaImg3" accept="image/*">
+                        <div id="aj_novo_assinaturaImg3"></div>
                     </div>
 
                     <div class="col-6">
@@ -1539,6 +1542,7 @@ label.secondary:hover { background: var(--surface-2); border-color: #A9B7C8; }
                     <div class="col-6">
                         <label class="branco">*SEMPRE DEIXAR EM BRANCO</label>
                         <input type="file" id="assinaturaImgAluno" accept="image/*">
+                        <div id="aj_novo_assinaturaImgAluno"></div>
                     </div>
                 </div>
                 <div class="actions">
@@ -2804,8 +2808,12 @@ window.openEditModal = (type, id) => {
                     <label>Assin. Aluno:</label><input type="file" id="edit_assAluno">
                 </div>
             </div>
+            <hr>
+            <p><b>Posição das assinaturas no certificado:</b></p>
+            <div id="aj_edit_wrap" style="display:flex; flex-wrap:wrap; gap:14px;"></div>
         `;
         openModal(title, bodyHTML, () => window.saveEditEmpresa(id));
+        assinAjMontarEdicao(item);
 
     } else if (type === 'aluno') {
         item = certAlunoPorId(id);
@@ -2960,6 +2968,8 @@ window.saveEditEmpresa = async (id) => {
             assinaturaNome3: el('modal_assinaturaNome3').value.trim(),
             assinaturaNomeAluno: el('modal_assinaturaNomeAluno').value.trim(),
         };
+        // ajuste visual das assinaturas (null = todas na posição padrão)
+        patch.assinaturaAjustes = assinAjColetar('edit');
 
         const uploads = [
             { id: "edit_logo1", key: "logo1" },
@@ -3555,7 +3565,137 @@ function assinaturasDaEmpresa(empresa) {
         { k: '2', nome: empresa.assinaturaNome2, img: empresa.assinaturaImg2 },
         { k: '3', nome: empresa.assinaturaNome3, img: empresa.assinaturaImg3 },
         { k: 'aluno', nome: empresa.assinaturaNomeAluno || 'Aluno(a) Certificado(a)', img: empresa.assinaturaImgAluno }
-    ].filter(s => s.nome || s.img);
+    ].filter(s => s.nome || s.img).map(s => Object.assign(s, { aj: assinAjDe(empresa, s.k) }));
+}
+
+// ── ajuste visual da assinatura (posição e tamanho sobre a linha) ──
+// Guardado na empresa: assinaturaAjustes = {cert|2|3|aluno: {x, y, s}}
+// x/y em px (deslocamento) e s = escala, sobre a MESMA caixa do certificado
+// (60px de altura, imagem até 75px, base na linha). Por isso o que se vê no
+// ajuste é o que sai no PDF.
+const ASSIN_SLOTS = [
+    { k: 'cert',  fileNovo: 'assinaturaCertificador', fileEdit: 'edit_ass1',     imgKey: 'assinaturaCert',     nomeNovo: 'certificadorNome',    nomeEdit: 'modal_certificadorNome',    padrao: 'Certificador' },
+    { k: '2',     fileNovo: 'assinaturaImg2',         fileEdit: 'edit_ass2',     imgKey: 'assinaturaImg2',     nomeNovo: 'assinaturaNome2',     nomeEdit: 'modal_assinaturaNome2',     padrao: 'Assinatura 2' },
+    { k: '3',     fileNovo: 'assinaturaImg3',         fileEdit: 'edit_ass3',     imgKey: 'assinaturaImg3',     nomeNovo: 'assinaturaNome3',     nomeEdit: 'modal_assinaturaNome3',     padrao: 'Assinatura 3' },
+    { k: 'aluno', fileNovo: 'assinaturaImgAluno',     fileEdit: 'edit_assAluno', imgKey: 'assinaturaImgAluno', nomeNovo: 'assinaturaNomeAluno', nomeEdit: 'modal_assinaturaNomeAluno', padrao: 'Aluno(a) Certificado(a)' }
+];
+const ASSIN_AJ = { novo: {}, edit: {} };   // contexto -> chave -> {x,y,s}
+function assinAjDe(empresa, k) {
+    const a = empresa && empresa.assinaturaAjustes && empresa.assinaturaAjustes[k];
+    if (!a) return null;
+    const x = Number(a.x) || 0, y = Number(a.y) || 0, sc = Number(a.s) || 1;
+    return (x || y || sc !== 1) ? { x, y, s: sc } : null;
+}
+// estilo extra da <img> da assinatura; 'fator' encolhe o deslocamento quando a
+// caixa é menor (lista de presença usa 70px em vez de 75px)
+function assinAjEstilo(aj, fator) {
+    if (!aj) return '';
+    const f = fator || 1;
+    return `transform-origin:50% 100%; transform:translate(${Math.round(aj.x * f)}px, ${Math.round(aj.y * f)}px) scale(${aj.s});`;
+}
+function assinAjColetar(ctx) {
+    const out = {};
+    Object.keys(ASSIN_AJ[ctx] || {}).forEach(k => {
+        const a = ASSIN_AJ[ctx][k];
+        if (a && (a.x || a.y || a.s !== 1)) out[k] = { x: a.x, y: a.y, s: a.s };
+    });
+    return Object.keys(out).length ? out : null;
+}
+// monta o ajustador dentro de 'box'
+function assinAjMontar(box, ctx, k, src, nome, inicial) {
+    const st = ASSIN_AJ[ctx][k] = Object.assign({ x: 0, y: 0, s: 1 }, inicial || {});
+    box.innerHTML = `
+      <div style="margin-top:8px; max-width:330px;">
+        <div style="font-size:12px; color:var(--muted); margin-bottom:4px;">Arraste a assinatura para que ela <b>cruze a linha</b>, como uma assinatura feita &agrave; m&atilde;o. &Eacute; assim que sair&aacute; no certificado.</div>
+        <div style="background:#fff; border:1px solid #ddd; border-radius:6px; padding:46px 14px 8px; user-select:none;">
+          <div class="aj-area" style="height:60px; display:flex; align-items:flex-end; justify-content:center; line-height:0; position:relative; cursor:grab; touch-action:none;">
+            <img class="aj-img" src="${src}" draggable="false" style="max-height:75px; width:auto; display:block; mix-blend-mode:multiply; filter:contrast(1.2) brightness(1.1); margin-bottom:-1px; position:relative; z-index:10; pointer-events:none;">
+          </div>
+          <div style="border-top:1.5px solid #000; width:100%;"></div>
+          <div class="aj-nome" style="font-size:9pt; font-weight:bold; text-transform:uppercase; margin-top:5px; font-family:sans-serif; text-align:center; line-height:1.2;"></div>
+        </div>
+        <div style="display:flex; align-items:center; gap:6px; margin-top:6px; font-size:12px; flex-wrap:wrap;">
+          <span>Tamanho</span><input type="range" class="aj-esc" min="40" max="200" step="5" style="width:110px; margin:0; padding:0; height:auto; border:none; box-shadow:none; background:transparent; flex:0 0 auto;">
+          <span class="aj-esc-v" style="min-width:36px;"></span>
+          <button type="button" class="secondary aj-m" data-d="0,-2" title="Subir" style="padding:2px 8px; margin:0;">&uarr;</button>
+          <button type="button" class="secondary aj-m" data-d="0,2" title="Descer" style="padding:2px 8px; margin:0;">&darr;</button>
+          <button type="button" class="secondary aj-m" data-d="-2,0" title="Esquerda" style="padding:2px 8px; margin:0;">&larr;</button>
+          <button type="button" class="secondary aj-m" data-d="2,0" title="Direita" style="padding:2px 8px; margin:0;">&rarr;</button>
+          <button type="button" class="secondary aj-reset" style="padding:2px 8px; margin:0;">Restaurar</button>
+        </div>
+      </div>`;
+    const img = box.querySelector('.aj-img'), area = box.querySelector('.aj-area');
+    const esc = box.querySelector('.aj-esc'), escV = box.querySelector('.aj-esc-v');
+    box.querySelector('.aj-nome').textContent = nome;
+    const pintar = () => {
+        img.style.transformOrigin = '50% 100%';
+        img.style.transform = `translate(${st.x}px, ${st.y}px) scale(${st.s})`;
+        esc.value = Math.round(st.s * 100); escV.textContent = Math.round(st.s * 100) + '%';
+    };
+    let arr = null;
+    area.addEventListener('pointerdown', e => { arr = { px: e.clientX, py: e.clientY, x: st.x, y: st.y }; area.setPointerCapture(e.pointerId); area.style.cursor = 'grabbing'; e.preventDefault(); });
+    area.addEventListener('pointermove', e => {
+        if (!arr) return;
+        st.x = Math.max(-150, Math.min(150, Math.round(arr.x + e.clientX - arr.px)));
+        st.y = Math.max(-80, Math.min(80, Math.round(arr.y + e.clientY - arr.py)));
+        pintar();
+    });
+    const soltar = () => { arr = null; area.style.cursor = 'grab'; };
+    area.addEventListener('pointerup', soltar); area.addEventListener('pointercancel', soltar);
+    esc.addEventListener('input', () => { st.s = Number(esc.value) / 100; pintar(); });
+    box.querySelectorAll('.aj-m').forEach(b => b.addEventListener('click', () => {
+        const [dx, dy] = b.dataset.d.split(',').map(Number); st.x += dx; st.y += dy; pintar();
+    }));
+    box.querySelector('.aj-reset').addEventListener('click', () => { st.x = 0; st.y = 0; st.s = 1; pintar(); });
+    pintar();
+}
+function assinAjLerArquivo(input) {
+    return new Promise(res => {
+        const f = input && input.files && input.files[0];
+        if (!f) return res('');
+        const r = new FileReader(); r.onload = () => res(r.result); r.onerror = () => res(''); r.readAsDataURL(f);
+    });
+}
+// formulário "Cadastrar Empresa Certificadora": aparece ao escolher a imagem
+function assinAjLigarNovo() {
+    ASSIN_SLOTS.forEach(sl => {
+        const inp = el(sl.fileNovo), box = el('aj_novo_' + sl.fileNovo);
+        if (!inp || !box) return;
+        const nomeAtual = () => (el(sl.nomeNovo) && el(sl.nomeNovo).value.trim()) || sl.padrao;
+        inp.addEventListener('change', async () => {
+            const src = await assinAjLerArquivo(inp);
+            if (!src) { box.innerHTML = ''; delete ASSIN_AJ.novo[sl.k]; return; }
+            assinAjMontar(box, 'novo', sl.k, src, nomeAtual());
+        });
+        const n = el(sl.nomeNovo);
+        if (n) n.addEventListener('input', () => { const t = box.querySelector('.aj-nome'); if (t) t.textContent = nomeAtual(); });
+    });
+}
+// edição da empresa: uma área por assinatura com imagem (atual ou trocada)
+function assinAjMontarEdicao(emp) {
+    ASSIN_AJ.edit = {};
+    const wrap = el('aj_edit_wrap'); if (!wrap) return;
+    const montar = (sl, src, inicial) => {
+        let box = el('aj_edit_' + sl.k);
+        if (!box) { box = document.createElement('div'); box.id = 'aj_edit_' + sl.k; wrap.appendChild(box); }
+        const nome = (el(sl.nomeEdit) && el(sl.nomeEdit).value.trim()) || sl.padrao;
+        const slot = document.createElement('div');
+        box.innerHTML = '<div style="font-weight:600; font-size:13px;">' + esc(nome) + '</div>';
+        box.appendChild(slot);
+        assinAjMontar(slot, 'edit', sl.k, src, nome, inicial);
+    };
+    ASSIN_SLOTS.forEach(sl => {
+        const src = emp[sl.imgKey];
+        // assinatura sem imagem: guarda o ajuste que já existia (não some)
+        if (src) montar(sl, src, assinAjDe(emp, sl.k));
+        else if (emp.assinaturaAjustes && emp.assinaturaAjustes[sl.k]) ASSIN_AJ.edit[sl.k] = Object.assign({ x: 0, y: 0, s: 1 }, emp.assinaturaAjustes[sl.k]);
+        const inp = el(sl.fileEdit);
+        if (inp) inp.addEventListener('change', async () => {
+            const nova = await assinAjLerArquivo(inp);
+            if (nova) montar(sl, nova, null);   // imagem nova começa na posição padrão
+        });
+    });
+    if (!wrap.children.length) wrap.innerHTML = '<div style="font-size:12px; color:var(--muted);">Nenhuma imagem de assinatura cadastrada. Escolha uma imagem acima para ajustar.</div>';
 }
 let ASSIN_EMP = '';          // empresa cujas caixinhas estão na tela
 let ASSIN_DESMARCADAS = {};  // chaves desmarcadas pelo usuário (por empresa emissora)
@@ -5189,6 +5329,8 @@ window.saveEmpresa = async () => {
             assinaturaNome3: el("assinaturaNome3").value.trim(), assinaturaImg3: assImg3Url,
             assinaturaNomeAluno: el("assinaturaNomeAluno").value.trim(), assinaturaImgAluno: assImgAlunoUrl,
         };
+        const ajNovo = assinAjColetar('novo');
+        if (ajNovo) novaEmpresa.assinaturaAjustes = ajNovo;
 
         Object.keys(novaEmpresa).forEach(key => (novaEmpresa[key] === null) && delete novaEmpresa[key]);
         await WS_DATA.push('empresas', novaEmpresa); 
@@ -5205,6 +5347,8 @@ window.saveEmpresa = async () => {
 window.clearEmpresaForm = () => {
     ["empresaNome","empresaCidade","certificadorNome","assinaturaNome2","assinaturaNome3","assinaturaNomeAluno"].forEach(i=>el(i).value="");
     ["empresaLogo1","empresaLogo2","empresaFundo","assinaturaCertificador","assinaturaImg2","assinaturaImg3","assinaturaImgAluno"].forEach(i=>el(i).value="");
+    ASSIN_SLOTS.forEach(sl => { const c = el('aj_novo_' + sl.fileNovo); if (c) c.innerHTML = ''; });
+    ASSIN_AJ.novo = {};
 }
 
 window.saveAluno = async () => {
@@ -5425,6 +5569,7 @@ window.buildPage1 = ({aluno, curso, empresa, dataInicioBR, dataFimBR, dataFim, e
                                         margin-bottom: -1px;
                                         position: relative;
                                         z-index: 10;
+                                        ${assinAjEstilo(sig.aj)}
                                     ">` : '<div style="height:60px;"></div>'}
                             </div>
                             <div style="border-top: 1.5px solid #000; width: 100%; margin: 0 auto;"></div>
@@ -5592,6 +5737,7 @@ function lpRodape(empresa) {
                             display:block;
                             mix-blend-mode:multiply;
                             filter:contrast(1.1) brightness(1.05);
+                            ${assinAjEstilo(assinAjDe(empresa, 'cert'), 70 / 75)}
                         ">
                     ` : ''}
                 </div>
@@ -5760,6 +5906,7 @@ window.addEventListener('DOMContentLoaded', async () => {
 
     el("selEmpresa").addEventListener('change', () => { popSelLocCert(); renderAlunosCheckboxForGeracao(); atualizarEmpresaPin(); atualizarRegWs(); });
     el("regWsChk").addEventListener('change', atualizarRegWs);
+    assinAjLigarNovo();
     el("regWsEmp").addEventListener('change', () => { try { localStorage.setItem(REG_WS_LS, el('regWsEmp').value); } catch (e) { } atualizarAssinaturas(); });
     el("selObra").addEventListener('change', renderAlunosCheckboxForGeracao);
     el("selCidade").addEventListener('change', renderAlunosCheckboxForGeracao);
