@@ -837,12 +837,13 @@ hr.dv{border:none;border-top:1px solid var(--bd);margin:18px 0}
           <div class="fg"><label class="fl">Cidade</label><select id="e-e-cidade" onchange="fltEpi()"><option value="">Todas</option></select></div>
           <div class="fg"><label class="fl">Filial</label><select id="e-e-filial" onchange="fltEpi()"><option value="">Todas</option></select></div><div class="fg"><label class="fl">Contrato</label><select id="e-e-contrato" onchange="fltEpi()"><option value="">Todos</option></select></div>
         </div>
-        <div class="fg"><label class="fl">Colaboradores</label><div class="sbar"><button class="bxs bxn" onclick="selAll('eChk',true);epiFichaPreview()">Todos</button><button class="bxs bxd" onclick="selAll('eChk',false);epiFichaPreview()">Nenhum</button></div><div id="e-f-list" class="cl"><div class="es">Selecione uma empresa</div></div><div id="epi-ficha-prev" class="epi-dica" style="margin-top:6px"></div></div>
+        <div class="fg"><label class="fl">Colaboradores</label><div class="sbar"><button class="bxs bxn" onclick="selAll('eChk',true);epiFichaPreview()">Todos</button><button class="bxs bxd" onclick="selAll('eChk',false);epiFichaPreview()">Nenhum</button></div><div id="e-f-list" class="cl"><div class="es">Selecione uma empresa</div></div></div>
       </div>
       <div class="fg"><label class="fl">Data da Entrega</label><input type="date" id="e-data"></div>
       <hr class="dv">
       <div class="ct">Selecionar Itens</div>
       <div class="fg"><label class="fl">Pesquisar Material</label><input id="e-search-input" placeholder="Digite o nome ou C.A..." onkeyup="filterEmissionSelect()"></div>
+      <div class="fg"><label class="fl">Adicionar para</label><select id="e-para"><option value="">Todos os selecionados</option></select></div>
       <div class="gepi">
         <div class="fg" style="margin:0"><label class="fl">Material</label><select id="e-sel-mat" onchange="updateUnid()"><option value="">Selecione...</option></select></div>
         <div class="fg" style="margin:0"><label class="fl">Qtd</label><input type="number" id="e-qtd" value="1" min="1"></div>
@@ -850,7 +851,8 @@ hr.dv{border:none;border-top:1px solid var(--bd);margin:18px 0}
         <button class="btn bs" onclick="addToCart()"><i class="fa-solid fa-plus"></i></button>
       </div>
       <div class="rmbar"><input type="checkbox" id="chk-lembrar-epi"><label for="chk-lembrar-epi">Lembrar itens para pr&oacute;ximas emiss&otilde;es <small>&mdash; salvo localmente</small></label><button class="bxs bxd" onclick="limparEpiSalvo()"><i class="fa-solid fa-trash"></i> Limpar</button></div>
-      <div class="fg"><label class="fl">Itens adicionais <small style="text-transform:none;font-weight:400">(opcional &mdash; entram na ficha de todos os selecionados; os EPIs do cargo de cada colaborador j&aacute; entram na ficha dele)</small></label><div id="epi-cart" style="min-height:46px;border:1px dashed var(--bd);padding:9px;border-radius:6px"><div class="es" style="padding:6px">Nenhum item adicionado</div></div></div>
+      <div class="fg"><label class="fl">Itens da ficha de cada colaborador <small style="text-transform:none;font-weight:400">(EPIs do cargo + os que voc&ecirc; adicionar; desmarque o que n&atilde;o deve ir)</small></label><div id="epi-ficha-prev"><div class="es" style="padding:6px">Selecione os colaboradores</div></div></div>
+      <div class="fg"><label class="fl">Itens adicionados para todos os selecionados <small style="text-transform:none;font-weight:400">(opcional)</small></label><div id="epi-cart" style="min-height:46px;border:1px dashed var(--bd);padding:9px;border-radius:6px"><div class="es" style="padding:6px">Nenhum item adicionado</div></div></div>
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap">
         <input type="checkbox" id="epi-show-venc" checked>
         <label for="epi-show-venc" style="font-size:12px;font-weight:600;color:var(--tp);cursor:pointer">Mostrar coluna Vencimento CA</label>
@@ -4530,7 +4532,10 @@ function renderCargoEpiCart(){
   const el=document.getElementById('c-epi-list');
   el.innerHTML=CARGO_EPI_CART.length?CARGO_EPI_CART.map((c,i)=>`<div class="cait" style="margin:0 0 4px 0;padding:6px 10px;font-size:11px"><span><strong>${esc(c.nome)}</strong> ${c.ca?'&middot; C.A.: '+esc(c.ca):''} &middot; <span class="bdg">${esc(c.tipo)}</span> &middot; Qtd: <strong>${c.qtd||1}</strong></span><button class="bxs bxd" onclick="remCargoEpi(${i})" style="padding:2px 6px"><i class="fa-solid fa-xmark"></i></button></div>`).join(''):'<div style="color:var(--tm);text-align:center;padding:10px">Nenhum EPI adicionado</div>';
 }
-function addToCart(){const s=document.getElementById('e-sel-mat');const o=s.options[s.selectedIndex];if(!o||!o.value){alert('Selecione um material');return;}const qtd=parseInt(document.getElementById('e-qtd').value)||1;const mat=DATA.materiais[o.value];if(!mat)return;const ex=CART.find(c=>c.id===mat.id);if(ex){ex.qtd+=qtd;}else{CART.push({id:mat.id,nome:mat.nome,ca:mat.ca||'',unidade:mat.unidade||'',tipo:mat.tipo||'EPI',qtd,vencimentoCa:mat.vencimentoCa||''});}renderCart();if(document.getElementById('chk-lembrar-epi').checked)localStorage.setItem('epi_cart_memory',JSON.stringify(CART));}
+function addToCart(){const s=document.getElementById('e-sel-mat');const o=s.options[s.selectedIndex];if(!o||!o.value){alert('Selecione um material');return;}const qtd=parseInt(document.getElementById('e-qtd').value)||1;const mat=DATA.materiais[o.value];if(!mat)return;
+  const para=(document.getElementById('e-para')||{}).value||'';
+  if(para){fichaAjAddMat(para,o.value,qtd);return;}   /* só para este colaborador */
+  const ex=CART.find(c=>c.id===mat.id);if(ex){ex.qtd+=qtd;}else{CART.push({id:mat.id,nome:mat.nome,ca:mat.ca||'',unidade:mat.unidade||'',tipo:mat.tipo||'EPI',qtd,vencimentoCa:mat.vencimentoCa||''});}renderCart();if(document.getElementById('chk-lembrar-epi').checked)localStorage.setItem('epi_cart_memory',JSON.stringify(CART));}
 function filterEmissionSelect(){const q=(document.getElementById('e-search-input').value||'').toLowerCase();const sel=document.getElementById('e-sel-mat');const cur=sel.value;sel.innerHTML=epiOpcoesFicha(q);if(cur)sel.value=cur;}
 // Materiais para a ficha: os do estoque da empresa escolhida primeiro, depois
 // os do Estoque Central, com o estoque escrito no nome para não confundir.
@@ -4630,20 +4635,70 @@ function epiItensDoCargo(func){
   });
   return out;
 }
-// itens da ficha de UM colaborador: os do cargo dele + os adicionais do carrinho
-function epiItensDaFicha(func,cartItems){
-  const items=(cartItems||[]).map(c=>({...c}));
-  epiItensDoCargo(func).forEach(it=>{if(!items.some(i=>i.id===it.id))items.push(it);});
+// Ajustes feitos pelo usuário na ficha de cada colaborador (prévia):
+// rem = itens retirados, qtd = quantidade alterada, add = itens só dele.
+// Vale para a empresa escolhida; trocar de empresa zera.
+let FICHA_AJ={},FICHA_AJ_EMP='',FICHA_ABERTAS=new Set();
+function fichaAj(fid){return FICHA_AJ[fid]||(FICHA_AJ[fid]={rem:{},qtd:{},add:[]});}
+// itens da ficha de UM colaborador: os do cargo dele + os adicionais do
+// carrinho + os adicionados só para ele, menos os que o usuário retirou
+function epiItensBase(func,cartItems){
+  const items=(cartItems||[]).map(c=>({...c,origem:'adicional'}));
+  epiItensDoCargo(func).forEach(it=>{if(!items.some(i=>i.id===it.id))items.push({...it,origem:'cargo'});});
+  const aj=func&&FICHA_AJ[func.id];
+  if(aj)aj.add.forEach(it=>{if(!items.some(i=>i.id===it.id))items.push({...it,origem:'so-dele'});});
+  if(aj)items.forEach(i=>{if(aj.qtd[i.id])i.qtd=aj.qtd[i.id];});
   return items;
 }
+function epiItensDaFicha(func,cartItems){
+  const aj=func&&FICHA_AJ[func.id];
+  return epiItensBase(func,cartItems).filter(i=>!(aj&&aj.rem[i.id])).map(i=>{const o={...i};delete o.origem;return o;});
+}
+function fichaAjToggle(fid,mid,on){const aj=fichaAj(fid);if(on)delete aj.rem[mid];else aj.rem[mid]=true;epiFichaPreview();}
+function fichaAjQtd(fid,mid,v){const n=parseInt(v)||1;fichaAj(fid).qtd[mid]=Math.max(1,n);epiFichaPreview();}
+function fichaAjAddMat(fid,matKey,q){
+  const mat=DATA.materiais[matKey];if(!mat){alert('Selecione um EPI');return;}
+  const aj=fichaAj(fid);const qtd=Math.max(1,parseInt(q)||1);
+  delete aj.rem[mat.id];
+  const f=DATA.funcionarios[fid];
+  if(epiItensBase(f,CART).some(i=>i.id===mat.id)){aj.qtd[mat.id]=qtd;}
+  else aj.add.push({id:mat.id,nome:mat.nome,ca:mat.ca||'',unidade:mat.unidade||'',tipo:mat.tipo||'EPI',qtd,vencimentoCa:mat.vencimentoCa||''});
+  FICHA_ABERTAS.add(String(fid));const dt=document.querySelector('#epi-ficha-prev details[data-fid="'+fid+'"]');if(dt)dt.open=true;epiFichaPreview();
+}
+// botão do bloco: aponta o seletor de itens para este colaborador
+function fichaAjPara(fid){const sp=document.getElementById('e-para');if(sp)sp.value=fid;const q=document.getElementById('e-search-input');if(q){q.scrollIntoView({behavior:'smooth',block:'center'});q.focus();}}
+function fichaAjRemAdd(fid,mid){const aj=fichaAj(fid);aj.add=aj.add.filter(i=>i.id!==mid);delete aj.qtd[mid];epiFichaPreview();}
+function fichaAjRestaurar(fid){delete FICHA_AJ[fid];epiFichaPreview();}
 function epiFichaPreview(){
   const box=document.getElementById('epi-ficha-prev');if(!box)return;
+  const emp=(document.getElementById('e-e')||{}).value||'';
+  if(emp!==FICHA_AJ_EMP){FICHA_AJ={};FICHA_ABERTAS=new Set();FICHA_AJ_EMP=emp;}
   const ids=getChecked('eChk');
-  if(!ids.length){box.innerHTML='';return;}
-  const extras=CART.length;
-  const linhas=ids.map(id=>{const f=DATA.funcionarios[id];if(!f)return'';const n=epiItensDaFicha(f,CART).length;const doCargo=epiItensDoCargo(f).length;
-    return '<div>'+esc(f.nome)+' &mdash; <b>'+n+'</b> item(ns)'+(doCargo?' ('+doCargo+' do cargo'+(extras?' + adicionais':'')+')':' <span style="color:#b45309">(cargo sem EPI cadastrado'+(extras?'; s\u00f3 os adicionais':'')+')</span>')+'</div>';}).join('');
-  box.innerHTML='<b>'+ids.length+' colaborador(es) selecionado(s):</b>'+linhas;
+  if(!ids.length){box.innerHTML='<div class="es" style="padding:6px">Selecione os colaboradores</div>';const sp0=document.getElementById('e-para');if(sp0)sp0.innerHTML='<option value="">Todos os selecionados</option>';return;}
+  // guarda quais blocos estão abertos antes de redesenhar
+  box.querySelectorAll('details[data-fid]').forEach(d=>{if(d.open)FICHA_ABERTAS.add(d.dataset.fid);else FICHA_ABERTAS.delete(d.dataset.fid);});
+  // "Adicionar para": todos ou um dos selecionados
+  const sp=document.getElementById('e-para');
+  if(sp){const cur=sp.value;sp.innerHTML='<option value="">Todos os selecionados</option>'+ids.map(i=>DATA.funcionarios[i]?'<option value="'+esc(i)+'">S\u00f3 para: '+esc(DATA.funcionarios[i].nome)+'</option>':'').join('');sp.value=ids.includes(cur)?cur:'';}
+  const rot={cargo:'do cargo',adicional:'adicional (todos)','so-dele':'s\u00f3 deste colaborador'};
+  const blocos=ids.map(id=>{const f=DATA.funcionarios[id];if(!f)return'';
+    const aj=FICHA_AJ[id]||{rem:{},qtd:{},add:[]};
+    const base=epiItensBase(f,CART);const vao=base.filter(i=>!aj.rem[i.id]);
+    const linhas=base.length?base.map(i=>{const fora=!!aj.rem[i.id];const jid=JSON.stringify(String(i.id)).replace(/"/g,'&quot;');
+      return '<div style="display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid var(--bd);'+(fora?'opacity:.45':'')+'">'
+        +'<input type="checkbox" style="width:16px;height:16px;flex:0 0 auto;margin:0" '+(fora?'':'checked')+' onchange="fichaAjToggle(\''+id+'\','+jid+',this.checked)" title="Desmarque para tirar da ficha">'
+        +'<div style="flex:1;min-width:0;line-height:1.25"><div style="font-size:12px;'+(fora?'text-decoration:line-through':'')+'">'+esc(i.nome)+'</div>'
+        +'<div style="font-size:10.5px;color:var(--mu)">C.A. '+esc(i.ca||'-')+' &middot; '+rot[i.origem]+'</div></div>'
+        +'<input type="number" min="1" value="'+(i.qtd||1)+'" title="Quantidade" style="width:52px;flex:0 0 auto;padding:2px 4px;margin:0" onchange="fichaAjQtd(\''+id+'\','+jid+',this.value)"'+(fora?' disabled':'')+'>'
+        +(i.origem==='so-dele'?'<button class="bxs bxd" title="Remover" onclick="fichaAjRemAdd(\''+id+'\','+jid+')"><i class="fa-solid fa-xmark"></i></button>':'')+'</div>';}).join('')
+      :'<div style="color:#b45309;font-size:12px;padding:4px 0">Cargo sem EPI cadastrado. Adicione abaixo os EPIs desta ficha.</div>';
+    const alterado=FICHA_AJ[id]&&(Object.keys(aj.rem).length||Object.keys(aj.qtd).length||aj.add.length);
+    return '<details data-fid="'+id+'"'+(FICHA_ABERTAS.has(String(id))?' open':'')+' style="border:1px solid var(--bd);border-radius:6px;padding:4px 8px;margin-top:4px;background:var(--sf,#fff)">'
+      +'<summary style="cursor:pointer">'+esc(f.nome)+' &mdash; <b>'+vao.length+'</b> item(ns) na ficha'+(alterado?' <span style="color:#b45309">(ajustada)</span>':'')+(vao.length?'':' <span style="color:#dc2626">(fica de fora: nenhum item)</span>')+' <small style="color:var(--mu)">&mdash; clique para ver/alterar</small></summary>'
+      +'<div style="margin:6px 0">'+linhas+'</div>'
+      +'<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;font-size:12px;margin-bottom:4px"><button class="bxs bxn" onclick="fichaAjPara(\''+id+'\')"><i class="fa-solid fa-plus"></i> Adicionar item s\u00f3 para este colaborador</button>'
+      +(alterado?'<button class="bxs" onclick="fichaAjRestaurar(\''+id+'\')">Restaurar padr\u00e3o</button>':'')+'</div></details>';}).join('');
+  box.innerHTML='<div style="font-size:12px"><b>'+ids.length+' colaborador(es) selecionado(s)</b></div>'+blocos;
 }
 function addOrcItem(){const tr=document.createElement('tr');tr.innerHTML=`<td><input class="oi o-desc" placeholder="Descri\u00e7\u00e3o do servi\u00e7o" oninput="calcTotal()"></td><td><input class="oi o-qtd" type="number" value="1" min="1" oninput="calcTotal()"></td><td><input class="oi o-val" type="number" value="0" min="0" step="0.01" oninput="calcTotal()"></td><td><button class="btn bd2" style="padding:4px 7px" onclick="this.closest('tr').remove();calcTotal()"><i class="fa-solid fa-trash"></i></button></td>`;document.getElementById('orc-body').appendChild(tr);}
 function calcTotal(){let t=0;document.querySelectorAll('#orc-body tr').forEach(tr=>{const q=parseFloat(tr.querySelector('.o-qtd')?.value)||0;const u=parseFloat(tr.querySelector('.o-val')?.value)||0;t+=q*u;});document.getElementById('orc-total-display').textContent=t.toLocaleString('pt-BR',{minimumFractionDigits:2});}
