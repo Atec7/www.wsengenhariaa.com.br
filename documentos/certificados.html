@@ -3078,25 +3078,23 @@ window.saveEditCurso = async (id) => {
             if (resultado && Object.keys(resultado.updates).length) {
                 await salvarRecalculo(id, resultado, false, cursoAtual.validade || 'none', divergentes);
             }
-        } else if (!houveMudancaValidade && contarCertificadosDoCurso(id) > 0) {
+        } else if (!houveMudancaValidade) {
             // Certificados já certos, mas o histórico (de onde saem os
-            // relatórios) ficou com o vencimento antigo num recálculo anterior:
-            // salvar o curso alinha só o histórico.
-            const resultado = await recalcularValidadeCurso(id, { bulk: true });
-            if (resultado && resultado.histDivergentes > 0) {
-                const soHist = {};
-                Object.keys(resultado.updates).forEach(k => { if (k.startsWith('historico/')) soHist[k] = resultado.updates[k]; });
-                const g = await gravarValidades(soHist);
-                alert(g.linhasHist + ' registro(s) do histórico de "' + resultado.cursoNome + '" tiveram o vencimento ajustado para "' +
-                    rotuloValidade(resultado.validadeNova) + '" nos relatórios.');
-            }
+            // relatórios) ficou com o vencimento antigo: salvar o curso
+            // alinha só o histórico.
+            const msg = await alinharHistoricoCurso(id);
+            if (msg) alert(msg);
         }
         let msgFinal = '';
+        let alinharDepois = false;
         if (houveMudancaValidade) {
             const nCerts = contarCertificadosDoCurso(id);
             if (nCerts === 0) {
                 // Sem certificados emitidos não há o que recalcular: a validade
                 // nova é salva direto. (Antes ela era descartada em silêncio.)
+                // O histórico pode ter linhas antigas do curso (certificados
+                // já excluídos): elas são alinhadas depois de salvar.
+                alinharDepois = true;
                 msgFinal = 'Validade do curso alterada para "' + rotuloValidade(validadeNova) + '".\n\n' +
                     'Nenhum certificado deste curso foi emitido ainda: os próximos já sairão com a validade nova.';
             } else {
@@ -3132,6 +3130,11 @@ window.saveEditCurso = async (id) => {
 
         if (msgFinal) {
             await WS_DATA.update('cursos', id, patch);
+            if (alinharDepois) {
+                cursosData[id] = Object.assign({}, cursoAtual, cursosData[id] || {}, patch);
+                const msg = await alinharHistoricoCurso(id);
+                if (msg) msgFinal += '\n\n' + msg;
+            }
             rerenderCert();
             window.closeModal();
             alert(msgFinal);
@@ -3375,30 +3378,61 @@ function tempoDoIdCert(id) {
 // Data de fim do treinamento de UMA linha do historico de certificado.
 // 1) a linha gravou dataFim (certificado manual);
 // 2) a linha gravou certIds (emissoes novas): pega dos certificados;
-// 3) linha antiga: certificados dos mesmos alunos criados ate 30 min antes dela.
+// 3) linha antiga: certificados dos mesmos alunos criados ate 30 min antes dela;
+// 4) sem alunos que batam (ids antigos de 'alunos' x 'funcionarios'):
+//    certificados do curso, da mesma empresa, criados ate 30 min antes dela.
+// Devolve '' quando nada foi achado.
 function dataFimDaLinhaHist(key, h, certsDoCurso) {
     if (h.dataFim) return h.dataFim;
     let certs = [];
     if (Array.isArray(h.certIds) && h.certIds.length) {
         const ids = new Set(h.certIds.map(String));
         certs = certsDoCurso.filter(c => ids.has(String(c.id)));
-    } else {
-        const alunos = new Set((h.funcionarioIds || []).map(String));
+    }
+    if (!certs.length) {
         const tLinha = tempoDoIdCert(key) || h.ts || 0;
-        if (alunos.size && tLinha) {
-            certs = certsDoCurso.filter(c => {
-                if (!alunos.has(String(c.aluno && c.aluno.id || ''))) return false;
-                if (h.empresaId) {
+        if (tLinha) {
+            const empresas = [h.empresaId, h.registroDe].filter(Boolean).map(String);
+            const naJanela = certsDoCurso.filter(c => {
+                if (empresas.length) {
                     const eid = c.empresaId || (c.empresa && c.empresa.id);
-                    if (String(eid || '') !== String(h.empresaId)) return false;
+                    if (empresas.indexOf(String(eid || '')) < 0) return false;
                 }
                 const t = (typeof c.ts === 'number') ? c.ts : tempoDoIdCert(c.id);
                 return t && t <= tLinha + 2000 && t >= tLinha - 30 * 60 * 1000;
             });
+            const alunos = new Set((h.funcionarioIds || []).map(String));
+            const dosAlunos = naJanela.filter(c => alunos.has(String(c.aluno && c.aluno.id || '')));
+            certs = dosAlunos.length ? dosAlunos : naJanela;
         }
     }
     const fins = certs.map(c => c.dataFim).filter(Boolean).sort();
     return fins.length ? fins[fins.length - 1] : '';
+}
+// Data (AAAA-MM-DD) em que a linha do historico foi gravada.
+function dataEmissaoLinhaHist(key, h) {
+    const t = tempoDoIdCert(key) || h.ts || 0;
+    if (!t) return '';
+    const d = new Date(t);
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+// Nome do curso escrito na linha ("Certificado - NR 18 (emitido pela WS)").
+function nomesCursoDaLinhaHist(h) {
+    const base = String(h.nome || '').replace(/^Certificados?\s*-\s*/i, '').trim();
+    const semParen = base.replace(/(\s*\([^()]*\))+\s*$/, '').trim();
+    return [base, semParen].map(n => n.toLowerCase());
+}
+// A linha e deste curso? Pelo id gravado; linha antiga sem id, pelo nome
+// (so quando nenhum outro curso tem o mesmo nome).
+function linhaHistEhDoCurso(h, cursoId, curso) {
+    if (!h) return false;
+    if (h.certificadoCursoId) return h.certificadoCursoId === cursoId;
+    const ehCert = h.tipo === 'certificado' || /^certificado/i.test(String(h.nome || ''));
+    if (!ehCert || !curso || !curso.nome) return false;
+    const alvo = String(curso.nome).trim().toLowerCase();
+    if (nomesCursoDaLinhaHist(h).indexOf(alvo) < 0) return false;
+    const mesmoNome = Object.keys(cursosData).filter(k => cursosData[k] && String(cursosData[k].nome || '').trim().toLowerCase() === alvo);
+    return mesmoNome.length === 1;
 }
 
 async function recalcularValidadeCurso(cursoId, opts = {}) {
@@ -3440,16 +3474,24 @@ async function recalcularValidadeCurso(cursoId, opts = {}) {
     // ate 30 min antes dela.
     let semDataFim = 0;
     let histDivergentes = 0;
+    let pelaEmissao = 0;
     try {
         const snap = await db.ref('historico').once('value');
         const hist = snap.val() || {};
         Object.keys(hist).forEach(id => {
             const h = hist[id];
-            if (!h || h.tipo !== 'certificado' || h.certificadoCursoId !== cursoId) return;
+            if (!linhaHistEhDoCurso(h, cursoId, curso)) return;
             if (!bulk && h.validade) return;
-            const dataFim = dataFimDaLinhaHist(id, h, certsDoCurso);
+            let dataFim = dataFimDaLinhaHist(id, h, certsDoCurso);
 
             if (bulk) {
+                // Sem certificado localizavel (registro antigo ou certificado
+                // excluido): usa a data em que o documento foi emitido, que e
+                // a mesma data mostrada no relatorio.
+                if (!dataFim) { dataFim = dataEmissaoLinhaHist(id, h); if (dataFim) pelaEmissao++; }
+                // Linha antiga achada pelo nome: grava o curso para as proximas vezes.
+                if (h.certificadoCursoId !== cursoId) { updates[`historico/${id}/certificadoCursoId`] = cursoId; histDivergentes++; }
+                if (h.tipo !== 'certificado') updates[`historico/${id}/tipo`] = 'certificado';
                 updates[`historico/${id}/validade`] = curso.validade;
                 if (dataFim) {
                     const novaExp = calcExpiracao(dataFim, curso.validade);
@@ -3471,6 +3513,7 @@ async function recalcularValidadeCurso(cursoId, opts = {}) {
         updates,
         afetados: certsDoCurso.length,
         histDivergentes,
+        pelaEmissao,
         cursoNome: curso.nome || 'curso',
         validadeNova: curso.validade || 'none'
     };
@@ -3515,7 +3558,7 @@ async function gravarValidades(updates) {
         await WS_DATA.marcarAlterados('historico', histKeys.map(k => k.split('/')[1]));
         await WS_DATA.advanceLocalMeta('historico');
     }
-    return { certs: certKeys.length / 2, linhasHist: histKeys.length / 2 };
+    return { certs: certKeys.length / 2, linhasHist: new Set(histKeys.map(k => k.split('/')[1])).size };
 }
 
 // Reparo silencioso: completa a copia de validade de certificados emitidos
@@ -3553,6 +3596,20 @@ function certsDivergentes(cursoId, validade) {
     return getArrayFromData(certificadosGeradosData).filter(c => c && c.curso && c.curso.id === cursoId &&
         (((c.curso.validade || 'none') !== v) || ((c.expiracao || null) !== calcExpiracao(c.dataFim, v)))).length;
 }
+// Ajusta só as linhas do histórico do curso que estão com vencimento diferente
+// da validade atual. Devolve a mensagem para o usuário ('' se nada mudou).
+async function alinharHistoricoCurso(cursoId) {
+    const resultado = await recalcularValidadeCurso(cursoId, { bulk: true });
+    if (!resultado || !(resultado.histDivergentes > 0)) return '';
+    const soHist = {};
+    Object.keys(resultado.updates).forEach(k => { if (k.startsWith('historico/')) soHist[k] = resultado.updates[k]; });
+    const g = await gravarValidades(soHist);
+    return g.linhasHist + ' registro(s) do histórico de "' + resultado.cursoNome + '" foram ajustados para "' +
+        rotuloValidade(resultado.validadeNova) + '" nos relatórios.' + avisoPelaEmissao(resultado);
+}
+function avisoPelaEmissao(r){
+    return (r && r.pelaEmissao) ? '\n\n' + r.pelaEmissao + ' registro(s) antigo(s) do histórico não tinham o certificado localizável: o vencimento deles foi contado a partir da data de emissão.' : '';
+}
 async function salvarRecalculo(cursoId, resultado, alterarValidade, validadeAntiga, divergentes) {
     const { updates, afetados, cursoNome, validadeNova } = resultado;
     const temCerts = Object.keys(updates).some(k => k.startsWith(PREFIX_CERT));
@@ -3589,7 +3646,7 @@ async function salvarRecalculo(cursoId, resultado, alterarValidade, validadeAnti
         }
         alert((mesmaValidade ? 'Vencimentos ajustados para "' : 'Validade do curso atualizada para "') + rotuloValidade(validadeNova) + '".\n\n' +
             afetados + ' certificado(s) recalculado(s)' +
-            (gravado.linhasHist ? ' e ' + gravado.linhasHist + ' registro(s) de historico.' : '.'));
+            (gravado.linhasHist ? ' e ' + gravado.linhasHist + ' registro(s) de historico.' : '.') + avisoPelaEmissao(resultado));
         return true;
     } catch (e) {
         console.error('Erro ao recalcular validade:', e);
