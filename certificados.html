@@ -532,7 +532,7 @@ button.danger:hover { background: #c82333; }
                 <div class="actions">
                     <button id="btnSalvarAluno">Salvar aluno</button>
                     <button class="secondary" id="btnLimparAluno">Limpar formulário</button>
-                    <button class="danger" id="btnApagarTudoAlunos" style="margin-top:0">Apagar Todos Alunos</button>
+                    <button class="danger so-arnaldo" id="btnApagarTudoAlunos" style="margin-top:0;display:none">Apagar Todos Alunos</button>
                 </div>
 
                 <h3>Alunos cadastrados</h3>
@@ -605,7 +605,7 @@ button.danger:hover { background: #c82333; }
                 <div class="actions">
                     <button id="btnSalvarCurso">Salvar curso</button>
                     <button class="secondary" id="btnLimparCurso">Limpar formulário</button>
-                    <button class="danger" id="btnApagarTudoCursos" style="margin-top:0">Apagar Todos Cursos</button>
+                    <button class="danger so-arnaldo" id="btnApagarTudoCursos" style="margin-top:0;display:none">Apagar Todos Cursos</button>
                 </div>
                 <h3>Cursos cadastrados</h3>
                 <table class="table" id="tabelaCursos"></table>
@@ -665,7 +665,7 @@ button.danger:hover { background: #c82333; }
             <div class="card">
                 <p style="color:var(--muted)">CLIQUE EM "OK" PARA LIBERAR A VISUALIZAÇÃO!</p>
                 <div class="actions">
-                    <button class="danger" id="btnApagarCertificados" style="margin-top:0">Apagar Todos Certificados Gerados</button>
+                    <button class="danger so-arnaldo" id="btnApagarCertificados" style="margin-top:0;display:none">Apagar Todos Certificados Gerados</button>
                 </div>
                 <h3>Lista de Certificados</h3>
                 <table class="table" id="tabelaCertificadosGerados"></table>
@@ -683,9 +683,9 @@ button.danger:hover { background: #c82333; }
                 <p style="color:var(--muted)">Os dados são salvos no json. Use as opções abaixo para segurança.</p>
                 <div class="actions">
                     <button id="btnExport">Exportar JSON</button>
-                    <label class="secondary" for="importFile" style="padding:10px 14px;border-radius:4px;cursor:pointer;font-weight:600;">Importar JSON</label>
+                    <label class="secondary so-arnaldo" for="importFile" style="display:none;padding:10px 14px;border-radius:4px;cursor:pointer;font-weight:600;">Importar JSON</label>
                     <input type="file" id="importFile" accept="application/json" style="display:none">
-                    <button class="danger" id="btnApagarTudo" title="Apaga TODOS os dados (Empresas, Alunos e Cursos)">Apagar TUDO</button>
+                    <button class="danger so-arnaldo" id="btnApagarTudo" style="display:none" title="Apaga TODOS os dados (Empresas, Alunos e Cursos)">Apagar TUDO</button>
                 </div>
             </div>
         </div>
@@ -2042,6 +2042,7 @@ window.deleteCertificado = (id) => {
 };
 
 window.clearAllCertificados = async () => {
+    if (!ehArnaldoCert()) { alert("Apenas o Arnaldo pode apagar todos os certificados."); return; }
     if (!confirm("Tem certeza que deseja apagar TODOS os certificados gerados?")) return;
     try { 
         await remove(ref(db, 'certificadosGerados')); 
@@ -2060,6 +2061,7 @@ window.exportJSON = () => {
     const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="certificados_backup_firebase.json"; a.click(); URL.revokeObjectURL(a.href);
 }
 window.importJSON = async (file) => {
+    if (!ehArnaldoCert()) { alert("Apenas o Arnaldo pode importar backup."); return; }
     if (!confirm("ATENÇÃO: A importação substituirá TODOS os dados atuais de Empresas, Alunos, Cursos e Certificados Gerados no Firebase. Continuar?")) return;
     const r=new FileReader();
     r.onload=async()=>{ 
@@ -2078,6 +2080,7 @@ window.importJSON = async (file) => {
     r.readAsText(file);
 }
 window.clearAllData = async () => {
+    if (!ehArnaldoCert()) { alert("Apenas o Arnaldo pode apagar todos os dados."); return; }
     if (!confirm("AVISO CRÍTICO: Esta ação irá APAGAR TODOS os dados (Empresas, Alunos, Cursos e Certificados Gerados) do Firebase. Tem certeza?")) return;
     try { 
         await remove(ref(db)); 
@@ -2168,6 +2171,7 @@ window.clearAlunoForm = () => {
     el("alunoEmpresaVinculo").value = "";
 }
 window.clearAllAlunos = async () => {
+    if (!ehArnaldoCert()) { alert("Apenas o Arnaldo pode apagar todos os alunos."); return; }
     if (!confirm("Tem certeza que deseja apagar TODOS os alunos?")) return;
     try { await remove(ref(db, 'alunos')); alert("Todos os alunos foram removidos."); } catch(e) { console.error("Erro:", e); alert("Erro ao apagar alunos."); }
 }
@@ -2203,6 +2207,7 @@ window.clearCursoForm = () => {
     el("cursoValidade").value = "none";
 }
 window.clearAllCursos = async () => {
+    if (!ehArnaldoCert()) { alert("Apenas o Arnaldo pode apagar todos os cursos."); return; }
     if (!confirm("Tem certeza que deseja apagar TODOS os cursos?")) return;
     try { await remove(ref(db, 'cursos')); alert("Todos os cursos foram removidos."); } catch(e) { console.error("Erro:", e); alert("Erro ao apagar cursos."); }
 }
@@ -2241,6 +2246,12 @@ async function transferirAlunosEmMassa(){
         console.error("Erro na transferência em massa:", e);
         alert("Erro ao transferir alunos.");
     }
+}
+
+// Ações destrutivas em massa são exclusivas do Arnaldo.
+function ehArnaldoCert(){
+    if(usuarioAtualCert) return !!(usuarioAtualCert.mestre && usuarioAtualCert.nome === 'Arnaldo');
+    return (sessionStorage.getItem('ws_user_nome') || '') === 'Arnaldo';
 }
 
 function setupNavigation() {
@@ -2524,6 +2535,8 @@ window.addEventListener('DOMContentLoaded', async () => {
     setupFirebaseListener('certificadosGerados', certificadosGeradosData, renderCertificadosGerados); 
 
     setupNavigation();
+    // Botões de "apagar tudo" e importação de backup: só o Arnaldo vê.
+    document.querySelectorAll('.so-arnaldo').forEach(n => { n.style.display = ehArnaldoCert() ? '' : 'none'; });
 
     el("selEmpresa").addEventListener('change', renderAlunosCheckboxForGeracao);
     el("btnSalvarEmpresa").onclick=window.saveEmpresa;
