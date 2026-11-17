@@ -3072,6 +3072,18 @@ window.saveEditCurso = async (id) => {
             if (resultado && Object.keys(resultado.updates).length) {
                 await salvarRecalculo(id, resultado, false, cursoAtual.validade || 'none', divergentes);
             }
+        } else if (!houveMudancaValidade && contarCertificadosDoCurso(id) > 0) {
+            // Certificados já certos, mas o histórico (de onde saem os
+            // relatórios) ficou com o vencimento antigo num recálculo anterior:
+            // salvar o curso alinha só o histórico.
+            const resultado = await recalcularValidadeCurso(id, { bulk: true });
+            if (resultado && resultado.histDivergentes > 0) {
+                const soHist = {};
+                Object.keys(resultado.updates).forEach(k => { if (k.startsWith('historico/')) soHist[k] = resultado.updates[k]; });
+                const g = await gravarValidades(soHist);
+                alert(g.linhasHist + ' registro(s) do histórico de "' + resultado.cursoNome + '" tiveram o vencimento ajustado para "' +
+                    rotuloValidade(resultado.validadeNova) + '" nos relatórios.');
+            }
         }
         let msgFinal = '';
         if (houveMudancaValidade) {
@@ -3345,11 +3357,44 @@ function cursoValidadeNoFim(cursoId, validadeLida){
 //                 proprio vencimento. Nao altera nenhum vencimento.
 //
 // Cada linha de 'historico' de certificado corresponde a uma execucao com
-// varios certificados. A execucao grava 'ts' em cada certificado e so depois
-// em 'historico', entao os certificados de uma execucao sempre tem ts menor que
-// o da sua linha. Percorrendo as execucoes em ordem cronologica e consumindo os
-// certificados ja percorridos, conseguimos atribuir o 'dataFim' de cada execucao
-// exatamente, sem precisar guardar dataFim no historico.
+// varios certificados; o dataFim dela sai de dataFimDaLinhaHist().
+// Ids do Firebase (push) embutem o horario de criacao em ms: serve de relogio
+// para registros antigos que nao gravaram 'ts'. (Mesma funcao do index.html.)
+const _PUSH_CH_CERT = '-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz';
+function tempoDoIdCert(id) {
+    let t = 0; const s = String(id || '');
+    for (let i = 0; i < 8; i++) { const v = _PUSH_CH_CERT.indexOf(s[i]); if (v < 0) return 0; t = t * 64 + v; }
+    return t;
+}
+// Data de fim do treinamento de UMA linha do historico de certificado.
+// 1) a linha gravou dataFim (certificado manual);
+// 2) a linha gravou certIds (emissoes novas): pega dos certificados;
+// 3) linha antiga: certificados dos mesmos alunos criados ate 30 min antes dela.
+function dataFimDaLinhaHist(key, h, certsDoCurso) {
+    if (h.dataFim) return h.dataFim;
+    let certs = [];
+    if (Array.isArray(h.certIds) && h.certIds.length) {
+        const ids = new Set(h.certIds.map(String));
+        certs = certsDoCurso.filter(c => ids.has(String(c.id)));
+    } else {
+        const alunos = new Set((h.funcionarioIds || []).map(String));
+        const tLinha = tempoDoIdCert(key) || h.ts || 0;
+        if (alunos.size && tLinha) {
+            certs = certsDoCurso.filter(c => {
+                if (!alunos.has(String(c.aluno && c.aluno.id || ''))) return false;
+                if (h.empresaId) {
+                    const eid = c.empresaId || (c.empresa && c.empresa.id);
+                    if (String(eid || '') !== String(h.empresaId)) return false;
+                }
+                const t = (typeof c.ts === 'number') ? c.ts : tempoDoIdCert(c.id);
+                return t && t <= tLinha + 2000 && t >= tLinha - 30 * 60 * 1000;
+            });
+        }
+    }
+    const fins = certs.map(c => c.dataFim).filter(Boolean).sort();
+    return fins.length ? fins[fins.length - 1] : '';
+}
+
 async function recalcularValidadeCurso(cursoId, opts = {}) {
     const bulk = !!opts.bulk;
     const curso = cursosData[cursoId];
@@ -3378,37 +3423,48 @@ async function recalcularValidadeCurso(cursoId, opts = {}) {
     // Sem esta saida, cada emissao reagia o node 'historico' inteiro.
     if (!bulk && !Object.keys(updates).length) return null;
 
-    // 2) historico: recupera o dataFim de cada execucao e refaz o vencimento
+    // 2) historico: descobre o dataFim de cada linha e refaz o vencimento.
+    // Os relatorios e o painel leem o vencimento DAQUI, nao do certificado.
+    // Antes o dataFim saia de uma varredura por ordem de 'ts' que falhava em
+    // varios casos (emissao registrada na WS, que grava duas linhas com o
+    // mesmo ts; certificado manual com mais de um periodo; registros antigos
+    // sem ts). Essas linhas ficavam sem vencimento e o relatorio continuava
+    // mostrando "nao vence". Agora usa a mesma regra do painel (index.html):
+    // dataFim gravado na linha -> certIds da linha -> alunos da linha criados
+    // ate 30 min antes dela.
+    let semDataFim = 0;
+    let histDivergentes = 0;
     try {
         const snap = await db.ref('historico').once('value');
         const hist = snap.val() || {};
-        let cert = 0;
-        Object.keys(hist)
-            .sort((a, b) => (hist[a].ts || 0) - (hist[b].ts || 0))
-            .forEach(id => {
-                const h = hist[id];
-                if (!h || h.tipo !== 'certificado' || h.certificadoCursoId !== cursoId) return;
-                if (!bulk && h.validade) return;
-                const ini = cert;
-                while (cert < certsDoCurso.length && (certsDoCurso[cert].ts || 0) <= (h.ts || 0)) cert++;
-                const dataFim = (cert > ini) ? (certsDoCurso[cert - 1].dataFim || '') : '';
+        Object.keys(hist).forEach(id => {
+            const h = hist[id];
+            if (!h || h.tipo !== 'certificado' || h.certificadoCursoId !== cursoId) return;
+            if (!bulk && h.validade) return;
+            const dataFim = dataFimDaLinhaHist(id, h, certsDoCurso);
 
-                if (bulk) {
-                    updates[`historico/${id}/validade`] = curso.validade;
-                    if (dataFim) updates[`historico/${id}/expiracao`] = calcExpiracao(dataFim, curso.validade);
-                    return;
-                }
-                if (!dataFim) return;
-                const inferida = inferirValidade(dataFim, h.expiracao);
-                if (inferida !== null) updates[`historico/${id}/validade`] = inferida;
-            });
+            if (bulk) {
+                updates[`historico/${id}/validade`] = curso.validade;
+                if (dataFim) {
+                    const novaExp = calcExpiracao(dataFim, curso.validade);
+                    updates[`historico/${id}/expiracao`] = novaExp;
+                    if ((h.expiracao || null) !== novaExp || (h.validade || 'none') !== (curso.validade || 'none')) histDivergentes++;
+                } else semDataFim++;
+                return;
+            }
+            if (!dataFim) return;
+            const inferida = inferirValidade(dataFim, h.expiracao);
+            if (inferida !== null) updates[`historico/${id}/validade`] = inferida;
+        });
     } catch (e) {
         console.error('Falha ao ler historico para recalculo de validade:', e);
     }
+    if (semDataFim) console.warn(semDataFim + ' linha(s) do historico do curso ' + cursoId + ' sem certificados localizaveis: vencimento nao recalculado.');
 
     return {
         updates,
         afetados: certsDoCurso.length,
+        histDivergentes,
         cursoNome: curso.nome || 'curso',
         validadeNova: curso.validade || 'none'
     };
