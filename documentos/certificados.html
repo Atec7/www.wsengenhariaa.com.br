@@ -1611,7 +1611,7 @@ label.secondary:hover { background: var(--surface-2); border-color: #A9B7C8; }
                     <button class="secondary" id="btnLimparAluno">Limpar formulário</button>
                 </div>
 
-                <div class="zona-risco">
+                <div class="zona-risco" id="zona-apagar-alunos" style="display:none">
                     <div class="zona-risco-txt">
                         <strong>Apagar todos os alunos</strong>
                         <span>Remove a base inteira de alunos. Não é possível desfazer.</span>
@@ -1820,7 +1820,7 @@ label.secondary:hover { background: var(--surface-2); border-color: #A9B7C8; }
             <div class="card">
                 <p style="color:var(--muted)">CLIQUE EM "OK" PARA LIBERAR A VISUALIZAÇÃO!</p>
                 <table class="table" id="tabelaCertificadosGerados"></table>
-                <div class="zona-risco">
+                <div class="zona-risco" id="zona-apagar-certificados" style="display:none">
                     <div class="zona-risco-txt">
                         <strong>Apagar todos os certificados gerados</strong>
                         <span>Remove em massa do banco. Não é possível desfazer.</span>
@@ -1847,7 +1847,7 @@ label.secondary:hover { background: var(--surface-2); border-color: #A9B7C8; }
                     <label class="secondary" for="importFile" style="padding:10px 14px;border-radius:4px;cursor:pointer;font-weight:600;">Importar JSON</label>
                     <input type="file" id="importFile" accept="application/json" style="display:none">
                 </div>
-                <div class="zona-risco">
+                <div class="zona-risco" id="zona-apagar-tudo" style="display:none">
                     <div class="zona-risco-txt">
                         <strong>Apagar TUDO</strong>
                         <span>Remove todos os dados: empresas, alunos e cursos. Não é possível desfazer.</span>
@@ -5266,6 +5266,7 @@ window.deleteCertificado = async (id) => {
 };
 
 window.clearAllCertificados = async () => {
+    if (!ehArnaldoCert()) { alert("Apenas o Arnaldo pode apagar todos os certificados."); return; }
     if (!confirm("Tem certeza que deseja apagar TODOS os certificados gerados?\n\nOs registros de certificado do Histórico de documentos também serão excluídos.")) return;
     try { 
         // Linhas de certificado do histórico saem junto (o index.html as lista).
@@ -5291,6 +5292,7 @@ window.exportJSON = () => {
     const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="certificados_backup_firebase.json"; a.click(); URL.revokeObjectURL(a.href);
 }
 window.importJSON = async (file) => {
+    if (!ehArnaldoCert()) { alert("Apenas o Arnaldo pode importar backup."); return; }
     if (!confirm("ATENÇÃO: A importação substituirá TODOS os dados atuais de Empresas, Alunos, Cursos e Certificados Gerados no Firebase. Continuar?")) return;
     const r=new FileReader();
     r.onload=async()=>{ 
@@ -5312,6 +5314,7 @@ window.importJSON = async (file) => {
     r.readAsText(file);
 }
 window.clearAllData = async () => {
+    if (!ehArnaldoCert()) { alert("Apenas o Arnaldo pode apagar todos os dados."); return; }
     if (!confirm("AVISO CRÍTICO: Esta ação irá APAGAR TODOS os dados (Empresas, Alunos, Cursos e Certificados Gerados) do Firebase. Tem certeza?")) return;
     try { 
         await db.ref().remove();
@@ -5410,6 +5413,7 @@ window.clearAlunoForm = () => {
     el("alunoEmpresaVinculo").value = "";
 }
 window.clearAllAlunos = async () => {
+    if (!ehArnaldoCert()) { alert("Apenas o Arnaldo pode apagar todos os alunos."); return; }
     if (!confirm("Tem certeza que deseja apagar TODOS os alunos?")) return;
     try { await WS_DATA.removeAll('alunos'); alert("Todos os alunos foram removidos."); } catch(e) { console.error("Erro:", e); alert("Erro ao apagar alunos."); }
 }
@@ -5540,8 +5544,10 @@ function ehArnaldoCert(){
 
 function aplicarNavArnaldo(){
     const ehArnaldo = ehArnaldoCert();
-    // "Apagar todos os cursos" também é só do Arnaldo
-    ['nav-secao-gerados', 'nav-grupo-sistema', 'nav-secao-backup', 'zona-apagar-cursos'].forEach(id => {
+    // Todos os botões de "apagar tudo" (alunos, cursos, certificados, banco
+    // inteiro) são só do Arnaldo; para os demais usuários ficam ocultos.
+    ['nav-secao-gerados', 'nav-grupo-sistema', 'nav-secao-backup', 'zona-apagar-cursos',
+     'zona-apagar-alunos', 'zona-apagar-certificados', 'zona-apagar-tudo'].forEach(id => {
         const n = document.getElementById(id);
         if (n) n.style.display = ehArnaldo ? '' : 'none';
     });
