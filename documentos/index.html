@@ -4510,9 +4510,12 @@ function renderCats(){
 }
 function editCat(col,id){if(!usuarioPodeEditar('catalogos')){alert('Você não tem permissão para editar.');return;}CAT_EDIT={col,id:String(id)};renderCats();}
 function cancelarCat(){CAT_EDIT=null;renderCats();}
-// Renomeia o item. Empresas antigas guardam o NOME do item (em vez do id) nos
-// campos de vínculo; elas passam a guardar o id na mesma gravação, senão o
-// vínculo se perderia com o nome novo.
+// Renomeia o item e atualiza os cadastros vinculados a ele, numa gravação só.
+// Quem guarda o id (o normal) já passa a mostrar o nome novo sem mudança.
+// Registros antigos guardam o NOME do item no lugar do id — empresas,
+// colaboradores, alunos (certificados) e permissões de usuários; nesses o
+// nome antigo é trocado pelo id, senão o vínculo se perderia com o nome novo.
+// Documentos já emitidos (histórico) não mudam: valem como foram gerados.
 function salvarCat(){
   if(!CAT_EDIT)return;
   const {col,id}=CAT_EDIT;
@@ -4535,8 +4538,24 @@ function salvarCat(){
     if(sing&&typeof e[sing]==='string'&&e[sing].trim()===antigo)patch[sing]=id;
     if(Object.keys(patch).length)ops.push({op:'patch',node:'empresas',key:e.id,val:patch});
   });
+  const campoId={obras:'obraId',cidades:'cidadeId',filiais:'filialId',contratos:'contratoId'}[col];
+  const vinculados={empresas:ops.length-1,funcionarios:0,alunos:0,usuarios:0};
+  if(antigo&&campoId){
+    [['funcionarios',DATA.funcionarios],['alunos',typeof ALUNOS_NODE!=='undefined'?ALUNOS_NODE:{}]].forEach(([node,mapa])=>{
+      Object.keys(mapa||{}).forEach(k=>{const r=mapa[k];if(r&&typeof r==='object'&&String(r[campoId]||'').trim()===antigo){ops.push({op:'patch',node,key:k,val:{[campoId]:id}});vinculados[node]++;}});
+    });
+    Object.keys(DATA.usuarios||{}).forEach(k=>{
+      const u=DATA.usuarios[k];const lst=u&&u[col];
+      if(Array.isArray(lst)&&lst.some(x=>String(x||'').trim()===antigo)){ops.push({op:'patch',node:'usuarios',key:k,val:{[col]:lst.map(x=>String(x||'').trim()===antigo?id:x)}});vinculados.usuarios++;}
+    });
+  }
   spin(true);
-  WS_DATA.lote(ops).then(()=>{spin(false);CAT_EDIT=null;if(window.renderAll)renderAll();else renderCats();})
+  WS_DATA.lote(ops).then(()=>{
+    spin(false);CAT_EDIT=null;if(window.renderAll)renderAll();else renderCats();
+    const n=vinculados.empresas+vinculados.funcionarios+vinculados.alunos+vinculados.usuarios;
+    if(n)alert('"'+antigo+'" agora \u00e9 "'+nome+'".\n\nCadastros antigos ajustados para continuar vinculados: '+
+      [['empresas','empresa(s)'],['funcionarios','colaborador(es)'],['alunos','aluno(s) de certificados'],['usuarios','usu\u00e1rio(s)']].filter(([k])=>vinculados[k]).map(([k,r])=>vinculados[k]+' '+r).join(', ')+'.');
+  })
     .catch(e=>{spin(false);alert('Erro ao salvar: '+e.message);});
 }
 function renderMsd(){Object.entries(MSD_MAP).forEach(([prefix,col])=>{const ops=document.getElementById(prefix+'-ops');if(!ops)return;const prev=Array.from(document.getElementsByName(prefix+'Chk')).filter(c=>c.checked).map(c=>c.value);const items=toArr(DATA[col]).sort((a,b)=>(a.nome||'').localeCompare(b.nome||'pt-BR'));ops.innerHTML=items.length?items.map(c=>`<div class="ci"><input type="checkbox" name="${prefix}Chk" value="${esc(c.id)}" id="ck_${prefix}_${esc(c.id)}" onchange="updateMsdVal('${prefix}')"><label for="ck_${prefix}_${esc(c.id)}">${esc(c.nome)}</label></div>`).join(''):'<div class="es">Nenhum cadastrado</div>';prev.forEach(v=>{const cb=document.getElementById('ck_'+prefix+'_'+v);if(cb)cb.checked=true;});if(PENDING_CAT_SEL&&PENDING_CAT_SEL.col===col){const cb=document.getElementById('ck_'+prefix+'_'+PENDING_CAT_SEL.id);if(cb){cb.checked=true;PENDING_CAT_SEL=null;}}updateMsdVal(prefix);});}
