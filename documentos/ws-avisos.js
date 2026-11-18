@@ -8,12 +8,17 @@
  *   e um por lembrete. Somem ao clicar no X ou sozinhos depois de 18 s
  *   (pausa com o mouse em cima).
  * - Faixas: vencido, até 7 dias, até 15 dias, até 30 dias.
- * - Cada balão aparece uma vez por sessão; volta se a situação mudar (ex.: de
- *   "15 dias" para "7 dias") ou depois de 4 horas com o sistema aberto.
+ * - Ao abrir ou atualizar a página, os balões e a voz aparecem de novo. Com
+ *   a página aberta, cada aviso aparece uma vez e volta se a situação mudar
+ *   (ex.: de "15 dias" para "7 dias") ou depois de 4 horas.
+ * - "Ignorar" no balão cala a voz até a página ser atualizada.
  * - Voz: síntese do próprio navegador, escolhendo a voz pt-BR mais natural
  *   disponível (no Edge, as vozes "Natural" da Microsoft).
- * - Lembretes ficam em 'lembretes/{id}' no Firebase; cada usuário vê os seus
- *   e os marcados como "para todos".
+ * - Lembretes ficam em 'lembretesUsuario/{usuario}/{id}' (só do dono) e em
+ *   'lembretesComuns/{id}' (marcados "para todos"). Cada usuário baixa só
+ *   esses dois nós, e por diferença (child_*), não a lista inteira a cada
+ *   mudança. Os avisos de vencimento não consultam o banco: usam os dados
+ *   que o painel já carregou.
  */
 (function () {
   'use strict';
@@ -159,10 +164,32 @@
       };
       return vs.slice().sort((a, b) => nota(b) - nota(a))[0];
     },
+    mudo: false,
+    testando: false,
     falar(texto, forcar) {
       if (!window.speechSynthesis || !texto) return;
-      if (!forcar && !cfg().voz) return;
-      if (!this.liberado && !forcar) { this.pend.push(texto); return; }
+      if (!forcar && (!cfg().voz || this.mudo)) return;
+      if (!this.liberado && !forcar) {
+        // Depois de atualizar a página o navegador pode exigir um clique antes
+        // de falar. Tenta falar já; se em 1,5 s não começou, guarda e fala no
+        // primeiro clique/tecla.
+        // já testando, ou já bloqueado (há fila): entra no fim da fila,
+        // mantendo a ordem (saudação primeiro)
+        if (this.testando || this.pend.length) { this.pend.push(texto); return; }
+        this.testando = true;
+        let comecou = false;
+        const u0 = this.utter(texto);
+        u0.onstart = () => { comecou = true; this.liberado = true; this.testando = false; const p = this.pend.splice(0); if (p.length) this.falar(p.join(' ')); };
+        u0.onerror = () => { if (!comecou) { this.testando = false; this.pend.unshift(texto); } };
+        try { speechSynthesis.speak(u0); } catch (_) { this.testando = false; this.pend.unshift(texto); return; }
+        setTimeout(() => {
+          if (comecou || !this.testando) return;
+          this.testando = false;
+          try { speechSynthesis.cancel(); } catch (_) { }
+          this.pend.unshift(texto);
+        }, 1500);
+        return;
+      }
       // frases curtas soam mais naturais e evitam o corte de ~15 s do Chrome
       const frases = String(texto).replace(/\s+/g, ' ').split(/(?<=[.!?;])\s+/).filter(Boolean);
       // Falha na voz (navegador sem suporte, voz removida) nunca pode
@@ -179,14 +206,32 @@
         });
       } catch (err) { console.warn('voz:', err); }
     },
+    utter(texto) {
+      const v = this.melhor();
+      const u = new SpeechSynthesisUtterance(String(texto).replace(/\s+/g, ' '));
+      u.lang = (v && v.lang) || 'pt-BR';
+      if (v) u.voice = v;
+      u.rate = Number(cfg().velocidade) || 1;
+      u.pitch = 1;
+      return u;
+    },
     // O navegador só deixa falar depois de um clique/tecla na página.
     liberar() {
       if (this.liberado) return;
       this.liberado = true;
+      if (this.testando) { this.testando = false; try { speechSynthesis.cancel(); } catch (_) { } }
       const p = this.pend.splice(0);
       if (p.length) this.falar(p.join(' '));
     },
-    parar() { try { speechSynthesis.cancel(); } catch (_) { } }
+    parar() { this.pend = []; try { speechSynthesis.cancel(); } catch (_) { } },
+    // "Ignorar": cala na hora e não fala mais nada até a página ser
+    // atualizada. (Para desligar de vez: "Voz e balões".)
+    silenciar() {
+      this.mudo = true;
+      this.testando = false;
+      this.parar();
+      document.querySelectorAll('.wsav-ign').forEach((b) => b.remove());
+    }
   };
   if (window.speechSynthesis) {
     try { speechSynthesis.getVoices(); speechSynthesis.onvoiceschanged = () => { }; } catch (_) { }
@@ -222,7 +267,8 @@
         (b.sub ? '<div class="wsav-sub">' + e(b.sub) + '</div>' : '') +
         '<div class="wsav-tt">' + e(b.titulo) + '</div>' +
         (b.linhas || []).map((l) => '<div class="wsav-li">' + l + '</div>').join('') +
-        (b.acao ? '<div class="wsav-ac"><button type="button">' + e(b.acao.rot) + '</button></div>' : '') +
+        '<div class="wsav-ac">' + (b.acao ? '<button type="button" class="wsav-ver">' + e(b.acao.rot) + '</button>' : '') +
+        (cfg().voz && !Voz.mudo ? '<button type="button" class="wsav-ign" title="Silencia a voz até a página ser atualizada"><i class="fa-solid fa-volume-xmark"></i> Ignorar</button>' : '') + '</div>' +
         '</div>' +
         '<button type="button" class="wsav-x" title="Fechar" aria-label="Fechar">&times;</button>' +
         '<div class="wsav-pg" style="animation-duration:' + AUTO_FECHAR_MS + 'ms"></div>';
@@ -236,7 +282,9 @@
         setTimeout(() => { el.remove(); this.vivos--; this.proximo(); }, 380);
       };
       el.querySelector('.wsav-x').onclick = fechar;
-      if (b.acao) el.querySelector('.wsav-ac button').onclick = () => { b.acao.fn(); fechar(); };
+      if (b.acao) el.querySelector('.wsav-ver').onclick = () => { b.acao.fn(); fechar(); };
+      const ign = el.querySelector('.wsav-ign');
+      if (ign) ign.onclick = () => Voz.silenciar();
       // Fecha sozinho quando a barra termina (pausa com o mouse em cima)
       el.querySelector('.wsav-pg').addEventListener('animationend', fechar);
       if (b.voz) Voz.falar(b.voz);
@@ -335,17 +383,60 @@
   }
 
   // ---------------------------------------------------------------- lembretes
+  // Consumo do banco: cada usuário baixa SÓ os próprios lembretes
+  // ('lembretesUsuario/{usuario}') e os compartilhados ('lembretesComuns').
+  // A escuta é por filho (child_added/changed/removed): depois da carga
+  // inicial, cada alteração traz só o lembrete alterado, não a lista toda.
+  // Os avisos de vencimento leem os dados que o painel já tem em memória e
+  // não fazem nenhuma consulta extra ao banco.
   let LEMBRETES = {};
   let lembretesOuvindo = false;
-  function ouvirLembretes() {
-    if (lembretesOuvindo || typeof db === 'undefined') return;
-    lembretesOuvindo = true;
-    db.ref('lembretes').on('value', (snap) => {
-      LEMBRETES = snap.val() || {};
+  function chaveUsuario() { return (usuarioId() || 'anon').replace(/[.#$\[\]\/]/g, '_'); }
+  function caminhoDe(l) { return l.compartilhado ? 'lembretesComuns/' + l.id : 'lembretesUsuario/' + chaveUsuario() + '/' + l.id; }
+  let _avisoTimer = null;
+  function lembretesMudaram() {
+    clearTimeout(_avisoTimer);
+    _avisoTimer = setTimeout(() => {
       if ($('wsav-mdl-lem') && $('wsav-mdl-lem').style.display === 'flex') renderLembretes();
       atualizarBadge();
       agendarVerificacao(1500);
-    }, (err) => console.warn('lembretes:', err));
+    }, 150);
+  }
+  // Cada origem (meus / comuns) tem seu mapa: um lembrete que passa de uma
+  // para a outra gera "removido" numa e "adicionado" na outra, e a ordem dos
+  // dois eventos não pode apagá-lo da tela.
+  const ORIGENS = { u: {}, c: {} };
+  function remontar() { LEMBRETES = Object.assign({}, ORIGENS.u, ORIGENS.c); lembretesMudaram(); }
+  function escutar(ref, src) {
+    const put = (sn) => { ORIGENS[src][sn.key] = Object.assign({}, sn.val(), { id: sn.key }); remontar(); };
+    ref.on('child_added', put, (err) => console.warn('lembretes:', err));
+    ref.on('child_changed', put);
+    ref.on('child_removed', (sn) => { delete ORIGENS[src][sn.key]; remontar(); });
+  }
+  function ouvirLembretes() {
+    if (lembretesOuvindo || typeof db === 'undefined' || !usuarioId()) return;
+    lembretesOuvindo = true;
+    escutar(db.ref('lembretesUsuario/' + chaveUsuario()), 'u');
+    escutar(db.ref('lembretesComuns'), 'c');
+    migrarLembretesAntigos();
+  }
+  // A primeira versão gravava tudo em 'lembretes/{id}'. Move os itens para a
+  // estrutura nova uma única vez (depois o nó fica vazio e a leitura custa
+  // praticamente nada).
+  function migrarLembretesAntigos() {
+    try { if (localStorage.getItem('ws_lem_migrado') === '1') return; } catch (_) { }
+    db.ref('lembretes').once('value').then((snap) => {
+      const v = snap.val() || {};
+      const up = {};
+      Object.keys(v).forEach((id) => {
+        const l = v[id]; if (!l || typeof l !== 'object') return;
+        const dono = String(l.usuarioId || 'anon').replace(/[.#$\[\]\/]/g, '_');
+        up[(l.compartilhado ? 'lembretesComuns/' : 'lembretesUsuario/' + dono + '/') + id] = Object.assign({}, l, { id });
+        up['lembretes/' + id] = null;
+      });
+      return Object.keys(up).length ? db.ref().update(up) : null;
+    }).then(() => { try { localStorage.setItem('ws_lem_migrado', '1'); } catch (_) { } })
+      .catch((err) => console.warn('migração de lembretes:', err));
   }
   function meusLembretes() {
     const uid = usuarioId();
@@ -372,10 +463,12 @@
   }
 
   // ---------------------------------------------------------------- verificação
-  const VISTOS_KEY = 'ws_avisos_vistos';
-  function vistos() { try { return JSON.parse(sessionStorage.getItem(VISTOS_KEY) || '{}') || {}; } catch (_) { return {}; } }
-  function marcarVisto(k) { const v = vistos(); v[k] = Date.now(); try { sessionStorage.setItem(VISTOS_KEY, JSON.stringify(v)); } catch (_) { } }
-  function deveMostrar(k) { const t = vistos()[k]; return !t || Date.now() - t > REAVISAR_MS; }
+  // Só na memória da página: ao atualizar (F5) os balões e a voz voltam.
+  // Com a página aberta, cada aviso aparece uma vez e volta se mudar de faixa
+  // ou depois de 4 horas.
+  const VISTOS = {};
+  function marcarVisto(k) { VISTOS[k] = Date.now(); }
+  function deveMostrar(k) { const t = VISTOS[k]; return !t || Date.now() - t > REAVISAR_MS; }
 
   function pronto() {
     return sessionStorage.getItem('ws_logado') === '1' &&
@@ -585,24 +678,31 @@
     };
     const btn = $('wsav-l-salvar'); btn.disabled = true;
     try {
-      if (lemEditando) {
-        await db.ref('lembretes/' + lemEditando).update(rec);
+      if (lemEditando && LEMBRETES[lemEditando]) {
+        const antigo = LEMBRETES[lemEditando];
+        const novo = Object.assign({}, antigo, rec);
+        delete novo._;
+        const de = caminhoDe(antigo), para = caminhoDe(novo);
+        if (de === para) await db.ref(para).update(rec);
+        else { const up = {}; up[para] = novo; up[de] = null; await db.ref().update(up); } // passou a ser (ou deixou de ser) para todos
       } else {
-        const ref = db.ref('lembretes').push();
-        await ref.set(Object.assign(rec, { id: ref.key, usuarioId: usuarioId(), usuarioNome: usuarioNome(), concluido: false, criadoEm: Date.now() }));
+        const id = db.ref().push().key;
+        const novo = Object.assign(rec, { id, usuarioId: usuarioId(), usuarioNome: usuarioNome(), concluido: false, criadoEm: Date.now() });
+        await db.ref(caminhoDe(novo)).set(novo);
       }
       lemEditando = null; limparForm();
     } catch (err) { alert('Não foi possível salvar: ' + (err && err.message ? err.message : err)); }
     finally { btn.disabled = false; }
   }
   function concluir(id, ok) {
-    db.ref('lembretes/' + id).update({ concluido: !!ok, concluidoEm: ok ? Date.now() : null, concluidoPor: ok ? usuarioNome() : null })
+    const l = LEMBRETES[id]; if (!l) return;
+    db.ref(caminhoDe(l)).update({ concluido: !!ok, concluidoEm: ok ? Date.now() : null, concluidoPor: ok ? usuarioNome() : null })
       .catch((err) => alert('Não foi possível atualizar: ' + err.message));
   }
   function excluir(id) {
     const l = LEMBRETES[id]; if (!l) return;
     if (!confirm('Excluir "' + (l.titulo || '') + '"?')) return;
-    db.ref('lembretes/' + id).remove().catch((err) => alert('Não foi possível excluir: ' + err.message));
+    db.ref(caminhoDe(l)).remove().catch((err) => alert('Não foi possível excluir: ' + err.message));
   }
 
   // ---------------------------------------------------------------- menu
