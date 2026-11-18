@@ -94,7 +94,10 @@
     const st = document.createElement('style');
     st.id = 'wsav-css';
     st.textContent = `
-#wsav-pilha{position:fixed;right:18px;bottom:18px;z-index:9000;display:flex;flex-direction:column-reverse;gap:10px;width:360px;max-width:calc(100vw - 36px);pointer-events:none}
+#wsav-pilha{position:fixed;right:18px;bottom:84px;z-index:9000;display:flex;flex-direction:column-reverse;gap:10px;width:360px;max-width:calc(100vw - 36px);pointer-events:none}
+#wsav-limpar{pointer-events:auto;align-self:flex-end;order:9999;border:1px solid #e4e4e7;background:rgba(255,255,255,.96);color:#3f3f46;border-radius:999px;padding:6px 13px;font:600 11px 'DM Sans',sans-serif;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.10);display:none;align-items:center;gap:6px;transition:background .15s}
+#wsav-limpar:hover{background:#f4f4f5;color:#18181b}
+#wsav-limpar.on{display:flex}
 .wsav-b{pointer-events:auto;position:relative;background:#fff;border:1px solid #e4e4e7;border-left:4px solid var(--c);border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.12),0 2px 6px rgba(0,0,0,.06);padding:13px 38px 14px 14px;font-family:'DM Sans',sans-serif;color:#18181b;overflow:hidden;opacity:0;transform:translateY(14px) scale(.98);transition:opacity .45s ease,transform .45s cubic-bezier(.2,.8,.2,1)}
 .wsav-b.on{opacity:1;transform:none}
 .wsav-b.sai{opacity:0;transform:translateX(30px);transition:opacity .35s ease,transform .35s ease}
@@ -246,10 +249,34 @@
     vivos: 0,
     pilha() {
       let p = $('wsav-pilha');
-      if (!p) { p = document.createElement('div'); p.id = 'wsav-pilha'; p.setAttribute('aria-live', 'polite'); document.body.appendChild(p); }
+      if (!p) {
+        p = document.createElement('div'); p.id = 'wsav-pilha'; p.setAttribute('aria-live', 'polite');
+        // "Limpar todas": fica acima dos balões (order alto na coluna invertida)
+        const bt = document.createElement('button');
+        bt.type = 'button'; bt.id = 'wsav-limpar'; bt.title = 'Fecha todos os avisos de uma vez';
+        bt.onclick = () => this.limparTodas();
+        p.appendChild(bt);
+        document.body.appendChild(p);
+      }
       return p;
     },
-    mostrar(b) { this.fila.push(b); this.proximo(); },
+    abertos: [],
+    // Botão aparece com 2 ou mais avisos (na tela + esperando a vez).
+    contador() {
+      const bt = $('wsav-limpar'); if (!bt) return;
+      const n = this.vivos + this.fila.length;
+      bt.innerHTML = '<i class="fa-solid fa-broom"></i> Limpar todas (' + n + ')';
+      bt.classList.toggle('on', n >= 2);
+    },
+    // Fecha todos os balões, descarta os que esperavam a vez e cala a leitura
+    // em andamento (a voz continua ligada para os próximos avisos).
+    limparTodas() {
+      this.fila = [];
+      Voz.parar();
+      this.abertos.slice().forEach((f) => f());
+      this.contador();
+    },
+    mostrar(b) { this.fila.push(b); this.proximo(); this.contador(); },
     proximo() {
       while (this.vivos < MAX_BALOES && this.fila.length) this.abrir(this.fila.shift());
     },
@@ -278,9 +305,12 @@
       let fechado = false;
       const fechar = () => {
         if (fechado) return; fechado = true;
+        this.abertos = this.abertos.filter((f) => f !== fechar);
         el.classList.add('sai');
-        setTimeout(() => { el.remove(); this.vivos--; this.proximo(); }, 380);
+        setTimeout(() => { el.remove(); this.vivos--; this.proximo(); this.contador(); }, 380);
       };
+      this.abertos.push(fechar);
+      this.contador();
       el.querySelector('.wsav-x').onclick = fechar;
       if (b.acao) el.querySelector('.wsav-ver').onclick = () => { b.acao.fn(); fechar(); };
       const ign = el.querySelector('.wsav-ign');

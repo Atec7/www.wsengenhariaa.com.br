@@ -2463,9 +2463,12 @@ function initListeners(){
     ],
     onUpdated:function(){ if(window.renderAll)renderAll(); }
   });
-  // Histórico em tempo real: o que for gerado ou excluído em outra tela ou
-  // aparelho aparece/some aqui na hora (o servidor avisa pelo _meta).
-  WS_DATA.watchPaths(['historico','materiais','epiMov']);
+  // Tempo real: o que for gerado, editado ou excluído em outra tela ou
+  // aparelho aparece aqui na hora (o servidor avisa pelo _meta). Colaboradores
+  // entraram aqui: antes, desligar alguém num computador não chegava aos
+  // relatórios dos outros até recarregar a página. Baixa só o colaborador
+  // alterado (registro de alterações), não a lista inteira.
+  WS_DATA.watchPaths(['historico','materiais','epiMov','funcionarios']);
   // Registros quebrados deixados por versões antigas: sem nome e sem CPF. Não
   // são pessoas, só linhas "Sem vínculo completo / ? · —" na lista.
   const _semNome=f=>!!f&&!String(f.nome||'').trim()&&!String(f.cpf||'').trim();
@@ -2523,6 +2526,7 @@ function initListeners(){
         });
       });
       await db.ref().update(updates);
+      await WS_DATA.marcarAlterados('funcionarios',Object.keys(updates).filter(k=>k.indexOf('funcionarios/')===0).map(k=>k.split('/')[1]));
       await WS_DATA.advanceLocalMeta('funcionarios');
       await WS_DATA.advanceLocalMeta('alunos');
       spin(false);
@@ -2555,7 +2559,8 @@ function initListeners(){
         .then(r=>r&&r.committed).catch(()=>false);
     })).then(res=>{
       if(!res.some(Boolean))return;
-      return WS_DATA.advanceLocalMeta('funcionarios')
+      return WS_DATA.marcarAlterados('funcionarios',faltam.filter((k,i)=>res[i]))
+        .then(()=>WS_DATA.advanceLocalMeta('funcionarios'))
         .then(()=>WS_DATA.refreshNode('funcionarios'))
         .then(()=>{if(window.renderAll)renderAll();});
     });
@@ -5167,6 +5172,7 @@ async function vincularEmMassa(){
   spin(true);
   try{
     await db.ref().update(updates);
+    await WS_DATA.marcarAlterados('funcionarios',funcs.map(f=>f.id));
     funcs.forEach(f=>{
       const cur=DATA.funcionarios[f.id]||{};
       DATA.funcionarios[f.id]=Object.assign({},cur,{filialId:fl,obraId:ob,cidadeId:cd},ct?{contratoId:ct}:{});

@@ -217,7 +217,10 @@
      uma linha de histórico editada, nunca chegava às outras telas e voltava
      ao valor antigo ao recarregar. Agora toda edição de registro existente
      anota as chaves em '_mudancas/<nó>' e o sync baixa só esses registros. */
-  var NOS_MUDANCAS = { historico: 1, certificadosGerados: 1, epiMov: 1 };
+  // funcionarios entrou no registro de alterações para que um colaborador
+  // editado em outro aparelho (ex.: marcado como desligado) chegue na hora,
+  // baixando SÓ o registro alterado, e não a lista inteira.
+  var NOS_MUDANCAS = { historico: 1, certificadosGerados: 1, epiMov: 1, funcionarios: 1 };
   function marcarAlterados(node, keys) {
     if (!DB || !NOS_MUDANCAS[node]) { return Promise.resolve(); }
     var lista = [];
@@ -299,6 +302,25 @@
     var t = entry.target;
     if (entry.key) { t[entry.key] = t[entry.key] || {}; return t[entry.key]; }
     return t || {};
+  }
+
+  /* ── pull só do que mudou (nós sem tsKey, com registro de alterações) ──
+     Se o _meta mudou mas o registro não traz nada, a mudança foi gravada por
+     fora do registro (código antigo): aí baixa o nó inteiro, como antes. */
+  function pullMud(path, entry, cache, meta) {
+    var map = slotOf(entry);
+    return aplicarMudancas(path, map, cache.mudKey).then(function (r) {
+      if (!r || !r.n) { return pullFull(path, entry); }
+      putCache(path, {
+        data: clone(map),
+        metaTs: (meta != null) ? meta : (cache.metaTs || 0),
+        savedAt: Date.now(),
+        tsKey: null,
+        tsValue: null,
+        mudKey: r.ultima
+      });
+      return { downloaded: true, incremental: true, alterados: r.n };
+    });
   }
 
   /* ── pull único (nó inteiro) ── */
@@ -462,6 +484,11 @@
           return { shouldPull: false, ok: true };
         }
         if (!entry.tsKey) {
+          // Nó sem campo de data mas com registro de alterações: baixa só os
+          // registros alterados desde o último sync.
+          if (NOS_MUDANCAS[path] && typeof DB.mudDesde === 'function' && cache.mudKey !== undefined && cache.mudKey !== null) {
+            return { shouldPull: true, pull: function () { return pullMud(path, entry, cache, meta); } };
+          }
           return { shouldPull: true, pull: function () { return pullFull(path, entry); } };
         }
         // Se a consulta incremental não trouxer nada novo, o _meta observado já
@@ -552,6 +579,9 @@
        como "em dia" sem ter o dado novo: ao reabrir a página, o registro
        editado voltava ao valor antigo e o excluído reaparecia. Agora ela só
        carimba o servidor e deixa o cache vencido, para o próximo sync baixar. */
+    // Para quem grava direto no banco (db.ref().update): anota as chaves no
+    // registro de alterações, para os outros aparelhos baixarem só elas.
+    marcarAlterados: function (node, keys) { return marcarAlterados(node, keys); },
     advanceLocalMeta: function (node) {
       return bump(node).then(function (ts) {
         return getCache(node).then(function (c) {
@@ -833,6 +863,8 @@
       var entry = REG[node];
       statUp(node, approxBytes(key));
       return DB.remove(node + '/' + key).then(function () {
+        return marcarAlterados(node, [key]);
+      }).then(function () {
         if (entry) { var map = slotOf(entry); delete map[key]; }
         return self._commitLocal(node, [{ op: 'del', key: key }]);
       }).then(function (r) { anunciar({ op: 'del', node: node, key: key }); return r; });
