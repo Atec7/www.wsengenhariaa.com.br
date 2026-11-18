@@ -639,25 +639,25 @@ hr.dv{border:none;border-top:1px solid var(--bd);margin:18px 0}
 </div>
 
 <div id="import" class="view">
-  <div class="ph"><div><div class="pt">Importar Colaboradores</div><div class="pd">Carga em massa a partir de um CSV, com valida&ccedil;&atilde;o antes de gravar</div></div>
-    <button class="btn" onclick="baixarModeloImport()"><i class="fa-solid fa-download"></i> Baixar modelo CSV</button>
+  <div class="ph"><div><div class="pt">Importar Colaboradores</div><div class="pd">Cadastro em massa a partir da planilha modelo, com valida&ccedil;&atilde;o antes de gravar</div></div>
+    <button class="btn bp" onclick="baixarModeloImport()"><i class="fa-solid fa-file-excel"></i> Baixar planilha modelo</button>
   </div>
 
   <div class="card">
     <div class="pt" style="margin:0 0 4px">1. Escolha o arquivo</div>
-    <div class="pd" style="margin:0 0 10px">Separado por ponto e v&iacute;rgula, primeira linha com os nomes das colunas. O arquivo n&atilde;o sai do seu computador at&eacute; voc&ecirc; confirmar a grava&ccedil;&atilde;o.</div>
-    <input type="file" id="imp-file" accept=".csv,text/csv" onchange="lerCsvImport(this)">
+    <div class="pd" style="margin:0 0 10px">Baixe a planilha modelo, preencha a aba <b>Colaboradores</b> sem mudar os t&iacute;tulos das colunas e envie aqui. Tamb&eacute;m aceita CSV. Nada &eacute; gravado at&eacute; voc&ecirc; conferir e confirmar.</div>
+    <input type="file" id="imp-file" accept=".xlsx,.csv,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" onchange="lerCsvImport(this)">
     <div class="pd" style="margin-top:8px" id="imp-arquivo">Nenhum arquivo selecionado.</div>
   </div>
 
   <div class="card" id="imp-card-rel" style="display:none">
     <div class="pt" style="margin:0 0 4px">2. Conferir o que ser&aacute; gravado</div>
-    <div class="pd" style="margin:0 0 10px">Nada foi gravado ainda. Revise os problemas e ajuste o CSV antes de continuar.</div>
+    <div class="pd" style="margin:0 0 10px">Nada foi gravado ainda. Revise os problemas e ajuste a planilha antes de continuar.</div>
     <div id="imp-resumo" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px"></div>
     <div id="imp-erros" style="border:1px solid var(--bd);border-radius:6px;max-height:260px;overflow-y:auto"></div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
       <button class="btn bp" id="imp-gravar" onclick="gravarImportacao()"><i class="fa-solid fa-floppy-disk"></i> Gravar no banco</button>
-      <button class="btn" onclick="baixarRejeitados()"><i class="fa-solid fa-file-export"></i> Baixar rejeitados (CSV)</button>
+      <button class="btn" onclick="baixarRejeitados()"><i class="fa-solid fa-file-export"></i> Baixar linhas rejeitadas</button>
       <button class="btn bd2" onclick="cancelarImportacao()"><i class="fa-solid fa-xmark"></i> Cancelar</button>
     </div>
     <div id="imp-progress" style="display:none;margin-top:10px">
@@ -668,7 +668,7 @@ hr.dv{border:none;border-top:1px solid var(--bd);margin:18px 0}
 
   <div class="card">
     <div class="pt" style="margin:0 0 4px">Colunas reconhecidas</div>
-    <div class="pd" style="margin:0">Obrigat&oacute;rias: <b>nome</b>, <b>empresa</b>. Recomendadas: <b>cpf</b>, <b>matricula</b>, <b>obra</b>, <b>filial</b>, <b>cidade</b>, <b>funcao</b>, <b>dataAdm</b>, <b>asoTipo</b>, <b>asoEmissao</b>, <b>asoData</b>. Em empresa/obra/filial/cidade informe o nome do cadastro ou o id.</div>
+    <div class="pd" style="margin:0">Obrigat&oacute;rias: <b>nome</b>, <b>empresa</b>. Recomendadas: <b>CPF</b>, <b>Matr&iacute;cula</b>, <b>Obra</b>, <b>Filial</b>, <b>Cidade</b>, <b>Contrato</b>, <b>Fun&ccedil;&atilde;o</b>, <b>Data de admiss&atilde;o</b>, <b>ASO tipo</b>, <b>ASO emiss&atilde;o</b>, <b>ASO validade</b>. Em empresa/obra/filial/cidade informe o nome do cadastro ou o id.</div>
   </div>
 </div>
 
@@ -5073,20 +5073,38 @@ const IMP_COLS=[
   {k:'obra',rot:'Obra'},
   {k:'filial',rot:'Filial'},
   {k:'cidade',rot:'Cidade'},
+  {k:'contrato',rot:'Contrato'},
   {k:'funcao',rot:'Funcao'},
   {k:'cbo',rot:'CBO'},
   {k:'setor',rot:'Setor'},
   {k:'dataAdm',rot:'Data de admissao'},
   {k:'asoTipo',rot:'ASO tipo'},
   {k:'asoEmissao',rot:'ASO emissao'},
-  {k:'asoData',rot:'ASO validade'}
+  {k:'asoDate',rot:'ASO validade'}
 ];
 const IMP_ASO_TIPOS=['ADMISSIONAL','DEMISSIONAL','PERIODICO','MUDANCA_FUNCAO','RETORNO_TRABALHO'];
 let IMP_LOTE=null;
 
+// Importação em massa: liberada para quem pode EDITAR a tela de
+// Colaboradores. Cada linha só é aceita se a empresa/obra/cidade/contrato
+// estiver entre os permitidos do usuário (funcVisivel), então ninguém cadastra
+// fora do próprio alcance.
+function impPermitido(){
+  if(!USUARIO_ATUAL)return false;
+  if(USUARIO_ATUAL.mestre)return true;
+  return typeof usuarioTemAcesso==='function'&&usuarioTemAcesso('funcs')&&typeof usuarioPodeEditar==='function'&&usuarioPodeEditar('funcs');
+}
 function impPodeUsar(){
-  if(USUARIO_ATUAL&&USUARIO_ATUAL.mestre&&USUARIO_ATUAL.nome==='Arnaldo')return true;
-  alert('Acesso restrito ao administrador.');return false;
+  if(impPermitido())return true;
+  alert('Seu usu\u00e1rio n\u00e3o tem permiss\u00e3o para cadastrar colaboradores.');return false;
+}
+// Função digitada: se bate com um cargo cadastrado, grava o id do cargo (como
+// o cadastro manual faz); senão mantém o texto.
+function impCargo(txt){
+  const t=String(txt||'').trim();if(!t)return '';
+  const alvo=impSemAcento(t);
+  const achados=toArr(DATA.cargos).filter(c=>impSemAcento(c.nome)===alvo);
+  return achados.length===1?String(achados[0].id):t;
 }
 function impSemAcento(s){return String(s==null?'':s).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();}
 function impData(s){
@@ -5128,9 +5146,140 @@ function impBaixar(txt,nome){
   a.href=url;a.download=nome;document.body.appendChild(a);a.click();a.remove();
   setTimeout(()=>URL.revokeObjectURL(url),2000);
 }
-function baixarModeloImport(){
+// ExcelJS só é baixado quando alguém usa a planilha (≈1 MB).
+let _impExcelJs=null;
+function impCarregarExcel(){
+  if(window.ExcelJS)return Promise.resolve(window.ExcelJS);
+  if(_impExcelJs)return _impExcelJs;
+  _impExcelJs=new Promise((ok,falha)=>{
+    const sc=document.createElement('script');
+    sc.src='https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js';
+    sc.onload=()=>window.ExcelJS?ok(window.ExcelJS):falha(new Error('biblioteca de planilha não carregou'));
+    sc.onerror=()=>{_impExcelJs=null;falha(new Error('sem conexão para carregar a biblioteca de planilha'));};
+    document.head.appendChild(sc);
+  });
+  return _impExcelJs;
+}
+// Títulos da planilha modelo (com acento). A validação aceita com ou sem acento.
+const IMP_ROT_PLANILHA={nome:'Nome',cpf:'CPF',empresa:'Empresa',matricula:'Matrícula',obra:'Obra',filial:'Filial',cidade:'Cidade',
+  contrato:'Contrato',funcao:'Função',cbo:'CBO',setor:'Setor',dataAdm:'Data de admissão',asoTipo:'ASO tipo',asoEmissao:'ASO emissão',asoDate:'ASO validade'};
+async function baixarModeloImport(){
   if(!impPodeUsar())return;
-  impBaixar(IMP_COLS.map(c=>c.rot).join(';')+'\r\n','modelo-colaboradores.csv');
+  spin(true);
+  try{
+    const ExcelJS=await impCarregarExcel();
+    const wb=new ExcelJS.Workbook();
+    wb.creator='WS Documentos';wb.created=new Date();
+    const ws=wb.addWorksheet('Colaboradores',{views:[{state:'frozen',ySplit:1}]});
+    const li=wb.addWorksheet('Listas');
+    const ins=wb.addWorksheet('Instruções');
+
+    // Listas só com o que o usuário pode usar
+    const nomes=(col,filtro)=>toArr(DATA[col]).filter(x=>x&&String(x.nome||'').trim()&&(!filtro||filtro(x))).map(x=>String(x.nome).trim()).filter((v,i,a)=>a.indexOf(v)===i).sort((a,b)=>a.localeCompare(b,'pt-BR'));
+    const restr=(lista,campo)=>x=>!(USUARIO_ATUAL&&!USUARIO_ATUAL.mestre&&Array.isArray(USUARIO_ATUAL[lista])&&USUARIO_ATUAL[lista].length)||USUARIO_ATUAL[lista].map(String).includes(String(x.id));
+    const listas=[
+      ['Empresa',nomes('empresas',e=>typeof empresaPermitida!=='function'||empresaPermitida(e.id))],
+      ['Obra',nomes('obras',restr('obras'))],
+      ['Filial',nomes('filiais',restr('filiais'))],
+      ['Cidade',nomes('cidades',restr('cidades'))],
+      ['Contrato',nomes('contratos',restr('contratos'))],
+      ['Função',nomes('cargos')],
+      ['ASO tipo',IMP_ASO_TIPOS.slice()]
+    ];
+    const refLista={};
+    listas.forEach(([tit,vals],i)=>{
+      const col=li.getColumn(i+1);col.width=Math.min(48,Math.max(14,...vals.map(v=>v.length+2),tit.length+2));
+      const h=li.getCell(1,i+1);h.value=tit;h.font={bold:true,color:{argb:'FFFFFFFF'}};h.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF3F3F46'}};
+      vals.forEach((v,j)=>{li.getCell(j+2,i+1).value=v;});
+      const L=String.fromCharCode(65+i);
+      if(vals.length)refLista[tit]="Listas!$"+L+"$2:$"+L+"$"+(vals.length+1);
+    });
+
+    const cols=IMP_COLS.map(c=>({k:c.k,obrig:c.obrig,tit:IMP_ROT_PLANILHA[c.k]||c.rot}));
+    ws.columns=cols.map(c=>({header:c.tit+(c.obrig?' *':''),key:c.k,width:Math.max(14,c.tit.length+4)}));
+    ws.getColumn('nome').width=36;ws.getColumn('empresa').width=30;ws.getColumn('cpf').width=16;
+    const cab=ws.getRow(1);cab.height=22;
+    cab.eachCell((cel,i)=>{
+      const ob=cols[i-1].obrig;
+      cel.font={bold:true,color:{argb:'FFFFFFFF'}};
+      cel.fill={type:'pattern',pattern:'solid',fgColor:{argb:ob?'FFB45309':'FF18181B'}};
+      cel.alignment={vertical:'middle',horizontal:'center'};
+    });
+    const N=1000;
+    const datas=['dataAdm','asoEmissao','asoDate'];
+    cols.forEach((c,i)=>{
+      const L=ws.getColumn(i+1).letter;
+      const rotLista={empresa:'Empresa',obra:'Obra',filial:'Filial',cidade:'Cidade',contrato:'Contrato',funcao:'Função',asoTipo:'ASO tipo'}[c.k];
+      for(let r=2;r<=N+1;r++){
+        const cel=ws.getCell(L+r);
+        if(c.k==='cpf'){cel.numFmt='@';}
+        if(datas.includes(c.k)){
+          cel.numFmt='dd/mm/yyyy';
+          cel.dataValidation={type:'date',operator:'greaterThan',allowBlank:true,formulae:[new Date(1950,0,1)],showErrorMessage:true,errorTitle:'Data inválida',error:'Digite a data como dd/mm/aaaa.'};
+        }else if(rotLista&&refLista[rotLista]){
+          // Função aceita texto livre (cargo novo); as demais só da lista
+          const livre=c.k==='funcao';
+          cel.dataValidation={type:'list',allowBlank:true,formulae:[refLista[rotLista]],showErrorMessage:!livre,errorStyle:livre?'information':'stop',errorTitle:'Valor fora da lista',error:'Escolha um valor da lista (aba Listas).'};
+        }
+      }
+    });
+
+    ins.getColumn(1).width=110;
+    [
+      ['CADASTRO EM MASSA DE COLABORADORES',true],
+      ['',false],
+      ['1. Preencha a aba "Colaboradores", um colaborador por linha, a partir da linha 2.',false],
+      ['2. Não altere, apague nem mude a ordem dos títulos da linha 1.',false],
+      ['3. Colunas com * (laranja) são obrigatórias: Nome e Empresa.',false],
+      ['4. Empresa, Obra, Filial, Cidade, Contrato e ASO tipo: escolha na setinha da célula. As opções vêm da aba "Listas" e são as liberadas para o seu usuário.',false],
+      ['5. Função: escolha um cargo da lista ou digite um novo.',false],
+      ['6. CPF: só números ou com pontos e traço (11 dígitos). CPF já cadastrado no sistema é recusado.',false],
+      ['7. Datas no formato dd/mm/aaaa (ex.: 15/03/2026). "ASO validade" é a data em que o ASO vence.',false],
+      ['8. Salve como .xlsx e envie em Cadastros > Importar Colaboradores. O sistema mostra o que será gravado e o que foi recusado ANTES de gravar.',false],
+      ['',false],
+      ['Exemplo de linha:',true],
+      ['João da Silva | 123.456.789-09 | (empresa da lista) | 1020 | (obra da lista) | ... | 10/01/2026 | ADMISSIONAL | 05/01/2026 | 05/01/2027',false]
+    ].forEach(([t,b],i)=>{const c=ins.getCell(i+1,1);c.value=t;c.font={bold:b,size:b?13:11};c.alignment={wrapText:true};});
+    wb.views=[{activeTab:0}];
+
+    const buf=await wb.xlsx.writeBuffer();
+    const url=URL.createObjectURL(new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}));
+    const a=document.createElement('a');a.href=url;a.download='modelo-cadastro-colaboradores.xlsx';document.body.appendChild(a);a.click();a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),2000);
+  }catch(e){console.error(e);alert('Não consegui gerar a planilha: '+(e&&e.message?e.message:e));}
+  finally{spin(false);}
+}
+// Lê a aba "Colaboradores" (ou a primeira) da planilha e devolve as linhas
+// como texto, no mesmo formato do leitor de CSV.
+async function impLerXlsx(arq){
+  const ExcelJS=await impCarregarExcel();
+  const wb=new ExcelJS.Workbook();
+  await wb.xlsx.load(await arq.arrayBuffer());
+  const ws=wb.getWorksheet('Colaboradores')||wb.worksheets[0];
+  if(!ws)throw new Error('a planilha não tem abas');
+  const pad=n=>String(n).padStart(2,'0');
+  const txt=(v,ehCpf)=>{
+    if(v==null)return '';
+    if(v instanceof Date)return v.getUTCFullYear()+'-'+pad(v.getUTCMonth()+1)+'-'+pad(v.getUTCDate());
+    if(typeof v==='number')return ehCpf?String(Math.round(v)).padStart(11,'0'):String(v);
+    if(typeof v==='object'){
+      if(v.richText)return v.richText.map(r=>r.text).join('');
+      if('result' in v)return txt(v.result,ehCpf);
+      if(v.text)return String(v.text);
+      return '';
+    }
+    return String(v);
+  };
+  const largura=ws.columnCount;
+  const cab=[];for(let c=1;c<=largura;c++)cab.push(txt(ws.getRow(1).getCell(c).value).replace(/\s*\*\s*$/,'').trim());
+  const iCpf=cab.findIndex(h=>impSemAcento(h)==='cpf');
+  const linhas=[cab];
+  ws.eachRow({includeEmpty:false},(row,n)=>{
+    if(n===1)return;
+    const l=[];for(let c=1;c<=largura;c++)l.push(txt(row.getCell(c).value,c-1===iCpf).trim());
+    if(l.some(x=>x!==''))linhas.push(l);
+  });
+  return linhas;
 }
 function impCsv(texto){
   const t=String(texto||'').replace(/^\uFEFF/,'');
@@ -5155,10 +5304,14 @@ function lerCsvImport(input){
   document.getElementById('imp-card-rel').style.display='none';
   if(!arq){document.getElementById('imp-arquivo').textContent='Nenhum arquivo selecionado.';return;}
   const fr=new FileReader();
-  fr.onload=()=>{
-    document.getElementById('imp-arquivo').textContent='Arquivo: '+arq.name+' ('+Math.round(arq.size/1024)+' KB)';
-    impValidar(impCsv(fr.result));
-  };
+  document.getElementById('imp-arquivo').textContent='Arquivo: '+arq.name+' ('+Math.round(arq.size/1024)+' KB)';
+  if(/\.xlsx$/i.test(arq.name)){
+    spin(true);
+    impLerXlsx(arq).then(linhas=>{spin(false);impValidar(linhas);})
+      .catch(e=>{spin(false);console.error(e);alert('N\u00e3o consegui ler a planilha: '+(e&&e.message?e.message:e)+'\n\nConfira se \u00e9 a planilha modelo (.xlsx).');});
+    return;
+  }
+  fr.onload=()=>impValidar(impCsv(fr.result));
   fr.onerror=()=>alert('N\u00e3o consegui ler o arquivo.');
   fr.readAsText(arq,'UTF-8');
 }
@@ -5210,16 +5363,24 @@ function impValidar(linhas){
       if(val(k)&&!conv)e.push(k+' inv\u00e1lida: "'+val(k)+'" (use AAAA-MM-DD)');
     });
 
+    if(!e.length&&emp&&!emp.erro&&typeof funcVisivel==='function'&&USUARIO_ATUAL&&!USUARIO_ATUAL.mestre){
+      const teste={empresaId:emp,obraId:res.obraId,cidadeId:res.cidadeId,filialId:res.filialId,contratoId:res.contratoId};
+      if(typeof empresaPermitida==='function'&&!empresaPermitida(emp))e.push('empresa fora das liberadas para o seu usu\u00e1rio');
+      else if(!funcVisivel(teste))e.push('obra/cidade/filial/contrato fora dos liberados para o seu usu\u00e1rio');
+    }
     if(e.length){erros.push({linha,nome:nome||'(sem nome)',msgs:e,bruto:l});}
     else{
       const rec={id:null,nome,cpf,empresaId:emp,matricula:val('matricula'),obraId:res.obraId,filialId:res.filialId,cidadeId:res.cidadeId,
-        funcao:val('funcao'),cbo:val('cbo'),setor:val('setor'),dataAdm,asoTipo:asoTipo||'',asoEmissao,asoDate};
+        contratoId:res.contratoId,funcao:impCargo(val('funcao')),cbo:val('cbo'),setor:val('setor'),dataAdm,asoTipo:asoTipo||'',asoEmissao,asoDate};
       if(!rec.matricula)delete rec.matricula;
       if(!rec.cbo)delete rec.cbo;
       if(!rec.setor)delete rec.setor;
       if(!rec.funcao)delete rec.funcao;
-      if(!rec.asaoTipo)delete rec.asaoTipo;
-      ['obraId','filialId','cidadeId'].forEach(k=>{if(!rec[k])delete rec[k];});
+      if(!rec.asoTipo)delete rec.asoTipo;
+      if(!rec.asoEmissao)delete rec.asoEmissao;
+      if(!rec.asoDate)delete rec.asoDate;
+      if(!rec.dataAdm)delete rec.dataAdm;
+      ['obraId','filialId','cidadeId','contratoId'].forEach(k=>{if(!rec[k])delete rec[k];});
       okRows.push({linha,rec,aviso:(!rec.filialId||!rec.obraId)?'ficar\u00e1 sem v\u00ednculo completo':null});
     }
   }
@@ -6414,14 +6575,15 @@ let USUARIO_ATUAL=null;
     }catch(_){}
     const navGerus=document.getElementById('nav-ger-usuarios');
     if(navGerus)navGerus.style.display=usuario&&usuario.mestre&&usuario.nome==='Arnaldo'?'':'none';
-    // Importação em massa é exclusiva do Arnaldo, pelo mesmo critério do
-    // gerenciamento de usuários acima. As funções do importador conferem a
-    // sessão de novo (impPodeUsar), então esconder o item não é a proteção.
-    const ehArnaldo=!!(usuario&&usuario.mestre&&usuario.nome==='Arnaldo');
+    // Importação em massa: quem pode EDITAR Colaboradores. As funções do
+    // importador conferem a sessão de novo (impPodeUsar) e cada linha é
+    // limitada às empresas/obras do usuário, então esconder o item não é a
+    // única proteção.
+    const podeImport=(function(){if(!usuario)return false;if(usuario.mestre)return true;const p=(usuario.telas||{}).funcs;return !!(p&&p.acesso!==false&&p.editar===true);})();
     const navImport=document.getElementById('nav-import');
-    if(navImport)navImport.style.display=ehArnaldo?'':'none';
+    if(navImport)navImport.style.display=podeImport?'':'none';
     const telaImport=document.getElementById('import');
-    if(telaImport&&!ehArnaldo)telaImport.classList.remove('active');
+    if(telaImport&&!podeImport)telaImport.classList.remove('active');
     if(!usuario||usuario.mestre)return;
     const telas=usuario.telas||{};
     const bch=document.getElementById('btn-clear-hist');
@@ -6438,6 +6600,8 @@ let USUARIO_ATUAL=null;
       if(onclick.indexOf('logoutWS')!==-1)return;
       if(onclick.indexOf('openConfModal')!==-1)return;
       if(telaId==='aprov'){el.style.display='';return;}
+      // importação segue a permissão de edição de Colaboradores (acima)
+      if(telaId==='import'){el.style.display=podeImport?'':'none';return;}
       if(!telaId)return;
       const perm=telas[telaId];
       if(perm===undefined&&!usuario.mestre)el.style.display='none';
@@ -7277,5 +7441,7 @@ document.addEventListener('DOMContentLoaded',()=>{initListeners();fixOldCertHist
 </script>
 
 
+<!-- avisos de vencimento, lembretes/tarefas e voz -->
+<script src="ws-avisos.js"></script>
 </body>
 </html>
