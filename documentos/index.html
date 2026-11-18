@@ -4486,7 +4486,59 @@ function renewDoc(key){
 
 // ── LISTAGENS ─────────────────────────────────────────────────────
 function renderEmps(){const q=(document.getElementById('filter-empresas').value||'').toLowerCase();const emps=toArr(DATA.empresas).filter(e=>empresaPermitida(e.id)).filter(e=>{const hay=[e.nome||'',e.cnpj||'',e.endereco||'',...empCatVals(e,'obras'),...empCatVals(e,'cidades'),...empCatVals(e,'filiais'),...empCatVals(e,'contratos')].join(' ').toLowerCase();return hay.includes(q);}).sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));document.getElementById('lst-e').innerHTML=emps.length?(WS_DATA.pag.slice(emps,'emps',150).map(e=>{const obs=empCatVals(e,'obras'),cids=empCatVals(e,'cidades'),fils=empCatVals(e,'filiais'),cts=empCatVals(e,'contratos');const parts=[];if(e.endereco)parts.push('End.: '+esc(e.endereco).substring(0,50));if(obs.length)parts.push('Obras: '+esc(obs.join(', ').substring(0,60)));if(cids.length)parts.push('Cidades: '+esc(cids.join(', ').substring(0,60)));if(fils.length)parts.push('Filiais: '+esc(fils.join(', ').substring(0,60)));if(cts.length)parts.push('Contratos: '+esc(cts.join(', ').substring(0,60)));return `<div class="tr2"><div><div class="rn">${esc(e.nome)}</div><div class="rs">CNPJ: ${esc(e.cnpj||'—')}${parts.length?' | '+parts.join(' | '):''}</div></div><div class="ra">${btnsEnt('emps','empresas','Emp',e)}</div></div>`;}).join('')+WS_DATA.pagBtn(emps.length,WS_DATA.pag.count(emps,'emps',150),'emps',150,'renderEmps()')):'<div class="es">Nenhuma empresa encontrada</div>';}
-function renderCats(){['obras','cidades','filiais','contratos'].forEach(col=>{const el=document.getElementById('cat-'+col+'-list');if(!el)return;const perm=catsPermitidos(col);const items=toArr(DATA[col]).filter(c=>(!perm||perm.has(String(c.id)))&&catPermitida(col,c.id)).sort((a,b)=>(a.nome||'').localeCompare(b.nome||'pt-BR'));el.innerHTML=items.length?items.map(c=>`<div class="tr2"><div class="rn">${esc(c.nome)}</div><div class="ra">${btCat(col,c.id)}</div></div>`).join(''):'<div class="es">Nenhum cadastrado</div>';});}
+// Catálogos (obras, cidades, filiais, contratos): lista com editar (lápis,
+// edição na própria linha) e excluir. CAT_EDIT guarda a linha em edição; o
+// texto digitado sobrevive aos re-renders que a sincronização dispara.
+let CAT_EDIT=null;
+function renderCats(){
+  let digitado=null,foco=false;
+  const inEd=document.getElementById('cat-edit-in');
+  if(inEd&&CAT_EDIT){digitado=inEd.value;foco=document.activeElement===inEd;}
+  ['obras','cidades','filiais','contratos'].forEach(col=>{
+    const el=document.getElementById('cat-'+col+'-list');if(!el)return;
+    const perm=catsPermitidos(col);
+    const items=toArr(DATA[col]).filter(c=>(!perm||perm.has(String(c.id)))&&catPermitida(col,c.id)).sort((a,b)=>(a.nome||'').localeCompare(b.nome||'pt-BR'));
+    el.innerHTML=items.length?items.map(c=>{
+      if(CAT_EDIT&&CAT_EDIT.col===col&&String(CAT_EDIT.id)===String(c.id)){
+        return `<div class="tr2" style="gap:6px"><input id="cat-edit-in" value="${esc(c.nome)}" style="flex:1" onkeydown="if(event.key==='Enter')salvarCat();else if(event.key==='Escape')cancelarCat();"><div class="ra"><button class="btn bs" title="Salvar" onclick="salvarCat()"><i class="fa-solid fa-check"></i></button><button class="btn bg2" title="Cancelar" onclick="cancelarCat()"><i class="fa-solid fa-xmark"></i></button></div></div>`;
+      }
+      return `<div class="tr2"><div class="rn">${esc(c.nome)}</div><div class="ra">${btCat(col,c.id)}</div></div>`;
+    }).join(''):'<div class="es">Nenhum cadastrado</div>';
+  });
+  const novo=document.getElementById('cat-edit-in');
+  if(novo){if(digitado!==null)novo.value=digitado;if(foco||digitado===null){novo.focus();if(digitado===null)novo.select();}}
+}
+function editCat(col,id){if(!usuarioPodeEditar('catalogos')){alert('Você não tem permissão para editar.');return;}CAT_EDIT={col,id:String(id)};renderCats();}
+function cancelarCat(){CAT_EDIT=null;renderCats();}
+// Renomeia o item. Empresas antigas guardam o NOME do item (em vez do id) nos
+// campos de vínculo; elas passam a guardar o id na mesma gravação, senão o
+// vínculo se perderia com o nome novo.
+function salvarCat(){
+  if(!CAT_EDIT)return;
+  const {col,id}=CAT_EDIT;
+  const inp=document.getElementById('cat-edit-in');
+  const nome=String(inp&&inp.value||'').trim();
+  const atual=(DATA[col]||{})[id];
+  if(!atual){CAT_EDIT=null;renderCats();return;}
+  if(!nome){alert('Informe um nome');return;}
+  const antigo=String(atual.nome||'').trim();
+  if(nome===antigo){cancelarCat();return;}
+  const norm=x=>String(x||'').trim().toLowerCase();
+  if(toArr(DATA[col]).some(c=>String(c.id)!==String(id)&&norm(c.nome)===norm(nome))){alert('Já existe "'+nome+'" neste cadastro.');return;}
+  const ops=[{op:'patch',node:col,key:id,val:{nome}}];
+  const sing=SING_MAP[col];
+  if(antigo)toArr(DATA.empresas).forEach(e=>{
+    const patch={};
+    const raw=e[col];
+    if(Array.isArray(raw)&&raw.some(x=>String(x||'').trim()===antigo))patch[col]=raw.map(x=>String(x||'').trim()===antigo?id:x);
+    else if(typeof raw==='string'&&raw.split(/[,;]/).some(x=>x.trim()===antigo))patch[col]=raw.split(/[,;]/).map(x=>x.trim()===antigo?id:x.trim()).filter(Boolean).join(',');
+    if(sing&&typeof e[sing]==='string'&&e[sing].trim()===antigo)patch[sing]=id;
+    if(Object.keys(patch).length)ops.push({op:'patch',node:'empresas',key:e.id,val:patch});
+  });
+  spin(true);
+  WS_DATA.lote(ops).then(()=>{spin(false);CAT_EDIT=null;if(window.renderAll)renderAll();else renderCats();})
+    .catch(e=>{spin(false);alert('Erro ao salvar: '+e.message);});
+}
 function renderMsd(){Object.entries(MSD_MAP).forEach(([prefix,col])=>{const ops=document.getElementById(prefix+'-ops');if(!ops)return;const prev=Array.from(document.getElementsByName(prefix+'Chk')).filter(c=>c.checked).map(c=>c.value);const items=toArr(DATA[col]).sort((a,b)=>(a.nome||'').localeCompare(b.nome||'pt-BR'));ops.innerHTML=items.length?items.map(c=>`<div class="ci"><input type="checkbox" name="${prefix}Chk" value="${esc(c.id)}" id="ck_${prefix}_${esc(c.id)}" onchange="updateMsdVal('${prefix}')"><label for="ck_${prefix}_${esc(c.id)}">${esc(c.nome)}</label></div>`).join(''):'<div class="es">Nenhum cadastrado</div>';prev.forEach(v=>{const cb=document.getElementById('ck_'+prefix+'_'+v);if(cb)cb.checked=true;});if(PENDING_CAT_SEL&&PENDING_CAT_SEL.col===col){const cb=document.getElementById('ck_'+prefix+'_'+PENDING_CAT_SEL.id);if(cb){cb.checked=true;PENDING_CAT_SEL=null;}}updateMsdVal(prefix);});}
 function updateMsdVal(prefix){const el=document.getElementById(prefix+'-val');if(!el)return;const vals=getChecked(prefix+'Chk');const names=vals.map(v=>{const c=DATA[MSD_MAP[prefix]]&&DATA[MSD_MAP[prefix]][v];return c?(c.nome||v):v;});el.textContent=names.length?names.join(', '):'Selecione...';}
 function toggleMsd(trig){const p=trig.nextElementSibling;const o=p.classList.toggle('open');document.querySelectorAll('.msd-panel.open').forEach(x=>{if(x!==p)x.classList.remove('open');});return o;}
@@ -4913,7 +4965,7 @@ function saveMaterial(d){
 function usuarioPodeExcluir(telaId){if(!USUARIO_ATUAL||USUARIO_ATUAL.mestre)return true;return usuarioPodeEditar(telaId);}
 function podeExcluirHist(){return !!(USUARIO_ATUAL&&USUARIO_ATUAL.mestre);}
 function btnsEnt(telaId,path,kind,rec){if(!usuarioPodeExcluir(telaId))return'';const ef='edit'+kind;return `<button class="btn bw" onclick='${ef}(${safeJSON(rec)})'><i class="fa-solid fa-pen"></i></button><button class="btn bd2" onclick="del('${path}','${rec.id}')"><i class="fa-solid fa-trash"></i></button>`;}
-function btCat(col,rid){if(!usuarioPodeExcluir('catalogos'))return'';return `<button class="btn bd2" onclick="delCat('${col}','${rid}')"><i class="fa-solid fa-trash"></i></button>`;}
+function btCat(col,rid){const ed=usuarioPodeEditar('catalogos')?`<button class="btn bw" title="Editar" onclick="editCat('${col}','${rid}')"><i class="fa-solid fa-pen"></i></button>`:'';const dl=usuarioPodeExcluir('catalogos')?`<button class="btn bd2" title="Excluir" onclick="delCat('${col}','${rid}')"><i class="fa-solid fa-trash"></i></button>`:'';return ed+dl;}
 function btHistDel(key,label,sm){if(!podeExcluirHist())return'';const st=sm?'padding:3px 6px;font-size:10px;':'';return `<button class="btn bd2" style="margin-left:6px;${st}" onclick="deleteHistoryItem('${key}')"><i class="fa-solid fa-trash"></i> ${esc(label||'Excluir')}</button>`;}
 const TELA_DEL_PATH={empresas:'emps',funcionarios:'funcs',cargos:'cargos',pessoas:'pessoas',textos:'texts',materiais:'epi'};
 function del(path,id){const tela=TELA_DEL_PATH[path];if(tela&&!usuarioPodeExcluir(tela)){alert('Voc\u00ea n\u00e3o tem permiss\u00e3o para excluir.');return;}if(!confirm('Confirma a exclus\u00e3o?'))return;WS_DATA.remove(path,id).then(()=>{if(path==='funcionarios'){/* o espelho em 'alunos' precisa sair junto, senão o colaborador reaparece na tela de certificados */return WS_DATA.remove('alunos',id).catch(e=>{alert('Colaborador excluído, mas não foi possível removê-lo de "alunos" (certificados). Tente excluir de novo.\n\n'+(e&&e.message?e.message:e));});}}).then(()=>{if(window.renderAll)renderAll();}).catch(e=>alert('Erro ao excluir: '+e.message));}
