@@ -8,8 +8,10 @@
  *   e um por lembrete. Somem ao clicar no X ou sozinhos depois de 18 s
  *   (pausa com o mouse em cima).
  * - Faixas: vencido, até 7 dias, até 15 dias, até 30 dias.
- * - Cada balão aparece uma vez por sessão; volta se a situação mudar (ex.: de
- *   "15 dias" para "7 dias") ou depois de 4 horas com o sistema aberto.
+ * - Ao abrir ou atualizar a página, os balões e a voz aparecem de novo. Com
+ *   a página aberta, cada aviso aparece uma vez e volta se a situação mudar
+ *   (ex.: de "15 dias" para "7 dias") ou depois de 4 horas.
+ * - "Ignorar" no balão cala a voz até a página ser atualizada.
  * - Voz: síntese do próprio navegador, escolhendo a voz pt-BR mais natural
  *   disponível (no Edge, as vozes "Natural" da Microsoft).
  * - Lembretes ficam em 'lembretesUsuario/{usuario}/{id}' (só do dono) e em
@@ -162,10 +164,32 @@
       };
       return vs.slice().sort((a, b) => nota(b) - nota(a))[0];
     },
+    mudo: false,
+    testando: false,
     falar(texto, forcar) {
       if (!window.speechSynthesis || !texto) return;
-      if (!forcar && !cfg().voz) return;
-      if (!this.liberado && !forcar) { this.pend.push(texto); return; }
+      if (!forcar && (!cfg().voz || this.mudo)) return;
+      if (!this.liberado && !forcar) {
+        // Depois de atualizar a página o navegador pode exigir um clique antes
+        // de falar. Tenta falar já; se em 1,5 s não começou, guarda e fala no
+        // primeiro clique/tecla.
+        // já testando, ou já bloqueado (há fila): entra no fim da fila,
+        // mantendo a ordem (saudação primeiro)
+        if (this.testando || this.pend.length) { this.pend.push(texto); return; }
+        this.testando = true;
+        let comecou = false;
+        const u0 = this.utter(texto);
+        u0.onstart = () => { comecou = true; this.liberado = true; this.testando = false; const p = this.pend.splice(0); if (p.length) this.falar(p.join(' ')); };
+        u0.onerror = () => { if (!comecou) { this.testando = false; this.pend.unshift(texto); } };
+        try { speechSynthesis.speak(u0); } catch (_) { this.testando = false; this.pend.unshift(texto); return; }
+        setTimeout(() => {
+          if (comecou || !this.testando) return;
+          this.testando = false;
+          try { speechSynthesis.cancel(); } catch (_) { }
+          this.pend.unshift(texto);
+        }, 1500);
+        return;
+      }
       // frases curtas soam mais naturais e evitam o corte de ~15 s do Chrome
       const frases = String(texto).replace(/\s+/g, ' ').split(/(?<=[.!?;])\s+/).filter(Boolean);
       // Falha na voz (navegador sem suporte, voz removida) nunca pode
@@ -182,21 +206,31 @@
         });
       } catch (err) { console.warn('voz:', err); }
     },
+    utter(texto) {
+      const v = this.melhor();
+      const u = new SpeechSynthesisUtterance(String(texto).replace(/\s+/g, ' '));
+      u.lang = (v && v.lang) || 'pt-BR';
+      if (v) u.voice = v;
+      u.rate = Number(cfg().velocidade) || 1;
+      u.pitch = 1;
+      return u;
+    },
     // O navegador só deixa falar depois de um clique/tecla na página.
     liberar() {
       if (this.liberado) return;
       this.liberado = true;
+      if (this.testando) { this.testando = false; try { speechSynthesis.cancel(); } catch (_) { } }
       const p = this.pend.splice(0);
       if (p.length) this.falar(p.join(' '));
     },
     parar() { this.pend = []; try { speechSynthesis.cancel(); } catch (_) { } },
-    // "Ignorar": cala na hora, descarta o que estava na fila e desliga a voz
-    // (fica salvo neste navegador até ligar de novo em "Voz e balões").
+    // "Ignorar": cala na hora e não fala mais nada até a página ser
+    // atualizada. (Para desligar de vez: "Voz e balões".)
     silenciar() {
-      salvarCfg({ voz: false });
+      this.mudo = true;
+      this.testando = false;
       this.parar();
       document.querySelectorAll('.wsav-ign').forEach((b) => b.remove());
-      const ck = $('wsav-c-voz'); if (ck) ck.checked = false;
     }
   };
   if (window.speechSynthesis) {
@@ -234,7 +268,7 @@
         '<div class="wsav-tt">' + e(b.titulo) + '</div>' +
         (b.linhas || []).map((l) => '<div class="wsav-li">' + l + '</div>').join('') +
         '<div class="wsav-ac">' + (b.acao ? '<button type="button" class="wsav-ver">' + e(b.acao.rot) + '</button>' : '') +
-        (cfg().voz ? '<button type="button" class="wsav-ign" title="Silencia a voz. Para ligar de novo: Avisos de Vencimento > Voz e balões"><i class="fa-solid fa-volume-xmark"></i> Ignorar</button>' : '') + '</div>' +
+        (cfg().voz && !Voz.mudo ? '<button type="button" class="wsav-ign" title="Silencia a voz até a página ser atualizada"><i class="fa-solid fa-volume-xmark"></i> Ignorar</button>' : '') + '</div>' +
         '</div>' +
         '<button type="button" class="wsav-x" title="Fechar" aria-label="Fechar">&times;</button>' +
         '<div class="wsav-pg" style="animation-duration:' + AUTO_FECHAR_MS + 'ms"></div>';
@@ -429,10 +463,12 @@
   }
 
   // ---------------------------------------------------------------- verificação
-  const VISTOS_KEY = 'ws_avisos_vistos';
-  function vistos() { try { return JSON.parse(sessionStorage.getItem(VISTOS_KEY) || '{}') || {}; } catch (_) { return {}; } }
-  function marcarVisto(k) { const v = vistos(); v[k] = Date.now(); try { sessionStorage.setItem(VISTOS_KEY, JSON.stringify(v)); } catch (_) { } }
-  function deveMostrar(k) { const t = vistos()[k]; return !t || Date.now() - t > REAVISAR_MS; }
+  // Só na memória da página: ao atualizar (F5) os balões e a voz voltam.
+  // Com a página aberta, cada aviso aparece uma vez e volta se mudar de faixa
+  // ou depois de 4 horas.
+  const VISTOS = {};
+  function marcarVisto(k) { VISTOS[k] = Date.now(); }
+  function deveMostrar(k) { const t = VISTOS[k]; return !t || Date.now() - t > REAVISAR_MS; }
 
   function pronto() {
     return sessionStorage.getItem('ws_logado') === '1' &&
