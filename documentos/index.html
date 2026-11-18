@@ -1213,6 +1213,12 @@ hr.dv{border:none;border-top:1px solid var(--bd);margin:18px 0}
     <div class="fg"><label class="fl">Cidade</label><select id="relcolab-emp-cidade" style="padding:7px 10px;font-size:12px" onchange="gerarRelColab()"><option value="">Todas</option></select></div>
     <div class="fg"><label class="fl">Filial</label><select id="relcolab-emp-filial" style="padding:7px 10px;font-size:12px" onchange="gerarRelColab()"><option value="">Todas</option></select></div><div class="fg"><label class="fl">Contrato</label><select id="relcolab-emp-contrato" style="padding:7px 10px;font-size:12px" onchange="gerarRelColab()"><option value="">Todos</option></select></div>
   </div>
+  <div class="g3" style="margin-top:6px">
+    <div class="fg"><label class="fl">Situa&ccedil;&atilde;o</label><select id="relcolab-sit" style="padding:7px 10px;font-size:12px" onchange="gerarRelColab()"><option value="">Ativos e desligados</option><option value="ativo">S&oacute; ativos</option><option value="desligado">S&oacute; desligados</option></select></div>
+    <div class="fg"><label class="fl">Per&iacute;odo &mdash; de</label><input type="date" id="relcolab-ini" onchange="gerarRelColab()"></div>
+    <div class="fg"><label class="fl">at&eacute;</label><input type="date" id="relcolab-fim" onchange="gerarRelColab()"></div>
+  </div>
+  <div class="pd" style="font-size:11px;margin:-4px 0 4px">Com per&iacute;odo: <b>ativo</b> = estava trabalhando no fim do per&iacute;odo; <b>desligado</b> = desligado dentro do per&iacute;odo. Admitidos depois do per&iacute;odo ou desligados antes dele ficam de fora.</div>
   <div class="ma" style="margin-top:6px">
     <button class="btn bg2" onclick="cls()">Cancelar</button>
     <button class="btn bp" onclick="gerarRelColab()"><i class="fa-solid fa-magnifying-glass"></i> Gerar</button>
@@ -3868,12 +3874,30 @@ function openRelColab(){
   const emps=empresasVisiveis().sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));
   el.innerHTML='<option value="">Selecione...</option>'+emps.map(e=>`<option value="${esc(e.id)}">${esc(e.nome)}</option>`).join('');
   document.getElementById('relcolab-mat').value='';
+  ['relcolab-sit','relcolab-ini','relcolab-fim'].forEach(id=>{const x=document.getElementById(id);if(x)x.value='';});
   popGenLoc('relcolab-emp');
   document.getElementById('relcolab-results').innerHTML='';
   document.getElementById('relcolab-pdf-btn').style.display='none';
   document.getElementById('mdl-rel-colab').style.display='flex';
 }
 function relColabCargo(f){return resolveCargo(f?.funcao)?.nome||f?.funcao||'—';}
+// Situação do colaborador no período (AAAA-MM-DD; vazio = sem limite).
+// Sem período: ativo/desligado conforme o cadastro hoje.
+// Com período: 'ativo' = trabalhava no fim do período (desligado só depois
+// dele também conta como ativo); 'desligado' = desligado dentro do período;
+// null = fora do período (admitido depois do fim ou desligado antes do início).
+function relColabSituacao(f,ini,fim){
+  const adm=String(f.dataAdm||'').slice(0,10),dem=String(f.dataDemissao||'').slice(0,10);
+  const deslig=f.ativo===false;
+  if(fim&&adm&&adm>fim)return null;
+  if(!deslig)return 'ativo';
+  if(!ini&&!fim)return 'desligado';
+  if(!dem)return 'desligado';
+  if(ini&&dem<ini)return null;
+  if(fim&&dem>fim)return 'ativo';
+  return 'desligado';
+}
+function relColabSitTxt(f,sit){return sit==='desligado'?'Desligado'+(f.dataDemissao?' em '+fmtData(f.dataDemissao):''):'Ativo';}
 function popRelLoc(){popGenLoc('relcolab-emp');}
 function relColabQuery(){
   const empId=document.getElementById('relcolab-emp').value;
@@ -3886,8 +3910,13 @@ function relColabQuery(){
   let funcs=toArr(DATA.funcionarios).filter(f=>String(f.empresaId||'').trim()===String(empId).trim()).filter(funcVisivel);
   funcs=funcs.filter(f=>colLocMatch(f,{obra:vOb,cidade:vCd,filial:vFl,contrato:vCt}));
   if(mat){funcs=funcs.filter(f=>String(f.matricula||'').trim()===mat||String(f.matricula||'').toLowerCase().includes(mat.toLowerCase()));}
+  const sitF=document.getElementById('relcolab-sit')?.value||'';
+  let ini=document.getElementById('relcolab-ini')?.value||'',fim=document.getElementById('relcolab-fim')?.value||'';
+  if(ini&&fim&&ini>fim){const t=ini;ini=fim;fim=t;}
+  funcs=funcs.map(f=>Object.assign({},f,{_sit:relColabSituacao(f,ini,fim)})).filter(f=>f._sit&&(!sitF||f._sit===sitF));
   funcs=funcs.slice().sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));
-  return{empId,mat,funcs,emp:resolveEmp(empId)};
+  const nAtivos=funcs.filter(f=>f._sit==='ativo').length;
+  return{empId,mat,funcs,emp:resolveEmp(empId),sitF,ini,fim,nAtivos,nDesligados:funcs.length-nAtivos};
 }
 function gerarRelColab(){
   const res=document.getElementById('relcolab-results');
@@ -3917,19 +3946,21 @@ function gerarRelColab(){
     <td>${esc(nameOf('obras',f.obraId))}</td>
     <td>${esc(nameOf('cidades',f.cidadeId))}</td>
     <td>${f.dataAdm?esc(fmtData(f.dataAdm)):'—'}</td>
-    <td style="text-align:center">${asoBadge(f)}</td>
+    <td>${f._sit==='desligado'?'<span class="bdg" style="background:#f4f4f5;color:#52525b">'+esc(relColabSitTxt(f,f._sit))+'</span>':'<span class="bdg" style="background:#dcfce7;color:#15803d">Ativo</span>'}</td>
+    <td style="text-align:center">${f._sit==='desligado'?'—':asoBadge(f)}</td>
   </tr>`).join('');
   const cargosHtml=cargosRows.map(([c,v])=>`<tr><td>${esc(c)}</td><td style="text-align:center">${v}</td></tr>`).join('');
   res.innerHTML=`
     <div style="padding:10px;background:var(--hl);border:1px solid var(--bd);border-radius:6px;margin-bottom:10px">
-      <strong>Empresa:</strong> ${empNome} &nbsp;|&nbsp; <strong>Total de Colaboradores:</strong> ${total} &nbsp;|&nbsp; <strong>Total de Cargos:</strong> ${nCargos}
+      <strong>Empresa:</strong> ${empNome} &nbsp;|&nbsp; <strong>Total de Colaboradores:</strong> ${total} &nbsp;|&nbsp; <strong style="color:#15803d">Ativos:</strong> ${q.nAtivos} &nbsp;|&nbsp; <strong style="color:#52525b">Desligados:</strong> ${q.nDesligados} &nbsp;|&nbsp; <strong>Total de Cargos:</strong> ${nCargos}
+      ${q.ini||q.fim?'<div style="margin-top:4px;color:var(--ts)">Per&iacute;odo: '+(q.ini?esc(fmtData(q.ini)):'in&iacute;cio')+' a '+(q.fim?esc(fmtData(q.fim)):'hoje')+'</div>':''}
     </div>
     <div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:12px">
       <div>${cargosRows.map(([c,v])=>`<div style="font-size:12px;padding:2px 0"><span style="font-weight:600">${esc(c)}:</span> ${v}</div>`).join('')}
       </div>
     </div>
     <table class="ot" style="width:100%;font-size:11px">
-      <thead><tr><th>Colaborador</th><th>Matr&iacute;cula</th><th>Cargo</th><th>CBO</th><th>Setor</th><th>Filial</th><th>Obra</th><th>Cidade</th><th>Admiss&atilde;o</th><th>ASO</th></tr></thead>
+      <thead><tr><th>Colaborador</th><th>Matr&iacute;cula</th><th>Cargo</th><th>CBO</th><th>Setor</th><th>Filial</th><th>Obra</th><th>Cidade</th><th>Admiss&atilde;o</th><th>Situa&ccedil;&atilde;o</th><th>ASO</th></tr></thead>
       <tbody>${rows}</tbody>
     </table>`;
   if(pdfBtn)pdfBtn.style.display='block';
@@ -3965,7 +3996,9 @@ async function relColabPDF(){
   doc.setFont('helvetica','bold');doc.setFontSize(10);doc.setTextColor(...C.twh);
   doc.text('FILTROS APLICADOS',W/2,158,{align:'center'});
   doc.setFont('helvetica','normal');doc.setFontSize(8.5);doc.setTextColor(...C.tlt);
-  doc.text('Matrícula: '+(q.mat?q.mat:'—')+'  |  Colaboradores: '+funcs.length,W/2,168,{align:'center'});
+  const sitRot={'':'Ativos e desligados',ativo:'Só ativos',desligado:'Só desligados'}[q.sitF||''];
+  doc.text('Matrícula: '+(q.mat?q.mat:'—')+'  |  Situação: '+sitRot+'  |  Período: '+(q.ini||q.fim?(q.ini?fmtData(q.ini):'início')+' a '+(q.fim?fmtData(q.fim):'hoje'):'—'),W/2,168,{align:'center'});
+  doc.text('Colaboradores: '+funcs.length+'  |  Ativos: '+q.nAtivos+'  |  Desligados: '+q.nDesligados,W/2,176,{align:'center'});
   const nowStr=new Date().toLocaleString('pt-BR');
   doc.setFont('helvetica','italic');doc.setFontSize(7.5);doc.setTextColor(...C.tlt);
   doc.text('Gerado em: '+nowStr,W/2,192,{align:'center'});
@@ -3996,8 +4029,8 @@ async function relColabPDF(){
   const nameOf=(col,id)=>{if(!id)return'—';const s=String(id).trim();const it=DATA[col]&&DATA[col][s]?DATA[col][s]:toArr(DATA[col]).find(c=>String(c.id||'').trim()===s);return it?(it.nome||'—'):'—';};
   doc.autoTable({
     startY:32,
-    head:[['Nº','Colaborador','Matrícula','Cargo','CBO','Setor','Filial','Obra','Cidade','Admissão','ASO / Venc.']],
-    body:funcs.map((f,i)=>[String(i+1),f.nome||'',String(f.matricula==null||f.matricula===''?'—':f.matricula),relColabCargo(f),f.cbo||'—',f.setor||'—',nameOf('filiais',f.filialId),nameOf('obras',f.obraId),nameOf('cidades',f.cidadeId),f.dataAdm?fmtData(f.dataAdm):'—',f.asoDate?fmtData(f.asoDate):'—']),
+    head:[['Nº','Colaborador','Matrícula','Cargo','CBO','Setor','Filial','Obra','Cidade','Admissão','Situação','ASO / Venc.']],
+    body:funcs.map((f,i)=>[String(i+1),f.nome||'',String(f.matricula==null||f.matricula===''?'—':f.matricula),relColabCargo(f),f.cbo||'—',f.setor||'—',nameOf('filiais',f.filialId),nameOf('obras',f.obraId),nameOf('cidades',f.cidadeId),f.dataAdm?fmtData(f.dataAdm):'—',relColabSitTxt(f,f._sit),f._sit==='desligado'?'—':(f.asoDate?fmtData(f.asoDate):'—')]),
     headStyles:{fillColor:C.h1,textColor:C.twh,fontStyle:'bold',fontSize:7,halign:'center',cellPadding:2},
     alternateRowStyles:{fillColor:C.bg},
     styles:{fontSize:7,textColor:C.dark,cellPadding:1.8},
@@ -4005,11 +4038,17 @@ async function relColabPDF(){
     tableWidth:uw,margin:{top:30,left:m,right:m,bottom:16},
     rowPageBreak:'avoid',
     columnStyles:{
-      0:{cellWidth:9,halign:'center'},1:{cellWidth:48},
-      2:{cellWidth:18,halign:'center'},3:{cellWidth:36},
-      4:{cellWidth:18,halign:'center'},5:{cellWidth:26},
-      6:{cellWidth:26},7:{cellWidth:26},8:{cellWidth:24},
-      9:{cellWidth:23,halign:'center'},10:{cellWidth:23,halign:'center'}
+      0:{cellWidth:9,halign:'center'},1:{cellWidth:42},
+      2:{cellWidth:18,halign:'center'},3:{cellWidth:32},
+      4:{cellWidth:16,halign:'center'},5:{cellWidth:22},
+      6:{cellWidth:24},7:{cellWidth:24},8:{cellWidth:20},
+      9:{cellWidth:21,halign:'center'},10:{cellWidth:28,halign:'center'},11:{cellWidth:21,halign:'center'}
+    },
+    didParseCell:function(data){
+      if(data.section==='body'&&data.column.index===10){
+        const des=String(data.cell.raw||'').startsWith('Desligado');
+        data.cell.styles.textColor=des?[82,82,91]:[21,128,61];data.cell.styles.fontStyle='bold';
+      }
     },
     didDrawPage:function(data){
       if(data.pageNumber!==lastPageNum){
@@ -4062,6 +4101,9 @@ async function relColabPDF(){
   if(fyEnd>H-16){doc.addPage();fyEnd=45;}
   doc.setFont('helvetica','bold');doc.setFontSize(11);doc.setTextColor(...C.dark);
   doc.text('TOTAL DE COLABORADORES: '+total, W/2,fyEnd,{align:'center'});
+  fyEnd+=7;
+  doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(...C.mid);
+  doc.text('Ativos: '+q.nAtivos+'   |   Desligados: '+q.nDesligados+(q.ini||q.fim?'   (período '+(q.ini?fmtData(q.ini):'início')+' a '+(q.fim?fmtData(q.fim):'hoje')+')':''),W/2,fyEnd,{align:'center'});
   fyEnd+=7;
   doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(...C.mid);
   doc.text('Total de Cargos: '+nCargos,W/2,fyEnd,{align:'center'});
@@ -4125,8 +4167,10 @@ async function genRelatorioPDF(docType,subTipo){
   const tipoOrder=['Ordem de Serviço','Lista de Presença','Certificado','Ficha Admissional','Ficha EPI/EPC','ASO','Proposta Comercial'];
 
   const rows=[];
+  const colabsRel={};
   items.forEach(h=>{
-    const funcs=dashFuncNames(h.funcionarioIds);
+    // colaborador desligado aparece marcado no relatório
+    const funcs=(h.funcionarioIds||[]).map(fid=>{colabsRel[fid]=1;const f=DATA.funcionarios[fid];if(!f)return 'ID: '+fid;return f.ativo===false?(f.nome||'')+' (desligado'+(f.dataDemissao?' em '+fmtData(f.dataDemissao):'')+')':(f.nome||'');});
     const empName=dashEmpName(h.empresaId);
     const docTipo=getDocTipo(h.nome);
     const categoria=getDocCategoria(h.nome);
@@ -4315,7 +4359,12 @@ async function genRelatorioPDF(docType,subTipo){
   doc.text('Total de registros: '+tg,W/2,sy+4,{align:'center'});
   doc.text('Vencidos: '+tv,W/2,sy+15,{align:'center'});
   doc.text('Não vence: '+tnv,W/2,sy+26,{align:'center'});
-  sy+=38;
+  // Colaboradores do relatório por situação (no período filtrado, mesma regra
+  // da Relação de Colaboradores)
+  let nAt=0,nDes=0;
+  Object.keys(colabsRel).forEach(fid=>{const f=DATA.funcionarios[fid];if(!f)return;const st=relColabSituacao(f,startDate||'',endDate||'')||(f.ativo===false?'desligado':'ativo');if(st==='desligado')nDes++;else nAt++;});
+  doc.text('Colaboradores: '+(nAt+nDes)+'  (ativos: '+nAt+'  |  desligados: '+nDes+')',W/2,sy+37,{align:'center'});
+  sy+=49;
   // Tabela de vencidos: colaborador + qual curso/documento está vencido
   const vencRows=rows.filter(r=>r.status==='VENCIDO').sort((a,b)=>(a.colaborador||'').localeCompare(b.colaborador||'')||(a.vencimento||'').localeCompare(b.vencimento||''));
   if(vencRows.length){
