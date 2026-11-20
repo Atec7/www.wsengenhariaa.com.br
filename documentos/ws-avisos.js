@@ -120,6 +120,7 @@
 .wsav-tab{width:100%;border-collapse:collapse;font-size:12px}
 .wsav-tab th{text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:#71717a;padding:6px 8px;border-bottom:1px solid #e4e4e7;position:sticky;top:0;background:#fff}
 .wsav-tab td{padding:6px 8px;border-bottom:1px solid #f4f4f5;vertical-align:top}
+.wsav-cnt{font-size:11px;color:#71717a;padding:6px 8px;border-bottom:1px solid #f4f4f5}
 .wsav-st{display:inline-block;padding:2px 7px;border-radius:5px;font-size:10px;font-weight:700;white-space:nowrap}
 .wsav-lst{border:1px solid #e4e4e7;border-radius:8px;max-height:46vh;overflow:auto}
 .wsav-lr{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-bottom:1px solid #f4f4f5}
@@ -324,6 +325,20 @@
   // ---------------------------------------------------------------- vencimentos
   // Mesma base do relatório: 'historico' (campo expiracao) + ASO dos
   // colaboradores. Um documento renovado só conta pela emissão mais recente.
+  // Obra, cidade, filial e contrato do colaborador (nome; registros antigos
+  // que guardam o nome no lugar do id também funcionam).
+  const LOCAIS = [['obras', 'obraId', 'Obra'], ['cidades', 'cidadeId', 'Cidade'], ['filiais', 'filialId', 'Filial'], ['contratos', 'contratoId', 'Contrato']];
+  function nomeLocal(col, id) {
+    if (!id) return '';
+    const m = (typeof DATA !== 'undefined' && DATA[col]) || {};
+    const r = m[id];
+    return String((r && r.nome) || id).trim();
+  }
+  function locaisDe(f) {
+    const o = {};
+    LOCAIS.forEach(([col, campo]) => { o[col] = f ? nomeLocal(col, f[campo]) : ''; });
+    return o;
+  }
   function coletarVencimentos() {
     if (typeof DATA === 'undefined') return [];
     const ultimo = {};
@@ -348,7 +363,7 @@
         if (atual && atual.ts >= tsDe(h)) return;
         ultimo[chave] = {
           ts: tsDe(h), tipo: ehCert ? 'cert' : 'doc', doc,
-          colaborador: (f && f.nome) || '—', empresaId: empId, exp: String(h.expiracao).slice(0, 10)
+          colaborador: (f && f.nome) || '—', empresaId: empId, exp: String(h.expiracao).slice(0, 10), loc: locaisDe(f)
         };
       });
     });
@@ -356,7 +371,7 @@
       if (!f || !f.asoDate || f.ativo === false) return;
       if (typeof funcVisivel === 'function' && !funcVisivel(f)) return;
       if (!podeVerEmpresa(f.empresaId)) return;
-      ultimo['aso|' + f.id] = { ts: 0, tipo: 'aso', doc: 'ASO', colaborador: f.nome || '—', empresaId: f.empresaId || '', exp: String(f.asoDate).slice(0, 10) };
+      ultimo['aso|' + f.id] = { ts: 0, tipo: 'aso', doc: 'ASO', colaborador: f.nome || '—', empresaId: f.empresaId || '', exp: String(f.asoDate).slice(0, 10), loc: locaisDe(f) };
     });
     const out = [];
     Object.keys(ultimo).forEach((k) => {
@@ -570,7 +585,7 @@
     const c = cfg();
     const vozes = Voz.vozes();
     const atual = Voz.melhor();
-    const m = modal('wsav-mdl-painel', 860,
+    const m = modal('wsav-mdl-painel', 1180,
       '<div class="mt2"><i class="fa-solid fa-bell" style="color:#dc2626;margin-right:6px"></i> Avisos de vencimento</div>' +
       '<div class="wsav-row" style="margin:6px 0 10px">' +
       '<div class="fg"><label class="fl">Empresa</label><select id="wsav-f-emp"><option value="">Todas (' + grupos.length + ')</option>' +
@@ -578,6 +593,14 @@
       '<div class="fg"><label class="fl">Situação</label><select id="wsav-f-fx"><option value="">Todas</option>' +
       FAIXAS.map((f) => '<option value="' + f.k + '">' + (f.k === 'vencido' ? 'Vencidos' : 'Vencem em até ' + f.k.slice(1) + ' dias') + '</option>').join('') + '</select></div>' +
       '<div class="fg"><label class="fl">Tipo</label><select id="wsav-f-tp"><option value="">Todos</option><option value="cert">Certificados</option><option value="doc">Documentos</option><option value="aso">ASO</option></select></div>' +
+      '</div>' +
+      '<div class="wsav-row" style="margin:-4px 0 10px">' +
+      LOCAIS.map(([col, , rot]) => {
+        const vals = [...new Set(itens.map((i) => (i.loc && i.loc[col]) || ''))].filter(Boolean).sort((a, b) => a.localeCompare(b, 'pt-BR'));
+        return '<div class="fg"><label class="fl">' + rot + '</label><select id="wsav-f-' + col + '"><option value="">' + (col === 'contratos' ? 'Todos' : 'Todas') + '</option>' +
+          vals.map((v) => '<option value="' + e(v) + '">' + e(v) + '</option>').join('') +
+          (itens.some((i) => !(i.loc && i.loc[col])) ? '<option value="__sem">(sem ' + rot.toLowerCase() + ')</option>' : '') + '</select></div>';
+      }).join('') +
       '</div>' +
       '<div class="wsav-lst" id="wsav-tab"></div>' +
       '<details style="margin-top:14px"><summary style="cursor:pointer;font-size:12px;font-weight:600">Voz e balões</summary>' +
@@ -598,14 +621,18 @@
 
     const desenhar = () => {
       const fe = $('wsav-f-emp').value, fx = $('wsav-f-fx').value, tp = $('wsav-f-tp').value;
-      const lst = itens.filter((i) => (!fe || (i.empresaId || '_') === fe) && (!fx || i.faixa === fx) && (!tp || i.tipo === tp));
+      const fl = {}; LOCAIS.forEach(([col]) => { fl[col] = $('wsav-f-' + col).value; });
+      const lst = itens.filter((i) => (!fe || (i.empresaId || '_') === fe) && (!fx || i.faixa === fx) && (!tp || i.tipo === tp) &&
+        LOCAIS.every(([col]) => { const v = (i.loc && i.loc[col]) || ''; return !fl[col] || (fl[col] === '__sem' ? !v : v === fl[col]); }));
       $('wsav-tab').innerHTML = lst.length
-        ? '<table class="wsav-tab"><thead><tr><th>Empresa</th><th>Colaborador</th><th>Documento</th><th>Vencimento</th><th>Situação</th></tr></thead><tbody>' +
-          lst.slice(0, 800).map((i) => '<tr><td>' + e(nomeEmpresa(i.empresaId)) + '</td><td>' + e(i.colaborador) + '</td><td>' + e((i.tipo === 'cert' ? 'Certificado ' : '') + i.doc) + '</td><td>' + e(fmtData(i.exp)) + '</td><td>' + stBadge(i.faixa, i.dias) + '</td></tr>').join('') +
+        ? '<div class="wsav-cnt">' + lst.length + ' documento(s)</div><table class="wsav-tab"><thead><tr><th>Empresa</th><th>Colaborador</th>' + LOCAIS.map(([, , rot]) => '<th>' + rot + '</th>').join('') + '<th>Documento</th><th>Vencimento</th><th>Situação</th></tr></thead><tbody>' +
+          lst.slice(0, 800).map((i) => '<tr><td>' + e(nomeEmpresa(i.empresaId)) + '</td><td>' + e(i.colaborador) + '</td>' +
+            LOCAIS.map(([col]) => '<td>' + e((i.loc && i.loc[col]) || '—') + '</td>').join('') +
+            '<td>' + e((i.tipo === 'cert' ? 'Certificado ' : '') + i.doc) + '</td><td>' + e(fmtData(i.exp)) + '</td><td>' + stBadge(i.faixa, i.dias) + '</td></tr>').join('') +
           '</tbody></table>' + (lst.length > 800 ? '<div class="es" style="padding:8px">mostrando 800 de ' + lst.length + '</div>' : '')
         : '<div class="es" style="padding:16px">Nenhum vencimento nos próximos 30 dias.</div>';
     };
-    ['wsav-f-emp', 'wsav-f-fx', 'wsav-f-tp'].forEach((id) => { $(id).onchange = desenhar; });
+    ['wsav-f-emp', 'wsav-f-fx', 'wsav-f-tp'].concat(LOCAIS.map(([col]) => 'wsav-f-' + col)).forEach((id) => { $(id).onchange = desenhar; });
     if (empFiltro) $('wsav-f-emp').value = empFiltro;
     desenhar();
     $('wsav-c-baloes').onchange = (ev) => salvarCfg({ baloes: ev.target.checked });
