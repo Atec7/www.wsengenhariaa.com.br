@@ -4368,8 +4368,44 @@ async function genRelatorioPDF(docType,subTipo){
   // da Relação de Colaboradores)
   let nAt=0,nDes=0;
   Object.keys(colabsRel).forEach(fid=>{const f=DATA.funcionarios[fid];if(!f)return;const st=relColabSituacao(f,startDate||'',endDate||'')||(f.ativo===false?'desligado':'ativo');if(st==='desligado')nDes++;else nAt++;});
-  doc.text('Colaboradores: '+(nAt+nDes)+'  (ativos: '+nAt+'  |  desligados: '+nDes+')',W/2,sy+37,{align:'center'});
-  sy+=49;
+  // Todos os colaboradores das empresas selecionadas (com ou sem documento no
+  // relatório), pela situação no período: o desligado aparece mesmo sem
+  // documento emitido.
+  const colabsEmp=toArr(DATA.funcionarios).filter(f=>f&&f.empresaId&&selectedEmpresas.includes(f.empresaId)&&(typeof funcVisivel!=='function'||funcVisivel(f)))
+    .map(f=>Object.assign({},f,{_sit:relColabSituacao(f,startDate||'',endDate||'')})).filter(f=>f._sit);
+  const desligadosEmp=colabsEmp.filter(f=>f._sit==='desligado').sort((x,y)=>String(y.dataDemissao||'').localeCompare(String(x.dataDemissao||''))||(x.nome||'').localeCompare(y.nome||''));
+  const ativosEmp=colabsEmp.length-desligadosEmp.length;
+  doc.text('Colaboradores das empresas: '+colabsEmp.length+'  (ativos: '+ativosEmp+'  |  desligados'+(startDate||endDate?' no período':'')+': '+desligadosEmp.length+')',W/2,sy+37,{align:'center'});
+  doc.text('Com documentos neste relatório: '+(nAt+nDes)+'  (ativos: '+nAt+'  |  desligados: '+nDes+')',W/2,sy+48,{align:'center'});
+  sy+=60;
+  // Tabela de desligados: nome, empresa, matrícula, cargo, admissão e demissão
+  if(desligadosEmp.length){
+    let tyD=sy;
+    doc.setFillColor(...C.h2);doc.rect(m,tyD-6,uw,6.5,'F');
+    doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(...C.twh);
+    doc.text('COLABORADORES DESLIGADOS'+(startDate||endDate?' NO PERÍODO':'')+' ('+desligadosEmp.length+')',m+4,tyD-1);
+    tyD+=7;
+    doc.autoTable({
+      startY:tyD,
+      head:[['Colaborador','Empresa','Matrícula','Cargo','Admissão','Demissão']],
+      body:desligadosEmp.map(f=>[f.nome||'',(resolveEmp(f.empresaId)||{}).nome||'—',String(f.matricula==null||f.matricula===''?'—':f.matricula),(resolveCargo(f.funcao)||{}).nome||f.funcao||'—',f.dataAdm?fmtData(f.dataAdm):'—',f.dataDemissao?fmtData(f.dataDemissao):'não informada']),
+      headStyles:{fillColor:[82,82,91],textColor:[255,255,255],fontStyle:'bold',fontSize:7,halign:'center',cellPadding:2},
+      alternateRowStyles:{fillColor:C.bg},
+      styles:{fontSize:7,textColor:C.dark,cellPadding:1.8},
+      theme:'grid',lineColor:C.bdr,lineWidth:0.12,
+      tableWidth:uw,margin:{top:38,left:m,right:m,bottom:16},
+      rowPageBreak:'avoid',
+      columnStyles:{0:{cellWidth:uw*0.28},1:{cellWidth:uw*0.20},2:{cellWidth:uw*0.09,halign:'center'},3:{cellWidth:uw*0.19},4:{cellWidth:uw*0.12,halign:'center'},5:{cellWidth:uw*0.12,halign:'center',fontStyle:'bold'}},
+      didDrawPage:function(data){
+        if(data.pageNumber!==lastPageNum){
+          drawPageHeader(doc,W,m,wsLogo);
+          drawPageFooter(doc,W,H,m);
+          lastPageNum=data.pageNumber;
+        }
+      }
+    });
+    sy=doc.lastAutoTable.finalY+10;
+  }
   // Tabela de vencidos: colaborador + qual curso/documento está vencido
   const vencRows=rows.filter(r=>r.status==='VENCIDO').sort((a,b)=>(a.colaborador||'').localeCompare(b.colaborador||'')||(a.vencimento||'').localeCompare(b.vencimento||''));
   if(vencRows.length){
