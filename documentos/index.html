@@ -402,6 +402,7 @@ hr.dv{border:none;border-top:1px solid var(--bd);margin:18px 0}
 .tgl .tgl-tr{position:absolute;inset:0;cursor:pointer;background:#d4d4d8;border-radius:22px;transition:background .15s}
 .tgl .tgl-tr:before{content:"";position:absolute;width:16px;height:16px;left:3px;top:3px;background:#fff;border-radius:50%;transition:transform .15s;box-shadow:0 1px 2px rgba(0,0,0,.2)}
 .tgl input:checked+.tgl-tr{background:#16a34a}
+#i-f-afast:checked+.tgl-tr{background:#d97706}
 .tgl input:checked+.tgl-tr:before{transform:translateX(18px)}
 .tgl input:focus-visible+.tgl-tr{outline:2px solid var(--hi);outline-offset:2px}
 .tgl-lbl{font-size:13px;font-weight:600}
@@ -1021,10 +1022,20 @@ hr.dv{border:none;border-top:1px solid var(--bd);margin:18px 0}
   <div class="fg"><label class="fl">Nome <span style="color:var(--danger, #dc2626)">*</span></label><input id="i-f-nm"></div>
 <div class="g2"><div class="fg"><label class="fl">CPF</label><input id="i-f-cp" placeholder="000.000.000-00"></div><div class="fg"><label class="fl">Data de Admiss&atilde;o</label><input type="date" id="i-f-dt" onchange="onDataAdmChange()"></div></div>
 <div class="g2"><div class="fg"><label class="fl">Situa&ccedil;&atilde;o</label><div class="tgl-row"><label class="tgl"><input type="checkbox" id="i-f-ativo" checked onchange="onSituacaoChange()"><span class="tgl-tr"></span></label><span class="tgl-lbl" id="i-f-ativo-lbl" style="color:#15803d">Ativo</span></div></div><div class="fg" id="i-f-dem-box" style="display:none"><label class="fl">Data de Demiss&atilde;o <span style="color:var(--danger, #dc2626)">*</span></label><input type="date" id="i-f-dem"></div></div>
+<div id="i-f-afast-wrap">
+  <div class="fg"><label class="fl">Afastamento</label><div class="tgl-row"><label class="tgl"><input type="checkbox" id="i-f-afast" onchange="onAfastChange()"><span class="tgl-tr"></span></label><span class="tgl-lbl" id="i-f-afast-lbl" style="color:#71717a">N&atilde;o est&aacute; afastado</span></div></div>
+  <div id="i-f-afast-box" style="display:none;border:1px solid #fde68a;background:#fffbeb;border-radius:8px;padding:12px 12px 2px;margin:-4px 0 12px">
+    <div class="g2"><div class="fg"><label class="fl">Motivo <span style="color:var(--danger, #dc2626)">*</span></label><select id="i-f-afast-mot" onchange="onAfastMotivoChange()"><option value="">Selecione...</option></select></div><div class="fg" id="i-f-afast-outro-box" style="display:none"><label class="fl">Qual motivo? <span style="color:var(--danger, #dc2626)">*</span></label><input id="i-f-afast-outro" maxlength="120"></div></div>
+    <div class="g2"><div class="fg"><label class="fl">In&iacute;cio do afastamento <span style="color:var(--danger, #dc2626)">*</span></label><input type="date" id="i-f-afast-ini"></div><div class="fg"><label class="fl">Retorno previsto / fim</label><input type="date" id="i-f-afast-fim"></div></div>
+    <div class="fg"><label class="fl">Observa&ccedil;&atilde;o</label><input id="i-f-afast-obs" maxlength="300" placeholder="Ex.: CAT n&ordm;, n&ordm; do benef&iacute;cio, CID (se autorizado)"></div>
+  </div>
+  <div id="i-f-afast-hist"></div>
+</div>
 <div class="g2"><div class="fg"><label class="fl">Fun&ccedil;&atilde;o</label><select id="i-f-fn" onchange="autoFillCBO()"><option value="">Selecione...</option></select></div><div class="fg"><label class="fl">CBO</label><input id="i-f-cb"></div></div>
 <div class="g2"><div class="fg"><label class="fl">Setor</label><input id="i-f-st"></div><div class="fg"><label class="fl">N&ordm; Contrato/Matr&iacute;cula</label><input id="i-f-mat" placeholder="N&ordm; do contrato ou matr&iacute;cula"></div></div>
 <div class="g2"><div class="fg"><label class="fl">Data de Emiss&atilde;o ASO</label><input type="date" id="i-f-aso-emissao"></div><div class="fg"><label class="fl">Vencimento ASO</label><input type="date" id="i-f-aso-date"></div></div>
 <div class="fg"><label class="fl">Tipo ASO</label><select id="i-f-aso-tipo" onchange="onAsoTipoChange()"><option value="">Selecione...</option><option value="ADMISSIONAL">Admissional</option><option value="DEMISSIONAL">Demissional</option><option value="PERIODICO">Periódico</option><option value="MUDANCA_FUNCAO">Mudança de Função</option><option value="RETORNO_TRABALHO">Retorno ao Trabalho</option></select></div>
+<div id="i-f-aso-hist"></div>
   <div class="ma"><button class="btn bp" onclick="sv('funcionario')"><i class="fa-solid fa-save"></i> Salvar</button><button class="btn bg2" onclick="cls()">Cancelar</button></div>
 </div></div>
 
@@ -1214,11 +1225,11 @@ hr.dv{border:none;border-top:1px solid var(--bd);margin:18px 0}
     <div class="fg"><label class="fl">Filial</label><select id="relcolab-emp-filial" style="padding:7px 10px;font-size:12px" onchange="gerarRelColab()"><option value="">Todas</option></select></div><div class="fg"><label class="fl">Contrato</label><select id="relcolab-emp-contrato" style="padding:7px 10px;font-size:12px" onchange="gerarRelColab()"><option value="">Todos</option></select></div>
   </div>
   <div class="g3" style="margin-top:6px">
-    <div class="fg"><label class="fl">Situa&ccedil;&atilde;o</label><select id="relcolab-sit" style="padding:7px 10px;font-size:12px" onchange="gerarRelColab()"><option value="">Ativos e desligados</option><option value="ativo">S&oacute; ativos</option><option value="desligado">S&oacute; desligados</option></select></div>
+    <div class="fg"><label class="fl">Situa&ccedil;&atilde;o</label><select id="relcolab-sit" style="padding:7px 10px;font-size:12px" onchange="gerarRelColab()"><option value="">Todos</option><option value="ativo">S&oacute; ativos</option><option value="afastado">S&oacute; afastados</option><option value="desligado">S&oacute; desligados</option></select></div>
     <div class="fg"><label class="fl">Per&iacute;odo &mdash; de</label><input type="date" id="relcolab-ini" onchange="gerarRelColab()"></div>
     <div class="fg"><label class="fl">at&eacute;</label><input type="date" id="relcolab-fim" onchange="gerarRelColab()"></div>
   </div>
-  <div class="pd" style="font-size:11px;margin:-4px 0 4px">Com per&iacute;odo: <b>ativo</b> = estava trabalhando no fim do per&iacute;odo; <b>desligado</b> = desligado dentro do per&iacute;odo. Admitidos depois do per&iacute;odo ou desligados antes dele ficam de fora.</div>
+  <div class="pd" style="font-size:11px;margin:-4px 0 4px">Com per&iacute;odo: <b>ativo</b> = estava trabalhando no fim do per&iacute;odo; <b>afastado</b> = esteve afastado em algum dia do per&iacute;odo; <b>desligado</b> = desligado dentro do per&iacute;odo. Admitidos depois do per&iacute;odo ou desligados antes dele ficam de fora.</div>
   <div class="ma" style="margin-top:6px">
     <button class="btn bg2" onclick="cls()">Cancelar</button>
     <button class="btn bp" onclick="gerarRelColab()"><i class="fa-solid fa-magnifying-glass"></i> Gerar</button>
@@ -2836,7 +2847,7 @@ function openM(id,mode){
   if(mode==='new'){
     if(id==='mdl-e'){v('eid','');v('i-e-nm','');v('i-e-cj','');v('i-e-ender','');v('i-e-lid','');document.getElementById('i-e-logo').value='';const p=document.getElementById('prev-emp-logo');if(p)p.style.display='none';selAll('eCatObraChk',false);selAll('eCatCidadeChk',false);selAll('eCatFilialChk',false);selAll('eCatContratoChk',false);}
     if(id==='mdl-c'){v('cid','');v('i-c-nm','');v('i-c-cb','');CARGO_EPI_CART=[];renderCargoEpiCart();document.getElementById('c-epi-search').value='';filterCargoEpiMat();}
-    if(id==='mdl-f'){v('fid','');v('i-f-nm','');v('i-f-cp','');v('i-f-fn','');v('i-f-cb','');v('i-f-st','');v('i-f-mat','');v('i-f-dt','');v('i-f-aso-emissao','');v('i-f-aso-date','');document.getElementById('i-f-aso-tipo').value='';document.getElementById('i-f-ep').value='';setSituacaoFunc(true,'');popFuncVinculos(false);}
+    if(id==='mdl-f'){v('fid','');v('i-f-nm','');v('i-f-cp','');v('i-f-fn','');v('i-f-cb','');v('i-f-st','');v('i-f-mat','');v('i-f-dt','');v('i-f-aso-emissao','');v('i-f-aso-date','');document.getElementById('i-f-aso-tipo').value='';document.getElementById('i-f-ep').value='';setSituacaoFunc(true,'');setAfastFunc(null);renderAsoHist(null);popFuncVinculos(false);}
     if(id==='mdl-t'){v('tid','');v('i-t-ti','');v('i-t-co','');v('i-t-val','none');setTxtCategoria('');selAll('tCgChk',false);}
     if(id==='mdl-m'){v('mid','');v('i-m-nm','');v('i-m-ca','');document.getElementById('i-m-tp').value='EPI';v('i-m-un','');v('i-m-es','0');v('i-m-vc','');v('i-m-min','');v('i-m-vida','');v('i-m-custo','');v('i-m-valprod','');matEstoqueCampo(true);}
     if(id==='mdl-p'){v('pid','');v('i-p-nm','');v('i-p-cp','');v('i-p-ender','');}
@@ -3902,7 +3913,29 @@ function relColabSituacao(f,ini,fim){
   if(fim&&dem>fim)return 'ativo';
   return 'desligado';
 }
-function relColabSitTxt(f,sit){return sit==='desligado'?'Desligado'+(f.dataDemissao?' em '+fmtData(f.dataDemissao):''):'Ativo';}
+// Afastamento (atual ou do histórico) que pega o período. Sem período: o
+// afastamento atual do cadastro.
+function relColabAfast(f,ini,fim){
+  const atual=f.afastado&&f.afastamento?Object.assign({},f.afastamento,{_atual:true}):null;
+  if(!ini&&!fim)return atual;
+  const lista=(Array.isArray(f.afastamentos)?f.afastamentos:[]).concat(atual?[atual]:[]);
+  const a0=ini||'0000-01-01',b0=fim||hojeISO();
+  return lista.filter(x=>x&&x.inicio&&x.inicio<=b0&&(x.fim||(x._atual?'9999-12-31':x.inicio))>=a0)
+    .sort((x,y)=>String(y.inicio).localeCompare(String(x.inicio)))[0]||null;
+}
+// ativo / afastado / desligado / null (fora do período)
+function relColabSit(f,ini,fim){
+  const s=relColabSituacao(f,ini,fim);
+  if(s!=='ativo')return{sit:s,afast:null};
+  const a=relColabAfast(f,ini,fim);
+  return a?{sit:'afastado',afast:a}:{sit:'ativo',afast:null};
+}
+function relColabAfastTxt(a){return a?(a.motivo||'Afastado')+' ('+(a.inicio?fmtData(a.inicio):'?')+' a '+(a.fim?fmtData(a.fim):'sem data de retorno')+')':'';}
+function relColabSitTxt(f,sit){
+  if(sit==='desligado')return 'Desligado'+(f.dataDemissao?' em '+fmtData(f.dataDemissao):'');
+  if(sit==='afastado')return 'Afastado: '+relColabAfastTxt(f._afast);
+  return 'Ativo';
+}
 function popRelLoc(){popGenLoc('relcolab-emp');}
 function relColabQuery(){
   const empId=document.getElementById('relcolab-emp').value;
@@ -3918,10 +3951,11 @@ function relColabQuery(){
   const sitF=document.getElementById('relcolab-sit')?.value||'';
   let ini=document.getElementById('relcolab-ini')?.value||'',fim=document.getElementById('relcolab-fim')?.value||'';
   if(ini&&fim&&ini>fim){const t=ini;ini=fim;fim=t;}
-  funcs=funcs.map(f=>Object.assign({},f,{_sit:relColabSituacao(f,ini,fim)})).filter(f=>f._sit&&(!sitF||f._sit===sitF));
+  funcs=funcs.map(f=>{const r=relColabSit(f,ini,fim);return Object.assign({},f,{_sit:r.sit,_afast:r.afast});}).filter(f=>f._sit&&(!sitF||f._sit===sitF));
   funcs=funcs.slice().sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));
   const nAtivos=funcs.filter(f=>f._sit==='ativo').length;
-  return{empId,mat,funcs,emp:resolveEmp(empId),sitF,ini,fim,nAtivos,nDesligados:funcs.length-nAtivos};
+  const nAfastados=funcs.filter(f=>f._sit==='afastado').length;
+  return{empId,mat,funcs,emp:resolveEmp(empId),sitF,ini,fim,nAtivos,nAfastados,nDesligados:funcs.filter(f=>f._sit==='desligado').length};
 }
 function gerarRelColab(){
   const res=document.getElementById('relcolab-results');
@@ -3951,13 +3985,13 @@ function gerarRelColab(){
     <td>${esc(nameOf('obras',f.obraId))}</td>
     <td>${esc(nameOf('cidades',f.cidadeId))}</td>
     <td>${f.dataAdm?esc(fmtData(f.dataAdm)):'—'}</td>
-    <td>${f._sit==='desligado'?'<span class="bdg" style="background:#f4f4f5;color:#52525b">'+esc(relColabSitTxt(f,f._sit))+'</span>':'<span class="bdg" style="background:#dcfce7;color:#15803d">Ativo</span>'}</td>
+    <td>${f._sit==='desligado'?'<span class="bdg" style="background:#f4f4f5;color:#52525b">'+esc(relColabSitTxt(f,f._sit))+'</span>':f._sit==='afastado'?'<span class="bdg" style="background:#fef3c7;color:#b45309;white-space:normal">'+esc(relColabSitTxt(f,f._sit))+'</span>':'<span class="bdg" style="background:#dcfce7;color:#15803d">Ativo</span>'}</td>
     <td style="text-align:center">${f._sit==='desligado'?'—':asoBadge(f)}</td>
   </tr>`).join('');
   const cargosHtml=cargosRows.map(([c,v])=>`<tr><td>${esc(c)}</td><td style="text-align:center">${v}</td></tr>`).join('');
   res.innerHTML=`
     <div style="padding:10px;background:var(--hl);border:1px solid var(--bd);border-radius:6px;margin-bottom:10px">
-      <strong>Empresa:</strong> ${empNome} &nbsp;|&nbsp; <strong>Total de Colaboradores:</strong> ${total} &nbsp;|&nbsp; <strong style="color:#15803d">Ativos:</strong> ${q.nAtivos} &nbsp;|&nbsp; <strong style="color:#52525b">Desligados:</strong> ${q.nDesligados} &nbsp;|&nbsp; <strong>Total de Cargos:</strong> ${nCargos}
+      <strong>Empresa:</strong> ${empNome} &nbsp;|&nbsp; <strong>Total de Colaboradores:</strong> ${total} &nbsp;|&nbsp; <strong style="color:#15803d">Ativos:</strong> ${q.nAtivos} &nbsp;|&nbsp; <strong style="color:#b45309">Afastados:</strong> ${q.nAfastados} &nbsp;|&nbsp; <strong style="color:#52525b">Desligados:</strong> ${q.nDesligados} &nbsp;|&nbsp; <strong>Total de Cargos:</strong> ${nCargos}
       ${q.ini||q.fim?'<div style="margin-top:4px;color:var(--ts)">Per&iacute;odo: '+(q.ini?esc(fmtData(q.ini)):'in&iacute;cio')+' a '+(q.fim?esc(fmtData(q.fim)):'hoje')+'</div>':''}
     </div>
     <div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:12px">
@@ -4001,9 +4035,9 @@ async function relColabPDF(){
   doc.setFont('helvetica','bold');doc.setFontSize(10);doc.setTextColor(...C.twh);
   doc.text('FILTROS APLICADOS',W/2,158,{align:'center'});
   doc.setFont('helvetica','normal');doc.setFontSize(8.5);doc.setTextColor(...C.tlt);
-  const sitRot={'':'Ativos e desligados',ativo:'Só ativos',desligado:'Só desligados'}[q.sitF||''];
+  const sitRot={'':'Todos',ativo:'Só ativos',afastado:'Só afastados',desligado:'Só desligados'}[q.sitF||''];
   doc.text('Matrícula: '+(q.mat?q.mat:'—')+'  |  Situação: '+sitRot+'  |  Período: '+(q.ini||q.fim?(q.ini?fmtData(q.ini):'início')+' a '+(q.fim?fmtData(q.fim):'hoje'):'—'),W/2,168,{align:'center'});
-  doc.text('Colaboradores: '+funcs.length+'  |  Ativos: '+q.nAtivos+'  |  Desligados: '+q.nDesligados,W/2,176,{align:'center'});
+  doc.text('Colaboradores: '+funcs.length+'  |  Ativos: '+q.nAtivos+'  |  Afastados: '+q.nAfastados+'  |  Desligados: '+q.nDesligados,W/2,176,{align:'center'});
   const nowStr=new Date().toLocaleString('pt-BR');
   doc.setFont('helvetica','italic');doc.setFontSize(7.5);doc.setTextColor(...C.tlt);
   doc.text('Gerado em: '+nowStr,W/2,192,{align:'center'});
@@ -4051,8 +4085,8 @@ async function relColabPDF(){
     },
     didParseCell:function(data){
       if(data.section==='body'&&data.column.index===10){
-        const des=String(data.cell.raw||'').startsWith('Desligado');
-        data.cell.styles.textColor=des?[82,82,91]:[21,128,61];data.cell.styles.fontStyle='bold';
+        const t=String(data.cell.raw||'');
+        data.cell.styles.textColor=t.startsWith('Desligado')?[82,82,91]:t.startsWith('Afastado')?[180,83,9]:[21,128,61];data.cell.styles.fontStyle='bold';
       }
     },
     didDrawPage:function(data){
@@ -4108,7 +4142,7 @@ async function relColabPDF(){
   doc.text('TOTAL DE COLABORADORES: '+total, W/2,fyEnd,{align:'center'});
   fyEnd+=7;
   doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(...C.mid);
-  doc.text('Ativos: '+q.nAtivos+'   |   Desligados: '+q.nDesligados+(q.ini||q.fim?'   (período '+(q.ini?fmtData(q.ini):'início')+' a '+(q.fim?fmtData(q.fim):'hoje')+')':''),W/2,fyEnd,{align:'center'});
+  doc.text('Ativos: '+q.nAtivos+'   |   Afastados: '+q.nAfastados+'   |   Desligados: '+q.nDesligados+(q.ini||q.fim?'   (período '+(q.ini?fmtData(q.ini):'início')+' a '+(q.fim?fmtData(q.fim):'hoje')+')':''),W/2,fyEnd,{align:'center'});
   fyEnd+=7;
   doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(...C.mid);
   doc.text('Total de Cargos: '+nCargos,W/2,fyEnd,{align:'center'});
@@ -4153,6 +4187,10 @@ async function genRelatorioPDF(docType,subTipo){
     expiracao:f.asoDate,
     funcionarioIds:[f.id]
   }));
+  // ASOs anteriores (histórico): aparecem como SUBSTITUÍDO, sem contar como vencido
+  toArr(DATA.funcionarios).filter(f=>f.empresaId&&selectedEmpresas.includes(f.empresaId)&&Array.isArray(f.asoHist)).forEach(f=>{
+    f.asoHist.forEach(a=>{const d=a.emissao||a.validade;if(!d)return;asoItems.push({empresaId:f.empresaId,nome:'ASO - '+fmtAsoTipo(a.tipo),ts:new Date(d+'T00:00:00').getTime(),data:fmtData(d),expiracao:a.validade||'',funcionarioIds:[f.id],substituido:true});});
+  });
   items=items.concat(asoItems.filter(h=>{
     if(startDate&&h.ts&&h.ts<new Date(startDate+'T00:00:00').getTime())return false;
     if(endDate&&h.ts&&h.ts>new Date(endDate+'T23:59:59').getTime())return false;
@@ -4163,8 +4201,8 @@ async function genRelatorioPDF(docType,subTipo){
   if(!items.length){spin(false);alert('Nenhum registro encontrado para os filtros selecionados.');return;}
 
   const now=new Date();
-  if(statusFilter==='emdia')items=items.filter(h=>!h.expiracao||new Date(h.expiracao).getTime()>=now.getTime());
-  else if(statusFilter==='vencido')items=items.filter(h=>h.expiracao&&new Date(h.expiracao).getTime()<now.getTime());
+  if(statusFilter==='emdia')items=items.filter(h=>!h.substituido&&(!h.expiracao||new Date(h.expiracao).getTime()>=now.getTime()));
+  else if(statusFilter==='vencido')items=items.filter(h=>!h.substituido&&h.expiracao&&new Date(h.expiracao).getTime()<now.getTime());
 
   items.sort((a,b)=>(a.empresaId||'').localeCompare(b.empresaId||'')||(a.nome||'').localeCompare(b.nome||''));
 
@@ -4175,14 +4213,15 @@ async function genRelatorioPDF(docType,subTipo){
   const colabsRel={};
   items.forEach(h=>{
     // colaborador desligado aparece marcado no relatório
-    const funcs=(h.funcionarioIds||[]).map(fid=>{colabsRel[fid]=1;const f=DATA.funcionarios[fid];if(!f)return 'ID: '+fid;return f.ativo===false?(f.nome||'')+' (desligado'+(f.dataDemissao?' em '+fmtData(f.dataDemissao):'')+')':(f.nome||'');});
+    const funcs=(h.funcionarioIds||[]).map(fid=>{colabsRel[fid]=1;const f=DATA.funcionarios[fid];if(!f)return 'ID: '+fid;return f.ativo===false?(f.nome||'')+' (desligado'+(f.dataDemissao?' em '+fmtData(f.dataDemissao):'')+')':f.afastado?(f.nome||'')+' (afastado)':(f.nome||'');});
     const empName=dashEmpName(h.empresaId);
     const docTipo=getDocTipo(h.nome);
     const categoria=getDocCategoria(h.nome);
     const tsStr=h.ts?new Date(h.ts).toLocaleString('pt-BR'):h.data||'';
     const expDate=h.expiracao?fmtData(h.expiracao):'—';
     let daysLeft=null,status='NÃO VENCE';
-    if(h.expiracao){
+    if(h.substituido){status='SUBSTITUÍDO';}
+    else if(h.expiracao){
       daysLeft=Math.ceil((new Date(h.expiracao).getTime()-now.getTime())/(24*60*60*1000));
       status=daysLeft<=0?'VENCIDO':'EM DIA';
     }
@@ -4333,6 +4372,7 @@ async function genRelatorioPDF(docType,subTipo){
           if(data.section==='body'&&data.column.index===5){
             if(data.cell.raw==='VENCIDO'){data.cell.styles.textColor=[220,38,38];data.cell.styles.fontStyle='bold';}
             else if(data.cell.raw==='EM DIA'){data.cell.styles.textColor=[22,163,74];data.cell.styles.fontStyle='bold';}
+            else if(data.cell.raw==='SUBSTITUÍDO'){data.cell.styles.textColor=[113,113,122];data.cell.styles.fontStyle='italic';}
           }
           if(data.section==='body'&&data.column.index===4){
             data.cell.styles.halign='center';
@@ -4372,12 +4412,41 @@ async function genRelatorioPDF(docType,subTipo){
   // relatório), pela situação no período: o desligado aparece mesmo sem
   // documento emitido.
   const colabsEmp=toArr(DATA.funcionarios).filter(f=>f&&f.empresaId&&selectedEmpresas.includes(f.empresaId)&&(typeof funcVisivel!=='function'||funcVisivel(f)))
-    .map(f=>Object.assign({},f,{_sit:relColabSituacao(f,startDate||'',endDate||'')})).filter(f=>f._sit);
+    .map(f=>{const r=relColabSit(f,startDate||'',endDate||'');return Object.assign({},f,{_sit:r.sit,_afast:r.afast});}).filter(f=>f._sit);
   const desligadosEmp=colabsEmp.filter(f=>f._sit==='desligado').sort((x,y)=>String(y.dataDemissao||'').localeCompare(String(x.dataDemissao||''))||(x.nome||'').localeCompare(y.nome||''));
-  const ativosEmp=colabsEmp.length-desligadosEmp.length;
-  doc.text('Colaboradores das empresas: '+colabsEmp.length+'  (ativos: '+ativosEmp+'  |  desligados'+(startDate||endDate?' no período':'')+': '+desligadosEmp.length+')',W/2,sy+37,{align:'center'});
+  const afastadosEmp=colabsEmp.filter(f=>f._sit==='afastado').sort((x,y)=>String(y._afast.inicio||'').localeCompare(String(x._afast.inicio||''))||(x.nome||'').localeCompare(y.nome||''));
+  const ativosEmp=colabsEmp.length-desligadosEmp.length-afastadosEmp.length;
+  doc.text('Colaboradores das empresas: '+colabsEmp.length+'  (ativos: '+ativosEmp+'  |  afastados: '+afastadosEmp.length+'  |  desligados'+(startDate||endDate?' no período':'')+': '+desligadosEmp.length+')',W/2,sy+37,{align:'center'});
   doc.text('Com documentos neste relatório: '+(nAt+nDes)+'  (ativos: '+nAt+'  |  desligados: '+nDes+')',W/2,sy+48,{align:'center'});
   sy+=60;
+  // Tabela de afastados: nome, empresa, matrícula, motivo e período
+  if(afastadosEmp.length){
+    let tyD=sy;
+    doc.setFillColor(...C.h2);doc.rect(m,tyD-6,uw,6.5,'F');
+    doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(...C.twh);
+    doc.text('COLABORADORES AFASTADOS'+(startDate||endDate?' NO PERÍODO':'')+' ('+afastadosEmp.length+')',m+4,tyD-1);
+    tyD+=7;
+    doc.autoTable({
+      startY:tyD,
+      head:[['Colaborador','Empresa','Matrícula','Motivo','Início','Retorno / fim','Observação']],
+      body:afastadosEmp.map(f=>[f.nome||'',(resolveEmp(f.empresaId)||{}).nome||'—',String(f.matricula==null||f.matricula===''?'—':f.matricula),f._afast.motivo||'—',f._afast.inicio?fmtData(f._afast.inicio):'—',f._afast.fim?fmtData(f._afast.fim):'sem data',f._afast.obs||'']),
+      headStyles:{fillColor:[180,83,9],textColor:[255,255,255],fontStyle:'bold',fontSize:7,halign:'center',cellPadding:2},
+      alternateRowStyles:{fillColor:C.bg},
+      styles:{fontSize:7,textColor:C.dark,cellPadding:1.8},
+      theme:'grid',lineColor:C.bdr,lineWidth:0.12,
+      tableWidth:uw,margin:{top:38,left:m,right:m,bottom:16},
+      rowPageBreak:'avoid',
+      columnStyles:{0:{cellWidth:uw*0.22},1:{cellWidth:uw*0.15},2:{cellWidth:uw*0.08,halign:'center'},3:{cellWidth:uw*0.17,fontStyle:'bold'},4:{cellWidth:uw*0.09,halign:'center'},5:{cellWidth:uw*0.10,halign:'center'},6:{cellWidth:uw*0.19}},
+      didDrawPage:function(data){
+        if(data.pageNumber!==lastPageNum){
+          drawPageHeader(doc,W,m,wsLogo);
+          drawPageFooter(doc,W,H,m);
+          lastPageNum=data.pageNumber;
+        }
+      }
+    });
+    sy=doc.lastAutoTable.finalY+10;
+  }
   // Tabela de desligados: nome, empresa, matrícula, cargo, admissão e demissão
   if(desligadosEmp.length){
     let tyD=sy;
@@ -4656,7 +4725,7 @@ function addCat(col,inputId){const el=document.getElementById(inputId);const nom
 function delCat(col,id){if(!usuarioPodeExcluir('catalogos')){alert('Voc\u00ea n\u00e3o tem permiss\u00e3o para excluir.');return;}if(!confirm('Confirma a exclus\u00e3o?'))return;WS_DATA.remove(col,id).then(()=>{if(window.renderAll)renderAll();}).catch(e=>alert('Erro: '+e.message));}
 function addCatAndSel(col,inputId,prefix){const el=document.getElementById(inputId);const nome=(el.value||'').trim();if(!nome){alert('Informe um nome');return;}const k=uid();PENDING_CAT_SEL={col:col,id:k};WS_DATA.write(col,k,{id:k,nome}).then(()=>{el.value='';refreshNode(col).then(()=>{renderMsd();});}).catch(e=>{PENDING_CAT_SEL=null;alert('Erro: '+e.message);});}
 function renderCargos(){const q=(document.getElementById('filter-cargos').value||'').toLowerCase();const cargos=toArr(DATA.cargos).filter(c=>(c.nome||'').toLowerCase().includes(q)||(c.cbo||'').toLowerCase().includes(q)).sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));const resolveEpiNomes=c=>{if(!c.epi)return'';const list=Array.isArray(c.epi)?c.epi:typeof c.epi==='string'?c.epi.split(',').map(s=>s.trim()).filter(s=>s).map(id=>({id})):[];return list.map(item=>{const id=typeof item==='object'?item.id:item;const qtd=typeof item==='object'?(item.qtd||1):1;const m=matPorId(id)||toArr(DATA.materiais).find(mm=>(mm.nome||'').toLowerCase().includes(id.toLowerCase()));return m?m.nome+(qtd>1?' x'+qtd:''):null;}).filter(Boolean).join(', ');};document.getElementById('lst-c').innerHTML=cargos.length?(WS_DATA.pag.slice(cargos,'cargos',120).map(c=>{const epiStr=resolveEpiNomes(c);return`<div class="tr2"><div><div class="rn">${esc(c.nome)}</div><div class="rs">CBO: ${esc(c.cbo||'—')}${epiStr?' | EPIs: '+esc(epiStr.substring(0,60)):''}</div></div><div class="ra">${btnsEnt('cargos','cargos','Cargo',c)}</div></div>`;}).join('')+WS_DATA.pagBtn(cargos.length,WS_DATA.pag.count(cargos,'cargos',120),'cargos',120,'renderCargos()')):'<div class="es">Nenhum cargo encontrado</div>';}
-function renderFuncs(){const q=(document.getElementById('filter-colaboradores').value||'').toLowerCase();const eSel=document.getElementById('filter-colaboradores-emp')?.value||'';const _semNome=f=>!!f&&!String(f.nome||'').trim()&&!String(f.cpf||'').trim();const brutos=toArr(DATA.funcionarios).filter(funcVisivel);const incomp=brutos.filter(_semNome);const aviso=document.getElementById('alert-incompletos');if(aviso){document.getElementById('alert-incompleto-txt').textContent=incomp.length+' registro(s) sem nome nesta base.';aviso.style.display=incomp.length?'flex':'none';}const funcs=toArr(DATA.funcionarios).filter(f=>funcVisivel(f)&&!_semNome(f)&&(!eSel||String(f.empresaId||'').trim()===String(eSel).trim())&&((f.nome||'').toLowerCase().includes(q)||(f.funcao||'').toLowerCase().includes(q))).sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));const em={};toArr(DATA.empresas).forEach(e=>{em[String(e.id||'').trim()]=e.nome;});const cg={};toArr(DATA.cargos).forEach(c=>{cg[String(c.id||'').trim()]=c.nome;});const nameOf=(col,id)=>{if(!id)return'';const s=String(id||'').trim();const it=DATA[col]&&DATA[col][s]?DATA[col][s]:toArr(DATA[col]).find(c=>String(c.id||'').trim()===s);return it?(it.nome||''):'';};const now=new Date();const fmtAsoTipo=t=>{return{'ADMISSIONAL':'Admissional','DEMISSIONAL':'Demissional','PERIODICO':'Periódico','MUDANCA_FUNCAO':'Mudança Função','RETORNO_TRABALHO':'Retorno Trabalho'}[t]||t;};function asoStatus(f){if(!f.asoDate)return'';const d=new Date(f.asoDate+'T23:59:59');const days=Math.ceil((d-now)/(864e5));if(days<0)return'<span class="bdg" style="background:#fee2e2;color:#b91c1c">ASO Vencido</span>';if(days<=30)return'<span class="bdg" style="background:#ffedd5;color:#c2410c">ASO '+days+'d</span>';return'<span class="bdg" style="background:#dcfce7;color:#15803d">ASO OK</span>';}function situacaoBadge(f){if(f.ativo!==false)return'';const d=f.dataDemissao?new Date(f.dataDemissao+'T00:00:00').toLocaleDateString('pt-BR'):'';return' <span class="bdg" style="background:#f4f4f5;color:#52525b">Desligado'+(d?' em '+d:'')+'</span>';}function vinculoBadge(f){const ok=!!f.filialId&&!!f.obraId;if(ok)return'';return' <span class="bdg" style="background:#fee2e2;color:#b91c1c">Sem vínculo completo</span>';}document.getElementById('lst-f').innerHTML=funcs.length?(WS_DATA.pag.slice(funcs,'funcs',120).map(f=>{const fl=nameOf('filiais',f.filialId),ob=nameOf('obras',f.obraId),cd=nameOf('cidades',f.cidadeId),ct=nameOf('contratos',f.contratoId);const vinculoTxt=(fl||ob||cd||ct)?` · ${[fl,ob,cd,ct?'Contrato '+ct:''].filter(Boolean).join(' / ')}`:'';return`<div class="tr2"><div><div class="rn">${esc(f.nome)} ${f.ativo===false?'':asoStatus(f)}${situacaoBadge(f)}${vinculoBadge(f)}</div><div class="rs">${esc(em[String(f.empresaId||'').trim()]||'?')} · ${esc(cg[String(f.funcao||'').trim()]||f.funcao||'—')}${vinculoTxt}${f.asoTipo?' · ASO: '+esc(fmtAsoTipo(f.asoTipo)):''}${f.asoDate?' · Vence: '+esc(f.asoDate):''}</div></div><div class="ra">${btnsEnt('funcs','funcionarios','Func',f)}</div></div>`;}).join('')+WS_DATA.pagBtn(funcs.length,WS_DATA.pag.count(funcs,'funcs',120),'funcs',120,'renderFuncs()')):'<div class="es">Nenhum colaborador encontrado</div>';}
+function renderFuncs(){const q=(document.getElementById('filter-colaboradores').value||'').toLowerCase();const eSel=document.getElementById('filter-colaboradores-emp')?.value||'';const _semNome=f=>!!f&&!String(f.nome||'').trim()&&!String(f.cpf||'').trim();const brutos=toArr(DATA.funcionarios).filter(funcVisivel);const incomp=brutos.filter(_semNome);const aviso=document.getElementById('alert-incompletos');if(aviso){document.getElementById('alert-incompleto-txt').textContent=incomp.length+' registro(s) sem nome nesta base.';aviso.style.display=incomp.length?'flex':'none';}const funcs=toArr(DATA.funcionarios).filter(f=>funcVisivel(f)&&!_semNome(f)&&(!eSel||String(f.empresaId||'').trim()===String(eSel).trim())&&((f.nome||'').toLowerCase().includes(q)||(f.funcao||'').toLowerCase().includes(q))).sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));const em={};toArr(DATA.empresas).forEach(e=>{em[String(e.id||'').trim()]=e.nome;});const cg={};toArr(DATA.cargos).forEach(c=>{cg[String(c.id||'').trim()]=c.nome;});const nameOf=(col,id)=>{if(!id)return'';const s=String(id||'').trim();const it=DATA[col]&&DATA[col][s]?DATA[col][s]:toArr(DATA[col]).find(c=>String(c.id||'').trim()===s);return it?(it.nome||''):'';};const now=new Date();const fmtAsoTipo=t=>{return{'ADMISSIONAL':'Admissional','DEMISSIONAL':'Demissional','PERIODICO':'Periódico','MUDANCA_FUNCAO':'Mudança Função','RETORNO_TRABALHO':'Retorno Trabalho'}[t]||t;};function asoStatus(f){if(!f.asoDate)return'';const d=new Date(f.asoDate+'T23:59:59');const days=Math.ceil((d-now)/(864e5));if(days<0)return'<span class="bdg" style="background:#fee2e2;color:#b91c1c">ASO Vencido</span>';if(days<=30)return'<span class="bdg" style="background:#ffedd5;color:#c2410c">ASO '+days+'d</span>';return'<span class="bdg" style="background:#dcfce7;color:#15803d">ASO OK</span>';}function situacaoBadge(f){if(f.ativo!==false){if(f.afastado&&f.afastamento){const a=f.afastamento;return' <span class="bdg" style="background:#fef3c7;color:#b45309" title="'+esc((a.motivo||'')+(a.obs?' \u2014 '+a.obs:''))+'">Afastado'+(a.inicio?' desde '+fmtData(a.inicio):'')+(a.fim?' at\u00e9 '+fmtData(a.fim):'')+'</span>';}return'';}const d=f.dataDemissao?new Date(f.dataDemissao+'T00:00:00').toLocaleDateString('pt-BR'):'';return' <span class="bdg" style="background:#f4f4f5;color:#52525b">Desligado'+(d?' em '+d:'')+'</span>';}function vinculoBadge(f){const ok=!!f.filialId&&!!f.obraId;if(ok)return'';return' <span class="bdg" style="background:#fee2e2;color:#b91c1c">Sem vínculo completo</span>';}document.getElementById('lst-f').innerHTML=funcs.length?(WS_DATA.pag.slice(funcs,'funcs',120).map(f=>{const fl=nameOf('filiais',f.filialId),ob=nameOf('obras',f.obraId),cd=nameOf('cidades',f.cidadeId),ct=nameOf('contratos',f.contratoId);const vinculoTxt=(fl||ob||cd||ct)?` · ${[fl,ob,cd,ct?'Contrato '+ct:''].filter(Boolean).join(' / ')}`:'';return`<div class="tr2"><div><div class="rn">${esc(f.nome)} ${f.ativo===false?'':asoStatus(f)}${situacaoBadge(f)}${vinculoBadge(f)}</div><div class="rs">${esc(em[String(f.empresaId||'').trim()]||'?')} · ${esc(cg[String(f.funcao||'').trim()]||f.funcao||'—')}${vinculoTxt}${f.asoTipo?' · ASO: '+esc(fmtAsoTipo(f.asoTipo)):''}${f.asoDate?' · Vence: '+esc(f.asoDate):''}</div></div><div class="ra">${btnsEnt('funcs','funcionarios','Func',f)}</div></div>`;}).join('')+WS_DATA.pagBtn(funcs.length,WS_DATA.pag.count(funcs,'funcs',120),'funcs',120,'renderFuncs()')):'<div class="es">Nenhum colaborador encontrado</div>';}
 function renderPessoas(){const q=(document.getElementById('filter-pessoas').value||'').toLowerCase();const pessoas=toArr(DATA.pessoas).filter(p=>(p.nome||'').toLowerCase().includes(q)||(p.cpf||'').toLowerCase().includes(q)).sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));document.getElementById('lst-p').innerHTML=pessoas.length?(WS_DATA.pag.slice(pessoas,'pessoas',120).map(p=>`<div class="tr2"><div><div class="rn">${esc(p.nome)}</div><div class="rs">CPF: ${esc(p.cpf||'—')}${p.endereco?' | '+esc(p.endereco).substring(0,50):''}</div></div><div class="ra">${btnsEnt('pessoas','pessoas','Pessoa',p)}</div></div>`).join('')+WS_DATA.pagBtn(pessoas.length,WS_DATA.pag.count(pessoas,'pessoas',120),'pessoas',120,'renderPessoas()')):'<div class="es">Nenhuma pessoa encontrada</div>';}
 function renderTexts(){const q=(document.getElementById('filter-texts').value||'').toLowerCase();const texts=toArr(DATA.textos).filter(t=>(t.titulo||'').toLowerCase().includes(q)).sort((a,b)=>(a.titulo||'').localeCompare(b.titulo||''));document.getElementById('lst-t').innerHTML=texts.length?(WS_DATA.pag.slice(texts,'texts',120).map(t=>`<div class="tr2"><div><div class="rn">${esc(t.titulo)} <span class="bdg">${esc(t.categoria||'')}</span></div><div class="rs">${esc((t.conteudo||'').substring(0,80))}${(t.conteudo||'').length>80?'...':''}</div></div><div class="ra">${btnsEnt('texts','textos','Text',t)}</div></div>`).join('')+WS_DATA.pagBtn(texts.length,WS_DATA.pag.count(texts,'texts',120),'texts',120,'renderTexts()')):'<div class="es">Nenhum texto cadastrado</div>';}
 function renderMats(){if(window.epiRenderEstoque)epiRenderEstoque();}
@@ -5104,7 +5173,15 @@ function getFormData(t){
     const dataDemissao=ativo?'':v('i-f-dem');
     if(!ativo&&!dataDemissao){alert('Informe a data de demiss\u00e3o do colaborador desligado.');return null;}
     if(!ativo&&v('i-f-dt')&&dataDemissao<v('i-f-dt')){alert('A data de demiss\u00e3o n\u00e3o pode ser anterior \u00e0 data de admiss\u00e3o.');return null;}
-    return{id:idAtual,empresaId,filialId,obraId,cidadeId,nome:v('i-f-nm'),cpf:v('i-f-cp'),funcao:v('i-f-fn'),cbo:v('i-f-cb'),setor:v('i-f-st'),matricula:v('i-f-mat'),dataAdm:v('i-f-dt'),asoEmissao,asoDate,asoTipo,ativo,dataDemissao,contratoId:v('i-f-ct')};
+    const afast=lerAfastamentoForm(ativo);if(afast===null)return null;
+    const prev=(idAtual&&DATA.funcionarios[idAtual])||null;
+    const novo={id:idAtual,empresaId,filialId,obraId,cidadeId,nome:v('i-f-nm'),cpf:v('i-f-cp'),funcao:v('i-f-fn'),cbo:v('i-f-cb'),setor:v('i-f-st'),matricula:v('i-f-mat'),dataAdm:v('i-f-dt'),asoEmissao,asoDate,asoTipo,ativo,dataDemissao,contratoId:v('i-f-ct')};
+    // O cadastro é regravado inteiro: carrega os campos que o formulário não
+    // mostra (histórico de ASO, afastamentos etc.) para não se perderem.
+    const rec=Object.assign({},prev||{},novo);
+    rec.asoHist=asoHistAtualizado(prev,novo);
+    Object.assign(rec,afastamentoAtualizado(prev,afast,ativo,dataDemissao));
+    return rec;
   }
   if(t==='texto'){const cargos=getChecked('tCgChk');return{id:v('tid'),titulo:v('i-t-ti'),conteudo:v('i-t-co'),categoria:getTxtCategoria(),cargosVinculados:cargos,validade:v('i-t-val')};}
   if(t==='material'){if(!v('i-m-nm').trim()){alert('Informe o nome do material.');return null;}const num=(id,dec)=>{const n=dec?parseFloat(v(id)):parseInt(v(id));return n>0?n:0;};const r={id:v('mid'),nome:v('i-m-nm'),ca:v('i-m-ca'),tipo:document.getElementById('i-m-tp').value,unidade:v('i-m-un'),vencimentoCa:v('i-m-vc'),estoqueMin:num('i-m-min'),vidaUtilDias:num('i-m-vida'),custo:epiParseMoeda(v('i-m-custo')),validadeProduto:v('i-m-valprod')};if(!r.id)r.estoque=num('i-m-es');return r;}
@@ -5651,7 +5728,84 @@ function autoAsoDate(){
   const diaStr=String(alvo.getDate()).padStart(2,'0');
   document.getElementById('i-f-aso-date').value=alvo.getFullYear()+'-'+mesStr+'-'+diaStr;
 }
-function editFunc(x){v('fid',x.id);document.getElementById('i-f-ep').value=x.empresaId||'';popFuncVinculos(true);document.getElementById('i-f-fl').value=x.filialId||'';document.getElementById('i-f-ob').value=x.obraId||'';document.getElementById('i-f-cd').value=x.cidadeId||'';document.getElementById('i-f-ct').value=x.contratoId||'';v('i-f-nm',x.nome||'');v('i-f-cp',x.cpf||'');v('i-f-fn',x.funcao||'');v('i-f-cb',x.cbo||'');v('i-f-st',x.setor||'');v('i-f-mat',x.matricula||'');v('i-f-dt',x.dataAdm||'');v('i-f-aso-emissao',x.asoEmissao||'');v('i-f-aso-date',x.asoDate||'');document.getElementById('i-f-aso-tipo').value=x.asoTipo||'';setSituacaoFunc(x.ativo!==false,x.dataDemissao||'');autoFillCBO();openM('mdl-f');}
+function editFunc(x){v('fid',x.id);document.getElementById('i-f-ep').value=x.empresaId||'';popFuncVinculos(true);document.getElementById('i-f-fl').value=x.filialId||'';document.getElementById('i-f-ob').value=x.obraId||'';document.getElementById('i-f-cd').value=x.cidadeId||'';document.getElementById('i-f-ct').value=x.contratoId||'';v('i-f-nm',x.nome||'');v('i-f-cp',x.cpf||'');v('i-f-fn',x.funcao||'');v('i-f-cb',x.cbo||'');v('i-f-st',x.setor||'');v('i-f-mat',x.matricula||'');v('i-f-dt',x.dataAdm||'');v('i-f-aso-emissao',x.asoEmissao||'');v('i-f-aso-date',x.asoDate||'');document.getElementById('i-f-aso-tipo').value=x.asoTipo||'';setSituacaoFunc(x.ativo!==false,x.dataDemissao||'');setAfastFunc(x);renderAsoHist(x);autoFillCBO();openM('mdl-f');}
+// ===== Histórico de ASO =====
+// Um ASO NOVO (data de emissão ou tipo diferentes) guarda o anterior em
+// f.asoHist. Mudar só a validade do mesmo ASO é correção e não gera histórico.
+const ASO_TIPO_ROT={ADMISSIONAL:'Admissional',DEMISSIONAL:'Demissional',PERIODICO:'Peri\u00f3dico',MUDANCA_FUNCAO:'Mudan\u00e7a de Fun\u00e7\u00e3o',RETORNO_TRABALHO:'Retorno ao Trabalho'};
+function asoHistAtualizado(prev,novo){
+  const hist=Array.isArray(prev&&prev.asoHist)?prev.asoHist.slice():[];
+  if(!prev)return hist;
+  const tinha=!!(prev.asoDate||prev.asoEmissao);
+  const temNovo=!!(novo.asoDate||novo.asoEmissao);
+  const outroAso=String(prev.asoEmissao||'')!==String(novo.asoEmissao||'')||String(prev.asoTipo||'')!==String(novo.asoTipo||'');
+  if(tinha&&temNovo&&outroAso){
+    hist.push({tipo:prev.asoTipo||'',emissao:prev.asoEmissao||'',validade:prev.asoDate||'',substituidoEm:new Date().toISOString().slice(0,10),por:(USUARIO_ATUAL&&USUARIO_ATUAL.nome)||''});
+  }
+  return hist;
+}
+function renderAsoHist(f){
+  const box=document.getElementById('i-f-aso-hist');if(!box)return;
+  const h=(f&&Array.isArray(f.asoHist))?f.asoHist.slice().reverse():[];
+  box.innerHTML=h.length?'<div class="fg"><label class="fl">Hist&oacute;rico de ASO ('+h.length+')</label><div style="border:1px solid var(--bd,#e4e4e7);border-radius:6px;font-size:11px">'+
+    h.map(a=>'<div style="padding:6px 9px;border-bottom:1px solid #f4f4f5;display:flex;gap:10px;flex-wrap:wrap"><b>'+esc(ASO_TIPO_ROT[a.tipo]||a.tipo||'ASO')+'</b><span>Emiss&atilde;o: '+(a.emissao?esc(fmtData(a.emissao)):'—')+'</span><span>Validade: '+(a.validade?esc(fmtData(a.validade)):'—')+'</span><span style="color:#71717a">substitu&iacute;do em '+esc(fmtData(a.substituidoEm))+(a.por?' por '+esc(a.por):'')+'</span></div>').join('')+'</div></div>':'';
+}
+
+// ===== Afastamento =====
+// f.afastado (flag) + f.afastamento {motivo,inicio,fim,obs} = afastamento atual.
+// Ao encerrar (desmarcar, desligar ou começar outro) ele vai para
+// f.afastamentos (histórico), com o fim preenchido.
+const AFAST_MOTIVOS=['Aux\u00edlio-doen\u00e7a (INSS)','Acidente de trabalho','Atestado m\u00e9dico','Licen\u00e7a-maternidade','Licen\u00e7a-paternidade','Servi\u00e7o militar','Licen\u00e7a n\u00e3o remunerada','Suspens\u00e3o disciplinar','Outro'];
+function hojeISO(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function setAfastFunc(f){
+  const sel=document.getElementById('i-f-afast-mot');if(!sel)return;
+  if(sel.options.length<=1)sel.innerHTML='<option value="">Selecione...</option>'+AFAST_MOTIVOS.map(m=>'<option>'+m+'</option>').join('');
+  const a=(f&&f.afastado&&f.afastamento)||null;
+  document.getElementById('i-f-afast').checked=!!a;
+  const mot=a?String(a.motivo||''):'';
+  if(mot&&!AFAST_MOTIVOS.includes(mot)){sel.value='Outro';v('i-f-afast-outro',mot);}else{sel.value=mot;v('i-f-afast-outro','');}
+  v('i-f-afast-ini',a?a.inicio||'':'');v('i-f-afast-fim',a?a.fim||'':'');v('i-f-afast-obs',a?a.obs||'':'');
+  onAfastMotivoChange();onAfastChange(true);
+  const hb=document.getElementById('i-f-afast-hist');
+  const h=(f&&Array.isArray(f.afastamentos))?f.afastamentos.slice().sort((x,y)=>String(y.inicio||'').localeCompare(String(x.inicio||''))):[];
+  if(hb)hb.innerHTML=h.length?'<div class="fg"><label class="fl">Afastamentos anteriores ('+h.length+')</label><div style="border:1px solid var(--bd,#e4e4e7);border-radius:6px;font-size:11px">'+
+    h.map(x=>'<div style="padding:6px 9px;border-bottom:1px solid #f4f4f5"><b>'+esc(x.motivo||'—')+'</b> &nbsp;'+(x.inicio?esc(fmtData(x.inicio)):'?')+' a '+(x.fim?esc(fmtData(x.fim)):'?')+(x.obs?' <span style="color:#71717a">· '+esc(x.obs)+'</span>':'')+'</div>').join('')+'</div></div>':'';
+}
+function onAfastChange(silencioso){
+  const on=document.getElementById('i-f-afast').checked;
+  const lbl=document.getElementById('i-f-afast-lbl');
+  lbl.textContent=on?'Afastado':'N\u00e3o est\u00e1 afastado';lbl.style.color=on?'#b45309':'#71717a';
+  document.getElementById('i-f-afast-box').style.display=on?'':'none';
+  if(on&&!silencioso&&!v('i-f-afast-ini'))v('i-f-afast-ini',hojeISO());
+}
+function onAfastMotivoChange(){
+  const outro=document.getElementById('i-f-afast-mot').value==='Outro';
+  document.getElementById('i-f-afast-outro-box').style.display=outro?'':'none';
+}
+// Lê o bloco de afastamento; null = erro já avisado; false = não afastado.
+function lerAfastamentoForm(ativo){
+  if(!ativo||!document.getElementById('i-f-afast').checked)return false;
+  let motivo=document.getElementById('i-f-afast-mot').value;
+  if(motivo==='Outro')motivo=v('i-f-afast-outro').trim();
+  const inicio=v('i-f-afast-ini'),fim=v('i-f-afast-fim'),obs=v('i-f-afast-obs').trim();
+  if(!motivo){alert('Informe o motivo do afastamento.');return null;}
+  if(!inicio){alert('Informe a data de in\u00edcio do afastamento.');return null;}
+  if(fim&&fim<inicio){alert('O fim do afastamento n\u00e3o pode ser antes do in\u00edcio.');return null;}
+  return{motivo,inicio,fim,obs};
+}
+function afastamentoAtualizado(prev,afast,ativo,dataDemissao){
+  const hist=Array.isArray(prev&&prev.afastamentos)?prev.afastamentos.slice():[];
+  const atual=(prev&&prev.afastado&&prev.afastamento)?prev.afastamento:null;
+  const encerrar=(a,fimPadrao)=>{const fim=a.fim&&a.fim<=fimPadrao?a.fim:fimPadrao;hist.push(Object.assign({},a,{fim:fim<a.inicio?a.inicio:fim,encerradoEm:hojeISO()}));};
+  if(afast){
+    // outro afastamento (início diferente): o anterior vai para o histórico
+    if(atual&&atual.inicio&&atual.inicio!==afast.inicio)encerrar(atual,afast.inicio);
+    return{afastado:true,afastamento:afast,afastamentos:hist};
+  }
+  if(atual)encerrar(atual,!ativo&&dataDemissao?dataDemissao:hojeISO());
+  return{afastado:false,afastamento:null,afastamentos:hist};
+}
+
 // Situação do colaborador. Registro sem o campo 'ativo' (cadastros antigos)
 // conta como ativo. Desligado exige a data de demissão.
 function setSituacaoFunc(ativo,dataDem){
@@ -5663,6 +5817,7 @@ function onSituacaoChange(){
   const lbl=document.getElementById('i-f-ativo-lbl');
   lbl.textContent=ativo?'Ativo':'Desligado';lbl.style.color=ativo?'#15803d':'#b91c1c';
   document.getElementById('i-f-dem-box').style.display=ativo?'none':'';
+  const aw=document.getElementById('i-f-afast-wrap');if(aw)aw.style.display=ativo?'':'none';
   if(!ativo&&!v('i-f-dem'))setTimeout(()=>{const d=document.getElementById('i-f-dem');if(d)d.focus();},0);
 }
 
