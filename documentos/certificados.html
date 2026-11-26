@@ -1406,6 +1406,19 @@ label.secondary:hover { background: var(--surface-2); border-color: #A9B7C8; }
     .main-content { margin-left: 0; width: 100%; }
     .container { max-width: none; padding: 0; }
 }
+.renov-card{border-left:4px solid #16a34a}
+.renov-tit{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:10px}
+.renov-tit svg{width:20px;height:20px;color:#16a34a}
+.renov-tit strong{font-size:15px}
+.renov-sub{flex-basis:100%;font-size:12px;color:var(--muted,#71717a)}
+.renov-filtros{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:8px}
+.renov-filtros input#renovBusca{flex:1;min-width:240px;margin:0}
+.renov-chk{display:flex;align-items:center;gap:6px;font-size:12px;white-space:nowrap}
+.renov-chk input{width:auto;margin:0}
+button.renovar{background:#16a34a!important;color:#fff!important;border-color:#16a34a!important}
+button.renovar:hover{background:#15803d!important}
+.renov-st{display:inline-block;padding:2px 7px;border-radius:5px;font-size:11px;font-weight:700;white-space:nowrap}
+.renov-vazio{font-size:12px;color:var(--muted,#71717a);padding:6px 2px}
 </style>
 </head>
 <body>
@@ -1441,6 +1454,10 @@ label.secondary:hover { background: var(--surface-2); border-color: #A9B7C8; }
         <a href="#secaoGeracao" class="menu-link">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7Z"/><path d="M14 2v5h5"/><path d="M9 15.5l2 2 4-4"/></svg>
             <span>Gerar certificados</span>
+        </a>
+        <a href="#secaoGeracao" id="nav-renovar" onclick="event.preventDefault();abrirRenovacao()" style="color:#16a34a">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 0 1 15.5-6.2L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15.5 6.2L3 16"/><path d="M3 21v-5h5"/></svg>
+            <span>Renovar Certificado</span>
         </a>
         <a href="#secaoGerados" class="menu-link" id="nav-secao-gerados" style="display:none;">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7h18v13H3z"/><path d="M3 7V5a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v2"/><path d="M8.5 12.5l2 2 4.5-4.5"/></svg>
@@ -1717,6 +1734,19 @@ label.secondary:hover { background: var(--surface-2); border-color: #A9B7C8; }
                 <span class="sec-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7Z"/><path d="M14 2v5h5"/><path d="M9 15.5l2 2 4-4"/></svg></span>
                 <span>Gerar Certificados<span class="sec-sub">Emissão em massa para a turma selecionada</span></span>
             </h2>
+
+            <div class="card renov-card" id="renovBox">
+                <div class="renov-tit">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 0 1 15.5-6.2L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15.5 6.2L3 16"/><path d="M3 21v-5h5"/></svg>
+                    <strong>Renovar certificado já emitido</strong>
+                    <span class="renov-sub">Busque o colaborador, clique em <b>Renovar</b> e informe a data de emissão. O novo certificado sai com os mesmos dados (empresa, curso, assinaturas).</span>
+                </div>
+                <div class="renov-filtros">
+                    <input id="renovBusca" placeholder="Nome do colaborador, CPF, matrícula ou curso" oninput="renderRenovacoes()" autocomplete="off">
+                    <label class="renov-chk"><input type="checkbox" id="renovSoVenc" onchange="renderRenovacoes()"> Só vencidos ou vencendo em até 60 dias</label>
+                </div>
+                <div id="renovLista"></div>
+            </div>
 
             <div class="empresa-pin" id="empresaPin" hidden>
                 <span class="pin-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21V10"/><path d="M12 10 6 5a6 6 0 0 1 12 0Z"/><rect x="9" y="14" width="6" height="3" rx="1.5"/></svg></span>
@@ -2123,6 +2153,7 @@ function getArrayFromData(dataObject) {
 // continuava na tela até a próxima sincronização.
 function rerenderCert(){
     try { renderEmpresas(); renderAlunos(); renderCursos(); renderCertificadosGerados(); } catch(e) { console.warn(e); }
+    try { renderRenovacoes(); } catch(e) { console.warn(e); }
 }
 async function updateItem(node, id, patch){
     try {
@@ -2767,6 +2798,7 @@ function renderCertificadosGerados(){
             <td>${fmtDateBR(c.dataGeracao)}</td>
             <td class="${expClass}">${exp}</td>
             <td class="actions">
+                <button class="renovar" title="Emite um novo certificado deste colaborador e curso" onclick="window.renovarCertificado('${c.id}')">&#8635; Renovar</button>
                 <button class="secondary" onclick="window.viewCertificado('${c.id}')">Ver/Editar</button>
                 <button class="danger" onclick="window.deleteCertificado('${c.id}')">Excluir</button>
             </td>
@@ -2775,12 +2807,126 @@ function renderCertificadosGerados(){
         (certs.length>WS_DATA.pag.count(certs,'ccerts',120)?'<tr><td colspan="6" style="text-align:center;padding:10px">'+WS_DATA.pagBtn(certs.length,WS_DATA.pag.count(certs,'ccerts',120),'ccerts',120,'renderCertificadosGerados()')+'</td></tr>':'');
 }
 
+// ── RENOVAR CERTIFICADO ─────────────────────────────────────────────────
+// Lista o certificado MAIS RECENTE de cada colaborador x curso (o que vale
+// hoje), das empresas liberadas ao usuário, com busca e filtro de vencidos.
+function isoHoje() { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+function isoMaisDias(iso, n) { const d = new Date(iso + 'T12:00:00'); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); }
+function diasEntre(a, b) { return Math.round((new Date(b + 'T12:00:00') - new Date(a + 'T12:00:00')) / 864e5); }
+function certsAtuaisParaRenovar() {
+    const ult = {};
+    getArrayFromData(certificadosGeradosData).forEach(c => {
+        if (!c || !c.aluno || !c.curso || c.registroDe) return; // cópia da WS: renova pela original
+        if (!empresaPermitidaCert(c.empresaId)) return;
+        const k = c.aluno.id + '|' + c.curso.id;
+        const ref = (c.dataFim || '') + '|' + String(c.ts || 0).padStart(15, '0');
+        if (!ult[k] || ref > ult[k]._ref) ult[k] = Object.assign({ _ref: ref }, c);
+    });
+    return Object.values(ult);
+}
+function renovStatus(c) {
+    if (!c.expiracao) return { dias: null, html: '<span class="renov-st" style="background:#f4f4f5;color:#52525b">Não vence</span>' };
+    const dias = diasEntre(isoHoje(), String(c.expiracao).slice(0, 10));
+    if (dias < 0) return { dias, html: '<span class="renov-st" style="background:#fee2e2;color:#b91c1c">Vencido há ' + (-dias) + 'd</span>' };
+    if (dias <= 60) return { dias, html: '<span class="renov-st" style="background:#ffedd5;color:#c2410c">Vence em ' + dias + 'd</span>' };
+    return { dias, html: '<span class="renov-st" style="background:#dcfce7;color:#15803d">Em dia</span>' };
+}
+function renderRenovacoes() {
+    const box = el('renovLista'); if (!box) return;
+    const q = String(el('renovBusca').value || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+    const qDig = q.replace(/\D/g, '');
+    const soVenc = el('renovSoVenc').checked;
+    if (q.length < 2 && !soVenc) { box.innerHTML = '<div class="renov-vazio">Digite pelo menos 2 letras para buscar, ou marque "Só vencidos ou vencendo".</div>'; return; }
+    const sa = t => String(t || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+    let lst = certsAtuaisParaRenovar().filter(c => {
+        if (q.length >= 2) {
+            const al = c.aluno || {};
+            const hit = sa(al.nome).includes(q) || sa(c.curso.nome).includes(q) || sa(al.matricula).includes(q) || (qDig.length >= 3 && String(al.cpf || '').replace(/\D/g, '').includes(qDig));
+            if (!hit) return false;
+        }
+        if (soVenc) { const st = renovStatus(c); if (st.dias === null || st.dias > 60) return false; }
+        return true;
+    }).map(c => Object.assign(c, { _st: renovStatus(c) }))
+      .sort((a, b) => ((a._st.dias === null ? 1e9 : a._st.dias) - (b._st.dias === null ? 1e9 : b._st.dias)) || String(a.aluno.nome || '').localeCompare(String(b.aluno.nome || ''), 'pt-BR'));
+    const total = lst.length;
+    lst = lst.slice(0, 60);
+    box.innerHTML = total ? '<table class="table"><tr><th>Colaborador</th><th>Empresa</th><th>Curso</th><th>Treinamento</th><th>Vencimento</th><th></th></tr>' +
+        lst.map(c => '<tr><td>' + esc(c.aluno.nome) + (c.aluno.matricula ? '<br><small style="color:var(--muted)">Mat. ' + esc(c.aluno.matricula) + '</small>' : '') + '</td>' +
+            '<td>' + esc((empresasData[c.empresaId] || {}).nome || '—') + '</td>' +
+            '<td>' + esc(c.curso.nome) + '</td>' +
+            '<td>' + esc(c.dataInicioBR || '') + (c.dataFimBR && c.dataFimBR !== c.dataInicioBR ? ' a ' + esc(c.dataFimBR) : '') + '</td>' +
+            '<td>' + (c.expiracao ? esc(fmtDateBR(c.expiracao)) + '<br>' : '') + c._st.html + '</td>' +
+            '<td><button class="renovar" onclick="window.renovarCertificado(\'' + c.id + '\')">&#8635; Renovar</button></td></tr>').join('') + '</table>' +
+        (total > lst.length ? '<div class="renov-vazio">Mostrando ' + lst.length + ' de ' + total + '. Refine a busca.</div>' : '')
+        : '<div class="renov-vazio">Nenhum certificado encontrado.</div>';
+}
+// Item "Renovar Certificado" do menu: abre a Geração no cartão de renovação.
+function abrirRenovacao() {
+    const link = document.querySelector('a.menu-link[href="#secaoGeracao"]');
+    if (link) link.click();
+    const box = el('renovBox'); if (!box) return;
+    box.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    setTimeout(() => { const b = el('renovBusca'); if (b) b.focus(); }, 250);
+}
+// Abre a pergunta da data de emissão e gera o novo certificado.
+window.renovarCertificado = (id) => {
+    const c = certificadosGeradosData[id];
+    if (!c || !c.aluno || !c.curso) { alert('Certificado não encontrado.'); return; }
+    // cópia registrada na WS: renova como a original (empresa de origem + WS)
+    const empresaId = c.registroDe || c.empresaId;
+    const wsId = c.registroDe ? c.empresaId : (c.emitidoPor || '');
+    if (!empresasData[empresaId]) { alert('A empresa deste certificado não existe mais no cadastro.'); return; }
+    if (!empresaPermitidaCert(empresaId)) { alert('Seu usuário não tem acesso a esta empresa.'); return; }
+    const curso = cursosData[c.curso.id] || c.curso;
+    const dur = (c.dataInicio && c.dataFim) ? Math.max(0, diasEntre(c.dataInicio, c.dataFim)) : 0;
+    const hoje = isoHoje();
+    openModal('Renovar certificado',
+        '<p style="margin:0 0 10px"><b>' + esc(c.aluno.nome) + '</b><br>' + esc(curso.nome) + ' &mdash; ' + esc((empresasData[empresaId] || {}).nome || '') +
+        (wsId && empresasData[wsId] ? '<br><small style="color:#b45309">emitido pela ' + esc(empresasData[wsId].nome) + ', como o anterior</small>' : '') + '</p>' +
+        '<p style="margin:0 0 12px;font-size:12px;color:var(--muted)">Certificado atual: ' + esc(c.dataInicioBR || '') + (c.dataFimBR ? ' a ' + esc(c.dataFimBR) : '') + (c.expiracao ? ' &middot; vence ' + esc(fmtDateBR(c.expiracao)) : '') + '</p>' +
+        '<label>Data de emissão do novo certificado *</label><input type="date" id="renov_emissao" value="' + hoje + '">' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">' +
+        '<div><label>Início do treinamento</label><input type="date" id="renov_ini" value="' + isoMaisDias(hoje, -dur) + '"></div>' +
+        '<div><label>Fim do treinamento</label><input type="date" id="renov_fim" value="' + hoje + '"></div></div>' +
+        '<p style="font-size:12px;margin:4px 0 0" id="renov_prev"></p>',
+        async () => {
+            const emissao = el('renov_emissao').value, ini = el('renov_ini').value, fim = el('renov_fim').value;
+            if (!emissao) { alert('Informe a data de emissão.'); return; }
+            if (!ini || !fim) { alert('Informe as datas do treinamento.'); return; }
+            if (fim < ini) { alert('O fim do treinamento não pode ser antes do início.'); return; }
+            const aluno = Object.assign({}, c.aluno, certAlunoPorId(c.aluno.id) || {}, { id: c.aluno.id });
+            window.closeModal();
+            const link = document.querySelector('a.menu-link[href="#secaoGeracao"]');
+            if (link) link.click();
+            try {
+                await gerarCertificados({ __renov: true, empresaId, wsId, alunos: [aluno], cursos: [{ curso, dataInicio: ini, dataFim: fim }], assinaturas: c.assinaturas || null, dataGeracao: emissao, renovacaoDe: id });
+            } catch (e) { console.error(e); alert('Não foi possível renovar: ' + (e && e.message ? e.message : e)); }
+            renderRenovacoes();
+        });
+    // Trocar a emissão move as datas do treinamento junto (mesma duração),
+    // até o usuário mexer nelas; mostra o vencimento novo.
+    let mexeu = false;
+    const prev = () => {
+        const fim = el('renov_fim').value;
+        const exp = fim ? calcExpiracao(fim, curso.validade) : null;
+        el('renov_prev').innerHTML = exp ? 'Novo vencimento: <b>' + esc(fmtDateBR(exp)) + '</b>' : 'Este curso não vence.';
+    };
+    el('renov_emissao').addEventListener('change', () => {
+        if (!mexeu && el('renov_emissao').value) { el('renov_fim').value = el('renov_emissao').value; el('renov_ini').value = isoMaisDias(el('renov_emissao').value, -dur); }
+        prev();
+    });
+    ['renov_ini', 'renov_fim'].forEach(i => el(i).addEventListener('change', () => { mexeu = true; prev(); }));
+    el('modalSaveButton').textContent = 'Renovar e gerar';
+    prev();
+};
+
 function openModal(title, bodyHTML, saveHandler) {
     el('modalTitle').textContent = title;
     el('modalBody').innerHTML = bodyHTML;
     // Data de início/fim já entra com o dia da semana escrito embaixo.
     if (typeof certPintarDias === 'function') certPintarDias(el('modalBody'));
     window.modalSaveHandler = saveHandler;
+    if (el('modalSaveButton')) el('modalSaveButton').textContent = 'Salvar';
     el('modalSaveButton').onclick = () => window.modalSaveHandler();
     el('genericModal').style.display = 'flex';
 }
@@ -3911,21 +4057,28 @@ function regWsDestino() {
     return (id && empresasData[id] && id !== el('selEmpresa').value) ? id : '';
 }
 
-async function gerarCertificados(){
-    const empresaId = el("selEmpresa").value;
+// ov (opcional) = renovação: empresa, aluno(s), curso(s) e datas já
+// definidos, sem ler a tela. O botão chama com o evento de clique, que não
+// tem __renov e é ignorado.
+async function gerarCertificados(ov){
+    if (!(ov && ov.__renov)) ov = null;
+    const empresaId = ov ? ov.empresaId : el("selEmpresa").value;
     if(!empresaId) return alert("Selecione a empresa.");
     const empresa = empresasData[empresaId]; 
     if(!empresa) return alert("Empresa inválida.");
 
     const alunosFiltrados = certAlunos().filter(a => a.empresaVinculoId === empresaId);
-    const selAlunoIds = alunosGeracaoSelecionados();
-    const selCursoElements = el("courseDatesContainer").querySelectorAll(".course-date-selector");
-    const selecionadosAlunos = alunosFiltrados.filter(a => selAlunoIds.includes(a.id));
+    const selAlunoIds = ov ? ov.alunos.map(a => a.id) : alunosGeracaoSelecionados();
+    const selCursoElements = ov ? [] : el("courseDatesContainer").querySelectorAll(".course-date-selector");
+    const selecionadosAlunos = ov ? ov.alunos.slice() : alunosFiltrados.filter(a => selAlunoIds.includes(a.id));
 
     if(selecionadosAlunos.length === 0) return alert("Selecione pelo menos um aluno vinculado à empresa.");
-    if(selCursoElements.length === 0) return alert("Selecione pelo menos um curso e defina as datas.");
+    if(!ov && selCursoElements.length === 0) return alert("Selecione pelo menos um curso e defina as datas.");
 
-    const selectedCoursesWithDates = Array.from(selCursoElements).map(elc => {
+    const selectedCoursesWithDates = ov ? ov.cursos.map(x => ({
+        curso: x.curso, dataInicio: x.dataInicio, dataFim: x.dataFim,
+        dataInicioBR: fmtDateBR(x.dataInicio), dataFimBR: fmtDateBR(x.dataFim)
+    })) : Array.from(selCursoElements).map(elc => {
         const courseId = elc.dataset.courseId;
         const dataInicio = elc.querySelector(`#dataInicio_${courseId}`).value;
         const dataFim = elc.querySelector(`#dataFim_${courseId}`).value;
@@ -3951,7 +4104,7 @@ async function gerarCertificados(){
         return alert(e.message);
     }
 
-    const conflictsBeforeGenerate = REPLAY_MODE ? [] : detectConflicts();
+    const conflictsBeforeGenerate = (REPLAY_MODE || ov) ? [] : detectConflicts();
     if (conflictsBeforeGenerate.length > 0) {
         highlightConflicts(conflictsBeforeGenerate);
         const proceed = await new Promise(resolve => {
@@ -3977,13 +4130,13 @@ async function gerarCertificados(){
     const histKeyPorCurso = selectedCoursesWithDates.map(() => db.ref('historico').push().key);
     const certIdsPorCurso = selectedCoursesWithDates.map(() => []);
     // "Registrar também na WS Engenharia": linha e certificados próprios da WS
-    const wsId = regWsDestino();
+    const wsId = ov ? (ov.wsId && empresasData[ov.wsId] ? ov.wsId : '') : regWsDestino();
     const wsEmpresa = wsId ? empresasData[wsId] : null;
     const wsHistKeyPorCurso = wsId ? selectedCoursesWithDates.map(() => db.ref('historico').push().key) : [];
     const wsCertIdsPorCurso = selectedCoursesWithDates.map(() => []);
     // quem EMITE o certificado (PDF, lista de presença): a WS, se marcado
     const emissora = wsEmpresa || empresa;
-    const assinSel = assinaturasEscolhidas();
+    const assinSel = ov ? (Array.isArray(ov.assinaturas) ? ov.assinaturas : null) : assinaturasEscolhidas();
     if (assinSel && !assinSel.length && !confirm('Nenhuma assinatura marcada: o certificado sairá sem assinaturas. Continuar?')) return;
 
     selecionadosAlunos.forEach(aluno => {
@@ -4010,11 +4163,12 @@ async function gerarCertificados(){
                 empresa: (emissora && emissora.id) ? { id: emissora.id, nome: emissora.nome, cidade: emissora.cidade, cnpj: emissora.cnpj } : null,
                 dataInicio: dataInicio, dataFim: dataFim,
                 dataInicioBR: dataInicioBR, dataFimBR: dataFimBR,
-                dataGeracao: new Date().toISOString().slice(0, 10),
+                dataGeracao: (ov && ov.dataGeracao) || new Date().toISOString().slice(0, 10),
                 ts: Date.now(),
                 expiracao: calcExpiracao(dataFim, curso.validade),
                 histKey: histKeyPorCurso[iCurso]
             };
+            if (ov && ov.renovacaoDe) certData.renovacaoDe = ov.renovacaoDe;
             if (wsId) { certData.empresaPdfId = wsId; certData.emitidoPor = wsId; }
             if (assinSel) certData.assinaturas = assinSel;
 
@@ -4114,6 +4268,7 @@ async function gerarCertificados(){
                 certIds: certIdsPorCurso[iCurso],
                 ...dadosGeradorCert()
             };
+            if (ov && ov.renovacaoDe) histUpdates['historico/' + histKeyPorCurso[iCurso]].renovacao = true;
             if (wsId) {
                 histUpdates['historico/' + histKeyPorCurso[iCurso]].nome += ' (emitido pela WS)';
                 histUpdates['historico/' + histKeyPorCurso[iCurso]].emitidoPor = wsId;
@@ -6104,6 +6259,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     window.renderCertificadosGerados = renderCertificadosGerados; 
 
     setupNavigation();
+    try { renderRenovacoes(); } catch(e) { }
     aplicarNavArnaldo();
     setupMobileNav();
 
