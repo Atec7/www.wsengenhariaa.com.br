@@ -6,6 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="ws-notas.js"></script>
 <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 
@@ -1417,6 +1418,8 @@ label.secondary:hover { background: var(--surface-2); border-color: #A9B7C8; }
 .renov-chk input{width:auto;margin:0}
 button.renovar{background:#16a34a!important;color:#fff!important;border-color:#16a34a!important}
 button.renovar:hover{background:#15803d!important}
+button.reimprimir{background:#fff!important;color:#1d4ed8!important;border:1px solid #93c5fd!important}
+button.reimprimir:hover{background:#eff6ff!important}
 .renov-st{display:inline-block;padding:2px 7px;border-radius:5px;font-size:11px;font-weight:700;white-space:nowrap}
 .renov-vazio{font-size:12px;color:var(--muted,#71717a);padding:6px 2px}
 </style>
@@ -1739,7 +1742,7 @@ button.renovar:hover{background:#15803d!important}
                 <div class="renov-tit">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 0 1 15.5-6.2L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15.5 6.2L3 16"/><path d="M3 21v-5h5"/></svg>
                     <strong>Renovar certificado já emitido</strong>
-                    <span class="renov-sub">Busque o colaborador, clique em <b>Renovar</b> e informe a data de emissão. O novo certificado sai com os mesmos dados (empresa, curso, assinaturas).</span>
+                    <span class="renov-sub">Busque o colaborador. <b>Renovar</b> pergunta a data de emissão e gera um certificado novo com os mesmos dados (empresa, curso, assinaturas). <b>Reimprimir</b> baixa de novo o mesmo certificado.</span>
                 </div>
                 <div class="renov-filtros">
                     <input id="renovBusca" placeholder="Nome do colaborador, CPF, matrícula ou curso" oninput="renderRenovacoes()" autocomplete="off">
@@ -2799,6 +2802,7 @@ function renderCertificadosGerados(){
             <td class="${expClass}">${exp}</td>
             <td class="actions">
                 <button class="renovar" title="Emite um novo certificado deste colaborador e curso" onclick="window.renovarCertificado('${c.id}')">&#8635; Renovar</button>
+                <button class="reimprimir" title="Gera de novo o mesmo certificado e baixa o PDF" onclick="window.reimprimirCertificado('${c.id}', this)">&#9113; Reimprimir</button>
                 <button class="secondary" onclick="window.viewCertificado('${c.id}')">Ver/Editar</button>
                 <button class="danger" onclick="window.deleteCertificado('${c.id}')">Excluir</button>
             </td>
@@ -2856,10 +2860,30 @@ function renderRenovacoes() {
             '<td>' + esc(c.curso.nome) + '</td>' +
             '<td>' + esc(c.dataInicioBR || '') + (c.dataFimBR && c.dataFimBR !== c.dataInicioBR ? ' a ' + esc(c.dataFimBR) : '') + '</td>' +
             '<td>' + (c.expiracao ? esc(fmtDateBR(c.expiracao)) + '<br>' : '') + c._st.html + '</td>' +
-            '<td><button class="renovar" onclick="window.renovarCertificado(\'' + c.id + '\')">&#8635; Renovar</button></td></tr>').join('') + '</table>' +
+            '<td style="white-space:nowrap"><button class="renovar" onclick="window.renovarCertificado(\'' + c.id + '\')">&#8635; Renovar</button> <button class="reimprimir" title="Gera de novo o mesmo certificado e baixa o PDF" onclick="window.reimprimirCertificado(\'' + c.id + '\', this)">&#9113; Reimprimir</button></td></tr>').join('') + '</table>' +
         (total > lst.length ? '<div class="renov-vazio">Mostrando ' + lst.length + ' de ' + total + '. Refine a busca.</div>' : '')
         : '<div class="renov-vazio">Nenhum certificado encontrado.</div>';
 }
+// Reimprimir: monta de novo o MESMO certificado (mesmos dados gravados) e
+// baixa o PDF direto, sem abrir a visualização.
+window.reimprimirCertificado = async (id, btn) => {
+    const c = certificadosGeradosData[id];
+    if (!c || !c.aluno || !c.curso) { alert('Certificado não encontrado.'); return; }
+    const rot = btn ? btn.innerHTML : '';
+    if (btn) { btn.disabled = true; btn.innerHTML = 'Gerando...'; }
+    try {
+        const pronto = certProntoParaImprimir(await resolverImagensCert(c));
+        const box = document.createElement('div');
+        box.innerHTML = window.buildPage1(pronto) + window.buildPage2(pronto);
+        const nt = (t) => (window.WS_NOTAS ? WS_NOTAS.semNota(t) : t);
+        await downloadPDF(box, `certificado_${nt(c.aluno.nome)}_${nt(c.curso.nome)}.pdf`);
+    } catch (e) {
+        console.error('Reimprimir:', e);
+        alert('Não foi possível reimprimir: ' + (e && e.message ? e.message : e));
+    } finally {
+        if (btn) { btn.disabled = false; btn.innerHTML = rot; }
+    }
+};
 // Item "Renovar Certificado" do menu: abre a Geração no cartão de renovação.
 function abrirRenovacao() {
     const link = document.querySelector('a.menu-link[href="#secaoGeracao"]');
@@ -5495,7 +5519,8 @@ function handleBulkDownload() {
 window.handleIndividualDownload = () => {
     if (!currentCertificadoId) return alert("Nenhum certificado selecionado para download.");
     const cert = certificadosGeradosData[currentCertificadoId];
-    downloadPDF(el("printAreaGerados"), `certificado_${cert.aluno.nome}_${cert.curso.nome}.pdf`);
+    const nt = (t) => (window.WS_NOTAS ? WS_NOTAS.semNota(t) : t);
+    downloadPDF(el("printAreaGerados"), `certificado_${nt(cert.aluno.nome)}_${nt(cert.curso.nome)}.pdf`);
 }
 
 function imprimirNativo(){
