@@ -6468,6 +6468,52 @@ async function genOrc(){
 
 // ── LISTAS ─────────────────────────────────────────────────────
 
+
+// ── AVISO DE DOCUMENTO REPETIDO ─────────────────────────────────────────
+// Cada geração grava no histórico 'docKeys' (ex.: 'os:<texto>', 'adm') e os
+// colaboradores (funcionarioIds; na geração em massa, docFuncIds). Antes de
+// gerar de novo, procura o mesmo documento para o mesmo colaborador e pede
+// confirmação. Fichas admissionais antigas (sem docKeys) são reconhecidas
+// pelo nome da linha.
+function docsRepetidos(fIds,keysPorFunc){
+  const alvo=new Set(fIds.map(String));
+  const achados={};
+  toArr(DATA.historico).forEach(h=>{
+    if(!h)return;
+    const ids=(Array.isArray(h.docFuncIds)?h.docFuncIds:Array.isArray(h.funcionarioIds)?h.funcionarioIds:[]).map(String);
+    if(!ids.some(i=>alvo.has(i)))return;
+    let keys=Array.isArray(h.docKeys)?h.docKeys:[];
+    if(!keys.length&&/^Ficha Admissional/i.test(String(h.nome||'')))keys=['adm'];
+    if(!keys.length)return;
+    ids.forEach(fid=>{
+      if(!alvo.has(fid))return;
+      const quer=keysPorFunc(fid)||[];
+      keys.forEach(k=>{
+        if(!quer.includes(k))return;
+        const ck=fid+'|'+k;
+        if(!achados[ck]||(Number(h.ts)||0)>(Number(achados[ck].h.ts)||0))achados[ck]={fid,k,h};
+      });
+    });
+  });
+  return Object.values(achados);
+}
+function docRotulo(k){
+  if(k==='adm')return 'Ficha Admissional';
+  if(k.indexOf('os:')===0){const t=(DATA.textos||{})[k.slice(3)];return 'OS'+(t&&t.titulo?' "'+t.titulo+'"':'');}
+  return k;
+}
+function confirmarRepetidos(lista){
+  if(!lista.length)return true;
+  const linhas=lista.slice(0,12).map(r=>{
+    const f=(DATA.funcionarios||{})[r.fid]||{};
+    const quando=r.h.ts?new Date(Number(r.h.ts)).toLocaleDateString('pt-BR'):(r.h.data||'');
+    return '• '+(f.nome||r.fid)+' — '+docRotulo(r.k)+(quando?' (gerado em '+quando+')':'');
+  });
+  return confirm('Atenção: já existe o mesmo documento para '+(lista.length===1?'este colaborador':'estes colaboradores')+':\n\n'+
+    linhas.join('\n')+(lista.length>12?'\n... e mais '+(lista.length-12):'')+
+    '\n\nGerar mesmo assim?\n(OK = gerar de novo · Cancelar = voltar sem gerar)');
+}
+
 // ── ORDEM DE SERVIÇO ─────────────────────────────────────────────
 async function gen(){
   if(!liberarGeracao('gen'))return;
@@ -6485,6 +6531,8 @@ async function gen(){
       return;
     }
   }
+  const osKeys=SEL_TEXTS.map(t=>'os:'+t);
+  if(!confirmarRepetidos(docsRepetidos(fIds,()=>osKeys)))return;
   spin(true);
   const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
   let first=true;
@@ -6500,7 +6548,7 @@ async function gen(){
 
   const firstTextId = SEL_TEXTS[0];
   const expiracao = getExpirationDate(firstTextId);
-  logHistory('OS Lote - '+fIds.length+' collaborator(es)', {empresaId:empId,funcionarioIds:fIds,expiracao});
+  logHistory('OS Lote - '+fIds.length+' collaborator(es)', {empresaId:empId,funcionarioIds:fIds,expiracao,docKeys:osKeys});
   showResult('gen-results','PDF gerado e baixado com sucesso!');
   return true;
 }
@@ -6631,6 +6679,7 @@ async function genAdm(){
       return;
     }
   }
+  if(!confirmarRepetidos(docsRepetidos(fIds,()=>['adm'])))return;
   spin(true);
   const local=document.getElementById('adm-local').value||'';
   const conteudo=document.getElementById('adm-cont').value||'';
@@ -6649,7 +6698,7 @@ async function genAdm(){
   
   const textId = document.getElementById('adm-sel-texto').value;
   const expiracao = getExpirationDate(textId);
-  logHistory('Ficha Admissional - '+fIds.length+' colaborador(es)', {empresaId:eid,funcionarioIds:fIds,data:dataVal,expiracao});
+  logHistory('Ficha Admissional - '+fIds.length+' colaborador(es)', {empresaId:eid,funcionarioIds:fIds,data:dataVal,expiracao,docKeys:['adm']});
   showResult('adm-results','Fichas geradas e baixadas com sucesso!');
   return true;
 }

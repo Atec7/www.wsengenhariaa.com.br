@@ -318,7 +318,53 @@ function voltar(){
 function massGerador(){
   try{return{usuarioId:sessionStorage.getItem('ws_user_id')||''};}catch(_){return{usuarioId:''};}
 }
-function massLogHistory(resumo,qtd,empresaId,treino,dataFmt){
+
+// ── AVISO DE DOCUMENTO REPETIDO ─────────────────────────────────────────
+// Cada geração grava no histórico 'docKeys' (ex.: 'os:<texto>', 'adm') e os
+// colaboradores (funcionarioIds; na geração em massa, docFuncIds). Antes de
+// gerar de novo, procura o mesmo documento para o mesmo colaborador e pede
+// confirmação. Fichas admissionais antigas (sem docKeys) são reconhecidas
+// pelo nome da linha.
+function docsRepetidos(fIds,keysPorFunc){
+  const alvo=new Set(fIds.map(String));
+  const achados={};
+  toArr(DATA.historico).forEach(h=>{
+    if(!h)return;
+    const ids=(Array.isArray(h.docFuncIds)?h.docFuncIds:Array.isArray(h.funcionarioIds)?h.funcionarioIds:[]).map(String);
+    if(!ids.some(i=>alvo.has(i)))return;
+    let keys=Array.isArray(h.docKeys)?h.docKeys:[];
+    if(!keys.length&&/^Ficha Admissional/i.test(String(h.nome||'')))keys=['adm'];
+    if(!keys.length)return;
+    ids.forEach(fid=>{
+      if(!alvo.has(fid))return;
+      const quer=keysPorFunc(fid)||[];
+      keys.forEach(k=>{
+        if(!quer.includes(k))return;
+        const ck=fid+'|'+k;
+        if(!achados[ck]||(Number(h.ts)||0)>(Number(achados[ck].h.ts)||0))achados[ck]={fid,k,h};
+      });
+    });
+  });
+  return Object.values(achados);
+}
+function docRotulo(k){
+  if(k==='adm')return 'Ficha Admissional';
+  if(k.indexOf('os:')===0){const t=(DATA.textos||{})[k.slice(3)];return 'OS'+(t&&t.titulo?' "'+t.titulo+'"':'');}
+  return k;
+}
+function confirmarRepetidos(lista){
+  if(!lista.length)return true;
+  const linhas=lista.slice(0,12).map(r=>{
+    const f=(DATA.funcionarios||{})[r.fid]||{};
+    const quando=r.h.ts?new Date(Number(r.h.ts)).toLocaleDateString('pt-BR'):(r.h.data||'');
+    return '• '+(f.nome||r.fid)+' — '+docRotulo(r.k)+(quando?' (gerado em '+quando+')':'');
+  });
+  return confirm('Atenção: já existe o mesmo documento para '+(lista.length===1?'este colaborador':'estes colaboradores')+':\n\n'+
+    linhas.join('\n')+(lista.length>12?'\n... e mais '+(lista.length-12):'')+
+    '\n\nGerar mesmo assim?\n(OK = gerar de novo · Cancelar = voltar sem gerar)');
+}
+
+function massLogHistory(resumo,qtd,empresaId,treino,dataFmt,extra){
   try{
     const data=new Date().toLocaleDateString('pt-BR',{hour:'2-digit',minute:'2-digit'});
     WS_DATA.push('historico',{
@@ -330,6 +376,9 @@ function massLogHistory(resumo,qtd,empresaId,treino,dataFmt){
       empresaId:empresaId||'',
       treino:treino||'',
       dataDoc:dataFmt||'',
+      // para o aviso de documento repetido (docFuncIds, e não funcionarioIds,
+      // para não mudar relatórios e painel, que contam funcionarioIds)
+      ...(extra&&extra.docKeys&&extra.docKeys.length?{docKeys:extra.docKeys,docFuncIds:extra.docFuncIds||[]}:{}),
       ...massGerador()
     }).catch(e=>console.error('Falha ao gravar histórico:',e));
   }catch(e){console.warn('massLogHistory:',e);}
@@ -1363,6 +1412,16 @@ async function massGen(){
   const docAdm=docTypeCb('adm');
   const docEpi=docTypeCb('epi');
  
+  // documentos que cada colaborador vai receber (OS ligadas ao cargo dele e a
+  // ficha admissional), para o aviso de documento repetido
+  const keysDe=f=>{
+    const ks=[];
+    if(docOS){const cg=String(f.funcao||'').trim();osTextsFiltered.forEach(id=>{const t=DATA.textos[id];if(t&&textoVinculadoAoCargo(t,cg))ks.push('os:'+id);});}
+    if(docAdm)ks.push('adm');
+    return ks;
+  };
+  const keysPorId={};selected.forEach(f=>{keysPorId[String(f.id)]=keysDe(f);});
+  if(!confirmarRepetidos(docsRepetidos(selected.map(f=>f.id),fid=>keysPorId[fid])))return;
   const treino=document.getElementById('m-lista-treino')?.value||'Treinamento';
   const carga=document.getElementById('m-lista-carga')?.value||'';
   const conteudo=document.getElementById('m-lista-cont')?.value||'';
@@ -1448,9 +1507,10 @@ async function massGen(){
       if(docLista)tipos.push('Lista de Presença');
       const empresas=Object.keys(grouped).filter(k=>k!=='unknown');
       const resumo=tipos.join(' + ')+' · '+selected.length+' colaborador(es)';
+      const docKeys=[...new Set([].concat(...Object.values(keysPorId)))];
       massLogHistory(resumo,results.length,
         empresas.length===1?empresas[0]:'',
-        treino||'',dataFmt);
+        treino||'',dataFmt,{docKeys,docFuncIds:selected.filter(f=>(keysPorId[String(f.id)]||[]).length).map(f=>f.id)});
     }
     if(results.length){
       const zip=new JSZip();

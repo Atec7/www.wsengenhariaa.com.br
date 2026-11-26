@@ -4116,6 +4116,24 @@ async function gerarCertificados(ov){
         if (!proceed) return;
     }
     
+    // Já existe certificado com o mesmo aluno, curso e datas? Avisa antes de
+    // gerar (mesma regra do cadastro manual). Cópias da WS não contam de novo.
+    {
+        const nm = (t) => String(t || '').trim().toLowerCase();
+        const existentes = getArrayFromData(certificadosGeradosData).filter(c => c && c.aluno && c.curso && !c.registroDe);
+        const repetidos = [];
+        selecionadosAlunos.forEach(a => selectedCoursesWithDates.forEach(item => {
+            const ja = existentes.find(c =>
+                (String(c.aluno.id) === String(a.id) || nm(c.aluno.nome) === nm(a.nome)) &&
+                (String(c.curso.id) === String(item.curso.id) || nm(c.curso.nome) === nm(item.curso.nome)) &&
+                c.dataInicio === item.dataInicio && c.dataFim === item.dataFim);
+            if (ja) repetidos.push(a.nome + ' — ' + item.curso.nome + ' (' + item.dataInicioBR + (item.dataFimBR !== item.dataInicioBR ? ' a ' + item.dataFimBR : '') + ', gerado em ' + fmtDateBR(ja.dataGeracao || '') + ')');
+        }));
+        if (repetidos.length && !confirm('Atenção: já existe certificado com os mesmos dados (colaborador, curso e datas do treinamento):\n\n' +
+            repetidos.slice(0, 12).map(r => '• ' + r).join('\n') + (repetidos.length > 12 ? '\n... e mais ' + (repetidos.length - 12) : '') +
+            '\n\nGerar mesmo assim?\n(OK = gerar de novo · Cancelar = voltar sem gerar)')) return;
+    }
+
     const printArea = el("printArea");
     const printAreaPresencas = el("printAreaPresencas");
     printArea.innerHTML = "";
