@@ -5002,6 +5002,35 @@ function valorPorExtenso(v){
   if(c)s+=(r?' e ':'')+inteiro(c)+(c===1?' centavo':' centavos');
   return s||'zero reais';
 }
+// Assinatura do responsável técnico (Wedson) para o recibo:
+// 1) a de Configurações (a mesma da OS e da Proposta);
+// 2) senão, a cadastrada numa empresa na tela de Certificados, como
+//    certificador ou assinatura 2/3/4, cujo nome tenha o primeiro nome do
+//    responsável (empresa da WS primeiro).
+async function assinaturaResponsavel(){
+  if(DATA.config&&DATA.config.assUrl){const a=await loadImg(DATA.config.assUrl);if(a)return a;}
+  const alvo=String(RESP.nome||'').split(/\s+/)[0].normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+  if(!alvo)return null;
+  const norm=t=>String(t||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+  const ehWS=e=>String(e.cnpj||'').replace(/\D/g,'')===String(WS_EMPRESA.cnpj).replace(/\D/g,'')||/\bws\b/.test(norm(e.nome));
+  const emps=toArr(DATA.empresas).sort((a,b)=>(ehWS(b)?1:0)-(ehWS(a)?1:0));
+  for(const e of emps){
+    const pares=[[e.certificadorNome,e.assinaturaCert||e.assinaturaCertUrl],[e.assinaturaNome2,e.assinaturaImg2],[e.assinaturaNome3,e.assinaturaImg3],[e.assinaturaNome4,e.assinaturaImg4]];
+    for(const [nome,img] of pares){
+      if(img&&norm(nome).includes(alvo)){const a=await loadImg(img);if(a)return a;}
+    }
+  }
+  return null;
+}
+// Desenha a imagem da assinatura dentro da caixa, sem distorcer, no formato certo.
+function desenharAssinatura(doc,img,cx,yBase,largMax,altMax){
+  try{
+    const fmt=/^data:image\/jpe?g/i.test(img)?'JPEG':'PNG';
+    let w=largMax,h=altMax;
+    try{const pr=doc.getImageProperties(img);if(pr&&pr.width&&pr.height){const r=pr.width/pr.height;if(largMax/altMax>r){h=altMax;w=h*r;}else{w=largMax;h=w/r;}}}catch(_){}
+    doc.addImage(img,fmt,cx-w/2,yBase-h-0.5,w,h);
+  }catch(e){console.warn('assinatura no recibo:',e);}
+}
 async function proximoNumeroRecibo(ano){
   try{
     const r=await db.ref('config/reciboSeq/'+ano).transaction(n=>(Number(n)||0)+1);
@@ -5038,7 +5067,7 @@ async function genRecibo(){
     const ano=dataRec.slice(0,4);
     const numero=String(await proximoNumeroRecibo(ano)).padStart(4,'0')+'/'+ano;
     const logo=emit.logo?await loadImg(emit.logo):null;
-    const assImg=assin.img==='ws'&&DATA.config?.assUrl?await loadImg(DATA.config.assUrl):null;
+    const assImg=assin.img==='ws'?await assinaturaResponsavel():null;
     const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
     const MES=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
     const dExt=d=>{const [a,m,dd]=d.split('-');return Number(dd)+' de '+MES[Number(m)-1]+' de '+a;};
@@ -5071,7 +5100,7 @@ async function genRecibo(){
       if(obs){const ol=doc.splitTextToSize('Observação: '+cleanForPdf(obs),uw);doc.text(ol,m,y);y+=ol.length*4.2+0.8;}
       doc.setTextColor(...C.dark);doc.text('Para maior clareza, firmamos o presente recibo, dando plena e geral quitação do valor acima.',m,y);y+=9;
       doc.text((cidade?cidade+', ':'')+dExt(dataRec)+'.',W-m,y,{align:'right'});y+=14;
-      if(assImg){try{doc.addImage(assImg,'PNG',W/2-22,y-15,44,14);}catch(_){}}
+      if(assImg)desenharAssinatura(doc,assImg,W/2,y,48,15);
       doc.setDrawColor(...C.dark);doc.setLineWidth(0.3);doc.line(W/2-40,y,W/2+40,y);
       doc.setFont('helvetica','bold');doc.setFontSize(8.5);doc.text(cleanForPdf(assin.nome),W/2,y+4,{align:'center'});
       doc.setFont('helvetica','normal');doc.setFontSize(7.5);doc.setTextColor(...C.sub);if(assin.linha2)doc.text(assin.linha2,W/2,y+8,{align:'center'});
