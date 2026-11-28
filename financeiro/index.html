@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>🌐 WS ENGENHARIA — Gerenciador</title>
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="theme-color" content="#0f172a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="WS Gerenciador">
+  <link rel="icon" href="../logo2.png" type="image/png">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      width: 100%; height: 100%;
+      overflow: hidden;
+      background: #0f172a;
+      font-family: Inter, system-ui, "Segoe UI", Roboto, Arial, sans-serif;
+    }
+    /* iframe em tela cheia: dentro dele o Google não mostra a faixa
+       "Este aplicativo foi criado por um usuário do Google Apps Script" */
+    #app {
+      position: fixed; inset: 0;
+      width: 100%; height: 100%;
+      border: 0; display: block;
+      background: #0f172a;
+    }
+    /* tela de carregamento */
+    #loader {
+      position: fixed; inset: 0; z-index: 10;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 18px; text-align: center; padding: 24px;
+      background: radial-gradient(800px 400px at 85% 0%, rgba(59,130,246,.18), transparent 60%),
+                  radial-gradient(700px 380px at 10% 100%, rgba(34,197,94,.14), transparent 60%),
+                  #0f172a;
+      color: #e2e8f0;
+      transition: opacity .4s ease;
+    }
+    #loader.hide { opacity: 0; pointer-events: none; }
+    #loader img {
+      width: 96px; height: 96px; border-radius: 50%;
+      object-fit: cover; background: #fff; padding: 3px;
+      border: 3px solid rgba(59,130,246,.6);
+      animation: pulse 2s ease-in-out infinite;
+    }
+    @keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+    #loader h1 { font-size: 20px; font-weight: 700; letter-spacing: .5px; }
+    #loader p { font-size: 13px; color: #94a3b8; }
+    .bar { width: 200px; height: 4px; background: rgba(255,255,255,.12); border-radius: 999px; overflow: hidden; position: relative; }
+    .bar::after {
+      content: ""; position: absolute; top: 0; bottom: 0; width: 40%;
+      background: linear-gradient(90deg, #3b82f6, #22c55e); border-radius: 999px;
+      animation: load 1.1s ease-in-out infinite;
+    }
+    @keyframes load { 0% { left: -40%; } 100% { left: 100%; } }
+    #fallback { display: none; font-size: 13px; color: #94a3b8; max-width: 380px; line-height: 1.5; }
+    #fallback a {
+      display: inline-block; margin-top: 10px; padding: 9px 16px; border-radius: 10px;
+      background: linear-gradient(135deg, #2952ff, #3b82f6); color: #fff; text-decoration: none; font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <div id="loader">
+    <img src="../logo2.png" alt="WS Engenharia">
+    <h1>WS ENGENHARIA</h1>
+    <p>Carregando o sistema...</p>
+    <div class="bar"></div>
+    <div id="fallback">
+      Está demorando mais que o normal. Se aparecer uma tela de login do Google, entre na sua conta e recarregue esta página, ou abra o sistema direto:
+      <br><a id="linkDireto" href="#" target="_blank" rel="noopener">Abrir em nova aba</a>
+    </div>
+  </div>
+
+  <iframe
+    id="app"
+    title="WS ENGENHARIA — Gerenciador"
+    allow="clipboard-read; clipboard-write; fullscreen"
+    allowfullscreen
+    referrerpolicy="no-referrer-when-downgrade"></iframe>
+
+  <script>
+    // Link de acesso ao sistema (Google Apps Script — implantação /exec)
+    var APP_URL = 'https://script.google.com/macros/s/AKfycbwgJTZGh54EZ8uxR2Nc-AeHPYKVNY-erIY-w66TIKGWuSrZJfv94sjFRaVu34yTdi2C/exec';
+
+    var iframe = document.getElementById('app');
+    var loader = document.getElementById('loader');
+    document.getElementById('linkDireto').href = APP_URL;
+
+    iframe.addEventListener('load', function () {
+      loader.classList.add('hide');
+      setTimeout(function () { loader.style.display = 'none'; }, 450);
+    });
+    iframe.src = APP_URL;
+
+    // se não carregar em 15s, mostra opção de abrir direto
+    setTimeout(function () {
+      if (loader.style.display !== 'none') document.getElementById('fallback').style.display = 'block';
+    }, 15000);
+  </script>
+</body>
+</html>
