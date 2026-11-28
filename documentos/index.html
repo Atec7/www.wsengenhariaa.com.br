@@ -449,6 +449,7 @@ hr.dv{border:none;border-top:1px solid var(--bd);margin:18px 0}
     <div class="mi" onclick="nav('adm',this)"><i class="fa-solid fa-file-signature"></i> Ficha Admissional</div>
     <div class="mi" onclick="nav('epi',this)"><i class="fa-solid fa-helmet-safety"></i> Ficha EPI/EPC</div>
     <div class="mi" onclick="nav('orc',this)"><i class="fa-solid fa-file-invoice-dollar"></i> Or&ccedil;amentos</div>
+    <div class="mi" onclick="nav('recibo',this);reciboPrep()"><i class="fa-solid fa-receipt"></i> Recibos</div>
     <div class="mi" onclick="abrirCoringa()"><i class="fa-solid fa-file-shield"></i> Documento Coringa</div>
     <div class="mi" style="color:#22c55e;border-left-color:transparent" onclick="abrirMassa()"><i class="fa-solid fa-layer-group"></i> Geração em Massa</div>
   </div>
@@ -898,6 +899,38 @@ hr.dv{border:none;border-top:1px solid var(--bd);margin:18px 0}
 
 📤 IMPORTANTE: Favor enviar o comprovante após a operação.</textarea></div>
     <button class="btn bp bf" onclick="genOrc()"><i class="fa-solid fa-file-pdf"></i> GERAR PROPOSTA</button>
+  </div>
+</div>
+
+<div id="recibo" class="view">
+  <div class="ph"><div><div class="pt">Recibos</div><div class="pd">Recibo de pagamento em PDF, numerado, com valor por extenso</div></div></div>
+  <div class="card" style="max-width:840px">
+    <div class="g2">
+      <div class="fg"><label class="fl">Recebedor (quem emite)</label><select id="r-emit"></select></div>
+      <div class="fg"><label class="fl">Pagador (quem pagou)</label><select id="r-e" onchange="reciboPagadorChange()"><option value="">Selecione...</option></select></div>
+    </div>
+    <div class="g2" id="r-outro-box" style="display:none">
+      <div class="fg"><label class="fl">Nome do pagador</label><input id="r-outro-nome" placeholder="Nome ou raz&atilde;o social"></div>
+      <div class="fg"><label class="fl">CPF / CNPJ</label><input id="r-outro-doc" placeholder="opcional"></div>
+    </div>
+    <div class="fg">
+      <label class="fl">Servi&ccedil;os recebidos</label>
+      <table class="ot"><thead><tr><th style="width:52%">Descri&ccedil;&atilde;o</th><th style="width:12%">Qtd</th><th style="width:20%">Valor Unit. (R$)</th><th style="width:5%"></th></tr></thead><tbody id="rec-body"></tbody></table>
+      <button class="btn bg2" style="font-size:11px;padding:5px 11px" onclick="addRecItem()"><i class="fa-solid fa-plus"></i> Adicionar Item</button>
+      <div class="ototal">Total: R$ <span id="rec-total">0,00</span></div>
+    </div>
+    <div class="g3">
+      <div class="fg"><label class="fl">Forma de pagamento</label><select id="r-forma"><option>PIX</option><option>Transfer&ecirc;ncia banc&aacute;ria</option><option>Dinheiro</option><option>Boleto</option><option>Cart&atilde;o de cr&eacute;dito</option><option>Cart&atilde;o de d&eacute;bito</option><option>Cheque</option></select></div>
+      <div class="fg"><label class="fl">Data do pagamento</label><input type="date" id="r-dtpag"></div>
+      <div class="fg"><label class="fl">Data do recibo</label><input type="date" id="r-data"></div>
+    </div>
+    <div class="g2">
+      <div class="fg"><label class="fl">Cidade</label><input id="r-cidade" placeholder="Ex.: Salvador"></div>
+      <div class="fg"><label class="fl">Quem assina</label><select id="r-assin"></select></div>
+    </div>
+    <div class="fg"><label class="fl">Observa&ccedil;&atilde;o (opcional)</label><input id="r-obs" maxlength="300" placeholder="Ex.: pagamento referente &agrave; proposta n&ordm; 0012/2026"></div>
+    <label style="display:flex;align-items:center;gap:8px;font-size:12px;margin:2px 0 14px;cursor:pointer"><input type="checkbox" id="r-2vias" checked style="width:auto"> Duas vias na mesma folha (cliente e emitente)</label>
+    <button class="btn bp bf" onclick="genRecibo()"><i class="fa-solid fa-file-pdf"></i> GERAR RECIBO</button>
   </div>
 </div>
 
@@ -4931,6 +4964,135 @@ function epiFichaPreview(){
       +(alterado?'<button class="bxs" onclick="fichaAjRestaurar(\''+id+'\')">Restaurar padr\u00e3o</button>':'')+'</div></details>';}).join('');
   box.innerHTML='<div style="font-size:12px"><b>'+ids.length+' colaborador(es) selecionado(s)</b></div>'+blocos;
 }
+// ── RECIBOS ──────────────────────────────────────────────────────
+// Recibo numerado por ano (config/reciboSeq/<ano>, transação no banco para
+// dois usuários não pegarem o mesmo número), valor por extenso, 1 ou 2 vias
+// na folha, mesmo visual dos outros documentos. Fica no histórico.
+function addRecItem(desc,qtd,val){const tr=document.createElement('tr');tr.innerHTML=`<td><input class="oi r-desc" placeholder="Descrição do serviço" oninput="calcRecTotal()"></td><td><input class="oi r-qtd" type="number" value="1" min="1" oninput="calcRecTotal()"></td><td><input class="oi r-val" type="number" step="0.01" min="0" placeholder="0,00" oninput="calcRecTotal()"></td><td><button class="btn bd2" style="padding:4px 8px" title="Remover" onclick="this.closest('tr').remove();calcRecTotal()"><i class="fa-solid fa-xmark"></i></button></td>`;document.getElementById('rec-body').appendChild(tr);if(desc)tr.querySelector('.r-desc').value=desc;if(qtd)tr.querySelector('.r-qtd').value=qtd;if(val!=null)tr.querySelector('.r-val').value=val;calcRecTotal();}
+function itensRecibo(){const it=[];document.querySelectorAll('#rec-body tr').forEach(tr=>{const desc=(tr.querySelector('.r-desc')?.value||'').trim();const qtd=parseFloat(tr.querySelector('.r-qtd')?.value)||1;const val=parseFloat(tr.querySelector('.r-val')?.value)||0;if(desc)it.push({desc,qtd,val});});return it;}
+function calcRecTotal(){const t=itensRecibo().reduce((a,i)=>a+i.qtd*i.val,0);document.getElementById('rec-total').textContent=t.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function reciboPagadorChange(){document.getElementById('r-outro-box').style.display=document.getElementById('r-e').value==='__outro'?'':'none';}
+function reciboPrep(){
+  const hoje=new Date().toISOString().slice(0,10);
+  ['r-data','r-dtpag'].forEach(id=>{const e=document.getElementById(id);if(e&&!e.value)e.value=hoje;});
+  const cid=document.getElementById('r-cidade');if(cid&&!cid.value)cid.value=(DATA.config&&DATA.config.cidadePadrao)||'Salvador';
+  const emit=document.getElementById('r-emit');
+  if(emit){const cur=emit.value;emit.innerHTML=`<option value="">${esc(WS_EMPRESA.nome)}</option>`+empresasVisiveis().sort((a,b)=>(a.nome||'').localeCompare(b.nome||'')).map(e=>`<option value="${esc(e.id)}">${esc(e.nome)}</option>`).join('');emit.value=cur||'';}
+  const pag=document.getElementById('r-e');
+  if(pag&&!pag.querySelector('option[value="__outro"]')){const o=document.createElement('option');o.value='__outro';o.textContent='— Outro (digitar nome) —';pag.appendChild(o);}
+  const as=document.getElementById('r-assin');
+  if(as){const cur=as.value;as.innerHTML=`<option value="">${esc(RESP.nome)} (respons&aacute;vel t&eacute;cnico)</option>`+toArr(DATA.pessoas).filter(p=>p&&p.nome).sort((a,b)=>(a.nome||'').localeCompare(b.nome||'')).map(p=>`<option value="${esc(p.id)}">${esc(p.nome)}</option>`).join('');as.value=cur||'';}
+  if(!document.querySelector('#rec-body tr'))addRecItem();
+}
+// Valor em reais por extenso (até bilhões)
+function valorPorExtenso(v){
+  v=Math.round((Number(v)||0)*100)/100;
+  const U=['','um','dois','três','quatro','cinco','seis','sete','oito','nove','dez','onze','doze','treze','quatorze','quinze','dezesseis','dezessete','dezoito','dezenove'];
+  const D=['','','vinte','trinta','quarenta','cinquenta','sessenta','setenta','oitenta','noventa'];
+  const CE=['','cento','duzentos','trezentos','quatrocentos','quinhentos','seiscentos','setecentos','oitocentos','novecentos'];
+  const ate999=n=>{if(n===0)return'';if(n===100)return'cem';const c=Math.floor(n/100),r=n%100,p=[];if(c)p.push(CE[c]);if(r){if(r<20)p.push(U[r]);else{const d=Math.floor(r/10),u=r%10;p.push(D[d]+(u?' e '+U[u]:''));}}return p.join(' e ');};
+  const inteiro=n=>{if(n===0)return'zero';const grupos=[];let x=n;while(x>0){grupos.push(x%1000);x=Math.floor(x/1000);}
+    const nomes=[['',''],['mil','mil'],['milhão','milhões'],['bilhão','bilhões']];const partes=[];
+    for(let i=grupos.length-1;i>=0;i--){const g=grupos[i];if(!g)continue;let t=(i===1&&g===1)?'mil':ate999(g)+(i?' '+nomes[i][g===1?0:1]:'');partes.push({t,g,i});}
+    let out='';partes.forEach((p,k)=>{if(k===0)out=p.t;else{const ultimo=k===partes.length-1;out+=(ultimo&&(p.g<100||p.g%100===0))?' e '+p.t:' '+p.t;}});return out;};
+  const r=Math.floor(v),c=Math.round((v-r)*100);
+  const grande=r>=1e6&&r%1e6===0;
+  let s='';
+  if(r)s=inteiro(r)+(grande?' de':'')+(r===1?' real':' reais');
+  if(c)s+=(r?' e ':'')+inteiro(c)+(c===1?' centavo':' centavos');
+  return s||'zero reais';
+}
+async function proximoNumeroRecibo(ano){
+  try{
+    const r=await db.ref('config/reciboSeq/'+ano).transaction(n=>(Number(n)||0)+1);
+    const n=r&&r.snapshot?Number(r.snapshot.val()):0;
+    if(n)return n;
+  }catch(e){console.warn('numero recibo:',e);}
+  return Number(String(Date.now()).slice(-4));
+}
+async function genRecibo(){
+  const itens=itensRecibo();
+  if(!itens.length){alert('Adicione pelo menos um serviço com descrição.');return;}
+  const total=itens.reduce((a,i)=>a+i.qtd*i.val,0);
+  if(!(total>0)){alert('Informe os valores dos serviços.');return;}
+  const pagSel=document.getElementById('r-e').value;
+  let pagNome='',pagDoc='',pagEmpId='';
+  if(pagSel==='__outro'){pagNome=(document.getElementById('r-outro-nome').value||'').trim();pagDoc=(document.getElementById('r-outro-doc').value||'').trim();if(!pagNome){alert('Informe o nome do pagador.');return;}}
+  else if(pagSel){const e=resolveEmp(pagSel)||{};pagNome=e.nome||'';pagDoc=e.cnpj||'';pagEmpId=pagSel;}
+  else{alert('Selecione quem pagou.');return;}
+  const emitId=document.getElementById('r-emit').value;
+  const emitEmp=emitId?(resolveEmp(emitId)||{}):null;
+  const emit={nome:emitEmp?emitEmp.nome:WS_EMPRESA.nome,cnpj:emitEmp?(emitEmp.cnpj||''):WS_EMPRESA.cnpj,logo:emitEmp?(emitEmp.logoUrl||''):(DATA.config?.logoUrl||'')};
+  const assId=document.getElementById('r-assin').value;
+  const pes=assId?(DATA.pessoas||{})[assId]:null;
+  const assin=pes?{nome:pes.nome||'',linha2:[pes.funcao||pes.cargo||'',pes.cpf?'CPF '+pes.cpf:''].filter(Boolean).join(' · '),img:null}
+                 :{nome:RESP.nome,linha2:'Eng. de Segurança do Trabalho · '+RESP.registro,img:'ws'};
+  const dataRec=document.getElementById('r-data').value||new Date().toISOString().slice(0,10);
+  const dataPag=document.getElementById('r-dtpag').value;
+  const forma=document.getElementById('r-forma').value;
+  const cidade=(document.getElementById('r-cidade').value||'').trim();
+  const obs=(document.getElementById('r-obs').value||'').trim();
+  const duas=document.getElementById('r-2vias').checked;
+  spin(true);
+  try{
+    const ano=dataRec.slice(0,4);
+    const numero=String(await proximoNumeroRecibo(ano)).padStart(4,'0')+'/'+ano;
+    const logo=emit.logo?await loadImg(emit.logo):null;
+    const assImg=assin.img==='ws'&&DATA.config?.assUrl?await loadImg(DATA.config.assUrl):null;
+    const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+    const MES=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+    const dExt=d=>{const [a,m,dd]=d.split('-');return Number(dd)+' de '+MES[Number(m)-1]+' de '+a;};
+    const via=(y0,rotVia,alturaMax)=>{
+      const W=210,m=12,uw=W-24,hh=22;
+      doc.setFillColor(...C.h1);doc.rect(0,y0,W,hh,'F');
+      if(logo){try{doc.addImage(logo,'PNG',m,y0+3,16,16);}catch(_){}}
+      const tx=m+(logo?20:0);
+      doc.setFont('helvetica','bold');doc.setFontSize(10.5);doc.setTextColor(...C.twh);doc.text(cleanForPdf(emit.nome),tx,y0+9,{maxWidth:120});
+      doc.setFont('helvetica','normal');doc.setFontSize(7.5);doc.setTextColor(...C.tlt);doc.text((emit.cnpj?'CNPJ '+emit.cnpj:'')+(cidade?(emit.cnpj?'  ·  ':'')+cidade:''),tx,y0+14);
+      doc.setFont('helvetica','bold');doc.setFontSize(16);doc.setTextColor(...C.twh);doc.text('RECIBO',W-m,y0+10,{align:'right'});
+      doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(...C.tlt);doc.text('Nº '+numero+(rotVia?'  ·  '+rotVia:''),W-m,y0+15.5,{align:'right'});
+      let y=y0+hh+7;
+      doc.setFillColor(...C.bg);doc.setDrawColor(...C.bdr);doc.setLineWidth(0.2);doc.roundedRect(W-m-62,y-4,62,12,1.5,1.5,'FD');
+      doc.setFont('helvetica','normal');doc.setFontSize(7);doc.setTextColor(...C.sub);doc.text('VALOR',W-m-58,y+0.5);
+      doc.setFont('helvetica','bold');doc.setFontSize(13);doc.setTextColor(...C.dark);doc.text(fmtMoeda(total),W-m-4,y+5.5,{align:'right'});
+      doc.setFont('helvetica','normal');doc.setFontSize(9.5);doc.setTextColor(...C.dark);
+      const txt='Recebemos de '+cleanForPdf(pagNome)+(pagDoc?', '+(pagDoc.replace(/\D/g,'').length===11?'CPF ':'CNPJ ')+pagDoc:'')+', a importância de '+fmtMoeda(total)+' ('+valorPorExtenso(total)+'), referente '+(itens.length>1?'aos serviços abaixo:':'ao serviço abaixo:');
+      const lines=doc.splitTextToSize(txt,uw-68);doc.text(lines,m,y);y+=Math.max(lines.length*4.6,12)+3;
+      doc.autoTable({startY:y,margin:{left:m,right:m},tableWidth:uw,theme:'grid',
+        head:[['Descrição','Qtd','Valor unit.','Total']],
+        body:itens.map(i=>[cleanForPdf(i.desc),String(i.qtd),fmtMoeda(i.val),fmtMoeda(i.qtd*i.val)]),
+        foot:[['','','TOTAL',fmtMoeda(total)]],
+        headStyles:{fillColor:C.h2,textColor:[255,255,255],fontSize:7.5,fontStyle:'bold'},footStyles:{fillColor:C.bg,textColor:C.dark,fontStyle:'bold',fontSize:8},
+        styles:{fontSize:8,textColor:C.dark,cellPadding:1.8,lineColor:C.bdr,lineWidth:0.15},
+        columnStyles:{0:{cellWidth:uw-70},1:{cellWidth:14,halign:'center'},2:{cellWidth:28,halign:'right'},3:{cellWidth:28,halign:'right'}}});
+      y=doc.lastAutoTable.finalY+6;
+      doc.setFontSize(8.5);doc.setTextColor(...C.mid);
+      doc.text('Forma de pagamento: '+forma+(dataPag?'     ·     Data do pagamento: '+fmtData(dataPag):''),m,y);y+=5;
+      if(obs){const ol=doc.splitTextToSize('Observação: '+cleanForPdf(obs),uw);doc.text(ol,m,y);y+=ol.length*4.2+0.8;}
+      doc.setTextColor(...C.dark);doc.text('Para maior clareza, firmamos o presente recibo, dando plena e geral quitação do valor acima.',m,y);y+=9;
+      doc.text((cidade?cidade+', ':'')+dExt(dataRec)+'.',W-m,y,{align:'right'});y+=14;
+      if(assImg){try{doc.addImage(assImg,'PNG',W/2-22,y-15,44,14);}catch(_){}}
+      doc.setDrawColor(...C.dark);doc.setLineWidth(0.3);doc.line(W/2-40,y,W/2+40,y);
+      doc.setFont('helvetica','bold');doc.setFontSize(8.5);doc.text(cleanForPdf(assin.nome),W/2,y+4,{align:'center'});
+      doc.setFont('helvetica','normal');doc.setFontSize(7.5);doc.setTextColor(...C.sub);if(assin.linha2)doc.text(assin.linha2,W/2,y+8,{align:'center'});
+      return y+10;
+    };
+    if(duas){
+      // as duas vias precisam caber em meia folha cada; muitos itens -> uma via por folha
+      const fim=via(0,'VIA DO CLIENTE');
+      if(fim<=146){
+        doc.setLineDashPattern([2,1.5],0);doc.setDrawColor(...C.sub);doc.setLineWidth(0.2);doc.line(6,148.5,204,148.5);doc.setLineDashPattern([],0);
+        doc.setFontSize(6.5);doc.setTextColor(...C.sub);doc.text('- - recortar aqui - -',8,147);
+        via(150,'VIA DO EMITENTE');
+      }else{doc.addPage();via(0,'VIA DO EMITENTE');}
+    }else via(0,'');
+    spin(false);
+    const nomeArq='RECIBO_'+numero.replace('/','-')+'_'+cleanForPdf(pagNome).replace(/\s+/g,'_').slice(0,40)+'.pdf';
+    await saveSecurely(doc,nomeArq,{empresaId:pagEmpId||emitId||''});
+    logHistory('Recibo nº '+numero+' - '+pagNome,{empresaId:pagEmpId||emitId||'',valor:total,numeroRecibo:numero,formaPagamento:forma,dataPagamento:dataPag||''});
+    return true;
+  }catch(e){spin(false);console.error('Recibo:',e);alert('Não foi possível gerar o recibo: '+(e&&e.message?e.message:e));}
+}
 function addOrcItem(){const tr=document.createElement('tr');tr.innerHTML=`<td><input class="oi o-desc" placeholder="Descri\u00e7\u00e3o do servi\u00e7o" oninput="calcTotal()"></td><td><input class="oi o-qtd" type="number" value="1" min="1" oninput="calcTotal()"></td><td><input class="oi o-val" type="number" value="0" min="0" step="0.01" oninput="calcTotal()"></td><td><button class="btn bd2" style="padding:4px 7px" onclick="this.closest('tr').remove();calcTotal()"><i class="fa-solid fa-trash"></i></button></td>`;document.getElementById('orc-body').appendChild(tr);}
 function calcTotal(){let t=0;document.querySelectorAll('#orc-body tr').forEach(tr=>{const q=parseFloat(tr.querySelector('.o-qtd')?.value)||0;const u=parseFloat(tr.querySelector('.o-val')?.value)||0;t+=q*u;});document.getElementById('orc-total-display').textContent=t.toLocaleString('pt-BR',{minimumFractionDigits:2});}
 
@@ -5035,7 +5197,7 @@ function catsPermitidos(col){
 function populateSelects(){
   const emps=empresasVisiveis().sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));
   const opts='<option value="">Selecione...</option>'+emps.map(e=>`<option value="${esc(e.id)}">${esc(e.nome)}</option>`).join('');
-  ['i-f-ep','o-e','g-e','list-empresa','adm-empresa','e-e','dash-filter-emp','b-f-ep'].forEach(id=>{const el=document.getElementById(id);if(!el)return;const cur=el.value;el.innerHTML=opts;if(cur)el.value=cur;});
+  ['i-f-ep','o-e','g-e','list-empresa','adm-empresa','e-e','dash-filter-emp','b-f-ep','r-e'].forEach(id=>{const el=document.getElementById(id);if(!el)return;const cur=el.value;el.innerHTML=opts;if(cur)el.value=cur;});
   const fltEmp=document.getElementById('filter-colaboradores-emp');
   if(fltEmp){const cur=fltEmp.value;fltEmp.innerHTML='<option value="">Todas as empresas</option>'+emps.map(e=>`<option value="${esc(e.id)}">${esc(e.nome)}</option>`).join('');if(cur)fltEmp.value=cur;}
   popFuncVinculos(true);
@@ -7107,6 +7269,7 @@ const TELAS_USUARIO=[
   {id:'adm',nome:'Ficha Admissional'},
   {id:'epi',nome:'Ficha EPI/EPC'},
   {id:'orc',nome:'Orcamentos'},
+  {id:'recibo',nome:'Recibos'},
   {id:'docc',nome:'Documento Coringa'},
   {id:'massa',nome:'Geracao em Massa'},
   {id:'cert',nome:'Emitir Certificados'},
