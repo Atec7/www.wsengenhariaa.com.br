@@ -981,7 +981,7 @@ hr.dv{border:none;border-top:1px solid var(--bd);margin:18px 0}
   <div class="fg"><label class="fl">Nome</label><input id="i-e-nm"></div>
   <div class="fg"><label class="fl">CNPJ</label><input id="i-e-cj" placeholder="00.000.000/0000-00"></div>
   <div class="fg"><label class="fl">Endere&ccedil;o</label><textarea id="i-e-ender" placeholder="Endere&ccedil;o completo da empresa" style="min-height:60px"></textarea></div>
-  <div class="fg"><label class="fl">E-mails para avisos de RH <span style="font-weight:400;text-transform:none;color:var(--ts)">(admiss&otilde;es e desligamentos; separe por v&iacute;rgula)</span></label><input id="i-e-emails" placeholder="rh@empresa.com.br, gestor@empresa.com.br"></div>
+  <div class="fg" id="fg-e-emails" style="display:none"><label class="fl">E-mails para avisos de RH <span style="font-weight:400;text-transform:none;color:var(--ts)">(admiss&otilde;es e desligamentos; separe por v&iacute;rgula)</span></label><input id="i-e-emails" placeholder="rh@empresa.com.br, gestor@empresa.com.br"></div>
   <div class="g2">
     <div class="fg"><label class="fl">Obras</label>
       <div class="msd">
@@ -1181,7 +1181,7 @@ hr.dv{border:none;border-top:1px solid var(--bd);margin:18px 0}
   <div class="fg"><label class="fl">Assinatura do Respons&aacute;vel</label><input type="file" id="f-ass" accept="image/*" onchange="previewImg(this,'prev-ass')"><img id="prev-ass" class="ip"></div>
   <div class="fg"><label class="fl">Imagem de Fundo da Capa (Documento Coringa)</label><input type="file" id="f-bg-capa" accept="image/*" onchange="previewImg(this,'prev-bg-capa')"><img id="prev-bg-capa" class="ip"></div>
   <div class="sb2" style="margin:0"><i class="fa-solid fa-check-circle"></i> <strong>AtecServer configurado</strong> &mdash; projeto <code>ws-documentos&certificados</code> conectado.</div>
-  <div style="border-top:1px solid var(--bd);margin:16px 0 0;padding-top:14px">
+  <div id="cf-mail-box" style="display:none;border-top:1px solid var(--bd);margin:16px 0 0;padding-top:14px">
     <div style="font-size:13px;font-weight:700;margin-bottom:8px"><i class="fa-solid fa-envelope"></i> Avisos de RH por e-mail</div>
     <div class="pd" style="font-size:11px;margin:0 0 10px">Ao salvar um colaborador <b>novo</b> (admiss&atilde;o) ou marcado como <b>desligado</b>, o sistema avisa por e-mail os endere&ccedil;os cadastrados na empresa dele. O envio &eacute; feito pelo Google Apps Script da conta da WS (gr&aacute;tis).</div>
     <div class="fg"><label class="fl">Endere&ccedil;o do script de envio (URL do Apps Script)</label><input id="cf-mail-url" placeholder="https://script.google.com/macros/s/.../exec"></div>
@@ -2888,7 +2888,7 @@ function fmtCnpj(c){if(!c)return'—';return c;}
 function addNewPageIfNeeded(doc,y,minSpace){return y;}
 function abrirMassa(){window.location.href='massa.html';}
 function abrirCoringa(){window.location.href='coringa.html';}
-function openConfModal(){document.getElementById('mdl-conf').style.display='flex';const c=DATA.config||{};const u=document.getElementById('cf-mail-url');if(u)u.value=c.emailWebhook||'';const cp=document.getElementById('cf-mail-copia');if(cp)cp.value=c.emailsRHCopia||'';const st=document.getElementById('cf-mail-status');if(st)st.textContent='';const ls=document.getElementById('cf-mail-lista');if(ls)ls.innerHTML='';}
+function openConfModal(){document.getElementById('mdl-conf').style.display='flex';aplicarVisRH();if(!ehArnaldoRH())return;const c=DATA.config||{};const u=document.getElementById('cf-mail-url');if(u)u.value=c.emailWebhook||'';const cp=document.getElementById('cf-mail-copia');if(cp)cp.value=c.emailsRHCopia||'';const st=document.getElementById('cf-mail-status');if(st)st.textContent='';const ls=document.getElementById('cf-mail-lista');if(ls)ls.innerHTML='';}
 function nav(id,el){document.querySelectorAll('.view').forEach(e=>e.classList.remove('active'));document.querySelectorAll('.mi').forEach(e=>e.classList.remove('active'));const target=document.getElementById(id);target.classList.add('active');if(el)el.classList.add('active');}
 function tabSwitch(id,el){document.querySelectorAll('.tc').forEach(e=>e.classList.remove('active'));document.getElementById(id).classList.add('active');document.querySelectorAll('.tab').forEach(e=>e.classList.remove('active'));if(el)el.classList.add('active');}
 function openM(id,mode){
@@ -5326,6 +5326,9 @@ function gravarRegistro(node,id,dados){
   return WS_DATA.write(node,id,limpo);
 }
 // ── AVISOS DE RH POR E-MAIL ─────────────────────────────────────────
+// Configuração e e-mails das empresas: só o Arnaldo vê e altera.
+function ehArnaldoRH(){return !!(USUARIO_ATUAL&&USUARIO_ATUAL.mestre&&USUARIO_ATUAL.nome===MESTRE_USER);}
+function aplicarVisRH(){const ok=ehArnaldoRH();['cf-mail-box','fg-e-emails'].forEach(i=>{const e=document.getElementById(i);if(e)e.style.display=ok?'':'none';});if(!ok){['cf-mail-url','cf-mail-copia','i-e-emails'].forEach(i=>{const e=document.getElementById(i);if(e)e.value='';});}}
 // O sistema só avisa o script (Google Apps Script da WS) QUAL colaborador e
 // QUAL evento. O script lê o colaborador e a empresa no banco, confere que o
 // evento é real, envia para os e-mails cadastrados na empresa (+ cópia) e
@@ -5354,6 +5357,7 @@ function avisoRHAposSalvar(id,antes,depois){
   }catch(e){console.warn('aviso RH:',e);}
 }
 async function salvarConfigEmail(){
+  if(!ehArnaldoRH()){alert('Apenas o Arnaldo pode acessar os avisos de RH.');return;}
   const url=(document.getElementById('cf-mail-url').value||'').trim();
   const copia=(document.getElementById('cf-mail-copia').value||'').trim();
   const st=document.getElementById('cf-mail-status');
@@ -5368,6 +5372,7 @@ async function salvarConfigEmail(){
   }catch(e){st.style.color='var(--dn)';st.textContent='Erro ao salvar: '+e.message;}
 }
 function testarEmailRH(){
+  if(!ehArnaldoRH()){alert('Apenas o Arnaldo pode acessar os avisos de RH.');return;}
   const st=document.getElementById('cf-mail-status');
   const para=prompt('Enviar o e-mail de teste para qual endere\u00e7o?',(DATA.config&&DATA.config.emailsRHCopia||'').split(',')[0]||'');
   if(!para)return;
@@ -5376,6 +5381,7 @@ function testarEmailRH(){
   st.style.color='var(--sc)';st.textContent='Pedido de teste enviado. Confira a caixa de entrada (e o spam) de '+para.trim()+' em alguns segundos.';
 }
 async function listarAvisosRH(){
+  if(!ehArnaldoRH()){alert('Apenas o Arnaldo pode acessar os avisos de RH.');return;}
   const box=document.getElementById('cf-mail-lista');box.textContent='Carregando...';
   try{
     // só os 20 últimos (leitura pequena, só quando pedida)
@@ -5428,8 +5434,8 @@ function btHistDel(key,label,sm){if(!podeExcluirHist())return'';const st=sm?'pad
 const TELA_DEL_PATH={empresas:'emps',funcionarios:'funcs',cargos:'cargos',pessoas:'pessoas',textos:'texts',materiais:'epi'};
 function del(path,id){const tela=TELA_DEL_PATH[path];if(tela&&!usuarioPodeExcluir(tela)){alert('Voc\u00ea n\u00e3o tem permiss\u00e3o para excluir.');return;}if(!confirm('Confirma a exclus\u00e3o?'))return;WS_DATA.remove(path,id).then(()=>{if(path==='funcionarios'){/* o espelho em 'alunos' precisa sair junto, senão o colaborador reaparece na tela de certificados */return WS_DATA.remove('alunos',id).catch(e=>{alert('Colaborador excluído, mas não foi possível removê-lo de "alunos" (certificados). Tente excluir de novo.\n\n'+(e&&e.message?e.message:e));});}}).then(()=>{if(window.renderAll)renderAll();}).catch(e=>alert('Erro ao excluir: '+e.message));}
 function getFormData(t){
-  if(t==='empresa'){const em=String(v('i-e-emails')||'').split(/[,;\s]+/).map(x=>x.trim()).filter(Boolean);const ruim=em.filter(x=>!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(x));if(ruim.length){alert('E-mail inv\u00e1lido: '+ruim.join(', '));return null;}}
-  if(t==='empresa')return{id:v('eid'),nome:v('i-e-nm'),cnpj:v('i-e-cj'),endereco:v('i-e-ender'),emailsRH:String(v('i-e-emails')||'').split(/[,;\s]+/).map(x=>x.trim()).filter(Boolean).join(', '),obras:getChecked('eCatObraChk'),cidades:getChecked('eCatCidadeChk'),filiais:getChecked('eCatFilialChk'),contratos:getChecked('eCatContratoChk'),logoUrl:v('i-e-lid')};
+  if(t==='empresa'&&ehArnaldoRH()){const em=String(v('i-e-emails')||'').split(/[,;\s]+/).map(x=>x.trim()).filter(Boolean);const ruim=em.filter(x=>!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(x));if(ruim.length){alert('E-mail inv\u00e1lido: '+ruim.join(', '));return null;}}
+  if(t==='empresa')return{id:v('eid'),nome:v('i-e-nm'),cnpj:v('i-e-cj'),endereco:v('i-e-ender'),emailsRH:ehArnaldoRH()?String(v('i-e-emails')||'').split(/[,;\s]+/).map(x=>x.trim()).filter(Boolean).join(', '):undefined,obras:getChecked('eCatObraChk'),cidades:getChecked('eCatCidadeChk'),filiais:getChecked('eCatFilialChk'),contratos:getChecked('eCatContratoChk'),logoUrl:v('i-e-lid')};
   if(t==='funcionario'){
     const cpfRaw=v('i-f-cp').replace(/\D/g,'');
     const idAtual=v('fid');
@@ -5471,7 +5477,7 @@ function getFormData(t){
   if(t==='pessoa'){const cpfRaw=v('i-p-cp').replace(/\D/g,'');const idAtual=v('pid');const existente=toArr(DATA.pessoas).find(p=>p.id!==idAtual&&(p.cpf||'').replace(/\D/g,'')===cpfRaw);if(existente){alert('CPF j\u00e1 cadastrado para: '+existente.nome);return null;}return{id:idAtual,nome:v('i-p-nm'),cpf:v('i-p-cp'),endereco:v('i-p-ender')};}
   return null;
 }
-function editEmp(x){v('eid',x.id);v('i-e-nm',x.nome||'');v('i-e-cj',x.cnpj||'');v('i-e-ender',x.endereco||'');v('i-e-emails',x.emailsRH||'');v('i-e-lid',x.logoUrl||'');document.getElementById('i-e-logo').value='';const toCheck={};[['obras','eCatObra'],['cidades','eCatCidade'],['filiais','eCatFilial'],['contratos','eCatContrato']].forEach(([col,prefix])=>{let ids=[];const raw=x[col];if(Array.isArray(raw))ids.push(...raw);else if(typeof raw==='string'&&raw.trim())ids.push(raw.trim());const sing=SING_MAP[col];if(typeof x[sing]==='string'&&x[sing].trim()){const c=toArr(DATA[col]).find(c=>c.nome===x[sing].trim());if(c)ids.push(c.id);}toCheck[prefix]=[...new Set(ids.map(i=>String(i).trim()).filter(Boolean))];});Object.keys(toCheck).forEach(prefix=>selAll(prefix+'Chk',false));renderMsd();Object.entries(toCheck).forEach(([prefix,ids])=>{ids.forEach(i=>{const cb=document.getElementById('ck_'+prefix+'_'+i);if(cb)cb.checked=true;});});openM('mdl-e');}
+function editEmp(x){v('eid',x.id);v('i-e-nm',x.nome||'');v('i-e-cj',x.cnpj||'');v('i-e-ender',x.endereco||'');v('i-e-emails',ehArnaldoRH()?(x.emailsRH||''):'');aplicarVisRH();v('i-e-lid',x.logoUrl||'');document.getElementById('i-e-logo').value='';const toCheck={};[['obras','eCatObra'],['cidades','eCatCidade'],['filiais','eCatFilial'],['contratos','eCatContrato']].forEach(([col,prefix])=>{let ids=[];const raw=x[col];if(Array.isArray(raw))ids.push(...raw);else if(typeof raw==='string'&&raw.trim())ids.push(raw.trim());const sing=SING_MAP[col];if(typeof x[sing]==='string'&&x[sing].trim()){const c=toArr(DATA[col]).find(c=>c.nome===x[sing].trim());if(c)ids.push(c.id);}toCheck[prefix]=[...new Set(ids.map(i=>String(i).trim()).filter(Boolean))];});Object.keys(toCheck).forEach(prefix=>selAll(prefix+'Chk',false));renderMsd();Object.entries(toCheck).forEach(([prefix,ids])=>{ids.forEach(i=>{const cb=document.getElementById('ck_'+prefix+'_'+i);if(cb)cb.checked=true;});});openM('mdl-e');}
 function editCargo(x){
   v('cid',x.id);v('i-c-nm',x.nome||'');v('i-c-cb',x.cbo||'');
   CARGO_EPI_CART=[];
@@ -7223,6 +7229,7 @@ let USUARIO_ATUAL=null;
     }catch(_){}
     const navGerus=document.getElementById('nav-ger-usuarios');
     if(navGerus)navGerus.style.display=usuario&&usuario.mestre&&usuario.nome==='Arnaldo'?'':'none';
+    try{aplicarVisRH();}catch(_){}
     // Importação em massa: quem pode EDITAR Colaboradores. As funções do
     // importador conferem a sessão de novo (impPodeUsar) e cada linha é
     // limitada às empresas/obras do usuário, então esconder o item não é a
